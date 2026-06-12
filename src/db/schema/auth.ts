@@ -1,11 +1,11 @@
-import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, index, uniqueIndex } from 'drizzle-orm/sqlite-core';
 import { sql } from 'drizzle-orm';
 import { UserRole } from '../enums';
 
 export const users = sqliteTable('users', {
   id: text('id').primaryKey(), // App internal unique ID (e.g., nanoid)
-  firebaseUid: text('firebase_uid').notNull().unique(), // Firebase Auth UID
-  phoneNumber: text('phone_number').notNull().unique(), // E.164 phone format
+  firebaseUid: text('firebase_uid').notNull(), // Firebase Auth UID
+  phoneNumber: text('phone_number').notNull(), // E.164 phone format
   whatsappNumber: text('whatsapp_number'), // Optional WhatsApp contact
   email: text('email'), // Optional email address
   name: text('name'), // Optional client name
@@ -17,7 +17,10 @@ export const users = sqliteTable('users', {
   lastLoginAt: integer('last_login_at', { mode: 'timestamp' }),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)
-});
+}, (table) => [
+  uniqueIndex('users_firebase_uid_idx').on(table.firebaseUid),
+  uniqueIndex('users_phone_number_idx').on(table.phoneNumber)
+]);
 
 export const refreshTokens = sqliteTable('refresh_tokens', {
   id: text('id').primaryKey(),
@@ -28,14 +31,18 @@ export const refreshTokens = sqliteTable('refresh_tokens', {
   expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull(),
   revokedAt: integer('revoked_at', { mode: 'timestamp' }), // Revocation timestamp for explicit logouts
   replacedByTokenId: text('replaced_by_token_id') // Supports rotation security tracing
-});
+}, (table) => [
+  index('refresh_tokens_user_id_expires_at_idx').on(table.userId, table.expiresAt)
+]);
 
 export const tokenBlacklist = sqliteTable('token_blacklist', {
   id: text('id').primaryKey(),
-  jti: text('jti').notNull().unique(), // Revoked Access Token unique identifier (JWT JTI claim)
+  jti: text('jti').notNull(), // Revoked Access Token unique identifier (JWT JTI claim)
   expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull(), // Revocation TTL (must match access token expiry)
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)
-});
+}, (table) => [
+  uniqueIndex('token_blacklist_jti_idx').on(table.jti)
+]);
 
 export const userDevices = sqliteTable('user_devices', {
   id: text('id').primaryKey(),
