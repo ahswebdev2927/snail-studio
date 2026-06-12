@@ -5,7 +5,7 @@ if (!getApps().length) {
   try {
     const projectId = process.env.FIREBASE_ADMIN_PROJECT_ID;
     const clientEmail = process.env.FIREBASE_ADMIN_CLIENT_EMAIL;
-    let privateKey = process.env.FIREBASE_ADMIN_PRIVATE_KEY;
+    const privateKey = process.env.FIREBASE_ADMIN_PRIVATE_KEY;
 
     if (projectId && clientEmail && privateKey) {
       // Clean private key: replace literal \n with actual newlines and strip any surrounding quotes
