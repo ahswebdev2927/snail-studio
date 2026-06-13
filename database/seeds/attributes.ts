@@ -9,7 +9,9 @@ export async function seedAttributes() {
     { name: "Length", code: "length", values: ["Short", "Medium", "Long", "Extra Long"] },
     { name: "Shape", code: "shape", values: ["Coffin", "Almond", "Square", "Stiletto"] },
     { name: "Texture", code: "texture", values: ["Matte", "Glossy", "Glitter"] },
-    { name: "Colour", code: "colour", values: ["Nude", "Pink", "Red", "Blue", "White", "Black"] }
+    { name: "Colour", code: "colour", values: ["Nude", "Pink", "Red", "Blue", "White", "Black"] },
+    { name: "Style", code: "style", values: ["Minimalist", "Floral", "Ombre", "French", "Classic"] },
+    { name: "Occasion", code: "occasion", values: ["Casual", "Wedding", "Party", "Festive"] }
   ];
 
   await db.transaction(async (tx) => {

@@ -21,3 +21,15 @@ export function formatPrice(paise: number): string {
   };
   return new Intl.NumberFormat('en-IN', options).format(paise / 100);
 }
+
+/**
+ * Generates a URL-friendly slug from a string.
+ */
+export function slugify(str: string): string {
+  return str
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, "")
+    .replace(/[\s_-]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
