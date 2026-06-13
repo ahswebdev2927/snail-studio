@@ -11,7 +11,12 @@ export const media = sqliteTable('media', {
   format: text('format'),
   width: integer('width'),
   height: integer('height'),
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)
+  resourceType: text('resource_type').notNull().default('image'),
+  duration: integer('duration'),
+  folder: text('folder'),
+  altText: text('alt_text'),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)
 });
 
 export const productMedia = sqliteTable('product_media', {
