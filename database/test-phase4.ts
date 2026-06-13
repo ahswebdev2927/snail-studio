@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { db } from "../src/db";
-import { users } from "../src/db/schema";
+import { users, brands, categories } from "../src/db/schema";
 import { eq } from "drizzle-orm";
 import { signAccessToken } from "../src/lib/auth/jwt";
 import { nanoid } from "nanoid";
@@ -14,6 +14,9 @@ import { GET as getBrands, POST as createBrand } from "../src/app/api/brands/rou
 import { GET as getBrand, PUT as updateBrand, DELETE as deleteBrand } from "../src/app/api/brands/[id]/route";
 import { GET as getCategories, POST as createCategory } from "../src/app/api/categories/route";
 import { PUT as updateCategory, DELETE as deleteCategory } from "../src/app/api/categories/[id]/route";
+
+// Import Variant Utilities
+import { generateVariants, generateUPCBarcode, validateUPCChecksum } from "../src/lib/catalog/variants";
 
 interface CategoryItem {
   id: string;
@@ -42,6 +45,11 @@ async function runTests() {
     role: admin.role,
     jti: `test_jti_${nanoid(10)}`,
   });
+
+  // Pre-test cleanup to ensure idempotency
+  await db.delete(brands).where(eq(brands.slug, "test-brand-nails"));
+  await db.delete(categories).where(eq(categories.slug, "parent-test-category"));
+  await db.delete(categories).where(eq(categories.slug, "child-test-category"));
 
   // --- BRAND TESTS ---
   console.log("\n--- Testing Brands ---");
@@ -162,6 +170,48 @@ async function runTests() {
     throw new Error("Circular dependency was not blocked!");
   }
   console.log("Success! Circular dependency was correctly blocked.");
+
+
+  // --- VARIANT & BARCODE GENERATOR TESTS ---
+  console.log("\n--- Testing Variant & Barcode Generators ---");
+  
+  // Test Barcode Generation & Validation
+  const barcode = generateUPCBarcode();
+  console.log("Generated UPC-A Barcode:", barcode);
+  const isValid = validateUPCChecksum(barcode);
+  console.log("Is barcode valid?", isValid);
+  if (!isValid) throw new Error("Generated barcode failed checksum validation");
+
+  // Verify invalid barcodes fail validation
+  if (validateUPCChecksum("123456789011")) {
+    throw new Error("Invalid barcode checksum was incorrectly verified as valid");
+  }
+  console.log("Successfully verified that incorrect checksums are blocked.");
+
+  // Test Cartesian product and SKU/Name layout builders
+  const testAttributes = {
+    length: [
+      { groupId: "g1", groupCode: "length", valueId: "v1", valueCode: "short" },
+      { groupId: "g1", groupCode: "length", valueId: "v2", valueCode: "medium" },
+    ],
+    shape: [
+      { groupId: "g2", groupCode: "shape", valueId: "v3", valueCode: "coffin" },
+      { groupId: "g2", groupCode: "shape", valueId: "v4", valueCode: "almond" },
+    ],
+  };
+
+  const variantsList = generateVariants("French Ombre Nails", "SNAIL-FRO", 149900, testAttributes);
+  console.log("Generated variants count:", variantsList.length);
+  variantsList.forEach((v) => {
+    console.log(`- SKU: ${v.sku} | Name: ${v.name} | Price: ${v.price}`);
+  });
+
+  if (variantsList.length !== 4) throw new Error("Incorrect Cartesian variants count");
+  if (variantsList[0].sku !== "SNAIL-FRO-S-COF") throw new Error(`Incorrect SKU generation: ${variantsList[0].sku}`);
+  if (variantsList[0].name !== "French Ombre Nails - short / coffin") {
+    throw new Error(`Incorrect name generation: ${variantsList[0].name}`);
+  }
+  console.log("Success! Cartesian variant generation and SKU/Name inheritance verified.");
 
 
   // --- CLEANUP ---
