@@ -1,0 +1,476 @@
+"use client";
+
+import React, { useState, useEffect } from "react";
+import { CloudinaryImage } from "./cloudinary-image";
+import { Search, Upload, Check, Loader2, X, Film } from "lucide-react";
+
+interface MediaItem {
+  id: string;
+  url: string;
+  publicId: string;
+  fileName: string | null;
+  fileSize: number | null;
+  format: string | null;
+  width: number | null;
+  height: number | null;
+  resourceType: "image" | "video";
+  duration: number | null;
+  folder: string | null;
+  altText: string | null;
+}
+
+interface MediaPickerProps {
+  onSelect: (selected: MediaItem[]) => void;
+  onClose?: () => void;
+  maxSelection?: number;
+  initialSelectionIds?: string[];
+  title?: string;
+}
+
+export const MediaPicker: React.FC<MediaPickerProps> = ({
+  onSelect,
+  onClose,
+  maxSelection = 1,
+  initialSelectionIds = [],
+  title = "Select Media",
+}) => {
+  const [activeTab, setActiveTab] = useState<"select" | "upload">("select");
+  const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
+  const [selectedItems, setSelectedItems] = useState<MediaItem[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const [search, setSearch] = useState("");
+  const [resourceType, setResourceType] = useState<"all" | "image" | "video">("all");
+  const [folderFilter, setFolderFilter] = useState<string>("all");
+
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploadFolder, setUploadFolder] = useState<
+    "products/images" | "products/videos" | "collections/banners" | "categories/banners"
+  >("products/images");
+  const [altText, setAltText] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+
+  const fetchMedia = async () => {
+    setIsLoading(true);
+    try {
+      const queryParams = new URLSearchParams();
+      if (resourceType !== "all") queryParams.append("resourceType", resourceType);
+      if (folderFilter !== "all") queryParams.append("folder", folderFilter);
+
+      const res = await fetch(`/api/media?${queryParams.toString()}`);
+      if (res.ok) {
+        const data = await res.json();
+        setMediaItems(data);
+
+        if (initialSelectionIds.length > 0) {
+          const matched = data.filter((item: MediaItem) => initialSelectionIds.includes(item.id));
+          setSelectedItems(matched);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to fetch media:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === "select") {
+      fetchMedia();
+    }
+  }, [activeTab, resourceType, folderFilter]);
+
+  const handleSelectItem = (item: MediaItem) => {
+    if (maxSelection === 1) {
+      setSelectedItems([item]);
+    } else {
+      const exists = selectedItems.find((selected) => selected.id === item.id);
+      if (exists) {
+        setSelectedItems(selectedItems.filter((selected) => selected.id !== item.id));
+      } else if (selectedItems.length < maxSelection) {
+        setSelectedItems([...selectedItems, item]);
+      }
+    }
+  };
+
+  const handleUpload = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!uploadFile) {
+      setUploadError("Please select a file to upload.");
+      return;
+    }
+
+    setUploadError("");
+    setIsUploading(true);
+
+    try {
+      const fileType = uploadFile.type.startsWith("video/") ? "video" : "image";
+
+      if (uploadFolder === "products/videos" && fileType !== "video") {
+        throw new Error("Folder 'products/videos' requires a video file.");
+      }
+      if (uploadFolder !== "products/videos" && fileType !== "image") {
+        throw new Error("Target folder requires an image file.");
+      }
+
+      const signRes = await fetch("/api/media/sign-upload", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          folder: uploadFolder,
+          resourceType: fileType,
+          fileSize: uploadFile.size,
+          mimeType: uploadFile.type,
+        }),
+      });
+
+      if (!signRes.ok) {
+        const errData = await signRes.json();
+        throw new Error(errData.error || "Failed to generate upload signature.");
+      }
+
+      const signData = await signRes.json();
+
+      const formData = new FormData();
+      formData.append("file", uploadFile);
+      formData.append("api_key", signData.apiKey);
+      formData.append("timestamp", signData.timestamp.toString());
+      formData.append("signature", signData.signature);
+      formData.append("folder", signData.folder);
+      formData.append("upload_preset", signData.uploadPreset);
+
+      const cloudUrl = `https://api.cloudinary.com/v1_1/${signData.cloudName}/${fileType}/upload`;
+      const cloudRes = await fetch(cloudUrl, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!cloudRes.ok) {
+        const cloudErr = await cloudRes.json();
+        throw new Error(cloudErr.error?.message || "Failed to upload file to Cloudinary.");
+      }
+
+      const cloudData = await cloudRes.json();
+
+      const regRes = await fetch("/api/media/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          url: cloudData.secure_url,
+          publicId: cloudData.public_id,
+          fileName: uploadFile.name,
+          fileSize: cloudData.bytes,
+          format: cloudData.format,
+          width: cloudData.width || null,
+          height: cloudData.height || null,
+          resourceType: fileType,
+          duration: cloudData.duration || null,
+          folder: uploadFolder,
+          altText: altText || null,
+        }),
+      });
+
+      if (!regRes.ok) {
+        throw new Error("Uploaded successfully, but failed to sync metadata in database.");
+      }
+
+      const registeredMedia = await regRes.json();
+
+      if (maxSelection === 1) {
+        setSelectedItems([registeredMedia]);
+      } else if (selectedItems.length < maxSelection) {
+        setSelectedItems([...selectedItems, registeredMedia]);
+      }
+
+      setUploadFile(null);
+      setAltText("");
+      setActiveTab("select");
+      await fetchMedia();
+
+    } catch (err: any) {
+      setUploadError(err.message || "Something went wrong during upload.");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleConfirm = () => {
+    onSelect(selectedItems);
+    if (onClose) onClose();
+  };
+
+  const filteredItems = mediaItems.filter((item) =>
+    (item.fileName || "").toLowerCase().includes(search.toLowerCase()) ||
+    item.publicId.toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <div className="flex flex-col h-[600px] w-full max-w-4xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl shadow-xl overflow-hidden font-sans">
+      <div className="flex justify-between items-center px-6 py-4 border-b border-neutral-100 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/50">
+        <h3 className="text-lg font-semibold text-neutral-800 dark:text-white">{title}</h3>
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-full hover:bg-neutral-200 dark:hover:bg-neutral-800 text-neutral-500 dark:text-neutral-400"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        )}
+      </div>
+
+      <div className="flex px-6 border-b border-neutral-100 dark:border-neutral-800">
+        <button
+          onClick={() => setActiveTab("select")}
+          className={`py-3 px-4 border-b-2 text-sm font-medium transition-all duration-200 ${
+            activeTab === "select"
+              ? "border-rose-500 text-rose-600 dark:text-rose-400"
+              : "border-transparent text-neutral-500 hover:text-neutral-800 dark:hover:text-white"
+          }`}
+        >
+          Select Existing
+        </button>
+        <button
+          onClick={() => setActiveTab("upload")}
+          className={`py-3 px-4 border-b-2 text-sm font-medium transition-all duration-200 ${
+            activeTab === "upload"
+              ? "border-rose-500 text-rose-600 dark:text-rose-400"
+              : "border-transparent text-neutral-500 hover:text-neutral-800 dark:hover:text-white"
+          }`}
+        >
+          Upload New
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-6 min-h-0">
+        {activeTab === "select" ? (
+          <div className="flex flex-col gap-4 h-full min-h-0">
+            <div className="flex flex-wrap gap-3 items-center">
+              <div className="relative flex-1 min-w-[200px]">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+                <input
+                  type="text"
+                  placeholder="Search file name..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="w-full pl-9 pr-4 py-2 border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm rounded-xl focus:outline-none focus:ring-1 focus:ring-rose-500"
+                />
+              </div>
+
+              <div className="flex items-center gap-1.5 p-1 border border-neutral-200 dark:border-neutral-800 rounded-xl bg-neutral-50 dark:bg-neutral-950">
+                <button
+                  onClick={() => setResourceType("all")}
+                  className={`px-3 py-1 text-xs font-medium rounded-lg ${
+                    resourceType === "all"
+                      ? "bg-white dark:bg-neutral-800 text-rose-600 dark:text-rose-400 shadow-sm"
+                      : "text-neutral-500"
+                  }`}
+                >
+                  All
+                </button>
+                <button
+                  onClick={() => setResourceType("image")}
+                  className={`px-3 py-1 text-xs font-medium rounded-lg ${
+                    resourceType === "image"
+                      ? "bg-white dark:bg-neutral-800 text-rose-600 dark:text-rose-400 shadow-sm"
+                      : "text-neutral-500"
+                  }`}
+                >
+                  Images
+                </button>
+                <button
+                  onClick={() => setResourceType("video")}
+                  className={`px-3 py-1 text-xs font-medium rounded-lg ${
+                    resourceType === "video"
+                      ? "bg-white dark:bg-neutral-800 text-rose-600 dark:text-rose-400 shadow-sm"
+                      : "text-neutral-500"
+                  }`}
+                >
+                  Videos
+                </button>
+              </div>
+
+              <select
+                value={folderFilter}
+                onChange={(e) => setFolderFilter(e.target.value)}
+                className="px-3 py-2 border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm rounded-xl focus:outline-none focus:ring-1 focus:ring-rose-500 cursor-pointer"
+              >
+                <option value="all">All Folders</option>
+                <option value="products/images">Product Images</option>
+                <option value="products/videos">Product Videos</option>
+                <option value="collections/banners">Collection Banners</option>
+                <option value="categories/banners">Category Banners</option>
+              </select>
+            </div>
+
+            <div className="flex-1 overflow-y-auto min-h-0">
+              {isLoading ? (
+                <div className="flex flex-col items-center justify-center h-48 text-neutral-400">
+                  <Loader2 className="w-8 h-8 animate-spin text-rose-500 mb-2" />
+                  <span>Loading registered media items...</span>
+                </div>
+              ) : filteredItems.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-48 border border-dashed border-neutral-200 dark:border-neutral-800 rounded-xl text-neutral-400">
+                  <span>No media items found matching filters</span>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-4">
+                  {filteredItems.map((item) => {
+                    const isSelected = selectedItems.some((sel) => sel.id === item.id);
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => handleSelectItem(item)}
+                        className={`relative aspect-square w-full rounded-xl border overflow-hidden transition-all duration-200 ${
+                          isSelected
+                            ? "border-rose-500 ring-2 ring-rose-400/40"
+                            : "border-neutral-200 dark:border-neutral-800 hover:border-rose-300"
+                        }`}
+                      >
+                        {item.resourceType === "image" ? (
+                          <CloudinaryImage
+                            src={item.url}
+                            variant="thumbnail"
+                            alt={item.altText || "Thumbnail"}
+                            className="w-full h-full rounded-none"
+                          />
+                        ) : (
+                          <div className="relative w-full h-full flex items-center justify-center bg-rose-50/50 dark:bg-rose-950/10">
+                            <Film className="w-8 h-8 text-rose-500" />
+                            {item.duration && (
+                              <span className="absolute bottom-1 right-1 px-1 bg-black/75 text-[9px] text-white rounded font-mono">
+                                {`${item.duration.toFixed(0)}s`}
+                              </span>
+                            )}
+                          </div>
+                        )}
+
+                        {isSelected && (
+                          <div className="absolute top-2 right-2 p-1 rounded-full bg-rose-500 text-white shadow-md border border-white">
+                            <Check className="w-3.5 h-3.5 stroke-[3]" />
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <form onSubmit={handleUpload} className="flex flex-col gap-5 max-w-lg mx-auto">
+            <div className="flex flex-col items-center justify-center border-2 border-dashed border-neutral-300 dark:border-neutral-800 rounded-2xl p-6 bg-neutral-50/50 dark:bg-neutral-950/30 hover:border-rose-400 transition-all duration-200 relative cursor-pointer group">
+              <input
+                type="file"
+                accept="image/*,video/*"
+                onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
+                className="absolute inset-0 opacity-0 cursor-pointer"
+              />
+              <Upload className="w-10 h-10 text-neutral-400 group-hover:text-rose-500 transition-colors duration-200 mb-2" />
+              {uploadFile ? (
+                <div className="text-center">
+                  <p className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 truncate max-w-xs">
+                    {uploadFile.name}
+                  </p>
+                  <p className="text-xs text-neutral-500 mt-1">
+                    {(uploadFile.size / (1024 * 1024)).toFixed(2)} MB
+                  </p>
+                </div>
+              ) : (
+                <div className="text-center">
+                  <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                    Click to select file or drag & drop here
+                  </p>
+                  <p className="text-xs text-neutral-400 mt-1">
+                    JPEG, PNG, WebP (Max 10MB) or MP4, WebM (Max 50MB)
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                Destination Folder
+              </label>
+              <select
+                value={uploadFolder}
+                onChange={(e: any) => setUploadFolder(e.target.value)}
+                className="w-full px-4 py-2 border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm rounded-xl focus:outline-none focus:ring-1 focus:ring-rose-500"
+              >
+                <option value="products/images">Product Images</option>
+                <option value="products/videos">Product Videos</option>
+                <option value="collections/banners">Collection Banners</option>
+                <option value="categories/banners">Category Banners</option>
+              </select>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                Alt Text (SEO & Accessibility)
+              </label>
+              <input
+                type="text"
+                placeholder="Describe this media..."
+                value={altText}
+                onChange={(e) => setAltText(e.target.value)}
+                className="w-full px-4 py-2 border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm rounded-xl focus:outline-none focus:ring-1 focus:ring-rose-500"
+              />
+            </div>
+
+            {uploadError && (
+              <p className="text-sm font-medium text-rose-500 bg-rose-50/50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/30 p-3 rounded-xl">
+                {uploadError}
+              </p>
+            )}
+
+            <button
+              type="submit"
+              disabled={isUploading || !uploadFile}
+              className="w-full py-2.5 px-4 bg-rose-500 text-white font-medium rounded-xl hover:bg-rose-600 disabled:bg-neutral-300 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2"
+            >
+              {isUploading ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span>Uploading to Cloudinary...</span>
+                </>
+              ) : (
+                <>
+                  <Upload className="w-5 h-5" />
+                  <span>Start Direct Upload</span>
+                </>
+              )}
+            </button>
+          </form>
+        )}
+      </div>
+
+      <div className="flex justify-between items-center px-6 py-4 border-t border-neutral-100 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/50">
+        <span className="text-sm text-neutral-500 dark:text-neutral-400">
+          {selectedItems.length > 0
+            ? `${selectedItems.length} of ${maxSelection} item(s) selected`
+            : "No items selected"}
+        </span>
+        <div className="flex gap-3">
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="px-4 py-2 border border-neutral-200 dark:border-neutral-800 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-300 text-sm font-medium"
+            >
+              Cancel
+            </button>
+          )}
+          <button
+            onClick={handleConfirm}
+            disabled={selectedItems.length === 0}
+            className="px-5 py-2 bg-rose-500 hover:bg-rose-600 disabled:bg-neutral-200 disabled:text-neutral-400 disabled:cursor-not-allowed text-white text-sm font-medium rounded-xl transition-colors duration-200"
+          >
+            Confirm Selection
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default MediaPicker;
