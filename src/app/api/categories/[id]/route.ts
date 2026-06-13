@@ -32,7 +32,7 @@ async function wouldCreateCircularReference(
     if (currentParentId === categoryId) {
       return true;
     }
-    const parent = await db.query.categories.findFirst({
+    const parent: { parentId: string | null } | undefined = await db.query.categories.findFirst({
       where: eq(categories.id, currentParentId),
       columns: { parentId: true },
     });
