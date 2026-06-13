@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { users } from "@/db/schema";
 import { eq, or } from "drizzle-orm";
 import { nanoid } from "nanoid";
+import { createSession } from "@/lib/auth/refresh-token";
 
 export async function POST(req: NextRequest) {
   try {
@@ -100,7 +101,21 @@ export async function POST(req: NextRequest) {
       user = insertedUsers[0];
     }
 
-    return NextResponse.json({
+    // Extract client IP address and device User-Agent
+    const userAgent = req.headers.get("user-agent") || undefined;
+    const ipAddress =
+      req.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
+      req.headers.get("x-real-ip") ||
+      undefined;
+
+    // Create session (JWT access token + database-backed refresh token)
+    const { accessToken, refreshToken, expiresAt } = await createSession(
+      user.id,
+      userAgent,
+      ipAddress
+    );
+
+    const response = NextResponse.json({
       success: true,
       message: "Authentication successful",
       user: {
@@ -112,6 +127,26 @@ export async function POST(req: NextRequest) {
         image: user.image,
       },
     });
+
+    // Set HttpOnly secure cookies
+    response.cookies.set("accessToken", accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 15 * 60, // 15 minutes
+    });
+
+    const refreshTokenMaxAge = Math.floor((expiresAt.getTime() - Date.now()) / 1000);
+    response.cookies.set("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: refreshTokenMaxAge,
+    });
+
+    return response;
   } catch (error: any) {
     console.error("Login API route error:", error);
     return NextResponse.json(
