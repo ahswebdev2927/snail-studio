@@ -1,9 +1,10 @@
 import { db } from "@/db";
-import { payments, orders, refunds } from "@/db/schema";
+import { payments, orders, refunds, inventoryItems, inventoryReservations, inventoryTransactions, cartItems, carts } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { getPaymentProvider } from "@/lib/payments/payment-factory";
 import { PaymentSession, PaymentVerificationResult, RefundResult } from "@/lib/payments/types";
+import { updateOrderStatus } from "../checkout/order.service";
 
 /**
  * Creates a payment session with the active gateway and logs a pending payment record in the DB.
@@ -155,4 +156,145 @@ export async function refundOrderPayment(
   }
 
   return refundResult;
+}
+
+/**
+ * Confirms an order's payment. Performs signature verification, updates payment/order records,
+ * deducts inventory stock, logs inventory audit history, and releases stock reservations atomically.
+ * 
+ * @param params Confirmation input including orderId, paymentId, gatewayOrderId, and optional signature or cartId.
+ * @returns Object indicating success.
+ */
+export async function confirmOrderPayment(params: {
+  orderId: string;
+  paymentId: string;
+  gatewayOrderId?: string;
+  signature?: string;
+  cartId?: string;
+}) {
+  return db.transaction(async (tx) => {
+    // 1. Fetch the order record
+    const orderRecord = await tx.query.orders.findFirst({
+      where: eq(orders.id, params.orderId),
+      with: {
+        items: true
+      }
+    });
+
+    if (!orderRecord) {
+      throw new Error(`Order not found for ID: ${params.orderId}`);
+    }
+
+    // Support idempotency: if order is already paid, return early
+    if (orderRecord.status === "paid") {
+      return { success: true, orderId: params.orderId, alreadyPaid: true };
+    }
+
+    if (orderRecord.status !== "pending") {
+      throw new Error(`Cannot confirm payment for order in status '${orderRecord.status}'`);
+    }
+
+    // 2. Resolve gatewayOrderId from payment record if not explicitly provided
+    let resolvedGatewayOrderId = params.gatewayOrderId;
+    if (!resolvedGatewayOrderId) {
+      const paymentRec = await tx.query.payments.findFirst({
+        where: eq(payments.orderId, params.orderId)
+      });
+      if (paymentRec) {
+        resolvedGatewayOrderId = paymentRec.gatewayTransactionId || undefined;
+      }
+    }
+
+    if (!resolvedGatewayOrderId) {
+      throw new Error(`Could not resolve gatewayOrderId for order ID: ${params.orderId}`);
+    }
+
+    // 3. Verify the payment with the gateway and update the payment log in DB
+    const verification = await verifyAndRecordPayment(
+      {
+        paymentId: params.paymentId,
+        orderId: params.orderId,
+        gatewayOrderId: resolvedGatewayOrderId,
+        signature: params.signature
+      },
+      tx
+    );
+
+    if (!verification.success) {
+      throw new Error(`Payment verification failed: ${verification.errorMessage || "signature mismatch"}`);
+    }
+
+    // 4. Mark the order as paid in the database (which also inserts into order status history)
+    await updateOrderStatus(params.orderId, "paid", "Payment verified and confirmed successfully.", tx);
+
+    // 5. Resolve the cart ID
+    let resolvedCartId = params.cartId;
+    if (!resolvedCartId) {
+      // Look up a cart associated with this user
+      if (orderRecord.userId) {
+        const userCart = await tx.query.carts.findFirst({
+          where: eq(carts.userId, orderRecord.userId)
+        });
+        if (userCart) {
+          resolvedCartId = userCart.id;
+        }
+      }
+    }
+
+    // 6. Convert reservations to physical stock deductions and log inventory transactions
+    for (const item of orderRecord.items) {
+      if (!item.variantId) continue;
+
+      const invItem = await tx.query.inventoryItems.findFirst({
+        where: eq(inventoryItems.variantId, item.variantId)
+      });
+
+      if (!invItem) {
+        console.warn(`Warning: Inventory item not found for variant ID: ${item.variantId}. Skipping stock deduction.`);
+        continue;
+      }
+
+      // Look up active reservation for this item and cart
+      let reservationQuery = eq(inventoryReservations.inventoryItemId, invItem.id);
+      if (resolvedCartId) {
+        reservationQuery = and(reservationQuery, eq(inventoryReservations.cartId, resolvedCartId));
+      }
+
+      const reservation = await tx.query.inventoryReservations.findFirst({
+        where: reservationQuery
+      });
+
+      // Release/delete reservation if found
+      if (reservation) {
+        await tx.delete(inventoryReservations).where(eq(inventoryReservations.id, reservation.id));
+      }
+
+      // Deduct physical stock level
+      const newStockLevel = Math.max(0, invItem.stockLevel - item.quantity);
+      await tx
+        .update(inventoryItems)
+        .set({ stockLevel: newStockLevel, updatedAt: new Date() })
+        .where(eq(inventoryItems.id, invItem.id));
+
+      // Create outbound inventory transaction log
+      await tx.insert(inventoryTransactions).values({
+        id: `it_${nanoid(12)}`,
+        inventoryItemId: invItem.id,
+        type: "outbound",
+        quantity: item.quantity,
+        reference: `order_${orderRecord.id}`
+      });
+    }
+
+    // 7. Clear cart items upon successful checkout completion
+    if (resolvedCartId) {
+      await tx.delete(cartItems).where(eq(cartItems.cartId, resolvedCartId));
+    }
+
+    return {
+      success: true,
+      orderId: params.orderId,
+      alreadyPaid: false
+    };
+  });
 }
