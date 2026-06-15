@@ -1,4 +1,4 @@
-import Fuse from "fuse.js";
+import { createFuse } from "@/lib/search/fuse";
 
 export interface ProductSearchItem {
   id: string;
@@ -38,22 +38,7 @@ export function searchWithFuse(products: ProductSearchItem[], query: string): Pr
     return products;
   }
 
-  const options: Fuse.IFuseOptions<ProductSearchItem> = {
-    keys: [
-      { name: "name", weight: 0.4 },
-      { name: "brandName", weight: 0.2 },
-      { name: "categoryName", weight: 0.2 },
-      { name: "attributes.value", weight: 0.15 },
-      { name: "shortDescription", weight: 0.1 },
-      { name: "description", weight: 0.05 },
-    ],
-    threshold: 0.3, // Typo-tolerance threshold
-    includeScore: true,
-    ignoreLocation: true,
-    minMatchCharLength: 2,
-  };
-
-  const fuse = new Fuse(products, options);
+  const fuse = createFuse(products);
   const results = fuse.search(trimmedQuery);
 
   return results.map((result) => result.item);
