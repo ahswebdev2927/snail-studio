@@ -5,6 +5,7 @@ import { users } from "@/db/schema";
 import { eq, or } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { createSession } from "@/lib/auth/refresh-token";
+import { mergeGuestCartIntoCustomerCart } from "@/services/cart/cart.service";
 
 export async function POST(req: NextRequest) {
   try {
@@ -115,6 +116,16 @@ export async function POST(req: NextRequest) {
       ipAddress
     );
 
+    // Merge guest cart to customer cart if guestCartToken cookie exists
+    const guestCartToken = req.cookies.get("guestCartToken")?.value;
+    if (guestCartToken) {
+      try {
+        await mergeGuestCartIntoCustomerCart(guestCartToken, user.id);
+      } catch (mergeError) {
+        console.error("Failed to merge guest cart into customer cart:", mergeError);
+      }
+    }
+
     const response = NextResponse.json({
       success: true,
       message: "Authentication successful",
@@ -145,6 +156,16 @@ export async function POST(req: NextRequest) {
       path: "/",
       maxAge: refreshTokenMaxAge,
     });
+
+    if (guestCartToken) {
+      response.cookies.set("guestCartToken", "", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        maxAge: 0,
+      });
+    }
 
     return response;
   } catch (error: any) {
