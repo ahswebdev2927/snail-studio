@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, primaryKey } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, primaryKey, index } from 'drizzle-orm/sqlite-core';
 import { sql } from 'drizzle-orm';
 import { users } from './auth';
 
@@ -40,7 +40,15 @@ export const products = sqliteTable('products', {
   isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)
-});
+}, (table) => [
+  index('products_name_idx').on(table.name),
+  index('products_slug_idx').on(table.slug),
+  index('products_brand_id_idx').on(table.brandId),
+  index('products_category_id_idx').on(table.categoryId),
+  index('products_is_active_idx').on(table.isActive),
+  index('products_is_featured_idx').on(table.isFeatured),
+  index('products_is_best_seller_idx').on(table.isBestSeller),
+]);
 
 export const attributeGroups = sqliteTable('attribute_groups', {
   id: text('id').primaryKey(),
@@ -72,7 +80,9 @@ export const productVariants = sqliteTable('product_variants', {
   barcode: text('barcode').unique(),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)
-});
+}, (table) => [
+  index('product_variants_price_idx').on(table.price),
+]);
 
 export const variantAttributeValues = sqliteTable('variant_attribute_values', {
   variantId: text('variant_id').notNull().references(() => productVariants.id, { onDelete: 'cascade' }),

@@ -56,7 +56,7 @@ export async function getFilteredProducts(params: FilterParams): Promise<Product
     conditions.push(eq(products.isActive, isActive));
   }
 
-  // 2. Database Text Search Query Pre-filter (Step 6.3)
+  // 2. Database Text Search Query Pre-filter
   if (q && q.trim()) {
     const searchTerm = `%${q.trim()}%`;
     conditions.push(
@@ -132,7 +132,7 @@ export async function getFilteredProducts(params: FilterParams): Promise<Product
     conditions.push(lte(products.priceMin, maxPrice));
   }
 
-  // 6. Availability Filter (Step 6.4)
+  // 6. Availability Filter
   if (availability) {
     const inStockCondition = exists(
       db.select()
@@ -191,7 +191,7 @@ export async function getFilteredProducts(params: FilterParams): Promise<Product
     conditions.push(buildAttributeFilter("texture", textures));
   }
 
-  // 9. Execute Drizzle Query with relations
+  // 9. Execute Drizzle Query with relations (including media)
   const rawProducts = await db.query.products.findMany({
     where: conditions.length > 0 ? and(...conditions) : undefined,
     with: {
@@ -204,6 +204,11 @@ export async function getFilteredProducts(params: FilterParams): Promise<Product
               group: true
             }
           }
+        }
+      },
+      media: {
+        with: {
+          media: true
         }
       }
     }
@@ -219,6 +224,16 @@ export async function getFilteredProducts(params: FilterParams): Promise<Product
         value: val.value,
         valueCode: val.code,
       };
+    });
+
+    const imagesList = p.media.map((pm) => ({
+      url: pm.media.url,
+      isFeatured: pm.isFeatured,
+      sortOrder: pm.sortOrder
+    })).sort((a, b) => {
+      if (a.isFeatured && !b.isFeatured) return -1;
+      if (!a.isFeatured && b.isFeatured) return 1;
+      return a.sortOrder - b.sortOrder;
     });
 
     return {
@@ -238,6 +253,7 @@ export async function getFilteredProducts(params: FilterParams): Promise<Product
       categoryName: p.category ? p.category.name : null,
       categorySlug: p.category ? p.category.slug : null,
       attributes: attributeList,
+      images: imagesList,
       createdAt: p.createdAt,
     };
   });

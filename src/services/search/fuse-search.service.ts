@@ -22,6 +22,11 @@ export interface ProductSearchItem {
     value: string;
     valueCode: string;
   }[];
+  images: {
+    url: string;
+    isFeatured: boolean;
+    sortOrder: number;
+  }[];
   createdAt: Date;
 }
 
