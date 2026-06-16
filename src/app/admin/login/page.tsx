@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { Sparkles, Phone, Lock, ArrowRight, ShieldCheck, Loader2 } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Sparkles, Phone, Lock, ArrowRight, ShieldCheck, Loader2, Sun, Moon } from "lucide-react";
 
 export default function AdminLoginPage() {
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -10,6 +10,59 @@ export default function AdminLoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [devBypassLoading, setDevBypassLoading] = useState(false);
+  const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [checkingSession, setCheckingSession] = useState(true);
+
+  // Check if there is an active session on mount to auto-login
+  useEffect(() => {
+    async function checkSession() {
+      try {
+        const res = await fetch("/api/auth/refresh", { method: "POST" });
+        if (res.ok) {
+          // Valid refresh token exists -> redirect to dashboard immediately
+          window.location.href = "/admin/dashboard";
+        } else {
+          setCheckingSession(false);
+        }
+      } catch (err) {
+        console.error("Auto-login check failed:", err);
+        setCheckingSession(false);
+      }
+    }
+    checkSession();
+  }, []);
+
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("theme") || localStorage.getItem("admin-theme");
+    if (savedTheme === "dark" || savedTheme === "light") {
+      setTheme(savedTheme);
+      if (savedTheme === "dark") {
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+      }
+    } else {
+      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      setTheme(prefersDark ? "dark" : "light");
+      if (prefersDark) {
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+      }
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    const nextTheme = theme === "light" ? "dark" : "light";
+    setTheme(nextTheme);
+    localStorage.setItem("theme", nextTheme);
+    localStorage.setItem("admin-theme", nextTheme);
+    if (nextTheme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  };
 
   const isDev = process.env.NODE_ENV === "development";
 
@@ -61,8 +114,32 @@ export default function AdminLoginPage() {
     }
   };
 
+  if (checkingSession) {
+    return (
+      <div className="min-h-screen w-full flex flex-col items-center justify-center gap-3 bg-gradient-to-br from-background via-secondary/15 to-background text-foreground font-sans">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <p className="text-xs font-light text-muted-foreground">Verifying secure session...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen w-full flex items-center justify-center p-4 bg-gradient-to-br from-background via-secondary/15 to-background text-foreground font-sans relative overflow-hidden">
+      {/* Floating Theme Toggle */}
+      <div className="absolute top-6 right-6 z-20">
+        <button
+          onClick={toggleTheme}
+          aria-label="Toggle Theme"
+          className="p-2.5 rounded-2xl bg-card border border-border/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-all duration-300 hover:rotate-12 cursor-pointer shadow-lg"
+        >
+          {theme === "light" ? (
+            <Moon className="w-4.5 h-4.5 text-muted-foreground" />
+          ) : (
+            <Sun className="w-4.5 h-4.5 text-accent" />
+          )}
+        </button>
+      </div>
+
       {/* Background radial accent glows */}
       <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-accent/5 rounded-full blur-3xl pointer-events-none" />
@@ -107,7 +184,7 @@ export default function AdminLoginPage() {
                     required
                     value={phoneNumber}
                     onChange={(e) => setPhoneNumber(e.target.value)}
-                    className="w-full pl-11 pr-4 py-3 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-sm outline-none transition-all placeholder:text-muted-foreground/50"
+                    className="w-full pl-11 pr-4 py-3 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-sm outline-none transition-all placeholder:text-muted-foreground/50 text-foreground"
                   />
                 </div>
               </div>
@@ -142,7 +219,7 @@ export default function AdminLoginPage() {
                     required
                     value={otp}
                     onChange={(e) => setOtp(e.target.value)}
-                    className="w-full pl-11 pr-4 py-3 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-sm outline-none tracking-widest text-center font-medium transition-all placeholder:text-muted-foreground/50"
+                    className="w-full pl-11 pr-4 py-3 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-sm outline-none tracking-widest text-center font-medium transition-all placeholder:text-muted-foreground/50 text-foreground"
                   />
                 </div>
               </div>

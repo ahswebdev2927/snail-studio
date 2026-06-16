@@ -26,20 +26,20 @@ export default function AdminPaymentsSettingsPage() {
               <span className="text-xs font-semibold text-foreground">Active Payment Gateway</span>
               <p className="text-[10px] text-muted-foreground font-light">Choose which backend integration manages payments.</p>
             </div>
-            <select className="px-3.5 py-2 bg-card border border-border rounded-xl text-xs font-medium outline-none">
-              <option value="mock">Mock Developer Gateway</option>
-              <option value="razorpay">Razorpay Gateway</option>
+            <select className="px-3.5 py-2 bg-card border border-border rounded-xl text-xs font-medium outline-none text-foreground">
+              <option value="mock" className="bg-card text-foreground">Mock Developer Gateway</option>
+              <option value="razorpay" className="bg-card text-foreground">Razorpay Gateway</option>
             </select>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
             <div className="space-y-1.5">
               <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Razorpay Key ID</label>
-              <input type="text" placeholder="rzp_test_..." className="w-full px-4 py-2.5 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none transition-all" />
+              <input type="text" placeholder="rzp_test_..." className="w-full px-4 py-2.5 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none transition-all text-foreground" />
             </div>
             <div className="space-y-1.5">
               <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Razorpay Secret Key</label>
-              <input type="password" placeholder="••••••••••••" className="w-full px-4 py-2.5 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none transition-all" />
+              <input type="password" placeholder="••••••••••••" className="w-full px-4 py-2.5 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none transition-all text-foreground" />
             </div>
           </div>
         </div>

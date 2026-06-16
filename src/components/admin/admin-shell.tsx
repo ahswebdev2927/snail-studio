@@ -37,6 +37,50 @@ export default function AdminShell({ user, children }: AdminShellProps) {
     }
   }, []);
 
+  // Set up transparent token refresh on 401 Unauthorized errors
+  useEffect(() => {
+    const originalFetch = window.fetch;
+    window.fetch = async function (input, init) {
+      let response = await originalFetch(input, init);
+
+      if (response.status === 401) {
+        const url = typeof input === "string" 
+          ? input 
+          : input instanceof URL 
+            ? input.toString() 
+            : input.url;
+
+        // Don't intercept refresh token or login requests to avoid loops
+        if (url.includes("/api/auth/refresh") || url.includes("/api/auth/login")) {
+          return response;
+        }
+
+        try {
+          const refreshRes = await originalFetch("/api/auth/refresh", {
+            method: "POST",
+          });
+
+          if (refreshRes.ok) {
+            // Re-fetch the original request with updated cookies
+            response = await originalFetch(input, init);
+          } else {
+            // Refresh failed, redirect to login
+            window.location.href = "/admin/login";
+          }
+        } catch (err) {
+          console.error("Transparent session refresh failed:", err);
+          window.location.href = "/admin/login";
+        }
+      }
+
+      return response;
+    };
+
+    return () => {
+      window.fetch = originalFetch;
+    };
+  }, []);
+
   const toggleTheme = () => {
     const nextTheme = theme === "light" ? "dark" : "light";
     setTheme(nextTheme);

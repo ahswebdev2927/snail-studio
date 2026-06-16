@@ -50,8 +50,8 @@ export const MediaPreview: React.FC<MediaPreviewProps> = ({
             className="w-full h-full"
           />
         ) : (
-          <div className="relative w-full h-full flex items-center justify-center bg-rose-50/50 dark:bg-rose-950/10">
-            <Film className="w-5 h-5 text-rose-500" />
+          <div className="relative w-full h-full flex items-center justify-center bg-primary/5 dark:bg-primary/10">
+            <Film className="w-5 h-5 text-primary" />
             {item.duration ? (
               <span className="absolute bottom-0 right-0 px-1 bg-black/75 text-[10px] text-white rounded font-mono">
                 {`${item.duration.toFixed(1)}s`}
@@ -89,7 +89,7 @@ export const MediaPreview: React.FC<MediaPreviewProps> = ({
       {onDelete && (
         <button
           onClick={() => onDelete(item.id)}
-          className="absolute top-1/2 right-2 -translate-y-1/2 p-1.5 rounded-full bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/20 dark:hover:bg-rose-950/40 dark:text-rose-400 border border-rose-100 dark:border-rose-900/30 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+          className="absolute top-1/2 right-2 -translate-y-1/2 p-1.5 rounded-full bg-destructive/10 hover:bg-destructive/20 text-destructive dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:text-destructive border border-destructive/25 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
           title="Remove media"
         >
           <X className="w-3.5 h-3.5" />

@@ -9,7 +9,7 @@ export type CloudinaryResourceType = "image" | "video";
 export interface SignatureParams extends Record<string, any> {
   timestamp: number;
   folder: string;
-  upload_preset: string;
+  upload_preset?: string;
 }
 
 export interface SignedUploadResponse {

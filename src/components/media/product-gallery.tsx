@@ -28,7 +28,7 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({
 
   if (!mediaList || mediaList.length === 0) {
     return (
-      <div className="flex items-center justify-center w-full aspect-square rounded-xl bg-rose-50/20 border border-rose-100 dark:bg-neutral-900/10 dark:border-neutral-800">
+      <div className="flex items-center justify-center w-full aspect-square rounded-xl bg-primary/5 border border-primary/20 dark:bg-neutral-900/10 dark:border-neutral-800">
         <span className="text-neutral-400 text-sm">No media available</span>
       </div>
     );
@@ -89,14 +89,14 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({
           <>
             <button
               onClick={handlePrev}
-              className="absolute left-4 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-white/80 dark:bg-neutral-900/80 backdrop-blur-md border border-neutral-200 dark:border-neutral-800 text-neutral-800 dark:text-white shadow-md hover:bg-rose-50 dark:hover:bg-neutral-800 opacity-0 group-hover:opacity-100 transition-all duration-300"
+              className="absolute left-4 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-white/80 dark:bg-neutral-900/80 backdrop-blur-md border border-neutral-200 dark:border-neutral-800 text-neutral-800 dark:text-white shadow-md hover:bg-primary/10 dark:hover:bg-neutral-800 opacity-0 group-hover:opacity-100 transition-all duration-300"
               aria-label="Previous slide"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
             <button
               onClick={handleNext}
-              className="absolute right-4 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-white/80 dark:bg-neutral-900/80 backdrop-blur-md border border-neutral-200 dark:border-neutral-800 text-neutral-800 dark:text-white shadow-md hover:bg-rose-50 dark:hover:bg-neutral-800 opacity-0 group-hover:opacity-100 transition-all duration-300"
+              className="absolute right-4 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-white/80 dark:bg-neutral-900/80 backdrop-blur-md border border-neutral-200 dark:border-neutral-800 text-neutral-800 dark:text-white shadow-md hover:bg-primary/10 dark:hover:bg-neutral-800 opacity-0 group-hover:opacity-100 transition-all duration-300"
               aria-label="Next slide"
             >
               <ChevronRight className="w-5 h-5" />
@@ -106,15 +106,15 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({
       </div>
 
       {mediaList.length > 1 && (
-        <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-rose-200/50">
+        <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-primary/30">
           {mediaList.map((media, index) => (
             <button
               key={media.id}
               onClick={() => setActiveIndex(index)}
               className={`relative w-20 h-20 flex-shrink-0 rounded-xl overflow-hidden border transition-all duration-200 ${
                 activeIndex === index
-                  ? "border-rose-400 ring-2 ring-rose-300/40"
-                  : "border-neutral-200 dark:border-neutral-800 hover:border-rose-300"
+                  ? "border-primary ring-2 ring-primary/40"
+                  : "border-neutral-200 dark:border-neutral-800 hover:border-primary/50"
               }`}
             >
               {media.resourceType === "image" ? (
@@ -125,8 +125,8 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({
                   className="w-full h-full rounded-none"
                 />
               ) : (
-                <div className="relative w-full h-full flex items-center justify-center bg-rose-50/50 dark:bg-rose-950/10">
-                  <div className="w-6 h-6 rounded-full bg-rose-500 flex items-center justify-center text-white shadow-sm">
+                <div className="relative w-full h-full flex items-center justify-center bg-primary/5 dark:bg-primary/10">
+                  <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-white shadow-sm">
                     <Play className="w-3 h-3 fill-current ml-0.5" />
                   </div>
                 </div>

@@ -11,31 +11,34 @@ export function generateUploadSignature(
 ): SignedUploadResponse {
   const timestamp = Math.round(new Date().getTime() / 1000);
 
-  // Map the folder/resourceType to its corresponding upload preset
+  // Map the folder/resourceType to its corresponding upload preset (optional)
   let uploadPreset = "";
   switch (folder) {
     case "products/images":
-      uploadPreset = process.env.CLOUDINARY_PRESET_PRODUCT_IMAGE || "product_images";
+      uploadPreset = process.env.CLOUDINARY_PRESET_PRODUCT_IMAGE || "";
       break;
     case "products/videos":
-      uploadPreset = process.env.CLOUDINARY_PRESET_PRODUCT_VIDEO || "product_videos";
+      uploadPreset = process.env.CLOUDINARY_PRESET_PRODUCT_VIDEO || "";
       break;
     case "collections/banners":
-      uploadPreset = process.env.CLOUDINARY_PRESET_COLLECTION_BANNER || "collection_banners";
+      uploadPreset = process.env.CLOUDINARY_PRESET_COLLECTION_BANNER || "";
       break;
     case "categories/banners":
-      uploadPreset = process.env.CLOUDINARY_PRESET_CATEGORY_BANNER || "category_banners";
+      uploadPreset = process.env.CLOUDINARY_PRESET_CATEGORY_BANNER || "";
       break;
     default:
       throw new Error(`Unsupported upload folder: ${folder}`);
   }
 
   // Parameters to sign (must match exactly what the client sends)
-  const paramsToSign = {
+  const paramsToSign: Record<string, any> = {
     timestamp,
     folder,
-    upload_preset: uploadPreset,
   };
+
+  if (uploadPreset) {
+    paramsToSign.upload_preset = uploadPreset;
+  }
 
   const apiSecret = process.env.CLOUDINARY_API_SECRET;
   if (!apiSecret) {

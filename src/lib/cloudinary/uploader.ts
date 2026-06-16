@@ -33,16 +33,16 @@ export async function uploadFromServer(
     let uploadPreset = "";
     switch (folder) {
       case "products/images":
-        uploadPreset = process.env.CLOUDINARY_PRESET_PRODUCT_IMAGE || "product_images";
+        uploadPreset = process.env.CLOUDINARY_PRESET_PRODUCT_IMAGE || "";
         break;
       case "products/videos":
-        uploadPreset = process.env.CLOUDINARY_PRESET_PRODUCT_VIDEO || "product_videos";
+        uploadPreset = process.env.CLOUDINARY_PRESET_PRODUCT_VIDEO || "";
         break;
       case "collections/banners":
-        uploadPreset = process.env.CLOUDINARY_PRESET_COLLECTION_BANNER || "collection_banners";
+        uploadPreset = process.env.CLOUDINARY_PRESET_COLLECTION_BANNER || "";
         break;
       case "categories/banners":
-        uploadPreset = process.env.CLOUDINARY_PRESET_CATEGORY_BANNER || "category_banners";
+        uploadPreset = process.env.CLOUDINARY_PRESET_CATEGORY_BANNER || "";
         break;
       default:
         throw new Error(`Unsupported upload folder: ${folder}`);
@@ -50,9 +50,12 @@ export async function uploadFromServer(
 
     const options: any = {
       folder,
-      upload_preset: uploadPreset,
       resource_type: resourceType,
     };
+
+    if (uploadPreset) {
+      options.upload_preset = uploadPreset;
+    }
 
     let result: any;
     if (Buffer.isBuffer(fileSource)) {

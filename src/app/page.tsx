@@ -1,5 +1,6 @@
 "use client";
 
+import React, { useState, useEffect } from "react";
 import Image from 'next/image';
 import { 
   Sparkles, 
@@ -11,10 +12,46 @@ import {
   Scissors, 
   Star,
   Layers,
-  ChevronRight
+  ChevronRight,
+  Sun,
+  Moon
 } from 'lucide-react';
 
 export default function Home() {
+  const [theme, setTheme] = useState<"light" | "dark">("light");
+
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("theme") || localStorage.getItem("admin-theme");
+    if (savedTheme === "dark" || savedTheme === "light") {
+      setTheme(savedTheme);
+      if (savedTheme === "dark") {
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+      }
+    } else {
+      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      setTheme(prefersDark ? "dark" : "light");
+      if (prefersDark) {
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+      }
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    const nextTheme = theme === "light" ? "dark" : "light";
+    setTheme(nextTheme);
+    localStorage.setItem("theme", nextTheme);
+    localStorage.setItem("admin-theme", nextTheme);
+    if (nextTheme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  };
+
   const featuredProducts = [
     {
       id: 'p1',
@@ -60,13 +97,26 @@ export default function Home() {
 
           {/* Header Action Buttons */}
           <div className="flex items-center gap-4">
+            {/* Theme Toggler */}
+            <button
+              onClick={toggleTheme}
+              aria-label="Toggle Theme"
+              className="p-2.5 rounded-2xl text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-all duration-300 hover:rotate-12 cursor-pointer border border-border/10"
+            >
+              {theme === "light" ? (
+                <Moon className="w-4.5 h-4.5 text-muted-foreground" />
+              ) : (
+                <Sun className="w-4.5 h-4.5 text-accent" />
+              )}
+            </button>
+
             <button className="p-2 text-foreground/85 hover:text-primary transition-colors relative" aria-label="Cart">
               <ShoppingBag className="w-5 h-5" />
               <span className="absolute -top-1 -right-1 bg-accent text-accent-foreground text-[10px] font-bold w-4.5 h-4.5 rounded-full flex items-center justify-center">
                 0
               </span>
             </button>
-            <button className="hidden sm:inline-flex items-center justify-center px-5 py-2.5 rounded-full text-xs font-semibold uppercase tracking-widest bg-primary text-primary-foreground hover:bg-primary/90 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-sm">
+            <button className="hidden sm:inline-flex items-center justify-center px-5 py-2.5 rounded-full text-xs font-semibold uppercase tracking-widest bg-primary text-primary-foreground hover:bg-primary/90 hover:scale-[1.02] active:scale-[0.99] transition-all shadow-sm">
               Shop Now
             </button>
           </div>

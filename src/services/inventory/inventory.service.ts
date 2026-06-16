@@ -1,6 +1,6 @@
 import { db } from "@/db";
-import { inventoryItems, inventoryReservations } from "@/db/schema";
-import { eq, gt, lt, inArray, and } from "drizzle-orm";
+import { inventoryItems, inventoryReservations, inventoryTransactions, productVariants, products } from "@/db/schema";
+import { eq, gt, lt, inArray, and, or, like, desc, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
 /**
@@ -231,3 +231,200 @@ export async function cleanupExpiredReservations(): Promise<number> {
 
   return result.length;
 }
+
+/**
+ * Retrieves a filtered and searched list of inventory items joined with variants and products.
+ * Includes calculated available stock levels and low-stock statuses.
+ */
+export async function getInventoryItems(params: { q?: string; status?: string } = {}) {
+  const { q, status: statusFilter } = params;
+
+  // Subquery to calculate active reservation sums grouped by inventory item ID
+  const activeReservationsSubquery = db
+    .select({
+      inventoryItemId: inventoryReservations.inventoryItemId,
+      reservedQuantity: sql<number>`SUM(${inventoryReservations.quantity})`.as("reserved_quantity"),
+    })
+    .from(inventoryReservations)
+    .where(gt(inventoryReservations.expiresAt, new Date()))
+    .groupBy(inventoryReservations.inventoryItemId)
+    .as("active_res");
+
+  // Core select query
+  const queryBuilder = db
+    .select({
+      id: inventoryItems.id,
+      variantId: inventoryItems.variantId,
+      stockLevel: inventoryItems.stockLevel,
+      lowStockThreshold: inventoryItems.lowStockThreshold,
+      updatedAt: inventoryItems.updatedAt,
+      sku: productVariants.sku,
+      variantName: productVariants.name,
+      barcode: productVariants.barcode,
+      productName: products.name,
+      productSlug: products.slug,
+      productId: products.id,
+      reservedQuantity: sql<number>`COALESCE(${activeReservationsSubquery.reservedQuantity}, 0)`.mapWith(Number),
+    })
+    .from(inventoryItems)
+    .innerJoin(productVariants, eq(inventoryItems.variantId, productVariants.id))
+    .innerJoin(products, eq(productVariants.productId, products.id))
+    .leftJoin(activeReservationsSubquery, eq(inventoryItems.id, activeReservationsSubquery.inventoryItemId));
+
+  // If search query is provided
+  if (q && q.trim() !== "") {
+    const searchVal = `%${q.trim()}%`;
+    queryBuilder.where(
+      or(
+        like(products.name, searchVal),
+        like(productVariants.sku, searchVal),
+        like(productVariants.barcode, searchVal)
+      )
+    );
+  }
+
+  const results = await queryBuilder;
+
+  // Map and calculate statuses in memory
+  const mapped = results.map((row) => {
+    const availableStock = Math.max(0, row.stockLevel - row.reservedQuantity);
+    let status: "in-stock" | "low-stock" | "out-of-stock" = "in-stock";
+    if (availableStock === 0) {
+      status = "out-of-stock";
+    } else if (availableStock <= row.lowStockThreshold) {
+      status = "low-stock";
+    }
+    return {
+      ...row,
+      availableStock,
+      status,
+    };
+  });
+
+  // Apply status filter if present and not "all"
+  if (statusFilter && statusFilter !== "all") {
+    return mapped.filter((item) => item.status === statusFilter);
+  }
+
+  return mapped;
+}
+
+/**
+ * Adjusts the physical stock level of an inventory item and logs the transaction.
+ * Runs atomically inside a database transaction.
+ */
+export async function adjustStock(
+  params: {
+    inventoryItemId: string;
+    type: "inbound" | "outbound" | "adjustment";
+    quantity: number;
+    reference?: string | null;
+  },
+  tx?: any
+) {
+  const execute = async (client: any) => {
+    // 1. Fetch item
+    const item = await client.query.inventoryItems.findFirst({
+      where: eq(inventoryItems.id, params.inventoryItemId),
+    });
+
+    if (!item) {
+      throw new Error(`Inventory item not found for ID: ${params.inventoryItemId}`);
+    }
+
+    // 2. Calculate new stock level
+    let newStockLevel = item.stockLevel;
+    if (params.type === "inbound") {
+      if (params.quantity < 0) throw new Error("Inbound quantity must be positive");
+      newStockLevel += params.quantity;
+    } else if (params.type === "outbound") {
+      if (params.quantity < 0) throw new Error("Outbound quantity must be positive");
+      newStockLevel = Math.max(0, newStockLevel - params.quantity);
+    } else if (params.type === "adjustment") {
+      newStockLevel = Math.max(0, newStockLevel + params.quantity);
+    }
+
+    const now = new Date();
+
+    // 3. Update stock level
+    await client
+      .update(inventoryItems)
+      .set({
+        stockLevel: newStockLevel,
+        updatedAt: now,
+      })
+      .where(eq(inventoryItems.id, item.id));
+
+    // 4. Log transaction
+    const txId = `it_${nanoid(12)}`;
+    await client.insert(inventoryTransactions).values({
+      id: txId,
+      inventoryItemId: item.id,
+      type: params.type,
+      quantity: params.quantity,
+      reference: params.reference || "manual adjustment",
+      createdAt: now,
+    });
+
+    return {
+      success: true,
+      inventoryItemId: item.id,
+      oldStockLevel: item.stockLevel,
+      newStockLevel,
+    };
+  };
+
+  if (tx) {
+    return execute(tx);
+  } else {
+    return db.transaction(async (innerTx) => {
+      return execute(innerTx);
+    });
+  }
+}
+
+/**
+ * Updates the low stock threshold alert level for a given inventory item.
+ */
+export async function updateLowStockThreshold(
+  inventoryItemId: string,
+  threshold: number,
+  tx?: any
+) {
+  const client = tx || db;
+  await client
+    .update(inventoryItems)
+    .set({
+      lowStockThreshold: threshold,
+      updatedAt: new Date(),
+    })
+    .where(eq(inventoryItems.id, inventoryItemId));
+  return { success: true };
+}
+
+/**
+ * Retrieves a detailed list of recent inventory transaction logs.
+ */
+export async function getInventoryTransactions(params: { limit?: number } = {}) {
+  const limit = params.limit || 50;
+
+  return db
+    .select({
+      id: inventoryTransactions.id,
+      inventoryItemId: inventoryTransactions.inventoryItemId,
+      type: inventoryTransactions.type,
+      quantity: inventoryTransactions.quantity,
+      reference: inventoryTransactions.reference,
+      createdAt: inventoryTransactions.createdAt,
+      sku: productVariants.sku,
+      variantName: productVariants.name,
+      productName: products.name,
+    })
+    .from(inventoryTransactions)
+    .innerJoin(inventoryItems, eq(inventoryTransactions.inventoryItemId, inventoryItems.id))
+    .innerJoin(productVariants, eq(inventoryItems.variantId, productVariants.id))
+    .innerJoin(products, eq(productVariants.productId, products.id))
+    .orderBy(desc(inventoryTransactions.createdAt))
+    .limit(limit);
+}
+

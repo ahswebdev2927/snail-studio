@@ -138,7 +138,9 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
       formData.append("timestamp", signData.timestamp.toString());
       formData.append("signature", signData.signature);
       formData.append("folder", signData.folder);
-      formData.append("upload_preset", signData.uploadPreset);
+      if (signData.uploadPreset) {
+        formData.append("upload_preset", signData.uploadPreset);
+      }
 
       const cloudUrl = `https://api.cloudinary.com/v1_1/${signData.cloudName}/${fileType}/upload`;
       const cloudRes = await fetch(cloudUrl, {
@@ -206,26 +208,26 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
   );
 
   return (
-    <div className="flex flex-col h-[600px] w-full max-w-4xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl shadow-xl overflow-hidden font-sans">
-      <div className="flex justify-between items-center px-6 py-4 border-b border-neutral-100 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/50">
-        <h3 className="text-lg font-semibold text-neutral-800 dark:text-white">{title}</h3>
+    <div className="flex flex-col h-[600px] w-full max-w-4xl bg-card text-foreground border border-border rounded-2xl shadow-xl overflow-hidden font-sans">
+      <div className="flex justify-between items-center px-6 py-4 border-b border-border/40 bg-secondary/20">
+        <h3 className="text-lg font-semibold text-foreground">{title}</h3>
         {onClose && (
           <button
             onClick={onClose}
-            className="p-1.5 rounded-full hover:bg-neutral-200 dark:hover:bg-neutral-800 text-neutral-500 dark:text-neutral-400"
+            className="p-1.5 rounded-full hover:bg-secondary/60 text-muted-foreground hover:text-foreground"
           >
             <X className="w-5 h-5" />
           </button>
         )}
       </div>
 
-      <div className="flex px-6 border-b border-neutral-100 dark:border-neutral-800">
+      <div className="flex px-6 border-b border-border/40">
         <button
           onClick={() => setActiveTab("select")}
           className={`py-3 px-4 border-b-2 text-sm font-medium transition-all duration-200 ${
             activeTab === "select"
-              ? "border-rose-500 text-rose-600 dark:text-rose-400"
-              : "border-transparent text-neutral-500 hover:text-neutral-800 dark:hover:text-white"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
           }`}
         >
           Select Existing
@@ -234,8 +236,8 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
           onClick={() => setActiveTab("upload")}
           className={`py-3 px-4 border-b-2 text-sm font-medium transition-all duration-200 ${
             activeTab === "upload"
-              ? "border-rose-500 text-rose-600 dark:text-rose-400"
-              : "border-transparent text-neutral-500 hover:text-neutral-800 dark:hover:text-white"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
           }`}
         >
           Upload New
@@ -247,23 +249,23 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
           <div className="flex flex-col gap-4 h-full min-h-0">
             <div className="flex flex-wrap gap-3 items-center">
               <div className="relative flex-1 min-w-[200px]">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/60" />
                 <input
                   type="text"
                   placeholder="Search file name..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2 border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm rounded-xl focus:outline-none focus:ring-1 focus:ring-rose-500"
+                  className="w-full pl-9 pr-4 py-2 border border-border bg-secondary/30 text-foreground text-sm rounded-xl focus:outline-none focus:ring-1 focus:ring-primary"
                 />
               </div>
 
-              <div className="flex items-center gap-1.5 p-1 border border-neutral-200 dark:border-neutral-800 rounded-xl bg-neutral-50 dark:bg-neutral-950">
+              <div className="flex items-center gap-1.5 p-1 border border-border rounded-xl bg-secondary/20">
                 <button
                   onClick={() => setResourceType("all")}
                   className={`px-3 py-1 text-xs font-medium rounded-lg ${
                     resourceType === "all"
-                      ? "bg-white dark:bg-neutral-800 text-rose-600 dark:text-rose-400 shadow-sm"
-                      : "text-neutral-500"
+                      ? "bg-card text-primary shadow-sm"
+                      : "text-muted-foreground"
                   }`}
                 >
                   All
@@ -272,8 +274,8 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
                   onClick={() => setResourceType("image")}
                   className={`px-3 py-1 text-xs font-medium rounded-lg ${
                     resourceType === "image"
-                      ? "bg-white dark:bg-neutral-800 text-rose-600 dark:text-rose-400 shadow-sm"
-                      : "text-neutral-500"
+                      ? "bg-card text-primary shadow-sm"
+                      : "text-muted-foreground"
                   }`}
                 >
                   Images
@@ -282,8 +284,8 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
                   onClick={() => setResourceType("video")}
                   className={`px-3 py-1 text-xs font-medium rounded-lg ${
                     resourceType === "video"
-                      ? "bg-white dark:bg-neutral-800 text-rose-600 dark:text-rose-400 shadow-sm"
-                      : "text-neutral-500"
+                      ? "bg-card text-primary shadow-sm"
+                      : "text-muted-foreground"
                   }`}
                 >
                   Videos
@@ -293,20 +295,20 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
               <select
                 value={folderFilter}
                 onChange={(e) => setFolderFilter(e.target.value)}
-                className="px-3 py-2 border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm rounded-xl focus:outline-none focus:ring-1 focus:ring-rose-500 cursor-pointer"
+                className="px-3 py-2 border border-border bg-secondary/30 text-foreground text-sm rounded-xl focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
               >
-                <option value="all">All Folders</option>
-                <option value="products/images">Product Images</option>
-                <option value="products/videos">Product Videos</option>
-                <option value="collections/banners">Collection Banners</option>
-                <option value="categories/banners">Category Banners</option>
+                <option value="all" className="bg-card text-foreground">All Folders</option>
+                <option value="products/images" className="bg-card text-foreground">Product Images</option>
+                <option value="products/videos" className="bg-card text-foreground">Product Videos</option>
+                <option value="collections/banners" className="bg-card text-foreground">Collection Banners</option>
+                <option value="categories/banners" className="bg-card text-foreground">Category Banners</option>
               </select>
             </div>
 
             <div className="flex-1 overflow-y-auto min-h-0">
               {isLoading ? (
                 <div className="flex flex-col items-center justify-center h-48 text-neutral-400">
-                  <Loader2 className="w-8 h-8 animate-spin text-rose-500 mb-2" />
+                  <Loader2 className="w-8 h-8 animate-spin text-primary mb-2" />
                   <span>Loading registered media items...</span>
                 </div>
               ) : filteredItems.length === 0 ? (
@@ -324,8 +326,8 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
                         onClick={() => handleSelectItem(item)}
                         className={`relative aspect-square w-full rounded-xl border overflow-hidden transition-all duration-200 ${
                           isSelected
-                            ? "border-rose-500 ring-2 ring-rose-400/40"
-                            : "border-neutral-200 dark:border-neutral-800 hover:border-rose-300"
+                            ? "border-primary ring-2 ring-primary/40"
+                            : "border-neutral-200 dark:border-neutral-800 hover:border-primary/50"
                         }`}
                       >
                         {item.resourceType === "image" ? (
@@ -336,8 +338,8 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
                             className="w-full h-full rounded-none"
                           />
                         ) : (
-                          <div className="relative w-full h-full flex items-center justify-center bg-rose-50/50 dark:bg-rose-950/10">
-                            <Film className="w-8 h-8 text-rose-500" />
+                          <div className="relative w-full h-full flex items-center justify-center bg-primary/5 dark:bg-primary/10">
+                            <Film className="w-8 h-8 text-primary" />
                             {item.duration && (
                               <span className="absolute bottom-1 right-1 px-1 bg-black/75 text-[9px] text-white rounded font-mono">
                                 {`${item.duration.toFixed(0)}s`}
@@ -347,7 +349,7 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
                         )}
 
                         {isSelected && (
-                          <div className="absolute top-2 right-2 p-1 rounded-full bg-rose-500 text-white shadow-md border border-white">
+                          <div className="absolute top-2 right-2 p-1 rounded-full bg-primary text-primary-foreground shadow-md border border-white">
                             <Check className="w-3.5 h-3.5 stroke-[3]" />
                           </div>
                         )}
@@ -360,14 +362,14 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
           </div>
         ) : (
           <form onSubmit={handleUpload} className="flex flex-col gap-5 max-w-lg mx-auto">
-            <div className="flex flex-col items-center justify-center border-2 border-dashed border-neutral-300 dark:border-neutral-800 rounded-2xl p-6 bg-neutral-50/50 dark:bg-neutral-950/30 hover:border-rose-400 transition-all duration-200 relative cursor-pointer group">
+            <div className="flex flex-col items-center justify-center border-2 border-dashed border-neutral-300 dark:border-neutral-800 rounded-2xl p-6 bg-neutral-50/50 dark:bg-neutral-950/30 hover:border-primary/60 transition-all duration-200 relative cursor-pointer group">
               <input
                 type="file"
                 accept="image/*,video/*"
                 onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
                 className="absolute inset-0 opacity-0 cursor-pointer"
               />
-              <Upload className="w-10 h-10 text-neutral-400 group-hover:text-rose-500 transition-colors duration-200 mb-2" />
+              <Upload className="w-10 h-10 text-neutral-400 group-hover:text-primary transition-colors duration-200 mb-2" />
               {uploadFile ? (
                 <div className="text-center">
                   <p className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 truncate max-w-xs">
@@ -390,23 +392,23 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+              <label className="text-sm font-medium text-foreground/80">
                 Destination Folder
               </label>
               <select
                 value={uploadFolder}
                 onChange={(e: any) => setUploadFolder(e.target.value)}
-                className="w-full px-4 py-2 border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm rounded-xl focus:outline-none focus:ring-1 focus:ring-rose-500"
+                className="w-full px-4 py-2 border border-border bg-secondary/30 text-foreground text-sm rounded-xl focus:outline-none focus:ring-1 focus:ring-primary"
               >
-                <option value="products/images">Product Images</option>
-                <option value="products/videos">Product Videos</option>
-                <option value="collections/banners">Collection Banners</option>
-                <option value="categories/banners">Category Banners</option>
+                <option value="products/images" className="bg-card text-foreground">Product Images</option>
+                <option value="products/videos" className="bg-card text-foreground">Product Videos</option>
+                <option value="collections/banners" className="bg-card text-foreground">Collection Banners</option>
+                <option value="categories/banners" className="bg-card text-foreground">Category Banners</option>
               </select>
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+              <label className="text-sm font-medium text-foreground/80">
                 Alt Text (SEO & Accessibility)
               </label>
               <input
@@ -414,12 +416,12 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
                 placeholder="Describe this media..."
                 value={altText}
                 onChange={(e) => setAltText(e.target.value)}
-                className="w-full px-4 py-2 border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm rounded-xl focus:outline-none focus:ring-1 focus:ring-rose-500"
+                className="w-full px-4 py-2 border border-border bg-secondary/30 text-foreground text-sm rounded-xl focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
 
             {uploadError && (
-              <p className="text-sm font-medium text-rose-500 bg-rose-50/50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/30 p-3 rounded-xl">
+              <p className="text-sm font-medium text-destructive bg-destructive/10 border border-destructive/20 p-3 rounded-xl">
                 {uploadError}
               </p>
             )}
@@ -427,7 +429,7 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
             <button
               type="submit"
               disabled={isUploading || !uploadFile}
-              className="w-full py-2.5 px-4 bg-rose-500 text-white font-medium rounded-xl hover:bg-rose-600 disabled:bg-neutral-300 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2"
+              className="w-full py-2.5 px-4 bg-primary text-primary-foreground font-medium rounded-xl hover:bg-primary/95 disabled:bg-neutral-300 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2"
             >
               {isUploading ? (
                 <>
@@ -445,8 +447,8 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
         )}
       </div>
 
-      <div className="flex justify-between items-center px-6 py-4 border-t border-neutral-100 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/50">
-        <span className="text-sm text-neutral-500 dark:text-neutral-400">
+      <div className="flex justify-between items-center px-6 py-4 border-t border-border/40 bg-secondary/20">
+        <span className="text-sm text-muted-foreground">
           {selectedItems.length > 0
             ? `${selectedItems.length} of ${maxSelection} item(s) selected`
             : "No items selected"}
@@ -455,7 +457,7 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
           {onClose && (
             <button
               onClick={onClose}
-              className="px-4 py-2 border border-neutral-200 dark:border-neutral-800 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-300 text-sm font-medium"
+              className="px-4 py-2 border border-border rounded-xl hover:bg-secondary/40 text-foreground text-sm font-medium transition-colors"
             >
               Cancel
             </button>
@@ -463,7 +465,7 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
           <button
             onClick={handleConfirm}
             disabled={selectedItems.length === 0}
-            className="px-5 py-2 bg-rose-500 hover:bg-rose-600 disabled:bg-neutral-200 disabled:text-neutral-400 disabled:cursor-not-allowed text-white text-sm font-medium rounded-xl transition-colors duration-200"
+            className="px-5 py-2 bg-primary hover:bg-primary/95 disabled:bg-neutral-200 disabled:text-neutral-400 disabled:cursor-not-allowed text-primary-foreground text-sm font-medium rounded-xl transition-colors duration-200"
           >
             Confirm Selection
           </button>
