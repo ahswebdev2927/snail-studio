@@ -221,17 +221,27 @@ export default function NewProductPage() {
   };
 
   // Toggle attribute value selections for base product attributes mapping
-  const handleAttributeToggle = (valueId: string) => {
-    const current = watch("attributeValueIds") || [];
-    if (current.includes(valueId)) {
-      setValue("attributeValueIds", current.filter(id => id !== valueId));
-    } else {
-      setValue("attributeValueIds", [...current, valueId]);
-    }
+  const handleAttributeToggle = (groupId: string, valueId: string) => {
+    // 1. Toggle base product attributes
+    const currentBase = watch("attributeValueIds") || [];
+    const updatedBase = currentBase.includes(valueId)
+      ? currentBase.filter(id => id !== valueId)
+      : [...currentBase, valueId];
+    setValue("attributeValueIds", updatedBase, { shouldValidate: true });
+
+    // 2. Sync to variant matrix builder selection state
+    setSelectedVariantAttrs(prev => {
+      const currentVar = prev[groupId] || [];
+      const updatedVar = currentVar.includes(valueId)
+        ? currentVar.filter(id => id !== valueId)
+        : [...currentVar, valueId];
+      return { ...prev, [groupId]: updatedVar };
+    });
   };
 
   // Toggle selection of attribute value in variant generator checkbox matrix
   const handleVariantAttrToggle = (groupId: string, valueId: string) => {
+    // 1. Toggle variant matrix selections
     setSelectedVariantAttrs(prev => {
       const current = prev[groupId] || [];
       const updated = current.includes(valueId)
@@ -239,6 +249,13 @@ export default function NewProductPage() {
         : [...current, valueId];
       return { ...prev, [groupId]: updated };
     });
+
+    // 2. Sync to base product attributes mapping
+    const currentBase = watch("attributeValueIds") || [];
+    const updatedBase = currentBase.includes(valueId)
+      ? currentBase.filter(id => id !== valueId)
+      : [...currentBase, valueId];
+    setValue("attributeValueIds", updatedBase, { shouldValidate: true });
   };
 
   // Trigger dynamic variant Cartesian generation
@@ -531,7 +548,7 @@ export default function NewProductPage() {
                         <button
                           key={v.id}
                           type="button"
-                          onClick={() => handleAttributeToggle(v.id)}
+                          onClick={() => handleAttributeToggle(group.id, v.id)}
                           className={`px-3 py-1.5 rounded-xl text-xs font-light tracking-wide border transition-all flex items-center gap-1 cursor-pointer ${
                             isChecked
                               ? "bg-primary/10 text-primary border-primary"
