@@ -1,9 +1,98 @@
-import React from "react";
-import { Settings, Save } from "lucide-react";
+"use client";
+
+import React, { useState, useEffect } from "react";
+import { Settings, Save, RefreshCw, CheckCircle2, AlertCircle } from "lucide-react";
 
 export default function AdminGeneralSettingsPage() {
+  // Form State
+  const [storeName, setStoreName] = useState("Snail Studio");
+  const [storeSlug, setStoreSlug] = useState("snail-studio");
+  const [storeEmail, setStoreEmail] = useState("hello@snailstudio.com");
+  const [storePhone, setStorePhone] = useState("+91 99999 99999");
+
+  // Global State
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  // Load configuration on mount
+  useEffect(() => {
+    fetchSettings();
+  }, []);
+
+  const fetchSettings = async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch("/api/admin/settings");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.store_name) setStoreName(data.store_name);
+        if (data.store_slug) setStoreSlug(data.store_slug);
+        if (data.store_email) setStoreEmail(data.store_email);
+        if (data.store_phone) setStorePhone(data.store_phone);
+      } else {
+        showStatus("error", "Failed to retrieve configuration settings.");
+      }
+    } catch (err) {
+      console.error(err);
+      showStatus("error", "An error occurred while fetching settings.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const showStatus = (type: "success" | "error", text: string) => {
+    setStatusMessage({ type, text });
+    setTimeout(() => {
+      setStatusMessage(null);
+    }, 5000);
+  };
+
+  const handleSave = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setIsSaving(true);
+    setStatusMessage(null);
+
+    try {
+      const res = await fetch("/api/admin/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          store_name: storeName,
+          store_slug: storeSlug,
+          store_email: storeEmail,
+          store_phone: storePhone,
+        }),
+      });
+
+      if (res.ok) {
+        showStatus("success", "General settings successfully saved.");
+      } else {
+        const errData = await res.json();
+        showStatus("error", errData.error || "Failed to save settings.");
+      }
+    } catch (err) {
+      console.error(err);
+      showStatus("error", "An error occurred while saving the configuration.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="flex flex-col items-center gap-3">
+          <RefreshCw className="w-8 h-8 text-primary animate-spin" />
+          <p className="text-xs text-muted-foreground font-light">Loading general settings...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
+      {/* Title Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-6 bg-card border border-border/40 rounded-3xl">
         <div className="space-y-1">
           <h1 className="font-serif text-2xl font-normal text-foreground">General Settings</h1>
@@ -12,32 +101,92 @@ export default function AdminGeneralSettingsPage() {
           </p>
         </div>
         <div>
-          <button className="inline-flex items-center gap-1.5 px-4.5 py-2.5 bg-primary text-primary-foreground hover:bg-primary/95 hover:scale-[1.01] active:scale-[0.99] rounded-xl text-xs font-medium transition-all shadow-sm cursor-pointer">
-            <Save className="w-4 h-4" />
-            Save Changes
+          <button
+            onClick={handleSave}
+            disabled={isSaving}
+            className="inline-flex items-center gap-1.5 px-4.5 py-2.5 bg-primary text-primary-foreground hover:bg-primary/95 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:scale-100 rounded-xl text-xs font-medium transition-all shadow-sm cursor-pointer"
+          >
+            {isSaving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+            {isSaving ? "Saving..." : "Save Changes"}
           </button>
         </div>
       </div>
 
-      <div className="bg-card border border-border/40 rounded-3xl p-6 space-y-6 max-w-3xl">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Store Name</label>
-            <input type="text" defaultValue="Snail Studio" className="w-full px-4 py-2.5 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none transition-all text-foreground" />
-          </div>
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Store Slug URL</label>
-            <input type="text" defaultValue="snail-studio" className="w-full px-4 py-2.5 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none transition-all text-foreground" />
-          </div>
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Contact Email</label>
-            <input type="email" defaultValue="hello@snailstudio.com" className="w-full px-4 py-2.5 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none transition-all text-foreground" />
-          </div>
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Contact Phone</label>
-            <input type="tel" defaultValue="+91 99999 99999" className="w-full px-4 py-2.5 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none transition-all text-foreground" />
-          </div>
+      {statusMessage && (
+        <div
+          className={`p-4 rounded-2xl flex items-start gap-3 border text-xs leading-relaxed animate-fade-in ${
+            statusMessage.type === "success"
+              ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500"
+              : "bg-destructive/10 border-destructive/20 text-destructive"
+          }`}
+        >
+          {statusMessage.type === "success" ? (
+            <CheckCircle2 className="w-4.5 h-4.5 shrink-0 mt-0.5" />
+          ) : (
+            <AlertCircle className="w-4.5 h-4.5 shrink-0 mt-0.5" />
+          )}
+          <span>{statusMessage.text}</span>
         </div>
+      )}
+
+      {/* Main Form container */}
+      <div className="bg-card border border-border/40 rounded-3xl p-6 space-y-6 max-w-3xl">
+        <form onSubmit={handleSave} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                Store Name
+              </label>
+              <input
+                type="text"
+                required
+                value={storeName}
+                onChange={(e) => setStoreName(e.target.value)}
+                placeholder="Snail Studio"
+                className="w-full px-4 py-2.5 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none transition-all text-foreground"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                Store Slug URL
+              </label>
+              <input
+                type="text"
+                required
+                value={storeSlug}
+                onChange={(e) => setStoreSlug(e.target.value)}
+                placeholder="snail-studio"
+                className="w-full px-4 py-2.5 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none transition-all text-foreground"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                Contact Email
+              </label>
+              <input
+                type="email"
+                required
+                value={storeEmail}
+                onChange={(e) => setStoreEmail(e.target.value)}
+                placeholder="hello@snailstudio.com"
+                className="w-full px-4 py-2.5 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none transition-all text-foreground"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                Contact Phone
+              </label>
+              <input
+                type="text"
+                required
+                value={storePhone}
+                onChange={(e) => setStorePhone(e.target.value)}
+                placeholder="+91 99999 99999"
+                className="w-full px-4 py-2.5 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none transition-all text-foreground"
+              />
+            </div>
+          </div>
+        </form>
       </div>
     </div>
   );

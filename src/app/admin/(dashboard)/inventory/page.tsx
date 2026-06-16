@@ -19,6 +19,7 @@ import {
   TrendingDown,
   Info
 } from "lucide-react";
+import { useDebounce } from "@/lib/hooks/use-debounce";
 
 interface InventoryItem {
   id: string;
@@ -52,6 +53,7 @@ interface TransactionLog {
 export default function AdminInventoryPage() {
   const [activeTab, setActiveTab] = useState<"stock" | "logs">("stock");
   const [searchQuery, setSearchQuery] = useState("");
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
   const [statusFilter, setStatusFilter] = useState("all");
   
   // Data lists
@@ -79,7 +81,7 @@ export default function AdminInventoryPage() {
     setIsLoading(true);
     try {
       const qParams = new URLSearchParams();
-      if (searchQuery.trim()) qParams.append("q", searchQuery.trim());
+      if (debouncedSearchQuery.trim()) qParams.append("q", debouncedSearchQuery.trim());
       if (statusFilter !== "all") qParams.append("status", statusFilter);
 
       const res = await fetch(`/api/inventory?${qParams.toString()}`);
@@ -94,7 +96,7 @@ export default function AdminInventoryPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [searchQuery, statusFilter]);
+  }, [debouncedSearchQuery, statusFilter]);
 
   // Fetch Adjustment Logs
   const fetchLogs = useCallback(async () => {

@@ -16,6 +16,7 @@ import {
   MessageSquare,
   ChevronRight
 } from "lucide-react";
+import { useDebounce } from "@/lib/hooks/use-debounce";
 
 interface CustomerListItem {
   id: string;
@@ -35,12 +36,13 @@ export default function AdminCustomersPage() {
   const [customers, setCustomers] = useState<CustomerListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
   const loadCustomers = async () => {
     setIsLoading(true);
     try {
       const query = new URLSearchParams();
-      if (searchQuery.trim()) query.set("q", searchQuery.trim());
+      if (debouncedSearchQuery.trim()) query.set("q", debouncedSearchQuery.trim());
 
       const res = await fetch(`/api/admin/customers?${query.toString()}`);
       if (res.ok) {
@@ -56,7 +58,7 @@ export default function AdminCustomersPage() {
 
   useEffect(() => {
     loadCustomers();
-  }, [searchQuery]);
+  }, [debouncedSearchQuery]);
 
   // Format currency helpers
   const formatPrice = (priceInPaise: number) => {

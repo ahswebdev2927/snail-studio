@@ -2,6 +2,9 @@ import { db } from "@/db";
 import { orders, orderItems, orderAddresses, orderStatusHistory } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
+import { sendMail } from "@/services/email/email.service";
+import { getOrderConfirmationTemplate } from "@/services/email/templates/order-confirmation.template";
+import { getOrderStatusUpdateTemplate } from "@/services/email/templates/order-status-update.template";
 
 /**
  * Creates a pending order in the database with associated items and shipping/billing addresses.
@@ -167,4 +170,101 @@ export async function updateOrderStatus(orderId: string, status: string, notes?:
     status,
     notes: notes || `Order status transitioned to ${status}.`,
   });
+
+  // EMAIL NOTIFICATION TRIGGER
+  // Fired asynchronously in the background so it doesn't block the request lifecycle
+  (async () => {
+    try {
+      const order = await db.query.orders.findFirst({
+        where: eq(orders.id, orderId),
+        with: {
+          user: true,
+          addresses: true,
+          items: {
+            with: {
+              variant: {
+                with: {
+                  product: true
+                }
+              }
+            }
+          }
+        }
+      });
+
+      if (!order) {
+        console.error(`[Email Trigger] Order not found for ID: ${orderId}`);
+        return;
+      }
+
+      const userEmail = order.user?.email || null;
+      if (!userEmail) {
+        console.log(`[Email Trigger] Order ${orderId} transitioned to ${status}, but no customer email is configured. Skipping.`);
+        return;
+      }
+
+      const customerName = order.user?.name || "Customer";
+      const shippingAddress = order.addresses.find(addr => addr.type === "shipping");
+
+      // Send Order Confirmation if order just moved to 'paid' (or processing if from pending)
+      if (status.toLowerCase() === "paid" || (status.toLowerCase() === "processing" && order.status === "pending")) {
+        const items = order.items.map(item => ({
+          productName: item.variant?.product?.name || "Luxury Handcrafted Nails",
+          variantName: item.variant?.name || "Default Style",
+          quantity: item.quantity,
+          price: item.price
+        }));
+
+        // Calculate subtotal
+        const subtotal = order.totalAmount - order.shippingAmount - order.taxAmount + order.discountAmount;
+
+        const html = getOrderConfirmationTemplate({
+          customerName,
+          orderId: order.id,
+          items,
+          subtotal,
+          tax: order.taxAmount,
+          shipping: order.shippingAmount,
+          discount: order.discountAmount,
+          total: order.totalAmount,
+          shippingAddress: {
+            name: shippingAddress?.name || customerName,
+            phone: shippingAddress?.phone || order.user?.phoneNumber || "",
+            addressLine1: shippingAddress?.addressLine1 || "N/A",
+            addressLine2: shippingAddress?.addressLine2 || null,
+            city: shippingAddress?.city || "N/A",
+            state: shippingAddress?.state || "N/A",
+            postalCode: shippingAddress?.postalCode || "N/A",
+            country: shippingAddress?.country || "IN",
+          }
+        });
+
+        await sendMail({
+          to: userEmail,
+          subject: `Order Confirmed - Snail Studio (#${order.id})`,
+          html,
+          templateName: "order_confirmation"
+        });
+
+      } else {
+        // Send a status progress email
+        const html = getOrderStatusUpdateTemplate({
+          customerName,
+          orderId: order.id,
+          newStatus: status,
+          statusNotes: notes,
+          updatedAt: new Date()
+        });
+
+        await sendMail({
+          to: userEmail,
+          subject: `Order Status Update - Snail Studio (#${order.id})`,
+          html,
+          templateName: "order_status_update"
+        });
+      }
+    } catch (emailErr) {
+      console.error(`[Email Trigger Error] Failed to process order status notification for ${orderId}:`, emailErr);
+    }
+  })();
 }

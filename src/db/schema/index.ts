@@ -5,4 +5,5 @@ export * from "./orders";
 export * from "./media";
 export * from "./reviews";
 export * from "./marketing";
+export * from "./notifications";
 export * from "../relations";

@@ -23,6 +23,7 @@ import {
   XCircle,
   HelpCircle
 } from "lucide-react";
+import { useDebounce } from "@/lib/hooks/use-debounce";
 
 interface OrderListItem {
   id: string;
@@ -103,6 +104,7 @@ export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<OrderListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   
   // Dialog/Modal State
@@ -119,7 +121,7 @@ export default function AdminOrdersPage() {
     try {
       const query = new URLSearchParams();
       if (statusFilter !== "all") query.set("status", statusFilter);
-      if (searchQuery.trim()) query.set("q", searchQuery.trim());
+      if (debouncedSearchQuery.trim()) query.set("q", debouncedSearchQuery.trim());
 
       const res = await fetch(`/api/admin/orders?${query.toString()}`);
       if (res.ok) {
@@ -135,7 +137,7 @@ export default function AdminOrdersPage() {
 
   useEffect(() => {
     loadOrders();
-  }, [statusFilter, searchQuery]);
+  }, [statusFilter, debouncedSearchQuery]);
 
   // Load specific order details
   const loadOrderDetail = async (id: string) => {
