@@ -45,6 +45,38 @@ const createProductSchema = z.object({
   variants: z.array(variantSchema).min(1, "At least one variant is required"),
 });
 
+// GET /api/products - List all products for administration (Admin only)
+export async function GET(req: NextRequest) {
+  try {
+    const auth = await authorize(req, "admin");
+    if (!auth.authorized) {
+      return auth.response!;
+    }
+
+    const allProducts = await db.query.products.findMany({
+      with: {
+        brand: true,
+        category: true,
+        variants: true,
+        media: {
+          with: {
+            media: true
+          }
+        }
+      },
+      orderBy: (products, { desc }) => [desc(products.createdAt)],
+    });
+
+    return NextResponse.json(allProducts, { status: 200 });
+  } catch (error: any) {
+    console.error("GET /api/products error:", error);
+    return NextResponse.json(
+      { error: "Internal Server Error", details: error.message || String(error) },
+      { status: 500 }
+    );
+  }
+}
+
 // POST /api/products - Create a product and its variants (Admin only)
 export async function POST(req: NextRequest) {
   try {
