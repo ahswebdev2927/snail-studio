@@ -120,6 +120,74 @@ export async function rotateRefreshToken(
 
   // Replay Attack Detection
   if (tokenRecord.revokedAt) {
+    const graceWindowMs = 10000; // 10 seconds grace window for concurrent requests
+    const timeSinceRevocation = Date.now() - tokenRecord.revokedAt.getTime();
+
+    if (timeSinceRevocation <= graceWindowMs && tokenRecord.replacedByTokenId) {
+      // Find the replacement token that was issued in place of this one
+      const replacementToken = await db.query.refreshTokens.findFirst({
+        where: eq(refreshTokens.id, tokenRecord.replacedByTokenId),
+      });
+
+      // If the replacement token exists and is valid, perform rotation on it
+      if (replacementToken && replacementToken.expiresAt > new Date()) {
+        const user = await db.query.users.findFirst({
+          where: eq(users.id, tokenRecord.userId),
+        });
+
+        if (user && user.isActive) {
+          // Issue new tokens
+          const newJti = nanoid();
+          const newRefJti = nanoid();
+
+          const newAccessToken = signAccessToken({
+            sub: user.id,
+            firebaseUid: user.firebaseUid,
+            phone: user.phoneNumber,
+            role: user.role,
+            jti: newJti,
+          });
+
+          const newRawRefreshToken = signRefreshToken({
+            sub: user.id,
+            jti: newRefJti,
+          });
+
+          const newHash = hashToken(newRawRefreshToken);
+          const newExpiresAt = getRefreshTokenExpiryDate();
+          const newRecordId = `ref_${nanoid(10)}`;
+
+          // Transactionally revoke the replacement token and save the new token record
+          await db.transaction(async (tx) => {
+            await tx
+              .update(refreshTokens)
+              .set({
+                revokedAt: new Date(),
+                replacedByTokenId: newRecordId,
+              })
+              .where(eq(refreshTokens.id, replacementToken.id));
+
+            await tx.insert(refreshTokens).values({
+              id: newRecordId,
+              userId: user.id,
+              tokenHash: newHash,
+              deviceInfo: deviceInfo || replacementToken.deviceInfo,
+              ipAddress: ipAddress || replacementToken.ipAddress,
+              expiresAt: newExpiresAt,
+            });
+          });
+
+          console.log(`Grace period rotation handled. Rotated replacement token ${replacementToken.id} to ${newRecordId}.`);
+
+          return {
+            accessToken: newAccessToken,
+            refreshToken: newRawRefreshToken,
+            expiresAt: newExpiresAt,
+          };
+        }
+      }
+    }
+
     // Revoke all other active sessions for this user immediately
     await db
       .update(refreshTokens)
