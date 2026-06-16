@@ -255,7 +255,7 @@ export async function confirmOrderPayment(params: {
       }
 
       // Look up active reservation for this item and cart
-      let reservationQuery = eq(inventoryReservations.inventoryItemId, invItem.id);
+      let reservationQuery: any = eq(inventoryReservations.inventoryItemId, invItem.id);
       if (resolvedCartId) {
         reservationQuery = and(reservationQuery, eq(inventoryReservations.cartId, resolvedCartId));
       }

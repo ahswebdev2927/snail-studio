@@ -15,7 +15,7 @@ import {
   inventoryTransactions,
   payments
 } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { processCheckout } from "@/services/checkout/checkout.service";
 import { getAvailableStock } from "@/services/inventory/inventory.service";
@@ -137,7 +137,7 @@ async function runConfirmTests() {
 
     // Verify status history log
     const lastHistory = updatedOrder.statusHistory[updatedOrder.statusHistory.length - 1];
-    if (lastHistory.status !== "paid" || !lastHistory.notes.includes("Payment verified")) {
+    if (lastHistory.status !== "paid" || !lastHistory.notes?.includes("Payment verified")) {
       throw new Error("Invalid order status history log");
     }
 
@@ -227,7 +227,7 @@ async function runConfirmTests() {
     try {
       // Find orders created for test
       const testOrders = await db.query.orders.findMany({
-        where: eq(orders.userId, null)
+        where: isNull(orders.userId)
       });
 
       for (const orderRecord of testOrders) {

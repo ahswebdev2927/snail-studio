@@ -14,7 +14,7 @@ import {
   inventoryReservations,
   payments
 } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { processCheckout } from "./checkout.service";
 import { getAvailableStock } from "../inventory/inventory.service";
@@ -204,7 +204,7 @@ async function runCheckoutTests() {
       // 1. Delete order status history, addresses, items, and payments linked to test runs
       // Fetch orders created for test
       const testOrders = await db.query.orders.findMany({
-        where: eq(orders.userId, null) // all test orders have userId = null
+        where: isNull(orders.userId) // all test orders have userId = null
       });
 
       for (const orderRecord of testOrders) {

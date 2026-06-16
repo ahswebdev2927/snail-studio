@@ -93,11 +93,11 @@ export class RazorpayGateway implements PaymentProvider {
       const payment = await razorpay.payments.fetch(paymentId);
 
       // Statuses can be: created, authorized, captured, refunded, failed
-      if (payment.status !== "captured") {
+      if ((payment.status as string) !== "captured") {
         return {
           success: false,
           gatewayTransactionId: paymentId,
-          status: payment.status === "captured" ? "captured" : payment.status === "failed" ? "failed" : "pending",
+          status: (payment.status as string) === "captured" ? "captured" : (payment.status as string) === "failed" ? "failed" : "pending",
           amount: Number(payment.amount),
           currency: payment.currency,
           errorMessage: `Razorpay payment status is ${payment.status}, expected captured.`

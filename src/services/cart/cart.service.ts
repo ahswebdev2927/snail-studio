@@ -146,7 +146,7 @@ export async function mergeGuestCartIntoCustomerCart(
     const customerItems = customerCart.items;
 
     // Fetch physical stock levels for the variant items in the guest cart to respect stock limits
-    const variantIds = guestItems.map((item) => item.variantId);
+    const variantIds = guestItems.map((item: any) => item.variantId);
     
     const inventoryMap = new Map<string, number>();
     if (variantIds.length > 0) {
@@ -160,7 +160,7 @@ export async function mergeGuestCartIntoCustomerCart(
 
     for (const guestItem of guestItems) {
       const customerItem = customerItems.find(
-        (item) => item.variantId === guestItem.variantId
+        (item: any) => item.variantId === guestItem.variantId
       );
       const stockLevel = inventoryMap.get(guestItem.variantId) ?? 0;
 
