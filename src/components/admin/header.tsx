@@ -49,6 +49,10 @@ export default function Header({
     if (segments[1] === "settings" && segments[2]) {
       return `${segments[2].charAt(0).toUpperCase() + segments[2].slice(1)} Settings`;
     }
+    // products/audit-logs -> "Product Audit Logs"
+    if (segments[1] === "products" && segments[2] === "audit-logs") {
+      return "Product Audit Logs";
+    }
     // products/new -> "New Product"
     if (segments[1] === "products" && segments[2] === "new") {
       return "Add Product";

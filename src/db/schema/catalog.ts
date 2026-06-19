@@ -35,8 +35,12 @@ export const products = sqliteTable('products', {
   priceMax: integer('price_max').notNull(),
   isFeatured: integer('is_featured', { mode: 'boolean' }).notNull().default(false),
   isBestSeller: integer('is_best_seller', { mode: 'boolean' }).notNull().default(false),
+  isNewArrival: integer('is_new_arrival', { mode: 'boolean' }).notNull().default(false),
+  isTrending: integer('is_trending', { mode: 'boolean' }).notNull().default(false),
   metaTitle: text('meta_title'),
   metaDescription: text('meta_description'),
+  ogImage: text('og_image'),
+  status: text('status', { enum: ['Active', 'Draft', 'Out Of Stock', 'Archived'] }).notNull().default('Active'),
   isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)
@@ -78,6 +82,7 @@ export const productVariants = sqliteTable('product_variants', {
   price: integer('price').notNull(),
   compareAtPrice: integer('compare_at_price'),
   barcode: text('barcode').unique(),
+  status: text('status', { enum: ['Active', 'Disabled', 'Archived'] }).notNull().default('Active'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)
 }, (table) => [

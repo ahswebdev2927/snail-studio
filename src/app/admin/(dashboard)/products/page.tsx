@@ -12,7 +12,11 @@ import {
   Tag, 
   Check, 
   X, 
-  AlertCircle 
+  AlertCircle,
+  Eye,
+  Pencil,
+  Package,
+  Archive
 } from "lucide-react";
 import Link from "next/link";
 
@@ -51,6 +55,7 @@ interface Product {
   isFeatured: boolean;
   isBestSeller: boolean;
   isActive: boolean;
+  status: "Active" | "Draft" | "Out Of Stock" | "Archived";
   createdAt: string;
   brand: Brand | null;
   category: Category | null;
@@ -66,6 +71,8 @@ export default function AdminProductsPage() {
   // Loading and action states
   const [isLoading, setIsLoading] = useState(true);
   const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
+  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+  const [archivingId, setArchivingId] = useState<string | null>(null);
   
   // Search and Filter States
   const [searchQuery, setSearchQuery] = useState("");
@@ -112,13 +119,39 @@ export default function AdminProductsPage() {
       if (res.ok) {
         setProducts(prev => prev.filter(p => p.id !== productId));
       } else {
-        alert("Failed to delete product.");
+        const errData = await res.json();
+        alert(errData.error || "Failed to delete product.");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error deleting product:", error);
-      alert("An error occurred while deleting the product.");
+      alert(error.message || "An error occurred while deleting the product.");
     } finally {
       setIsDeletingId(null);
+    }
+  };
+
+  // Handle Product Archiving
+  const handleArchiveProduct = async (productId: string, productName: string) => {
+    const confirmed = window.confirm(`Are you sure you want to archive "${productName}"? This will hide it from future storefront listings, search, and collections.`);
+    if (!confirmed) return;
+
+    setArchivingId(productId);
+    try {
+      const res = await fetch(`/api/admin/products/${productId}/archive`, {
+        method: "POST"
+      });
+
+      if (res.ok) {
+        setProducts(prev => prev.map(p => p.id === productId ? { ...p, status: "Archived", isActive: false } : p));
+      } else {
+        const errData = await res.json();
+        alert(errData.error || "Failed to archive product.");
+      }
+    } catch (error: any) {
+      console.error("Error archiving product:", error);
+      alert(error.message || "An error occurred while archiving the product.");
+    } finally {
+      setArchivingId(null);
     }
   };
 
@@ -151,8 +184,11 @@ export default function AdminProductsPage() {
     // 4. Status filter
     const matchesStatus = 
       selectedStatus === "all" ||
-      (selectedStatus === "active" && product.isActive) ||
-      (selectedStatus === "inactive" && !product.isActive);
+      (selectedStatus === "active" && (product.status === "Active" || product.isActive)) ||
+      (selectedStatus === "draft" && product.status === "Draft") ||
+      (selectedStatus === "out_of_stock" && product.status === "Out Of Stock") ||
+      (selectedStatus === "archived" && product.status === "Archived") ||
+      (selectedStatus === "inactive" && !(product.isActive || product.status === "Active"));
 
     return matchesSearch && matchesCategory && matchesBrand && matchesStatus;
   }).sort((a, b) => {
@@ -299,7 +335,7 @@ export default function AdminProductsPage() {
                   <th className="py-3.5 px-4 text-center w-24">Variants</th>
                   <th className="py-3.5 px-4 text-center w-40">Marketing Badges</th>
                   <th className="py-3.5 px-4 text-center w-24">Status</th>
-                  <th className="py-3.5 px-4 text-center w-24">Actions</th>
+                  <th className="py-3.5 px-4 text-center w-44">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -389,28 +425,114 @@ export default function AdminProductsPage() {
                       {/* Status */}
                       <td className="py-3 px-4 text-center">
                         <span className={`inline-flex px-2 py-0.5 rounded-full text-[9px] font-bold uppercase border tracking-wider ${
-                          product.isActive
+                          product.status === "Active"
+                            ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                            : product.status === "Draft"
+                            ? "bg-blue-500/10 text-blue-500 border-blue-500/20"
+                            : product.status === "Out Of Stock"
+                            ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
+                            : product.status === "Archived"
+                            ? "bg-rose-500/10 text-rose-500 border-rose-500/20"
+                            : product.isActive
                             ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
                             : "bg-muted text-muted-foreground border-border"
                         }`}>
-                          {product.isActive ? "Active" : "Inactive"}
+                          {product.status || (product.isActive ? "Active" : "Draft")}
                         </span>
                       </td>
 
                       {/* Actions */}
                       <td className="py-3 px-4 text-center">
-                        <button
-                          disabled={isDeletingId === product.id}
-                          onClick={() => handleDeleteProduct(product.id, product.name)}
-                          className="inline-flex items-center justify-center p-1.5 hover:bg-rose-500/10 text-muted-foreground hover:text-rose-500 border border-border/40 hover:border-rose-500/20 rounded-xl transition-all cursor-pointer disabled:opacity-50"
-                          title="Delete Product"
-                        >
-                          {isDeletingId === product.id ? (
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          ) : (
-                            <Trash2 className="w-3.5 h-3.5" />
+                        {/* Desktop view actions */}
+                        <div className="hidden md:flex items-center justify-center gap-1.5">
+                          <Link
+                            href={`/products/${product.slug}`}
+                            target="_blank"
+                            className="inline-flex items-center justify-center p-1.5 border border-border/40 hover:bg-secondary text-muted-foreground hover:text-foreground rounded-xl transition-all cursor-pointer"
+                            title="View Product"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                          </Link>
+                          <Link
+                            href={`/admin/products/${product.id}/edit`}
+                            className="inline-flex items-center justify-center p-1.5 border border-border/40 hover:bg-secondary text-muted-foreground hover:text-foreground rounded-xl transition-all cursor-pointer"
+                            title="Edit Product"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </Link>
+                          <Link
+                            href={`/admin/inventory?q=${encodeURIComponent(product.name)}`}
+                            className="inline-flex items-center justify-center p-1.5 border border-border/40 hover:bg-secondary text-muted-foreground hover:text-foreground rounded-xl transition-all cursor-pointer"
+                            title="Inventory"
+                          >
+                            <Package className="w-3.5 h-3.5" />
+                          </Link>
+                          <button
+                            disabled={archivingId === product.id || product.status === "Archived"}
+                            onClick={() => handleArchiveProduct(product.id, product.name)}
+                            className="inline-flex items-center justify-center p-1.5 border border-border/40 hover:bg-rose-500/10 text-muted-foreground hover:text-rose-500 disabled:opacity-30 rounded-xl transition-all cursor-pointer"
+                            title="Archive Product"
+                          >
+                            {archivingId === product.id ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <Archive className="w-3.5 h-3.5" />
+                            )}
+                          </button>
+                        </div>
+
+                        {/* Mobile dropdown style */}
+                        <div className="md:hidden relative inline-block text-left">
+                          <button
+                            onClick={() => setOpenDropdownId(openDropdownId === product.id ? null : product.id)}
+                            className="px-2.5 py-1.5 bg-secondary/50 hover:bg-muted text-foreground border border-border/40 rounded-xl text-[10px] font-semibold transition-all cursor-pointer"
+                          >
+                            More Actions
+                          </button>
+                          {openDropdownId === product.id && (
+                            <>
+                              <div className="fixed inset-0 z-30" onClick={() => setOpenDropdownId(null)} />
+                              <div className="absolute right-0 mt-1 w-36 bg-card border border-border rounded-xl shadow-lg py-1.5 z-40 text-left">
+                                <Link
+                                  href={`/products/${product.slug}`}
+                                  target="_blank"
+                                  className="flex items-center gap-2 px-3 py-1.5 hover:bg-secondary text-foreground text-[11px] transition-colors"
+                                  onClick={() => setOpenDropdownId(null)}
+                                >
+                                  <Eye className="w-3.5 h-3.5 text-muted-foreground" />
+                                  View Product
+                                </Link>
+                                <Link
+                                  href={`/admin/products/${product.id}/edit`}
+                                  className="flex items-center gap-2 px-3 py-1.5 hover:bg-secondary text-foreground text-[11px] transition-colors"
+                                  onClick={() => setOpenDropdownId(null)}
+                                >
+                                  <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
+                                  Edit Product
+                                </Link>
+                                <Link
+                                  href={`/admin/inventory?q=${encodeURIComponent(product.name)}`}
+                                  className="flex items-center gap-2 px-3 py-1.5 hover:bg-secondary text-foreground text-[11px] transition-colors"
+                                  onClick={() => setOpenDropdownId(null)}
+                                >
+                                  <Package className="w-3.5 h-3.5 text-muted-foreground" />
+                                  Inventory
+                                </Link>
+                                <button
+                                  disabled={archivingId === product.id || product.status === "Archived"}
+                                  onClick={() => {
+                                    handleArchiveProduct(product.id, product.name);
+                                    setOpenDropdownId(null);
+                                  }}
+                                  className="flex w-full items-center gap-2 px-3 py-1.5 hover:bg-rose-500/10 text-rose-500 hover:text-rose-600 text-[11px] transition-colors text-left disabled:opacity-30"
+                                >
+                                  <Archive className="w-3.5 h-3.5" />
+                                  Archive Product
+                                </button>
+                              </div>
+                            </>
                           )}
-                        </button>
+                        </div>
                       </td>
                     </tr>
                   );

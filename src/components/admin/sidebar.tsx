@@ -13,11 +13,9 @@ import {
   Ticket, 
   LayoutGrid, 
   Settings, 
-  LogOut, 
   ChevronDown,
   Sparkles,
-  ChevronRight,
-  UserCheck
+  ChevronRight
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SessionUser } from "@/lib/auth/session";
@@ -60,7 +58,8 @@ export default function Sidebar({ isCollapsed, isMobileOpen, closeMobileSidebar,
         { name: "Products", href: "/admin/products" },
         { name: "Add Product", href: "/admin/products/new" },
         { name: "Collections", href: "/admin/collections" },
-        { name: "Attributes", href: "/admin/attributes" }
+        { name: "Attributes", href: "/admin/attributes" },
+        { name: "Audit Logs", href: "/admin/products/audit-logs" }
       ]
     },
     {
@@ -100,17 +99,7 @@ export default function Sidebar({ isCollapsed, isMobileOpen, closeMobileSidebar,
     }
   ];
 
-  const handleLogout = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const res = await fetch("/api/auth/logout", { method: "POST" });
-      if (res.ok) {
-        window.location.href = "/admin/login";
-      }
-    } catch (err) {
-      console.error("Logout failed:", err);
-    }
-  };
+
 
   const renderLink = (item: MenuItem) => {
     const Icon = item.icon;
@@ -119,13 +108,30 @@ export default function Sidebar({ isCollapsed, isMobileOpen, closeMobileSidebar,
     
     const hasSubItems = !!item.subItems;
     const isExpanded = item.name === "Catalog" ? catalogOpen : settingsOpen;
-    const setExpanded = item.name === "Catalog" ? setCatalogOpen : setSettingsOpen;
+
+    const handleToggleMenu = () => {
+      if (item.name === "Catalog") {
+        if (!catalogOpen) {
+          setCatalogOpen(true);
+          setSettingsOpen(false);
+        } else {
+          setCatalogOpen(false);
+        }
+      } else if (item.name === "Settings") {
+        if (!settingsOpen) {
+          setSettingsOpen(true);
+          setCatalogOpen(false);
+        } else {
+          setSettingsOpen(false);
+        }
+      }
+    };
 
     if (hasSubItems) {
       return (
         <div key={item.name} className="space-y-1">
           <button
-            onClick={() => setExpanded(!isExpanded)}
+            onClick={handleToggleMenu}
             className={cn(
               "w-full flex items-center justify-between px-4 py-3 rounded-2xl text-sm font-medium tracking-wide transition-all duration-200 group text-left cursor-pointer",
               isActive 
@@ -140,17 +146,23 @@ export default function Sidebar({ isCollapsed, isMobileOpen, closeMobileSidebar,
               {!isCollapsed && <span>{item.name}</span>}
             </div>
             {!isCollapsed && (
-              isExpanded ? (
-                <ChevronDown className="w-4 h-4 text-muted-foreground/60 transition-transform duration-300 rotate-180" />
-              ) : (
-                <ChevronRight className="w-4 h-4 text-muted-foreground/60 transition-transform duration-300" />
-              )
+              <ChevronDown 
+                className={cn(
+                  "w-4 h-4 text-muted-foreground/60 transition-transform duration-300",
+                  isExpanded ? "rotate-0" : "-rotate-90"
+                )} 
+              />
             )}
           </button>
 
-          {/* Sub Items list */}
-          {isExpanded && !isCollapsed && (
-            <div className="pl-12 pr-2 py-1 space-y-1 transition-all duration-300 ease-in-out">
+          {/* Sub Items list with slide-down transition */}
+          {!isCollapsed && (
+            <div 
+              className={cn(
+                "pl-12 pr-2 space-y-1 overflow-hidden transition-all duration-300 ease-in-out",
+                isExpanded ? "max-h-60 opacity-100 py-1" : "max-h-0 opacity-0 py-0 pointer-events-none"
+              )}
+            >
               {item.subItems?.map((sub) => {
                 const isSubItemActive = pathname === sub.href;
                 return (
@@ -225,38 +237,6 @@ export default function Sidebar({ isCollapsed, isMobileOpen, closeMobileSidebar,
         {menuItems.map(renderLink)}
       </div>
 
-      {/* Profile Details (User profile box at the bottom) */}
-      {!isCollapsed && (
-        <div className="p-4 mx-3 mb-2 bg-secondary/25 dark:bg-secondary/10 rounded-2xl border border-border/30 flex items-center gap-3 transition-colors duration-300">
-          <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
-            <UserCheck className="w-4.5 h-4.5" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-xs font-semibold text-foreground truncate">
-              {user.name || "Administrator"}
-            </p>
-            <p className="text-[10px] text-muted-foreground truncate font-light">
-              {user.phoneNumber}
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* Footer / Logout */}
-      <div className="p-3 border-t border-border/40 shrink-0">
-        <form onSubmit={handleLogout}>
-          <button
-            type="submit"
-            className={cn(
-              "w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-destructive hover:bg-destructive/10 rounded-2xl transition-all duration-200 group cursor-pointer",
-              isCollapsed ? "justify-center" : "justify-start"
-            )}
-          >
-            <LogOut className="w-5 h-5 shrink-0 group-hover:translate-x-0.5 transition-transform" />
-            {!isCollapsed && <span className="tracking-wide">Sign Out</span>}
-          </button>
-        </form>
-      </div>
     </aside>
   );
 }
