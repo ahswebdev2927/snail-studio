@@ -1,6 +1,7 @@
 import { seedAdminUser } from "./seeds/admin-user";
 import { seedAttributes } from "./seeds/attributes";
 import { seedCategories } from "./seeds/categories";
+import { seedProducts } from "./seeds/products";
 
 async function main() {
   console.log("Starting database seeding...");
@@ -8,6 +9,7 @@ async function main() {
     await seedAdminUser();
     await seedAttributes();
     await seedCategories();
+    await seedProducts();
     console.log("Database seeding completed successfully!");
     process.exit(0);
   } catch (error) {
@@ -17,3 +19,4 @@ async function main() {
 }
 
 main();
+

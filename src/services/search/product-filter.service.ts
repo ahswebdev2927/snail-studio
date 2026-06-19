@@ -25,6 +25,8 @@ export interface FilterParams {
   availability?: "in_stock" | "out_of_stock"; // Inventory availability status
   featured?: boolean;
   bestSeller?: boolean;
+  newArrival?: boolean;
+  trending?: boolean;
   isActive?: boolean;    // Defaults to true for customer-facing search
 }
 
@@ -46,6 +48,8 @@ export async function getFilteredProducts(params: FilterParams): Promise<Product
     availability,
     featured,
     bestSeller,
+    newArrival,
+    trending,
     isActive = true
   } = params;
 
@@ -159,6 +163,12 @@ export async function getFilteredProducts(params: FilterParams): Promise<Product
   }
   if (bestSeller !== undefined) {
     conditions.push(eq(products.isBestSeller, bestSeller));
+  }
+  if (newArrival !== undefined) {
+    conditions.push(eq(products.isNewArrival, newArrival));
+  }
+  if (trending !== undefined) {
+    conditions.push(eq(products.isTrending, trending));
   }
 
   // 8. Attribute Filters (Exists subqueries for Shape, Length, Colour, Texture)

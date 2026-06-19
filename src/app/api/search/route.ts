@@ -55,6 +55,12 @@ export async function GET(request: NextRequest) {
     const bestSellerVal = searchParams.get("bestSeller");
     const bestSeller = bestSellerVal === "true" ? true : bestSellerVal === "false" ? false : undefined;
 
+    const newArrivalVal = searchParams.get("newArrival");
+    const newArrival = newArrivalVal === "true" ? true : newArrivalVal === "false" ? false : undefined;
+
+    const trendingVal = searchParams.get("trending");
+    const trending = trendingVal === "true" ? true : trendingVal === "false" ? false : undefined;
+
     const sort = (searchParams.get("sort") || "relevance") as "relevance" | "price_asc" | "price_desc" | "newest";
 
     const pageVal = searchParams.get("page");
@@ -77,6 +83,8 @@ export async function GET(request: NextRequest) {
       availability,
       featured,
       bestSeller,
+      newArrival,
+      trending,
       sort,
       page,
       limit,
