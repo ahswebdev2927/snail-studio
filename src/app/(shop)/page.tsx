@@ -1,128 +1,51 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import Image from 'next/image';
-import { 
-  Sparkles, 
-  ShoppingBag, 
-  CheckCircle2, 
-  Heart, 
-  ArrowRight, 
-  ShieldCheck, 
-  Scissors, 
+import React from "react";
+import Image from "next/image";
+import Link from "next/link";
+import {
+  Sparkles,
+  ShoppingBag,
+  Heart,
+  ArrowRight,
+  ShieldCheck,
+  Scissors,
   Star,
   Layers,
   ChevronRight,
-  Sun,
-  Moon
-} from 'lucide-react';
+} from "lucide-react";
+import { useCartStore } from "@/lib/hooks/use-cart-store";
 
 export default function Home() {
-  const [theme, setTheme] = useState<"light" | "dark">("light");
-
-  useEffect(() => {
-    const savedTheme = localStorage.getItem("theme") || localStorage.getItem("admin-theme");
-    if (savedTheme === "dark" || savedTheme === "light") {
-      setTheme(savedTheme);
-      if (savedTheme === "dark") {
-        document.documentElement.classList.add("dark");
-      } else {
-        document.documentElement.classList.remove("dark");
-      }
-    } else {
-      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-      setTheme(prefersDark ? "dark" : "light");
-      if (prefersDark) {
-        document.documentElement.classList.add("dark");
-      } else {
-        document.documentElement.classList.remove("dark");
-      }
-    }
-  }, []);
-
-  const toggleTheme = () => {
-    const nextTheme = theme === "light" ? "dark" : "light";
-    setTheme(nextTheme);
-    localStorage.setItem("theme", nextTheme);
-    localStorage.setItem("admin-theme", nextTheme);
-    if (nextTheme === "dark") {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  };
+  const addToCart = useCartStore((state) => state.addToCart);
+  const toggleWishlist = useCartStore((state) => state.toggleWishlist);
+  const isInWishlist = useCartStore((state) => state.isInWishlist);
 
   const featuredProducts = [
     {
-      id: 'p1',
-      name: 'Emerald Glamour Coffin Set',
-      description: 'Rich emerald green coffin shape with hand-painted gold leaf flakes and a velvety matte finish.',
-      price: 2499,
-      image: '/emerald_nails_set.png',
+      id: "p1",
+      name: "Emerald Glamour Coffin Set",
+      description: "Rich emerald green coffin shape with hand-painted gold leaf flakes and a velvety matte finish.",
+      price: 2499, // in rupees, will normalise in store/drawer
+      image: "/emerald_nails_set.png",
       rating: 4.9,
       reviewsCount: 48,
-      tags: ['Best Seller', 'Matte']
+      tags: ["Best Seller", "Matte"],
     },
     {
-      id: 'p2',
-      name: 'Blush Marble & Gold Leaf',
-      description: 'Elegant soft blush pink with white quartz marble accents and liquid gold borders.',
-      price: 2999,
-      image: '/luxury_nails_hero.png',
+      id: "p2",
+      name: "Blush Marble & Gold Leaf",
+      description: "Elegant soft blush pink with white quartz marble accents and liquid gold borders.",
+      price: 2999, // in rupees
+      image: "/luxury_nails_hero.png",
       rating: 5.0,
       reviewsCount: 32,
-      tags: ['Luxury', 'Glossy']
-    }
+      tags: ["Luxury", "Glossy"],
+    },
   ];
 
   return (
     <div className="flex-1 flex flex-col bg-background text-foreground transition-colors duration-300">
-      {/* Premium Header */}
-      <header className="sticky top-0 z-50 backdrop-blur-md bg-background/80 border-b border-border/40 transition-all duration-300">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-          {/* Logo */}
-          <div className="flex items-center gap-2">
-            <span className="font-serif text-2xl font-semibold tracking-wide bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              Snail Studio
-            </span>
-          </div>
-
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-8 text-sm font-medium tracking-wide">
-            <a href="#collections" className="text-foreground/80 hover:text-primary transition-colors">Collections</a>
-            <a href="#sizing" className="text-foreground/80 hover:text-primary transition-colors">Sizing Guide</a>
-            <a href="#benefits" className="text-foreground/80 hover:text-primary transition-colors">Why Snail Studio</a>
-            <a href="#reviews" className="text-foreground/80 hover:text-primary transition-colors">Reviews</a>
-          </nav>
-
-          {/* Header Action Buttons */}
-          <div className="flex items-center gap-4">
-            {/* Theme Toggler */}
-            <button
-              onClick={toggleTheme}
-              aria-label="Toggle Theme"
-              className="p-2.5 rounded-2xl text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-all duration-300 hover:rotate-12 cursor-pointer border border-border/10"
-            >
-              {theme === "light" ? (
-                <Moon className="w-4.5 h-4.5 text-muted-foreground" />
-              ) : (
-                <Sun className="w-4.5 h-4.5 text-accent" />
-              )}
-            </button>
-
-            <button className="p-2 text-foreground/85 hover:text-primary transition-colors relative" aria-label="Cart">
-              <ShoppingBag className="w-5 h-5" />
-              <span className="absolute -top-1 -right-1 bg-accent text-accent-foreground text-[10px] font-bold w-4.5 h-4.5 rounded-full flex items-center justify-center">
-                0
-              </span>
-            </button>
-            <button className="hidden sm:inline-flex items-center justify-center px-5 py-2.5 rounded-full text-xs font-semibold uppercase tracking-widest bg-primary text-primary-foreground hover:bg-primary/90 hover:scale-[1.02] active:scale-[0.99] transition-all shadow-sm">
-              Shop Now
-            </button>
-          </div>
-        </div>
-      </header>
-
       {/* Hero Section */}
       <section className="relative overflow-hidden pt-12 pb-20 lg:pt-20 lg:pb-32 bg-gradient-to-b from-secondary to-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -140,21 +63,21 @@ export default function Home() {
                 Indulge in couture, hand-designed press-on nails that look and feel like high-end gel manicures. Reusable, non-damaging, and applied in minutes.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                <a 
-                  href="#collections"
+                <Link
+                  href="/shop"
                   className="inline-flex items-center justify-center px-8 py-4 rounded-full text-sm font-semibold tracking-wider uppercase bg-primary text-primary-foreground hover:bg-primary/95 shadow-md hover:shadow-lg transition-all group"
                 >
                   Explore Collections
                   <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                </a>
-                <a 
-                  href="#sizing"
+                </Link>
+                <Link
+                  href="/sizing-guide"
                   className="inline-flex items-center justify-center px-8 py-4 rounded-full text-sm font-semibold tracking-wider uppercase border border-border bg-background/50 backdrop-blur-sm hover:bg-background transition-all"
                 >
                   Find Your Size
-                </a>
+                </Link>
               </div>
-              
+
               {/* Trust Indicators */}
               <div className="grid grid-cols-3 gap-4 pt-4 border-t border-border/40 max-w-md mx-auto lg:mx-0">
                 <div>
@@ -175,7 +98,7 @@ export default function Home() {
             {/* Hero Image Collage */}
             <div className="lg:col-span-7 flex justify-center">
               <div className="relative w-full max-w-lg aspect-square lg:max-w-xl rounded-2xl overflow-hidden shadow-2xl border-4 border-card/40 bg-card">
-                <Image 
+                <Image
                   src="/luxury_nails_hero.png"
                   alt="Snail Studio Luxury Nails Hero Display"
                   fill
@@ -253,62 +176,92 @@ export default function Home() {
                 New Arrivals
               </h2>
             </div>
-            <a href="#all-products" className="text-xs font-semibold uppercase tracking-widest text-primary hover:text-primary/80 transition-colors flex items-center gap-1">
+            <Link
+              href="/shop"
+              className="text-xs font-semibold uppercase tracking-widest text-primary hover:text-primary/80 transition-colors flex items-center gap-1"
+            >
               View All Sets <ChevronRight className="w-4 h-4" />
-            </a>
+            </Link>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
-            {featuredProducts.map((product) => (
-              <div 
-                key={product.id}
-                className="group flex flex-col md:flex-row bg-card rounded-2xl overflow-hidden border border-border/30 hover:shadow-xl transition-all duration-300"
-              >
-                <div className="relative w-full md:w-1/2 aspect-square">
-                  <Image 
-                    src={product.image}
-                    alt={product.name}
-                    fill
-                    sizes="(max-width: 768px) 100vw, 25vw"
-                    className="object-cover group-hover:scale-102 transition-transform duration-500"
-                  />
-                  <div className="absolute top-4 left-4 flex flex-wrap gap-1.5">
-                    {product.tags.map((tag) => (
-                      <span key={tag} className="px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider bg-background/90 text-primary backdrop-blur-sm rounded-full border border-border/40">
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-                
-                <div className="p-6 md:p-8 flex-1 flex flex-col justify-between space-y-6">
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-1.5 text-accent">
-                      <Star className="w-4 h-4 fill-current" />
-                      <span className="text-xs font-bold text-foreground">{product.rating.toFixed(1)}</span>
-                      <span className="text-[10px] text-muted-foreground">({product.reviewsCount} reviews)</span>
+            {featuredProducts.map((product) => {
+              const favorite = isInWishlist(product.id);
+              return (
+                <div
+                  key={product.id}
+                  className="group flex flex-col md:flex-row bg-card rounded-2xl overflow-hidden border border-border/30 hover:shadow-xl transition-all duration-300 relative"
+                >
+                  <div className="relative w-full md:w-1/2 aspect-square">
+                    <Image
+                      src={product.image}
+                      alt={product.name}
+                      fill
+                      sizes="(max-width: 768px) 100vw, 25vw"
+                      className="object-cover group-hover:scale-102 transition-transform duration-500"
+                    />
+                    <div className="absolute top-4 left-4 flex flex-wrap gap-1.5">
+                      {product.tags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider bg-background/90 text-primary backdrop-blur-sm rounded-full border border-border/40 animate-fade-in"
+                        >
+                          {tag}
+                        </span>
+                      ))}
                     </div>
-                    <h3 className="font-serif text-xl text-foreground font-medium group-hover:text-primary transition-colors">
-                      {product.name}
-                    </h3>
-                    <p className="text-xs text-muted-foreground leading-relaxed font-light">
-                      {product.description}
-                    </p>
-                  </div>
-
-                  <div className="space-y-4 pt-4 border-t border-border/30">
-                    <div className="flex items-baseline justify-between">
-                      <span className="text-xs text-muted-foreground font-light">Price</span>
-                      <span className="font-serif text-2xl font-semibold text-primary">₹{product.price.toLocaleString('en-IN')}</span>
-                    </div>
-                    <button className="w-full inline-flex items-center justify-center px-4 py-3 rounded-full text-xs font-semibold uppercase tracking-wider bg-primary text-primary-foreground hover:bg-primary/90 hover:scale-[1.01] active:scale-[0.99] transition-all shadow-sm">
-                      <ShoppingBag className="w-4 h-4 mr-2" />
-                      Add to Cart
+                    {/* Floating Wishlist Heart */}
+                    <button
+                      onClick={() => toggleWishlist(product.id)}
+                      className="absolute top-4 right-4 p-2.5 rounded-full bg-background/95 backdrop-blur-sm border border-border/20 shadow-sm text-muted-foreground hover:text-red-500 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+                      aria-label="Add to Wishlist"
+                    >
+                      <Heart className={`w-4.5 h-4.5 ${favorite ? "fill-red-500 text-red-500" : ""}`} />
                     </button>
                   </div>
+
+                  <div className="p-6 md:p-8 flex-1 flex flex-col justify-between space-y-6">
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-1.5 text-accent">
+                        <Star className="w-4 h-4 fill-current" />
+                        <span className="text-xs font-bold text-foreground">{product.rating.toFixed(1)}</span>
+                        <span className="text-[10px] text-muted-foreground">({product.reviewsCount} reviews)</span>
+                      </div>
+                      <h3 className="font-serif text-xl text-foreground font-medium group-hover:text-primary transition-colors">
+                        {product.name}
+                      </h3>
+                      <p className="text-xs text-muted-foreground leading-relaxed font-light">
+                        {product.description}
+                      </p>
+                    </div>
+
+                    <div className="space-y-4 pt-4 border-t border-border/30">
+                      <div className="flex items-baseline justify-between">
+                        <span className="text-xs text-muted-foreground font-light">Price</span>
+                        <span className="font-serif text-2xl font-semibold text-primary">
+                          ₹{product.price.toLocaleString("en-IN")}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() =>
+                          addToCart({
+                            id: product.id,
+                            name: product.name,
+                            price: product.price,
+                            imageUrl: product.image,
+                            variantName: product.tags[0] || "Standard Set",
+                          })
+                        }
+                        className="w-full inline-flex items-center justify-center px-4 py-3 rounded-full text-xs font-semibold uppercase tracking-wider bg-primary text-primary-foreground hover:bg-primary/90 hover:scale-[1.01] active:scale-[0.99] transition-all shadow-xs cursor-pointer"
+                      >
+                        <ShoppingBag className="w-4 h-4 mr-2" />
+                        Add to Cart
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>
@@ -326,7 +279,7 @@ export default function Home() {
               <p className="text-sm text-muted-foreground leading-relaxed font-light">
                 Getting the perfect fit is key to making your press-ons look like a professional salon manicure and last for weeks. You can measure your nails at home in two easy steps:
               </p>
-              
+
               <ol className="space-y-4 text-sm font-light text-foreground">
                 <li className="flex gap-4">
                   <span className="flex-none w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center font-serif font-bold text-xs">1</span>
@@ -343,17 +296,20 @@ export default function Home() {
               </ol>
 
               <div className="pt-2">
-                <button className="inline-flex items-center text-xs font-bold uppercase tracking-widest text-primary hover:text-primary/80 transition-colors group">
+                <Link
+                  href="/sizing-guide"
+                  className="inline-flex items-center text-xs font-bold uppercase tracking-widest text-primary hover:text-primary/80 transition-colors group"
+                >
                   Download Printable Sizing Ruler
                   <ArrowRight className="ml-1 w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                </button>
+                </Link>
               </div>
             </div>
 
             {/* Sizing Chart Display */}
             <div className="lg:col-span-7 bg-secondary/30 border border-border/40 rounded-2xl p-6 sm:p-8">
               <h3 className="font-serif text-xl text-foreground font-semibold mb-6 text-center">Standard Size Charts</h3>
-              
+
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse text-xs font-light">
                   <thead>
@@ -424,7 +380,9 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="p-8 rounded-2xl bg-card border border-border/30 space-y-6">
               <div className="flex items-center gap-1 text-accent">
-                {[...Array(5)].map((_, i) => <Star key={i} className="w-4 h-4 fill-current" />)}
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="w-4 h-4 fill-current" />
+                ))}
               </div>
               <p className="text-sm font-light text-muted-foreground leading-relaxed italic">
                 &ldquo;Absolutely blown away by the quality. They feel extremely sturdy and the finish is identical to a professional gel manicure. Got so many compliments on the emerald set!&rdquo;
@@ -440,7 +398,9 @@ export default function Home() {
 
             <div className="p-8 rounded-2xl bg-card border border-border/30 space-y-6">
               <div className="flex items-center gap-1 text-accent">
-                {[...Array(5)].map((_, i) => <Star key={i} className="w-4 h-4 fill-current" />)}
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="w-4 h-4 fill-current" />
+                ))}
               </div>
               <p className="text-sm font-light text-muted-foreground leading-relaxed italic">
                 &ldquo;Application took less than 15 minutes, and they lasted a full two weeks without budging. I love that I can pop them off and reuse them again next month.&rdquo;
@@ -456,7 +416,9 @@ export default function Home() {
 
             <div className="p-8 rounded-2xl bg-card border border-border/30 space-y-6">
               <div className="flex items-center gap-1 text-accent">
-                {[...Array(5)].map((_, i) => <Star key={i} className="w-4 h-4 fill-current" />)}
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="w-4 h-4 fill-current" />
+                ))}
               </div>
               <p className="text-sm font-light text-muted-foreground leading-relaxed italic">
                 &ldquo;Beautiful packaging and the sizing was perfect. Snail Studio has saved me so much time and money compared to my usual bi-weekly salon visits.&rdquo;
@@ -472,69 +434,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-
-      {/* Footer */}
-      <footer className="bg-foreground text-background py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-4 gap-12 border-b border-background/10 pb-12">
-          <div className="space-y-6">
-            <span className="font-serif text-2xl font-semibold tracking-wide bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              Snail Studio
-            </span>
-            <p className="text-xs text-background/60 font-light leading-relaxed max-w-sm">
-              Handcrafting premium, luxury press-on nails that offer high-fashion aesthetics without compromise.
-            </p>
-          </div>
-          
-          <div>
-            <h4 className="font-serif text-sm font-semibold tracking-wider mb-6">Collections</h4>
-            <ul className="space-y-3 text-xs text-background/70 font-light">
-              <li><a href="#collections" className="hover:text-primary transition-colors">Classics</a></li>
-              <li><a href="#collections" className="hover:text-primary transition-colors">Seasonal Specials</a></li>
-              <li><a href="#collections" className="hover:text-primary transition-colors">Custom Designs</a></li>
-              <li><a href="#collections" className="hover:text-primary transition-colors">Essential Accoutrements</a></li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="font-serif text-sm font-semibold tracking-wider mb-6">Client Support</h4>
-            <ul className="space-y-3 text-xs text-background/70 font-light">
-              <li><a href="#sizing" className="hover:text-primary transition-colors">Sizing Chart & Care</a></li>
-              <li><a href="#shipping" className="hover:text-primary transition-colors">Shipping & Returns</a></li>
-              <li><a href="#contact" className="hover:text-primary transition-colors">Contact Support</a></li>
-              <li><a href="#faq" className="hover:text-primary transition-colors">Frequently Asked Questions</a></li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="font-serif text-sm font-semibold tracking-wider mb-6">Join Snail Studio</h4>
-            <p className="text-xs text-background/70 font-light leading-relaxed mb-4">
-              Subscribe to unlock early access to new collections and exclusive offers.
-            </p>
-            <form onSubmit={(e) => e.preventDefault()} className="flex">
-              <input 
-                type="email" 
-                placeholder="Enter your email" 
-                className="w-full bg-background/10 border border-background/25 rounded-l-full px-4 py-2.5 text-xs text-background focus:outline-none focus:border-primary transition-colors"
-                required
-              />
-              <button 
-                type="submit"
-                className="bg-primary text-primary-foreground font-semibold text-xs px-5 py-2.5 rounded-r-full hover:bg-primary/95 transition-colors uppercase tracking-widest"
-              >
-                Join
-              </button>
-            </form>
-          </div>
-        </div>
-        
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 flex flex-col sm:flex-row items-center justify-between text-[11px] text-background/50 font-light gap-4">
-          <p>&copy; {new Date().getFullYear()} Snail Studio. All rights reserved.</p>
-          <div className="flex gap-6">
-            <a href="#privacy" className="hover:text-primary transition-colors">Privacy Policy</a>
-            <a href="#terms" className="hover:text-primary transition-colors">Terms of Service</a>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }

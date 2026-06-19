@@ -74,6 +74,24 @@ export default function ShopCatalog() {
   const [isLoading, setIsLoading] = useState(true);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
+  // Sync state with URL search params when they change (e.g. from Mega Menu click)
+  useEffect(() => {
+    setSearchQuery(searchParams.get("q") || "");
+    setSort(searchParams.get("sort") || "relevance");
+    setPage(parseInt(searchParams.get("page") || "1", 10));
+    setFilters({
+      category: searchParams.get("category") || undefined,
+      brand: parseArray("brand"),
+      shape: parseArray("shape"),
+      length: parseArray("length"),
+      colour: parseArray("colour"),
+      texture: parseArray("texture"),
+      minPrice: searchParams.get("minPrice") ? parseInt(searchParams.get("minPrice")!, 10) : undefined,
+      maxPrice: searchParams.get("maxPrice") ? parseInt(searchParams.get("maxPrice")!, 10) : undefined,
+      availability: searchParams.get("availability") as "in_stock" | undefined,
+    });
+  }, [searchParams]);
+
   // 3. Fetch search results from API when parameters change
   useEffect(() => {
     let isMounted = true;
