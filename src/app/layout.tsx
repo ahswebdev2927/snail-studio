@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Playfair_Display, Inter } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 
 const playfair = Playfair_Display({
@@ -32,8 +33,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${playfair.variable} ${inter.variable}`}>
-      <head>
-        <script
+      <body className="font-sans antialiased min-h-screen flex flex-col">
+        <Script
+          id="theme-initializer"
+          strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
             __html: `
               try {
@@ -47,8 +50,6 @@ export default function RootLayout({
             `,
           }}
         />
-      </head>
-      <body className="font-sans antialiased min-h-screen flex flex-col">
         {children}
       </body>
     </html>

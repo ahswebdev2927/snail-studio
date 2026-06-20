@@ -14,6 +14,7 @@ import { db } from "@/db";
 import { heroBanners } from "@/db/schema";
 import { eq, asc } from "drizzle-orm";
 import { HeroCarousel } from "@/components/storefront/hero-carousel";
+import { FeaturedCollections } from "@/components/storefront/featured-collections";
 import { FeaturedProductsRow } from "@/components/storefront/featured-products-row";
 
 export default async function Home() {
@@ -50,6 +51,9 @@ export default async function Home() {
     <div className="flex-1 flex flex-col bg-background text-foreground transition-colors duration-300">
       {/* Hero Banner Carousel (Admin Managed) */}
       <HeroCarousel banners={activeBanners} />
+
+      {/* Featured Collections Grid */}
+      <FeaturedCollections />
 
       {/* Brand Values / Benefits */}
       <section id="benefits" className="py-20 bg-background border-y border-border/20">
