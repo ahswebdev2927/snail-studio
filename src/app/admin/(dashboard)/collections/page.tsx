@@ -13,8 +13,10 @@ import {
   Image as ImageIcon, 
   Compass, 
   Check, 
-  AlertCircle
+  AlertCircle,
+  Pencil
 } from "lucide-react";
+import MediaPicker from "@/components/media/media-picker";
 
 interface Category {
   id: string;
@@ -59,12 +61,32 @@ export default function AdminCollectionsPage() {
   const [catParentId, setCatParentId] = useState("");
   const [catDescription, setCatDescription] = useState("");
   const [catImage, setCatImage] = useState("");
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [editingBrand, setEditingBrand] = useState<Brand | null>(null);
+
+  // Media Picker states
+  const [showCatMediaPicker, setShowCatMediaPicker] = useState(false);
+  const [showBrdMediaPicker, setShowBrdMediaPicker] = useState(false);
 
   // Brand Form State
   const [brdName, setBrdName] = useState("");
   const [brdSlug, setBrdSlug] = useState("");
   const [brdDescription, setBrdDescription] = useState("");
   const [brdLogoUrl, setBrdLogoUrl] = useState("");
+
+  const handleCatMediaSelect = (selected: any[]) => {
+    if (selected.length > 0) {
+      setCatImage(selected[0].url);
+    }
+    setShowCatMediaPicker(false);
+  };
+
+  const handleBrdMediaSelect = (selected: any[]) => {
+    if (selected.length > 0) {
+      setBrdLogoUrl(selected[0].url);
+    }
+    setShowBrdMediaPicker(false);
+  };
 
   // Load Categories Flat and Tree
   const loadCategories = async () => {
@@ -104,15 +126,31 @@ export default function AdminCollectionsPage() {
     loadBrands();
   }, []);
 
-  // Category Submit
-  const handleCreateCategory = async (e: React.FormEvent) => {
+  // Category Start Edit
+  const handleStartEditCategory = (cat: Category) => {
+    setEditingCategory(cat);
+    setCatName(cat.name);
+    setCatSlug(cat.slug);
+    setCatParentId(cat.parentId || "");
+    setCatDescription(cat.description || "");
+    setCatImage(cat.image || "");
+    setIsCatModalOpen(true);
+  };
+
+  // Category Submit (Create or Update)
+  const handleSaveCategory = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!catName.trim()) return;
 
     setIsSubmitting(true);
     try {
-      const res = await fetch("/api/categories", {
-        method: "POST",
+      const url = editingCategory 
+        ? `/api/categories/${editingCategory.id}`
+        : "/api/categories";
+      const method = editingCategory ? "PUT" : "POST";
+
+      const res = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: catName.trim(),
@@ -125,6 +163,7 @@ export default function AdminCollectionsPage() {
 
       if (res.ok) {
         setIsCatModalOpen(false);
+        setEditingCategory(null);
         // Reset form
         setCatName("");
         setCatSlug("");
@@ -135,25 +174,40 @@ export default function AdminCollectionsPage() {
         await loadCategories();
       } else {
         const data = await res.json();
-        alert(`Failed to create category: ${data.error || "Server error"}`);
+        alert(`Failed to save category: ${data.error || "Server error"}`);
       }
     } catch (error) {
-      console.error("Error creating category:", error);
+      console.error("Error saving category:", error);
       alert("An unexpected error occurred.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Brand Submit
-  const handleCreateBrand = async (e: React.FormEvent) => {
+  // Brand Start Edit
+  const handleStartEditBrand = (brand: Brand) => {
+    setEditingBrand(brand);
+    setBrdName(brand.name);
+    setBrdSlug(brand.slug);
+    setBrdDescription(brand.description || "");
+    setBrdLogoUrl(brand.logoUrl || "");
+    setIsBrdModalOpen(true);
+  };
+
+  // Brand Submit (Create or Update)
+  const handleSaveBrand = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!brdName.trim()) return;
 
     setIsSubmitting(true);
     try {
-      const res = await fetch("/api/brands", {
-        method: "POST",
+      const url = editingBrand 
+        ? `/api/brands/${editingBrand.id}`
+        : "/api/brands";
+      const method = editingBrand ? "PUT" : "POST";
+
+      const res = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: brdName.trim(),
@@ -165,6 +219,7 @@ export default function AdminCollectionsPage() {
 
       if (res.ok) {
         setIsBrdModalOpen(false);
+        setEditingBrand(null);
         // Reset form
         setBrdName("");
         setBrdSlug("");
@@ -174,10 +229,10 @@ export default function AdminCollectionsPage() {
         await loadBrands();
       } else {
         const data = await res.json();
-        alert(`Failed to create brand: ${data.error || "Server error"}`);
+        alert(`Failed to save brand: ${data.error || "Server error"}`);
       }
     } catch (error) {
-      console.error("Error creating brand:", error);
+      console.error("Error saving brand:", error);
       alert("An unexpected error occurred.");
     } finally {
       setIsSubmitting(false);
@@ -264,6 +319,13 @@ export default function AdminCollectionsPage() {
               />
             )}
             <button
+              onClick={() => handleStartEditCategory(cat)}
+              className="p-2 bg-primary/10 hover:bg-primary/25 border border-primary/20 text-primary rounded-xl transition-all cursor-pointer"
+              title="Edit Category"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+            </button>
+            <button
               onClick={() => handleDeleteCategory(cat.id, cat.name)}
               className="p-2 bg-rose-500/10 hover:bg-rose-500/25 border border-rose-500/20 text-rose-500 rounded-xl transition-all cursor-pointer"
               title="Delete Category"
@@ -296,7 +358,15 @@ export default function AdminCollectionsPage() {
         <div className="relative z-10 flex gap-2">
           {activeTab === "categories" ? (
             <button
-              onClick={() => setIsCatModalOpen(true)}
+              onClick={() => {
+                setEditingCategory(null);
+                setCatName("");
+                setCatSlug("");
+                setCatParentId("");
+                setCatDescription("");
+                setCatImage("");
+                setIsCatModalOpen(true);
+              }}
               className="inline-flex items-center gap-1.5 px-4.5 py-2.5 bg-primary text-primary-foreground hover:bg-primary/95 hover:scale-[1.01] active:scale-[0.99] rounded-xl text-xs font-semibold uppercase tracking-wider transition-all shadow-sm shadow-primary/5 cursor-pointer"
             >
               <Plus className="w-4 h-4" />
@@ -304,7 +374,14 @@ export default function AdminCollectionsPage() {
             </button>
           ) : (
             <button
-              onClick={() => setIsBrdModalOpen(true)}
+              onClick={() => {
+                setEditingBrand(null);
+                setBrdName("");
+                setBrdSlug("");
+                setBrdDescription("");
+                setBrdLogoUrl("");
+                setIsBrdModalOpen(true);
+              }}
               className="inline-flex items-center gap-1.5 px-4.5 py-2.5 bg-primary text-primary-foreground hover:bg-primary/95 hover:scale-[1.01] active:scale-[0.99] rounded-xl text-xs font-semibold uppercase tracking-wider transition-all shadow-sm shadow-primary/5 cursor-pointer"
             >
               <Plus className="w-4 h-4" />
@@ -427,12 +504,22 @@ export default function AdminCollectionsPage() {
                     <span className="text-[9px] text-muted-foreground font-mono">
                       Registered: {new Date(brd.createdAt).toLocaleDateString()}
                     </span>
-                    <button
-                      onClick={() => handleDeleteBrand(brd.id, brd.name)}
-                      className="p-2 bg-rose-500/10 hover:bg-rose-500/25 border border-rose-500/20 text-rose-500 rounded-xl transition-all cursor-pointer"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleStartEditBrand(brd)}
+                        className="p-2 bg-primary/10 hover:bg-primary/25 border border-primary/20 text-primary rounded-xl transition-all cursor-pointer"
+                        title="Edit Brand"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteBrand(brd.id, brd.name)}
+                        className="p-2 bg-rose-500/10 hover:bg-rose-500/25 border border-rose-500/20 text-rose-500 rounded-xl transition-all cursor-pointer"
+                        title="Delete Brand"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -447,9 +534,19 @@ export default function AdminCollectionsPage() {
           <div className="w-full max-w-lg bg-card border border-border rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             {/* Modal Header */}
             <div className="flex items-center justify-between p-6 border-b border-border/40">
-              <h3 className="font-serif text-lg font-normal text-foreground">Create New Category</h3>
+              <h3 className="font-serif text-lg font-normal text-foreground">
+                {editingCategory ? "Edit Category" : "Create New Category"}
+              </h3>
               <button
-                onClick={() => setIsCatModalOpen(false)}
+                onClick={() => {
+                  setIsCatModalOpen(false);
+                  setEditingCategory(null);
+                  setCatName("");
+                  setCatSlug("");
+                  setCatParentId("");
+                  setCatDescription("");
+                  setCatImage("");
+                }}
                 className="p-1.5 rounded-full bg-secondary hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
               >
                 <X className="w-4 h-4" />
@@ -457,7 +554,7 @@ export default function AdminCollectionsPage() {
             </div>
 
             {/* Modal Form */}
-            <form onSubmit={handleCreateCategory}>
+            <form onSubmit={handleSaveCategory}>
               <div className="p-6 space-y-4">
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Category Name *</label>
@@ -490,23 +587,34 @@ export default function AdminCollectionsPage() {
                     className="w-full px-3.5 py-2.5 bg-card border border-border focus:border-primary focus:outline-none rounded-xl text-xs font-light text-foreground"
                   >
                     <option value="">No Parent (Root Node)</option>
-                    {categoriesFlat.map((cat) => (
-                      <option key={cat.id} value={cat.id}>
-                        {cat.name} ({cat.slug})
-                      </option>
-                    ))}
+                    {categoriesFlat
+                      .filter((c) => !editingCategory || c.id !== editingCategory.id)
+                      .map((cat) => (
+                        <option key={cat.id} value={cat.id}>
+                          {cat.name} ({cat.slug})
+                        </option>
+                      ))}
                   </select>
                 </div>
 
-                <div className="space-y-1.5">
+                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Category Image URL</label>
-                  <input
-                    type="url"
-                    placeholder="https://images.cloudinary.com/..."
-                    value={catImage}
-                    onChange={(e) => setCatImage(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-secondary/20 border border-border/70 focus:border-primary focus:outline-none rounded-xl text-xs font-light text-foreground"
-                  />
+                  <div className="flex gap-2">
+                    <input
+                      type="url"
+                      placeholder="https://images.cloudinary.com/..."
+                      value={catImage}
+                      onChange={(e) => setCatImage(e.target.value)}
+                      className="flex-1 px-3.5 py-2.5 bg-secondary/20 border border-border/70 focus:border-primary focus:outline-none rounded-xl text-xs font-light text-foreground"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowCatMediaPicker(true)}
+                      className="px-4 py-2.5 bg-secondary hover:bg-secondary/80 border border-border rounded-xl text-xs font-semibold cursor-pointer shrink-0"
+                    >
+                      Select Media
+                    </button>
+                  </div>
                 </div>
 
                 <div className="space-y-1.5">
@@ -525,7 +633,15 @@ export default function AdminCollectionsPage() {
               <div className="p-6 border-t border-border/40 bg-secondary/10 flex justify-end gap-2.5">
                 <button
                   type="button"
-                  onClick={() => setIsCatModalOpen(false)}
+                  onClick={() => {
+                    setIsCatModalOpen(false);
+                    setEditingCategory(null);
+                    setCatName("");
+                    setCatSlug("");
+                    setCatParentId("");
+                    setCatDescription("");
+                    setCatImage("");
+                  }}
                   className="px-4 py-2 bg-secondary hover:bg-muted text-foreground border border-border rounded-xl text-xs font-semibold uppercase tracking-wider cursor-pointer"
                 >
                   Cancel
@@ -535,7 +651,13 @@ export default function AdminCollectionsPage() {
                   disabled={isSubmitting}
                   className="px-5 py-2 bg-primary text-primary-foreground hover:bg-primary/95 disabled:bg-muted disabled:text-muted-foreground rounded-xl text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5"
                 >
-                  {isSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Save Node"}
+                  {isSubmitting ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : editingCategory ? (
+                    "Save Changes"
+                  ) : (
+                    "Save Node"
+                  )}
                 </button>
               </div>
             </form>
@@ -549,9 +671,18 @@ export default function AdminCollectionsPage() {
           <div className="w-full max-w-lg bg-card border border-border rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             {/* Modal Header */}
             <div className="flex items-center justify-between p-6 border-b border-border/40">
-              <h3 className="font-serif text-lg font-normal text-foreground">Register New Brand</h3>
+              <h3 className="font-serif text-lg font-normal text-foreground">
+                {editingBrand ? "Edit Brand Details" : "Register New Brand"}
+              </h3>
               <button
-                onClick={() => setIsBrdModalOpen(false)}
+                onClick={() => {
+                  setIsBrdModalOpen(false);
+                  setEditingBrand(null);
+                  setBrdName("");
+                  setBrdSlug("");
+                  setBrdDescription("");
+                  setBrdLogoUrl("");
+                }}
                 className="p-1.5 rounded-full bg-secondary hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
               >
                 <X className="w-4 h-4" />
@@ -559,7 +690,7 @@ export default function AdminCollectionsPage() {
             </div>
 
             {/* Modal Form */}
-            <form onSubmit={handleCreateBrand}>
+            <form onSubmit={handleSaveBrand}>
               <div className="p-6 space-y-4">
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Brand Name *</label>
@@ -584,15 +715,24 @@ export default function AdminCollectionsPage() {
                   />
                 </div>
 
-                <div className="space-y-1.5">
+                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Logo URL</label>
-                  <input
-                    type="url"
-                    placeholder="https://images.cloudinary.com/..."
-                    value={brdLogoUrl}
-                    onChange={(e) => setBrdLogoUrl(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-secondary/20 border border-border/70 focus:border-primary focus:outline-none rounded-xl text-xs font-light text-foreground"
-                  />
+                  <div className="flex gap-2">
+                    <input
+                      type="url"
+                      placeholder="https://images.cloudinary.com/..."
+                      value={brdLogoUrl}
+                      onChange={(e) => setBrdLogoUrl(e.target.value)}
+                      className="flex-1 px-3.5 py-2.5 bg-secondary/20 border border-border/70 focus:border-primary focus:outline-none rounded-xl text-xs font-light text-foreground"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowBrdMediaPicker(true)}
+                      className="px-4 py-2.5 bg-secondary hover:bg-secondary/80 border border-border rounded-xl text-xs font-semibold cursor-pointer shrink-0"
+                    >
+                      Select Media
+                    </button>
+                  </div>
                 </div>
 
                 <div className="space-y-1.5">
@@ -611,7 +751,14 @@ export default function AdminCollectionsPage() {
               <div className="p-6 border-t border-border/40 bg-secondary/10 flex justify-end gap-2.5">
                 <button
                   type="button"
-                  onClick={() => setIsBrdModalOpen(false)}
+                  onClick={() => {
+                    setIsBrdModalOpen(false);
+                    setEditingBrand(null);
+                    setBrdName("");
+                    setBrdSlug("");
+                    setBrdDescription("");
+                    setBrdLogoUrl("");
+                  }}
                   className="px-4 py-2 bg-secondary hover:bg-muted text-foreground border border-border rounded-xl text-xs font-semibold uppercase tracking-wider cursor-pointer"
                 >
                   Cancel
@@ -621,10 +768,44 @@ export default function AdminCollectionsPage() {
                   disabled={isSubmitting}
                   className="px-5 py-2 bg-primary text-primary-foreground hover:bg-primary/95 disabled:bg-muted disabled:text-muted-foreground rounded-xl text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5"
                 >
-                  {isSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Save Brand"}
+                  {isSubmitting ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : editingBrand ? (
+                    "Save Changes"
+                  ) : (
+                    "Save Brand"
+                  )}
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Category Media Picker Modal */}
+      {showCatMediaPicker && (
+        <div className="fixed inset-0 z-60 bg-foreground/20 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-card border border-border/40 rounded-3xl w-full max-w-4xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto relative">
+            <MediaPicker
+              onSelect={handleCatMediaSelect}
+              onClose={() => setShowCatMediaPicker(false)}
+              maxSelection={1}
+              title="Select Category Image"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Brand Media Picker Modal */}
+      {showBrdMediaPicker && (
+        <div className="fixed inset-0 z-60 bg-foreground/20 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-card border border-border/40 rounded-3xl w-full max-w-4xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto relative">
+            <MediaPicker
+              onSelect={handleBrdMediaSelect}
+              onClose={() => setShowBrdMediaPicker(false)}
+              maxSelection={1}
+              title="Select Brand Logo"
+            />
           </div>
         </div>
       )}
