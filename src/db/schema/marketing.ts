@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, uniqueIndex } from 'drizzle-orm/sqlite-core';
 import { sql } from 'drizzle-orm';
 import { orders } from './orders';
 import { users } from './auth';
@@ -38,3 +38,19 @@ export const heroBanners = sqliteTable('hero_banners', {
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)
 });
+
+export const sizeProfiles = sqliteTable('size_profiles', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  description: text('description').notNull(),
+  thumb: integer('thumb').notNull(),
+  index: integer('index').notNull(),
+  middle: integer('middle').notNull(),
+  ring: integer('ring').notNull(),
+  pinky: integer('pinky').notNull(),
+  isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)
+}, (table) => [
+  uniqueIndex('size_profiles_name_unique').on(table.name)
+]);

@@ -9,7 +9,8 @@ import {
   variantAttributeValues,
   media,
   productMedia,
-  heroBanners
+  heroBanners,
+  sizeProfiles
 } from "../../src/db/schema";
 import { eq, and } from "drizzle-orm";
 import { nanoid } from "nanoid";
@@ -338,6 +339,59 @@ export async function seedProducts() {
       }
     ]);
     console.log("Hero banners seeded successfully!");
+  }
+
+  // Seed Size Profiles
+  const existingSizes = await db.query.sizeProfiles.findMany();
+  if (existingSizes.length === 0) {
+    console.log("Seeding default size profiles...");
+    await db.insert(sizeProfiles).values([
+      {
+        id: `sz_${nanoid(10)}`,
+        name: "XS",
+        description: "Petite hands",
+        thumb: 14,
+        index: 10,
+        middle: 11,
+        ring: 10,
+        pinky: 8,
+        isActive: true
+      },
+      {
+        id: `sz_${nanoid(10)}`,
+        name: "S",
+        description: "Small hands",
+        thumb: 15,
+        index: 11,
+        middle: 12,
+        ring: 11,
+        pinky: 9,
+        isActive: true
+      },
+      {
+        id: `sz_${nanoid(10)}`,
+        name: "M",
+        description: "Average / Standard hands",
+        thumb: 16,
+        index: 12,
+        middle: 13,
+        ring: 12,
+        pinky: 10,
+        isActive: true
+      },
+      {
+        id: `sz_${nanoid(10)}`,
+        name: "L",
+        description: "Larger hands",
+        thumb: 18,
+        index: 13,
+        middle: 14,
+        ring: 13,
+        pinky: 11,
+        isActive: true
+      }
+    ]);
+    console.log("Size profiles seeded successfully!");
   }
 
   console.log("Products and dependencies seeded successfully!");
