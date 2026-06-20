@@ -36,6 +36,13 @@
       "when": 1781868395423,
       "tag": "0004_zippy_spiral",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1781928082953,
+      "tag": "0005_fair_cammi",
+      "breakpoints": true
     }
   ]
 }

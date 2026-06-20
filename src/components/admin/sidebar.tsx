@@ -92,6 +92,7 @@ export default function Sidebar({ isCollapsed, isMobileOpen, closeMobileSidebar,
       icon: Settings,
       subItems: [
         { name: "General", href: "/admin/settings/general" },
+        { name: "Hero Banners", href: "/admin/settings/hero-banners" },
         { name: "SMTP Mailer", href: "/admin/settings/smtp" },
         { name: "Payments", href: "/admin/settings/payments" },
         { name: "Search Sync", href: "/admin/settings/search" }

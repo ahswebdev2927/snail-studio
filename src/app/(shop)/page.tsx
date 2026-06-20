@@ -1,25 +1,27 @@
-"use client";
-
 import React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
   Sparkles,
-  ShoppingBag,
-  Heart,
-  ArrowRight,
   ShieldCheck,
   Scissors,
   Star,
   Layers,
   ChevronRight,
+  ArrowRight,
 } from "lucide-react";
-import { useCartStore } from "@/lib/hooks/use-cart-store";
+import { db } from "@/db";
+import { heroBanners } from "@/db/schema";
+import { eq, asc } from "drizzle-orm";
+import { HeroCarousel } from "@/components/storefront/hero-carousel";
+import { FeaturedProductsRow } from "@/components/storefront/featured-products-row";
 
-export default function Home() {
-  const addToCart = useCartStore((state) => state.addToCart);
-  const toggleWishlist = useCartStore((state) => state.toggleWishlist);
-  const isInWishlist = useCartStore((state) => state.isInWishlist);
+export default async function Home() {
+  // Fetch active hero banners from database
+  const activeBanners = await db.query.heroBanners.findMany({
+    where: eq(heroBanners.isActive, true),
+    orderBy: asc(heroBanners.sortOrder),
+  });
 
   const featuredProducts = [
     {
@@ -46,79 +48,8 @@ export default function Home() {
 
   return (
     <div className="flex-1 flex flex-col bg-background text-foreground transition-colors duration-300">
-      {/* Hero Section */}
-      <section className="relative overflow-hidden pt-12 pb-20 lg:pt-20 lg:pb-32 bg-gradient-to-b from-secondary to-background">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
-            {/* Hero Text */}
-            <div className="lg:col-span-5 space-y-8 text-center lg:text-left">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary border border-primary/20 text-xs font-medium tracking-wide animate-pulse">
-                <Sparkles className="w-3.5 h-3.5" />
-                Salon Quality. At Home.
-              </div>
-              <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl font-normal leading-tight text-foreground">
-                Elegance at Your <span className="font-serif italic font-light text-primary">Fingertips</span>
-              </h1>
-              <p className="text-base sm:text-lg text-muted-foreground max-w-xl mx-auto lg:mx-0 font-light leading-relaxed">
-                Indulge in couture, hand-designed press-on nails that look and feel like high-end gel manicures. Reusable, non-damaging, and applied in minutes.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                <Link
-                  href="/shop"
-                  className="inline-flex items-center justify-center px-8 py-4 rounded-full text-sm font-semibold tracking-wider uppercase bg-primary text-primary-foreground hover:bg-primary/95 shadow-md hover:shadow-lg transition-all group"
-                >
-                  Explore Collections
-                  <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                </Link>
-                <Link
-                  href="/sizing-guide"
-                  className="inline-flex items-center justify-center px-8 py-4 rounded-full text-sm font-semibold tracking-wider uppercase border border-border bg-background/50 backdrop-blur-sm hover:bg-background transition-all"
-                >
-                  Find Your Size
-                </Link>
-              </div>
-
-              {/* Trust Indicators */}
-              <div className="grid grid-cols-3 gap-4 pt-4 border-t border-border/40 max-w-md mx-auto lg:mx-0">
-                <div>
-                  <div className="font-serif text-2xl font-semibold text-primary">100%</div>
-                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground mt-1">Reusable</div>
-                </div>
-                <div>
-                  <div className="font-serif text-2xl font-semibold text-primary">15 Min</div>
-                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground mt-1">Easy Application</div>
-                </div>
-                <div>
-                  <div className="font-serif text-2xl font-semibold text-primary">14+ Days</div>
-                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground mt-1">Wear Time</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Hero Image Collage */}
-            <div className="lg:col-span-7 flex justify-center">
-              <div className="relative w-full max-w-lg aspect-square lg:max-w-xl rounded-2xl overflow-hidden shadow-2xl border-4 border-card/40 bg-card">
-                <Image
-                  src="/luxury_nails_hero.png"
-                  alt="Snail Studio Luxury Nails Hero Display"
-                  fill
-                  sizes="(max-width: 1024px) 100vw, 50vw"
-                  className="object-cover hover:scale-105 transition-transform duration-700"
-                  priority
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
-                <div className="absolute bottom-6 left-6 right-6 p-6 rounded-xl bg-background/80 backdrop-blur-md border border-border/40 shadow-lg flex items-center justify-between">
-                  <div>
-                    <span className="text-[10px] uppercase tracking-widest text-primary font-semibold">Featured Design</span>
-                    <h3 className="font-serif text-lg text-foreground mt-0.5">Blush Marble & Gold Leaf</h3>
-                  </div>
-                  <span className="font-serif text-lg font-semibold text-accent">₹2,999</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* Hero Banner Carousel (Admin Managed) */}
+      <HeroCarousel banners={activeBanners} />
 
       {/* Brand Values / Benefits */}
       <section id="benefits" className="py-20 bg-background border-y border-border/20">
@@ -184,85 +115,8 @@ export default function Home() {
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
-            {featuredProducts.map((product) => {
-              const favorite = isInWishlist(product.id);
-              return (
-                <div
-                  key={product.id}
-                  className="group flex flex-col md:flex-row bg-card rounded-2xl overflow-hidden border border-border/30 hover:shadow-xl transition-all duration-300 relative"
-                >
-                  <div className="relative w-full md:w-1/2 aspect-square">
-                    <Image
-                      src={product.image}
-                      alt={product.name}
-                      fill
-                      sizes="(max-width: 768px) 100vw, 25vw"
-                      className="object-cover group-hover:scale-102 transition-transform duration-500"
-                    />
-                    <div className="absolute top-4 left-4 flex flex-wrap gap-1.5">
-                      {product.tags.map((tag) => (
-                        <span
-                          key={tag}
-                          className="px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider bg-background/90 text-primary backdrop-blur-sm rounded-full border border-border/40 animate-fade-in"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                    {/* Floating Wishlist Heart */}
-                    <button
-                      onClick={() => toggleWishlist(product.id)}
-                      className="absolute top-4 right-4 p-2.5 rounded-full bg-background/95 backdrop-blur-sm border border-border/20 shadow-sm text-muted-foreground hover:text-red-500 hover:scale-105 active:scale-95 transition-all cursor-pointer"
-                      aria-label="Add to Wishlist"
-                    >
-                      <Heart className={`w-4.5 h-4.5 ${favorite ? "fill-red-500 text-red-500" : ""}`} />
-                    </button>
-                  </div>
-
-                  <div className="p-6 md:p-8 flex-1 flex flex-col justify-between space-y-6">
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-1.5 text-accent">
-                        <Star className="w-4 h-4 fill-current" />
-                        <span className="text-xs font-bold text-foreground">{product.rating.toFixed(1)}</span>
-                        <span className="text-[10px] text-muted-foreground">({product.reviewsCount} reviews)</span>
-                      </div>
-                      <h3 className="font-serif text-xl text-foreground font-medium group-hover:text-primary transition-colors">
-                        {product.name}
-                      </h3>
-                      <p className="text-xs text-muted-foreground leading-relaxed font-light">
-                        {product.description}
-                      </p>
-                    </div>
-
-                    <div className="space-y-4 pt-4 border-t border-border/30">
-                      <div className="flex items-baseline justify-between">
-                        <span className="text-xs text-muted-foreground font-light">Price</span>
-                        <span className="font-serif text-2xl font-semibold text-primary">
-                          ₹{product.price.toLocaleString("en-IN")}
-                        </span>
-                      </div>
-                      <button
-                        onClick={() =>
-                          addToCart({
-                            id: product.id,
-                            name: product.name,
-                            price: product.price,
-                            imageUrl: product.image,
-                            variantName: product.tags[0] || "Standard Set",
-                          })
-                        }
-                        className="w-full inline-flex items-center justify-center px-4 py-3 rounded-full text-xs font-semibold uppercase tracking-wider bg-primary text-primary-foreground hover:bg-primary/90 hover:scale-[1.01] active:scale-[0.99] transition-all shadow-xs cursor-pointer"
-                      >
-                        <ShoppingBag className="w-4 h-4 mr-2" />
-                        Add to Cart
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          {/* Client-side Products Row */}
+          <FeaturedProductsRow products={featuredProducts} />
         </div>
       </section>
 

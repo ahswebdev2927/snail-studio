@@ -25,3 +25,16 @@ export const couponUsage = sqliteTable('coupon_usage', {
   userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)
 });
+
+export const heroBanners = sqliteTable('hero_banners', {
+  id: text('id').primaryKey(),
+  imageUrl: text('image_url').notNull(),
+  title: text('title').notNull(),
+  subtitle: text('subtitle'),
+  ctaText: text('cta_text'),
+  ctaLink: text('cta_link'),
+  sortOrder: integer('sort_order').notNull().default(0),
+  isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)
+});

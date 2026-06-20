@@ -8,7 +8,8 @@ import {
   productAttributeValues, 
   variantAttributeValues,
   media,
-  productMedia
+  productMedia,
+  heroBanners
 } from "../../src/db/schema";
 import { eq, and } from "drizzle-orm";
 import { nanoid } from "nanoid";
@@ -299,6 +300,45 @@ export async function seedProducts() {
       }
     }
   });
+
+  // Seed Hero Banners
+  const existingBanners = await db.query.heroBanners.findMany();
+  if (existingBanners.length === 0) {
+    console.log("Seeding hero banners...");
+    await db.insert(heroBanners).values([
+      {
+        id: `ban_${nanoid(10)}`,
+        imageUrl: "/luxury_nails_hero.png",
+        title: "Elegance at Your Fingertips",
+        subtitle: "Indulge in couture, hand-designed press-on nails that look and feel like high-end gel manicures.",
+        ctaText: "Explore Collections",
+        ctaLink: "/shop",
+        sortOrder: 0,
+        isActive: true
+      },
+      {
+        id: `ban_${nanoid(10)}`,
+        imageUrl: "/emerald_nails_set.png",
+        title: "Salon Quality. At Home.",
+        subtitle: "Reusable, non-damaging, and applied in minutes. Enjoy the beauty without the cost or damage.",
+        ctaText: "Shop New Sets",
+        ctaLink: "/shop?sort=newest",
+        sortOrder: 1,
+        isActive: true
+      },
+      {
+        id: `ban_${nanoid(10)}`,
+        imageUrl: "/luxury_nails_hero.png",
+        title: "Couture Craftsmanship",
+        subtitle: "Each set is individually styled with top-tier builder gels and artistic gold-leaf accents.",
+        ctaText: "Find Your Size",
+        ctaLink: "/sizing-guide",
+        sortOrder: 2,
+        isActive: true
+      }
+    ]);
+    console.log("Hero banners seeded successfully!");
+  }
 
   console.log("Products and dependencies seeded successfully!");
 }
