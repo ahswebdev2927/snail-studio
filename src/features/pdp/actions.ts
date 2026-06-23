@@ -1,8 +1,8 @@
 "use server";
 
 import { db } from "@/db";
-import { wishlists, wishlistItems } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { wishlists, wishlistItems, orders, orderItems, productVariants, reviews } from "@/db/schema";
+import { eq, and, inArray } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { getSessionUser } from "@/lib/auth/session";
 import { nanoid } from "nanoid";
@@ -125,5 +125,113 @@ export async function syncWishlistDb(localProductIds: string[]) {
   } catch (error: any) {
     console.error("Error syncing database wishlist:", error);
     return { success: false, error: error.message || "Internal server error" };
+  }
+}
+
+/**
+ * Submits a new customer review for a product after checking delivery status and the 2-hour delay.
+ */
+export async function submitProductReview(
+  productId: string,
+  rating: number,
+  title: string,
+  comment: string
+) {
+  try {
+    const user = await getAuthUser();
+    if (!user) {
+      return { success: false, error: "You must be logged in to submit a review." };
+    }
+
+    if (rating < 1 || rating > 5) {
+      return { success: false, error: "Rating must be between 1 and 5 stars." };
+    }
+
+    if (!title.trim()) {
+      return { success: false, error: "Review title is required." };
+    }
+
+    if (!comment.trim()) {
+      return { success: false, error: "Review comment body is required." };
+    }
+
+    // 1. Get all variant IDs for this product
+    const variantsList = await db.query.productVariants.findMany({
+      where: eq(productVariants.productId, productId),
+    });
+    const variantIds = variantsList.map((v) => v.id);
+
+    if (variantIds.length === 0) {
+      return { success: false, error: "No product variants found to verify purchase." };
+    }
+
+    // 2. Query any orders for this user containing any of these variants
+    const userOrders = await db
+      .select({
+        id: orders.id,
+        status: orders.status,
+        updatedAt: orders.updatedAt,
+      })
+      .from(orders)
+      .innerJoin(orderItems, eq(orderItems.orderId, orders.id))
+      .where(
+        and(
+          eq(orders.userId, user.id),
+          inArray(orderItems.variantId, variantIds)
+        )
+      );
+
+    if (userOrders.length === 0) {
+      return {
+        success: false,
+        error: "Only verified buyers who have purchased this product can write a review.",
+      };
+    }
+
+    // 3. Find if any of these orders are delivered, and check delivery timestamp
+    const deliveredOrders = userOrders.filter((o) => o.status === "delivered");
+
+    if (deliveredOrders.length === 0) {
+      // User purchased it, but it hasn't been delivered
+      return {
+        success: false,
+        error: "Your order for this product is not marked as delivered yet. You can submit a review once your package arrives.",
+      };
+    }
+
+    // Find the most recent delivery
+    const mostRecentDelivery = deliveredOrders.reduce((latest, current) => {
+      return current.updatedAt > latest.updatedAt ? current : latest;
+    }, deliveredOrders[0]);
+
+    const timeDiff = Date.now() - mostRecentDelivery.updatedAt.getTime();
+    const TWO_HOURS = 2 * 60 * 60 * 1000;
+
+    if (timeDiff < TWO_HOURS) {
+      const minutesRemaining = Math.ceil((TWO_HOURS - timeDiff) / (60 * 1000));
+      return {
+        success: false,
+        error: `Your order was delivered recently. Please wait ${minutesRemaining} more minute(s) to write a review.`,
+      };
+    }
+
+    // 4. Save review in database
+    await db.insert(reviews).values({
+      id: nanoid(),
+      productId,
+      userId: user.id,
+      rating,
+      title,
+      comment,
+      isApproved: false, // Moderated by default
+    });
+
+    return {
+      success: true,
+      message: "Thank you! Your review has been submitted and is awaiting approval.",
+    };
+  } catch (error: any) {
+    console.error("Error submitting review:", error);
+    return { success: false, error: error.message || "Failed to submit review" };
   }
 }

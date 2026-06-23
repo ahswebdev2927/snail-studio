@@ -1,13 +1,17 @@
 import { db } from "@/db";
-import { products, reviews } from "@/db/schema";
-import { eq, avg, count, and } from "drizzle-orm";
+import { products, reviews, orders, orderItems } from "@/db/schema";
+import { eq, ne, avg, count, and, inArray } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
+import { cookies } from "next/headers";
+import { getSessionUser } from "@/lib/auth/session";
 import { ProductGallery, GalleryMediaItem } from "@/features/pdp/product-gallery";
 import { ProductInfo } from "@/features/pdp/product-info";
 import { ProductActions, ProductVariantFull } from "@/features/pdp/product-actions";
 import { BreadcrumbItem } from "@/features/pdp/pdp-breadcrumb";
 import { ProductTabs } from "@/features/pdp/product-tabs";
+import { ProductReviews } from "@/features/pdp/product-reviews";
+import { RelatedProducts } from "@/features/pdp/related-products";
 
 /* -----------------------------------------------------------------------
  * generateMetadata — SSR SEO per product
@@ -110,6 +114,145 @@ export default async function ProductPage({
 
   const averageRating = Number(reviewStats[0]?.averageRating ?? 0) || 4.8;
   const reviewCount   = Number(reviewStats[0]?.reviewCount   ?? 0);
+
+  /* ----- 2.1 Fetch Approved Reviews list ----- */
+  const dbReviews = await db.query.reviews.findMany({
+    where: and(
+      eq(reviews.productId, product.id),
+      eq(reviews.isApproved, true)
+    ),
+    with: {
+      user: true,
+    },
+    orderBy: (r, { desc }) => [desc(r.createdAt)],
+  });
+
+  // Fetch all user IDs who have purchased this product and had it delivered
+  const variantIds = product.variants.map((v) => v.id);
+  
+  const buyers = variantIds.length > 0 ? await db
+    .select({ userId: orders.userId })
+    .from(orders)
+    .innerJoin(orderItems, eq(orderItems.orderId, orders.id))
+    .where(
+      and(
+        inArray(orderItems.variantId, variantIds),
+        eq(orders.status, "delivered")
+      )
+    ) : [];
+  const verifiedUserIds = new Set(buyers.map((b) => b.userId).filter(Boolean));
+
+  const formattedReviews = dbReviews.map((r) => ({
+    id: r.id,
+    rating: r.rating,
+    title: r.title,
+    comment: r.comment,
+    createdAt: r.createdAt,
+    reviewerName: r.user?.name || "Verified Buyer",
+    isVerifiedPurchase: verifiedUserIds.has(r.userId),
+  }));
+
+  /* ----- 2.2 User Session Eligibility Check ----- */
+  const cookieStore = await cookies();
+  const token = cookieStore.get("accessToken")?.value;
+  const user = token ? await getSessionUser(token) : null;
+
+  let eligibility = {
+    isLoggedIn: false,
+    hasPurchased: false,
+    isDelivered: false,
+    isEligible: false,
+    remainingMinutes: 0,
+  };
+
+  if (user) {
+    // Check if this user purchased the product
+    const userOrders = variantIds.length > 0 ? await db
+      .select({
+        id: orders.id,
+        status: orders.status,
+        updatedAt: orders.updatedAt,
+      })
+      .from(orders)
+      .innerJoin(orderItems, eq(orderItems.orderId, orders.id))
+      .where(
+        and(
+          eq(orders.userId, user.id),
+          inArray(orderItems.variantId, variantIds)
+        )
+      ) : [];
+
+    const hasPurchased = userOrders.length > 0;
+    const deliveredOrders = userOrders.filter((o) => o.status === "delivered");
+    const isDelivered = deliveredOrders.length > 0;
+
+    let isEligible = false;
+    let remainingMinutes = 0;
+    
+    if (isDelivered) {
+      const mostRecent = deliveredOrders.reduce((latest, current) => {
+        return current.updatedAt > latest.updatedAt ? current : latest;
+      }, deliveredOrders[0]);
+
+      const timeDiff = Date.now() - mostRecent.updatedAt.getTime();
+      const TWO_HOURS = 2 * 60 * 60 * 1000;
+      
+      if (timeDiff >= TWO_HOURS) {
+        isEligible = true;
+      } else {
+        remainingMinutes = Math.ceil((TWO_HOURS - timeDiff) / (60 * 1000));
+      }
+    }
+
+    eligibility = {
+      isLoggedIn: true,
+      hasPurchased,
+      isDelivered,
+      isEligible,
+      remainingMinutes,
+    };
+  }
+
+  /* ----- 2.3 Fetch Related Category Products ----- */
+  let relatedProducts = await db.query.products.findMany({
+    where: and(
+      eq(products.categoryId, product.categoryId || ""),
+      eq(products.isActive, true),
+      ne(products.id, product.id)
+    ),
+    limit: 6,
+    with: {
+      media: {
+        with: { media: true },
+        orderBy: (pm, { asc }) => [asc(pm.sortOrder)],
+      },
+    },
+  });
+
+  // Fallback to featured products if fewer than 4 related items found
+  if (relatedProducts.length < 4) {
+    const fallbackProducts = await db.query.products.findMany({
+      where: and(
+        eq(products.isActive, true),
+        ne(products.id, product.id),
+        eq(products.isFeatured, true)
+      ),
+      limit: 6 - relatedProducts.length,
+      with: {
+        media: {
+          with: { media: true },
+          orderBy: (pm, { asc }) => [asc(pm.sortOrder)],
+        },
+      },
+    });
+
+    const existingIds = new Set(relatedProducts.map((p) => p.id));
+    for (const p of fallbackProducts) {
+      if (!existingIds.has(p.id)) {
+        relatedProducts.push(p);
+      }
+    }
+  }
 
   /* ----- 3. Shape gallery media ----- */
   const galleryMedia: GalleryMediaItem[] = product.media
@@ -260,6 +403,18 @@ export default async function ProductPage({
 
         {/* ---- Product Tabs Section (Description, Wear Guide, Shipping, FAQs) ---- */}
         <ProductTabs description={product.description} />
+
+        {/* ---- Customer Reviews Section ---- */}
+        <ProductReviews
+          productId={product.id}
+          reviews={formattedReviews}
+          averageRating={averageRating}
+          reviewCount={reviewCount}
+          eligibility={eligibility}
+        />
+
+        {/* ---- Related Products Section ---- */}
+        <RelatedProducts products={relatedProducts} />
       </div>
     </>
   );
