@@ -11,9 +11,11 @@ export interface FilterState {
   length?: string[];
   colour?: string[];
   texture?: string[];
+  style?: string[];
   minPrice?: number;
   maxPrice?: number;
   availability?: "in_stock";
+  rating?: number;
 }
 
 interface FilterSidebarProps {
@@ -38,6 +40,8 @@ export function FilterSidebar({ facets, filters, onChange, onClear }: FilterSide
     lengths: true,
     colours: true,
     textures: true,
+    style: true,
+    rating: true,
   });
 
   const toggleSection = (section: string) => {
@@ -87,6 +91,7 @@ export function FilterSidebar({ facets, filters, onChange, onClear }: FilterSide
   const lengthsFacet = attributesList.find(a => a.groupCode === "length");
   const coloursFacet = attributesList.find(a => a.groupCode === "colour");
   const texturesFacet = attributesList.find(a => a.groupCode === "texture");
+  const stylesFacet = attributesList.find(a => a.groupCode === "style");
 
   const activeFiltersCount = 
     (filters.category ? 1 : 0) +
@@ -95,8 +100,10 @@ export function FilterSidebar({ facets, filters, onChange, onClear }: FilterSide
     (filters.length?.length || 0) +
     (filters.colour?.length || 0) +
     (filters.texture?.length || 0) +
+    (filters.style?.length || 0) +
     (filters.minPrice !== undefined || filters.maxPrice !== undefined ? 1 : 0) +
-    (filters.availability ? 1 : 0);
+    (filters.availability ? 1 : 0) +
+    (filters.rating ? 1 : 0);
 
   return (
     <div className="w-full space-y-6 select-none">
@@ -334,9 +341,39 @@ export function FilterSidebar({ facets, filters, onChange, onClear }: FilterSide
         </div>
       )}
 
+      {/* Styles (Toggle Pills) */}
+      {stylesFacet && stylesFacet.values.length > 0 && (
+        <div className="border-b border-border/20 pb-5">
+          <div className="flex items-center justify-between py-2 cursor-pointer" onClick={() => toggleSection("style")}>
+            <h3 className="text-sm font-medium text-foreground">Style</h3>
+            <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-300 ${openSections.style ? "rotate-180" : ""}`} />
+          </div>
+          {openSections.style && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {stylesFacet.values.map((v) => {
+                const isSelected = filters.style?.includes(v.code) || false;
+                return (
+                  <button
+                    key={v.code}
+                    onClick={() => handleCheckboxToggle("style", v.code)}
+                    className={`text-xs px-3 py-1.5 rounded-full border transition-all duration-300 cursor-pointer ${
+                      isSelected
+                        ? "bg-primary border-primary text-primary-foreground shadow-sm font-medium"
+                        : "bg-secondary/20 hover:bg-secondary/40 border-border/30 text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {v.value} ({v.count})
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Textures */}
       {texturesFacet && texturesFacet.values.length > 0 && (
-        <div className="pb-5">
+        <div className="border-b border-border/20 pb-5">
           <div className="flex items-center justify-between py-2 cursor-pointer" onClick={() => toggleSection("textures")}>
             <h3 className="text-sm font-medium text-foreground">Finish / Texture</h3>
             <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-300 ${openSections.textures ? "rotate-180" : ""}`} />
@@ -363,6 +400,54 @@ export function FilterSidebar({ facets, filters, onChange, onClear }: FilterSide
           )}
         </div>
       )}
+
+      {/* Rating Filter */}
+      <div className="pb-5">
+        <div className="flex items-center justify-between py-2 cursor-pointer" onClick={() => toggleSection("rating")}>
+          <h3 className="text-sm font-medium text-foreground">Customer Rating</h3>
+          <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-300 ${openSections.rating ? "rotate-180" : ""}`} />
+        </div>
+        {openSections.rating && (
+          <div className="mt-3 space-y-2">
+            {[4, 3, 2].map((stars) => {
+              const isSelected = filters.rating === stars;
+              return (
+                <button
+                  key={stars}
+                  onClick={() => {
+                    onChange({
+                      ...filters,
+                      rating: isSelected ? undefined : stars,
+                    });
+                  }}
+                  className={`w-full flex items-center justify-between text-left text-sm py-1.5 px-2.5 rounded-md transition-all duration-300 cursor-pointer ${
+                    isSelected
+                      ? "bg-primary/10 text-primary font-medium"
+                      : "text-muted-foreground hover:bg-secondary/20 hover:text-foreground"
+                  }`}
+                >
+                  <span className="flex items-center gap-1.5">
+                    <span className="flex items-center text-amber-400">
+                      {Array.from({ length: 5 }).map((_, idx) => (
+                        <svg
+                          key={idx}
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                          className={`w-3.5 h-3.5 ${idx < stars ? "fill-amber-400" : "fill-border/40"}`}
+                        >
+                          <path fillRule="evenodd" d="M10.868 2.884c-.321-.772-1.415-.772-1.736 0l-1.83 4.401-4.753.381c-.833.067-1.171 1.107-.536 1.651l3.6 3.102-1.196 4.657c-.21.817.682 1.465 1.39.998l4.056-2.67 4.056 2.67c.708.467 1.6-.18 1.39-.998l-1.196-4.657 3.6-3.102c.635-.544.297-1.584-.536-1.65l-4.752-.382-1.831-4.401z" clipRule="evenodd" />
+                        </svg>
+                      ))}
+                    </span>
+                    <span className="text-xs text-foreground/80">& Up</span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

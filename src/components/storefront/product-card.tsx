@@ -28,6 +28,11 @@ export interface ProductCardProps {
         altText?: string | null;
       };
     }[];
+    images?: {
+      url: string;
+      isFeatured?: boolean;
+      sortOrder?: number;
+    }[];
   };
 }
 
@@ -51,6 +56,14 @@ export function ProductCard({ product }: ProductCardProps) {
           }
           if (item.url) return item.url;
         }
+        return "";
+      })
+      .filter((url) => !!url);
+  } else if (product.images && Array.isArray(product.images)) {
+    images = product.images
+      .map((item: any) => {
+        if (typeof item === "string") return item;
+        if (item && typeof item === "object" && item.url) return item.url;
         return "";
       })
       .filter((url) => !!url);
