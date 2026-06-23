@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { products, reviews, orders, orderItems } from "@/db/schema";
+import { products, reviews, orders, orderItems, productVariants } from "@/db/schema";
 import { eq, ne, avg, count, and, inArray } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
@@ -12,6 +12,8 @@ import { BreadcrumbItem } from "@/features/pdp/pdp-breadcrumb";
 import { ProductTabs } from "@/features/pdp/product-tabs";
 import { ProductReviews } from "@/features/pdp/product-reviews";
 import { RelatedProducts } from "@/features/pdp/related-products";
+import { FrequentlyBoughtTogether } from "@/features/pdp/frequently-bought-together";
+import { RecentlyViewedTracker, RecentlyViewed } from "@/features/pdp/recently-viewed";
 
 /* -----------------------------------------------------------------------
  * generateMetadata — SSR SEO per product
@@ -254,6 +256,8 @@ export default async function ProductPage({
     }
   }
 
+
+
   /* ----- 3. Shape gallery media ----- */
   const galleryMedia: GalleryMediaItem[] = product.media
     .filter((pm) => pm.media)
@@ -343,6 +347,77 @@ export default async function ProductPage({
   const primaryImageUrl =
     galleryMedia.find((m) => m.isFeatured)?.url ?? galleryMedia[0]?.url;
 
+  /* ----- 7.1 Fetch Frequently Bought Together (FBT) Recommendations ----- */
+  const dbRecommendations = await db.query.products.findMany({
+    where: and(
+      eq(products.isActive, true),
+      ne(products.id, product.id)
+    ),
+    limit: 2,
+    with: {
+      variants: {
+        with: { inventory: true },
+        where: eq(productVariants.status, "Active"),
+      },
+      media: {
+        with: { media: true },
+        orderBy: (pm, { asc }) => [asc(pm.sortOrder)],
+      },
+    },
+  });
+
+  const currentProductFbt = {
+    id: product.id,
+    name: product.name,
+    imageUrl: primaryImageUrl,
+    variants: fullVariants.map((v) => ({
+      id: v.id,
+      name: v.name,
+      price: v.price,
+      stockLevel: v.stockLevel,
+    })),
+  };
+
+  const recommendationsFbt = dbRecommendations.map((p) => {
+    const pPrimaryImageUrl = p.media.find((m) => m.isFeatured)?.media?.url ?? p.media[0]?.media?.url;
+    return {
+      id: p.id,
+      name: p.name,
+      imageUrl: pPrimaryImageUrl,
+      variants: p.variants.map((v) => ({
+        id: v.id,
+        name: v.name,
+        price: v.price,
+        stockLevel: v.inventory?.stockLevel ?? 0,
+      })),
+    };
+  });
+
+  /* ----- 7.2 Fetch Recently Viewed Products ----- */
+  const recentlyViewedCookie = cookieStore.get("snail_recently_viewed")?.value;
+  const viewedSlugs = recentlyViewedCookie
+    ? recentlyViewedCookie.split(",").filter((s) => s && s !== slug)
+    : [];
+
+  const dbRecentlyViewed = viewedSlugs.length > 0
+    ? await db.query.products.findMany({
+        where: and(
+          eq(products.isActive, true),
+          inArray(products.slug, viewedSlugs)
+        ),
+        with: {
+          media: {
+            with: { media: true },
+            orderBy: (pm, { asc }) => [asc(pm.sortOrder)],
+          },
+        },
+      })
+    : [];
+
+  const recentlyViewedProducts = dbRecentlyViewed.sort((a, b) => {
+    return viewedSlugs.indexOf(a.slug) - viewedSlugs.indexOf(b.slug);
+  });
+
   /* ----- 8. Render ----- */
   return (
     <>
@@ -351,6 +426,9 @@ export default async function ProductPage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }}
       />
+
+      {/* Background tracking for Recently Viewed cookie */}
+      <RecentlyViewedTracker slug={product.slug} />
 
       <div className="bg-background text-foreground transition-colors duration-300">
         {/* ---- PDP Main Grid ---- */}
@@ -413,8 +491,17 @@ export default async function ProductPage({
           eligibility={eligibility}
         />
 
+        {/* ---- Frequently Bought Together Section ---- */}
+        <FrequentlyBoughtTogether
+          currentProduct={currentProductFbt}
+          recommendations={recommendationsFbt}
+        />
+
         {/* ---- Related Products Section ---- */}
         <RelatedProducts products={relatedProducts} />
+
+        {/* ---- Recently Viewed Section ---- */}
+        <RecentlyViewed products={recentlyViewedProducts} />
       </div>
     </>
   );
