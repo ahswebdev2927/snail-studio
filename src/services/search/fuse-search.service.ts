@@ -27,6 +27,8 @@ export interface ProductSearchItem {
     isFeatured: boolean;
     sortOrder: number;
   }[];
+  rating: number;
+  reviewsCount: number;
   createdAt: Date;
 }
 

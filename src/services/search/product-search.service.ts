@@ -3,7 +3,7 @@ import { searchWithFuse, ProductSearchItem } from "./fuse-search.service";
 
 export interface SearchQueryParams extends FilterParams {
   q?: string;
-  sort?: "relevance" | "price_asc" | "price_desc" | "newest";
+  sort?: "relevance" | "price_asc" | "price_desc" | "newest" | "best_selling" | "featured" | "alpha_asc" | "alpha_desc";
   page?: number;
   limit?: number;
 }
@@ -207,6 +207,22 @@ function sortProducts(
       return sorted.sort((a, b) => b.priceMax - a.priceMax);
     case "newest":
       return sorted.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    case "best_selling":
+      return sorted.sort((a, b) => {
+        if (a.isBestSeller && !b.isBestSeller) return -1;
+        if (!a.isBestSeller && b.isBestSeller) return 1;
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
+    case "featured":
+      return sorted.sort((a, b) => {
+        if (a.isFeatured && !b.isFeatured) return -1;
+        if (!a.isFeatured && b.isFeatured) return 1;
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
+    case "alpha_asc":
+      return sorted.sort((a, b) => a.name.localeCompare(b.name));
+    case "alpha_desc":
+      return sorted.sort((a, b) => b.name.localeCompare(a.name));
     case "relevance":
     default:
       // Default sorting: Featured first, then Best Sellers, then Newest

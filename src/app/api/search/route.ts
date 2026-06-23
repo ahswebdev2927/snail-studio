@@ -40,6 +40,7 @@ export async function GET(request: NextRequest) {
     const lengths = parseCommaSeparated("length");
     const colours = parseCommaSeparated("colour");
     const textures = parseCommaSeparated("texture");
+    const styles = parseCommaSeparated("style");
 
     const minPriceVal = searchParams.get("minPrice");
     const minPrice = minPriceVal ? parseInt(minPriceVal, 10) : undefined;
@@ -48,6 +49,9 @@ export async function GET(request: NextRequest) {
     const maxPrice = maxPriceVal ? parseInt(maxPriceVal, 10) : undefined;
 
     const availability = searchParams.get("availability") as "in_stock" | "out_of_stock" | null || undefined;
+
+    const ratingVal = searchParams.get("rating");
+    const rating = ratingVal ? parseFloat(ratingVal) : undefined;
 
     const featuredVal = searchParams.get("featured");
     const featured = featuredVal === "true" ? true : featuredVal === "false" ? false : undefined;
@@ -61,7 +65,7 @@ export async function GET(request: NextRequest) {
     const trendingVal = searchParams.get("trending");
     const trending = trendingVal === "true" ? true : trendingVal === "false" ? false : undefined;
 
-    const sort = (searchParams.get("sort") || "relevance") as "relevance" | "price_asc" | "price_desc" | "newest";
+    const sort = (searchParams.get("sort") || "relevance") as any;
 
     const pageVal = searchParams.get("page");
     const page = pageVal ? Math.max(1, parseInt(pageVal, 10)) : 1;
@@ -78,6 +82,7 @@ export async function GET(request: NextRequest) {
       lengths,
       colours,
       textures,
+      styles,
       minPrice,
       maxPrice,
       availability,
@@ -85,6 +90,7 @@ export async function GET(request: NextRequest) {
       bestSeller,
       newArrival,
       trending,
+      rating,
       sort,
       page,
       limit,
