@@ -4,8 +4,10 @@ import { eq, avg, count, and } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
 import { ProductGallery, GalleryMediaItem } from "@/features/pdp/product-gallery";
-import { ProductInfo, PdpVariant } from "@/features/pdp/product-info";
+import { ProductInfo } from "@/features/pdp/product-info";
+import { ProductActions, ProductVariantFull } from "@/features/pdp/product-actions";
 import { BreadcrumbItem } from "@/features/pdp/pdp-breadcrumb";
+import { ProductTabs } from "@/features/pdp/product-tabs";
 
 /* -----------------------------------------------------------------------
  * generateMetadata — SSR SEO per product
@@ -26,9 +28,7 @@ export async function generateMetadata({
   });
 
   if (!product) {
-    return {
-      title: "Product Not Found | Snail Studio",
-    };
+    return { title: "Product Not Found | Snail Studio" };
   }
 
   const featuredMedia =
@@ -47,15 +47,11 @@ export async function generateMetadata({
     openGraph: {
       title,
       description,
-      type: "website",
+      type:   "website",
       locale: "en_IN",
-      images: ogImageUrl
-        ? [{ url: ogImageUrl, alt: product.name }]
-        : undefined,
+      images: ogImageUrl ? [{ url: ogImageUrl, alt: product.name }] : undefined,
     },
-    alternates: {
-      canonical: `/products/${slug}`,
-    },
+    alternates: { canonical: `/products/${slug}` },
   };
 }
 
@@ -73,7 +69,7 @@ export default async function ProductPage({
   const product = await db.query.products.findFirst({
     where: eq(products.slug, slug),
     with: {
-      brand: true,
+      brand:    true,
       category: true,
       variants: {
         with: {
@@ -88,15 +84,8 @@ export default async function ProductPage({
         },
       },
       media: {
-        with: { media: true },
+        with:    { media: true },
         orderBy: (pm, { asc }) => [asc(pm.sortOrder)],
-      },
-      attributeValues: {
-        with: {
-          attributeValue: {
-            with: { group: true },
-          },
-        },
       },
     },
   });
@@ -105,11 +94,11 @@ export default async function ProductPage({
     notFound();
   }
 
-  /* ----- 2. Aggregate reviews stats ----- */
+  /* ----- 2. Approved reviews aggregate ----- */
   const reviewStats = await db
     .select({
       averageRating: avg(reviews.rating),
-      reviewCount: count(reviews.id),
+      reviewCount:   count(reviews.id),
     })
     .from(reviews)
     .where(
@@ -120,65 +109,77 @@ export default async function ProductPage({
     );
 
   const averageRating = Number(reviewStats[0]?.averageRating ?? 0) || 4.8;
-  const reviewCount = Number(reviewStats[0]?.reviewCount ?? 0);
+  const reviewCount   = Number(reviewStats[0]?.reviewCount   ?? 0);
 
   /* ----- 3. Shape gallery media ----- */
   const galleryMedia: GalleryMediaItem[] = product.media
     .filter((pm) => pm.media)
     .map((pm) => ({
-      id: pm.media.id,
-      url: pm.media.url,
-      publicId: pm.media.publicId,
+      id:           pm.media.id,
+      url:          pm.media.url,
+      publicId:     pm.media.publicId,
       resourceType: pm.media.resourceType,
-      format: pm.media.format,
-      altText: pm.media.altText,
-      width: pm.media.width,
-      height: pm.media.height,
-      isFeatured: pm.isFeatured,
-      sortOrder: pm.sortOrder,
+      format:       pm.media.format,
+      altText:      pm.media.altText,
+      width:        pm.media.width,
+      height:       pm.media.height,
+      isFeatured:   pm.isFeatured,
+      sortOrder:    pm.sortOrder,
     }));
 
-  /* ----- 4. Shape variants for ProductInfo ----- */
-  const pdpVariants: PdpVariant[] = product.variants
+  /* ----- 4. Shape full variants (with attribute details for selector) ----- */
+  const fullVariants: ProductVariantFull[] = product.variants
     .filter((v) => v.status !== "Archived")
     .map((v) => ({
-      id: v.id,
-      sku: v.sku,
-      name: v.name,
-      price: v.price,
-      compareAtPrice: v.compareAtPrice,
-      status: v.status as "Active" | "Disabled" | "Archived",
-      stockLevel: v.inventory?.stockLevel ?? 0,
+      id:               v.id,
+      sku:              v.sku,
+      name:             v.name,
+      price:            v.price,
+      compareAtPrice:   v.compareAtPrice,
+      status:           v.status as "Active" | "Disabled" | "Archived",
+      stockLevel:       v.inventory?.stockLevel       ?? 0,
       lowStockThreshold: v.inventory?.lowStockThreshold ?? 5,
+      attributes: v.attributes.map((a) => ({
+        groupCode: a.attributeValue.group.code,
+        groupName: a.attributeValue.group.name,
+        valueCode: a.attributeValue.code,
+        valueName: a.attributeValue.value,
+        valueId:   a.attributeValue.id,
+      })),
     }));
 
   /* ----- 5. Breadcrumb items ----- */
   const breadcrumbs: BreadcrumbItem[] = [
     { label: "Shop", href: "/shop" },
     ...(product.category
-      ? [{ label: product.category.name, href: `/shop?category=${product.category.slug}` }]
+      ? [
+          {
+            label: product.category.name,
+            href:  `/shop?category=${product.category.slug}`,
+          },
+        ]
       : []),
     { label: product.name },
   ];
 
-  /* ----- 6. JSON-LD structured data ----- */
+  /* ----- 6. JSON-LD Product schema ----- */
   const featuredMedia = galleryMedia.find((m) => m.isFeatured) ?? galleryMedia[0];
   const productJsonLd = {
     "@context": "https://schema.org",
-    "@type": "Product",
-    name: product.name,
+    "@type":    "Product",
+    name:        product.name,
     description: product.description ?? product.shortDescription ?? undefined,
-    image: featuredMedia?.url,
-    sku: pdpVariants[0]?.sku,
+    image:       featuredMedia?.url,
+    sku:         fullVariants[0]?.sku,
     brand: product.brand
       ? { "@type": "Brand", name: product.brand.name }
       : undefined,
     offers: {
-      "@type": "AggregateOffer",
-      priceCurrency: "INR",
-      lowPrice: (product.priceMin / 100).toFixed(2),
-      highPrice: (product.priceMax / 100).toFixed(2),
-      offerCount: pdpVariants.filter((v) => v.status === "Active").length,
+      "@type":        "AggregateOffer",
+      priceCurrency:  "INR",
+      lowPrice:       (product.priceMin / 100).toFixed(2),
+      highPrice:      (product.priceMax / 100).toFixed(2),
+      offerCount:     fullVariants.filter((v) => v.status === "Active").length,
       availability:
         product.status === "Out Of Stock"
           ? "https://schema.org/OutOfStock"
@@ -186,16 +187,20 @@ export default async function ProductPage({
     },
     ...(reviewCount > 0 && {
       aggregateRating: {
-        "@type": "AggregateRating",
-        ratingValue: averageRating.toFixed(1),
+        "@type":      "AggregateRating",
+        ratingValue:  averageRating.toFixed(1),
         reviewCount,
-        bestRating: 5,
-        worstRating: 1,
+        bestRating:   5,
+        worstRating:  1,
       },
     }),
   };
 
-  /* ----- 7. Render ----- */
+  /* ----- 7. Primary image URL for cart item thumbnail ----- */
+  const primaryImageUrl =
+    galleryMedia.find((m) => m.isFeatured)?.url ?? galleryMedia[0]?.url;
+
+  /* ----- 8. Render ----- */
   return (
     <>
       {/* JSON-LD structured data */}
@@ -211,65 +216,50 @@ export default async function ProductPage({
           className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12"
         >
           <div className="grid grid-cols-1 lg:grid-cols-[55fr_45fr] gap-8 lg:gap-14 items-start">
+
             {/* Left: Gallery — sticky on large screens */}
             <div className="lg:sticky lg:top-28">
               <ProductGallery media={galleryMedia} productName={product.name} />
             </div>
 
-            {/* Right: Product Information */}
-            <div>
+            {/* Right: Info + Actions stacked in sequence */}
+            <div className="flex flex-col gap-6 lg:gap-7">
+              {/* Static product info */}
               <ProductInfo
                 product={{
-                  id: product.id,
-                  name: product.name,
-                  slug: product.slug,
+                  id:               product.id,
+                  name:             product.name,
+                  slug:             product.slug,
                   shortDescription: product.shortDescription,
-                  description: product.description,
-                  priceMin: product.priceMin,
-                  priceMax: product.priceMax,
-                  isBestSeller: product.isBestSeller,
-                  isNewArrival: product.isNewArrival,
-                  isTrending: product.isTrending,
-                  isFeatured: product.isFeatured,
-                  status: product.status,
+                  isBestSeller:     product.isBestSeller,
+                  isNewArrival:     product.isNewArrival,
+                  isTrending:       product.isTrending,
+                  isFeatured:       product.isFeatured,
                   category: product.category
-                    ? {
-                        name: product.category.name,
-                        slug: product.category.slug,
-                      }
-                    : null,
-                  brand: product.brand
-                    ? {
-                        name: product.brand.name,
-                        slug: product.brand.slug,
-                      }
+                    ? { name: product.category.name, slug: product.category.slug }
                     : null,
                   reviewCount,
                   averageRating,
                 }}
-                variants={pdpVariants}
                 breadcrumbs={breadcrumbs}
+              />
+
+              {/* Divider between info and actions */}
+              <div className="border-t border-border/30" />
+
+              {/* Interactive: price, variants, qty, add to cart, buy now */}
+              <ProductActions
+                productId={product.id}
+                productName={product.name}
+                productImageUrl={primaryImageUrl}
+                variants={fullVariants}
               />
             </div>
           </div>
         </section>
 
-        {/* ---- Product Description (full) ---- */}
-        {product.description && (
-          <section
-            aria-label="Product description"
-            className="border-t border-border/30"
-          >
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 lg:py-14">
-              <h2 className="font-serif text-2xl font-normal text-foreground mb-6">
-                About This Set
-              </h2>
-              <div className="max-w-2xl text-muted-foreground text-sm leading-loose font-light whitespace-pre-wrap">
-                {product.description}
-              </div>
-            </div>
-          </section>
-        )}
+        {/* ---- Product Tabs Section (Description, Wear Guide, Shipping, FAQs) ---- */}
+        <ProductTabs description={product.description} />
       </div>
     </>
   );
