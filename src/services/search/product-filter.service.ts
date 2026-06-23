@@ -16,7 +16,7 @@ import { ProductSearchItem } from "./fuse-search.service";
 export interface FilterParams {
   q?: string;            // Text search query for database-first matching
   category?: string;     // Slug or ID
-  brand?: string;        // Slug or ID
+  brands?: string[];     // Array of brand slugs or IDs
   shapes?: string[];     // Array of attribute value codes (e.g. ['almond', 'coffin'])
   lengths?: string[];    // Array of attribute value codes (e.g. ['short', 'medium'])
   colours?: string[];    // Array of attribute value codes (e.g. ['pink', 'nude'])
@@ -41,7 +41,7 @@ export async function getFilteredProducts(params: FilterParams): Promise<Product
   const {
     q,
     category,
-    brand,
+    brands: brandFilters,
     shapes,
     lengths,
     colours,
@@ -120,15 +120,15 @@ export async function getFilteredProducts(params: FilterParams): Promise<Product
   }
 
   // 4. Brand Filter
-  if (brand) {
-    const targetBrand = await db.query.brands.findFirst({
-      where: or(eq(brands.id, brand), eq(brands.slug, brand))
+  if (brandFilters && brandFilters.length > 0) {
+    const targetBrands = await db.query.brands.findMany({
+      where: or(inArray(brands.id, brandFilters), inArray(brands.slug, brandFilters))
     });
 
-    if (targetBrand) {
-      conditions.push(eq(products.brandId, targetBrand.id));
+    if (targetBrands.length > 0) {
+      conditions.push(inArray(products.brandId, targetBrands.map(b => b.id)));
     } else {
-      // If a brand was supplied but not found, return empty results
+      // If brands were supplied but not found, return empty results
       return [];
     }
   }

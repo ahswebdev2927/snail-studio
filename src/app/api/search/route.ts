@@ -27,8 +27,6 @@ export async function GET(request: NextRequest) {
 
     const q = searchParams.get("q") || undefined;
     const category = searchParams.get("category") || undefined;
-    const brand = searchParams.get("brand") || undefined;
-
     // Parse comma-separated filter criteria
     const parseCommaSeparated = (paramName: string) => {
       const val = searchParams.get(paramName);
@@ -36,6 +34,7 @@ export async function GET(request: NextRequest) {
       return val.split(",").map((item) => item.trim()).filter(Boolean);
     };
 
+    const brands = parseCommaSeparated("brand");
     const shapes = parseCommaSeparated("shape");
     const lengths = parseCommaSeparated("length");
     const colours = parseCommaSeparated("colour");
@@ -77,7 +76,7 @@ export async function GET(request: NextRequest) {
     const result = await searchProducts({
       q,
       category,
-      brand,
+      brands,
       shapes,
       lengths,
       colours,
