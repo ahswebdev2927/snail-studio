@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { toggleWishlistDb } from "@/features/pdp/actions";
 
 export interface CartItem {
   id: string;
@@ -22,7 +23,7 @@ interface CartStore {
   addToCart: (item: Omit<CartItem, "quantity">, qty?: number) => void;
   removeFromCart: (itemId: string) => void;
   updateQuantity: (itemId: string, qty: number) => void;
-  toggleWishlist: (productId: string) => void;
+  toggleWishlist: (productId: string) => Promise<void>;
   isInWishlist: (productId: string) => boolean;
   clearCart: () => void;
   loadPersistedData: () => void;
@@ -77,10 +78,12 @@ export const useCartStore = create<CartStore>((set, get) => ({
     });
   },
   
-  toggleWishlist: (productId) => {
+  toggleWishlist: async (productId) => {
+    // 1. Optimistic local update
+    let originallyFav = false;
     set((state) => {
-      const isFav = state.wishlist.includes(productId);
-      const newWishlist = isFav
+      originallyFav = state.wishlist.includes(productId);
+      const newWishlist = originallyFav
         ? state.wishlist.filter((id) => id !== productId)
         : [...state.wishlist, productId];
       if (typeof window !== "undefined") {
@@ -88,6 +91,53 @@ export const useCartStore = create<CartStore>((set, get) => ({
       }
       return { wishlist: newWishlist };
     });
+
+    try {
+      // 2. Database update
+      const res = await toggleWishlistDb(productId);
+      if (res.success) {
+        const isFav = res.isWishlisted;
+        set((state) => {
+          // Adjust state based on database response
+          const alreadyCorrect = state.wishlist.includes(productId) === isFav;
+          if (alreadyCorrect) return {};
+          
+          const newWishlist = isFav
+            ? [...state.wishlist.filter((id) => id !== productId), productId]
+            : state.wishlist.filter((id) => id !== productId);
+          
+          if (typeof window !== "undefined") {
+            localStorage.setItem("snail_wishlist", JSON.stringify(newWishlist));
+          }
+          return { wishlist: newWishlist };
+        });
+      } else if (res.error === "guest") {
+        // Logged-out state is already handled by optimistic local update, do nothing
+      } else {
+        // Revert on backend error
+        set((state) => {
+          const revertedWishlist = originallyFav
+            ? [...state.wishlist.filter((id) => id !== productId), productId]
+            : state.wishlist.filter((id) => id !== productId);
+          if (typeof window !== "undefined") {
+            localStorage.setItem("snail_wishlist", JSON.stringify(revertedWishlist));
+          }
+          return { wishlist: revertedWishlist };
+        });
+      }
+    } catch (err) {
+      console.error("Error toggling database wishlist:", err);
+      // Revert on request failure
+      set((state) => {
+        const revertedWishlist = originallyFav
+          ? [...state.wishlist.filter((id) => id !== productId), productId]
+          : state.wishlist.filter((id) => id !== productId);
+        if (typeof window !== "undefined") {
+          localStorage.setItem("snail_wishlist", JSON.stringify(revertedWishlist));
+        }
+        return { wishlist: revertedWishlist };
+      });
+    }
   },
   
   isInWishlist: (productId) => {

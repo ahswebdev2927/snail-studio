@@ -39,10 +39,10 @@ export interface ProductCardProps {
 export function ProductCard({ product }: ProductCardProps) {
   const addToCart = useCartStore((state) => state.addToCart);
   const toggleWishlist = useCartStore((state) => state.toggleWishlist);
-  const isInWishlist = useCartStore((state) => state.isInWishlist);
+  const wishlist = useCartStore((state) => state.wishlist);
   const [isAdding, setIsAdding] = useState(false);
 
-  const favorite = isInWishlist(product.id);
+  const favorite = wishlist.includes(product.id);
 
   // Extract media items safely to handle different query patterns
   let images: string[] = [];

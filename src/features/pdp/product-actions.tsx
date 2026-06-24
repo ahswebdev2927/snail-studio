@@ -28,7 +28,7 @@ import {
 import { useCartStore } from "@/lib/hooks/use-cart-store";
 import { formatPrice } from "@/lib/utils";
 import { cn } from "@/lib/utils";
-import { toggleWishlistDb, syncWishlistDb } from "./actions";
+import { syncWishlistDb } from "./actions";
 
 /* -----------------------------------------------------------------------
  * Types
@@ -149,8 +149,8 @@ export function ProductActions({
   const addToCart    = useCartStore((s) => s.addToCart);
   const setCartOpen  = useCartStore((s) => s.setCartOpen);
   const toggleWishlist = useCartStore((s) => s.toggleWishlist);
-  const isInWishlist   = useCartStore((s) => s.isInWishlist);
-  const favorite = isInWishlist(productId);
+  const wishlist       = useCartStore((s) => s.wishlist);
+  const favorite = wishlist.includes(productId);
 
   /* ----- Sync Wishlist with Database on Mount if Logged In ----- */
   useEffect(() => {
@@ -415,22 +415,9 @@ export function ProductActions({
     }
   };
 
-  /* ----- Wishlist Toggle with DB Sync ----- */
-  const handleWishlistToggle = async () => {
-    const res = await toggleWishlistDb(productId);
-    if (res.success) {
-      const isFav = res.isWishlisted;
-      useCartStore.setState((state) => {
-        const newWishlist = isFav
-          ? [...state.wishlist, productId]
-          : state.wishlist.filter((id) => id !== productId);
-        localStorage.setItem("snail_wishlist", JSON.stringify(newWishlist));
-        return { wishlist: newWishlist };
-      });
-    } else {
-      // Fallback for guest shoppers
-      toggleWishlist(productId);
-    }
+  /* ----- Wishlist Toggle ----- */
+  const handleWishlistToggle = () => {
+    toggleWishlist(productId);
   };
 
   /* ----- No variants fallback ----- */

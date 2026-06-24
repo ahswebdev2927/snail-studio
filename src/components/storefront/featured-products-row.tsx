@@ -24,12 +24,12 @@ interface FeaturedProductsRowProps {
 export function FeaturedProductsRow({ products }: FeaturedProductsRowProps) {
   const addToCart = useCartStore((state) => state.addToCart);
   const toggleWishlist = useCartStore((state) => state.toggleWishlist);
-  const isInWishlist = useCartStore((state) => state.isInWishlist);
+  const wishlist = useCartStore((state) => state.wishlist);
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
       {products.map((product) => {
-        const favorite = isInWishlist(product.id);
+        const favorite = wishlist.includes(product.id);
         return (
           <div
             key={product.id}

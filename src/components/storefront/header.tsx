@@ -21,6 +21,7 @@ import { Drawer, DrawerHeader, DrawerTitle, DrawerBody, DrawerFooter } from "../
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "../ui/accordion";
 import { Button } from "../ui/button";
 import type { StorefrontNavigation } from "@/services/navigation";
+import { syncWishlistDb } from "@/features/pdp/actions";
 
 interface HeaderProps {
   navigationData?: StorefrontNavigation;
@@ -45,6 +46,24 @@ export function Header({ navigationData }: HeaderProps) {
   useEffect(() => {
     loadPersistedData();
   }, [loadPersistedData]);
+
+  // Sync wishlist with DB on mount if user is logged in
+  useEffect(() => {
+    async function sync() {
+      const localWishlist = useCartStore.getState().wishlist;
+      try {
+        const res = await syncWishlistDb(localWishlist);
+        if (res.success && res.wishlist) {
+          useCartStore.setState({ wishlist: res.wishlist });
+          localStorage.setItem("snail_wishlist", JSON.stringify(res.wishlist));
+        }
+      } catch (err) {
+        console.error("Failed to sync database wishlist on mount:", err);
+      }
+    }
+    const timer = setTimeout(sync, 250);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Client-side fetch fallback if server prop is missing
   useEffect(() => {
