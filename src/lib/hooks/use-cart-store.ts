@@ -11,6 +11,7 @@ export interface CartItem {
   shape?: string;
   length?: string;
   size?: string;
+  productId?: string;
 }
 
 interface CartStore {

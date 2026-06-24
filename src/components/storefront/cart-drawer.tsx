@@ -366,10 +366,22 @@ export function CartDrawer() {
               <span className="text-primary font-serif">{formatPrice(subtotal)}</span>
             </div>
           </div>
-          <Button onClick={handleCheckout} className="w-full py-6 text-xs uppercase tracking-widest font-semibold flex items-center justify-center gap-2 group">
-            Proceed to Checkout
-            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-          </Button>
+          <div className="flex flex-col gap-2">
+            <Button onClick={handleCheckout} className="w-full py-6 text-xs uppercase tracking-widest font-semibold flex items-center justify-center gap-2 group">
+              Proceed to Checkout
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </Button>
+            <Button
+              onClick={() => {
+                setCartOpen(false);
+                router.push("/cart");
+              }}
+              variant="outline"
+              className="w-full py-5 text-[10px] uppercase tracking-widest font-bold flex items-center justify-center gap-2 border-border/40 hover:bg-secondary/50"
+            >
+              View Shopping Bag
+            </Button>
+          </div>
 
           {/* Trust Badges */}
           <div className="grid grid-cols-3 gap-2 pt-3 text-center text-muted-foreground border-t border-border/10 mt-1">

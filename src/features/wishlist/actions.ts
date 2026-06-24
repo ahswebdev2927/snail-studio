@@ -52,7 +52,17 @@ export async function getWishlistProducts(localProductIds?: string[]) {
       with: {
         brand: true,
         category: true,
-        variants: true,
+        variants: {
+          with: {
+            attributes: {
+              with: {
+                attributeValue: {
+                  with: { group: true },
+                },
+              },
+            },
+          },
+        },
         media: {
           with: {
             media: true,
@@ -107,6 +117,19 @@ export async function getWishlistProducts(localProductIds?: string[]) {
         reviewsCount,
         reviewCount: reviewsCount, // Support both naming keys
         media: p.media,
+        variants: p.variants.map((v) => ({
+          id: v.id,
+          sku: v.sku,
+          name: v.name,
+          price: v.price,
+          status: v.status,
+          attributes: v.attributes?.map((va) => ({
+            groupCode: va.attributeValue?.group?.code,
+            groupName: va.attributeValue?.group?.name,
+            valueCode: va.attributeValue?.code,
+            valueName: va.attributeValue?.value,
+          })) || [],
+        })),
       };
     });
 

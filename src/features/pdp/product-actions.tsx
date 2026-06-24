@@ -382,6 +382,7 @@ export function ProductActions({
         shape:       getAttributeLabel("shape"),
         length:      getAttributeLabel("length"),
         size:        getAttributeLabel("size"),
+        productId:   productId,
       },
       quantity
     );
@@ -415,6 +416,7 @@ export function ProductActions({
         shape:       getAttributeLabel("shape"),
         length:      getAttributeLabel("length"),
         size:        getAttributeLabel("size"),
+        productId:   productId,
       },
       quantity
     );
