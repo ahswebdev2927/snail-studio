@@ -364,6 +364,14 @@ export function ProductActions({
   const handleAddToCart = () => {
     if (!canAddToCart || !selectedVariant) return;
     setIsAdding(true);
+
+    const getAttributeLabel = (groupCode: string) => {
+      const valueCode = selectedAttributes[groupCode];
+      if (!valueCode) return undefined;
+      const group = attributeGroups.find((g) => g.code === groupCode);
+      return group?.values.find((v) => v.code === valueCode)?.name;
+    };
+
     addToCart(
       {
         id:          selectedVariant.id,
@@ -371,6 +379,9 @@ export function ProductActions({
         price:       selectedVariant.price / 100,
         imageUrl:    productImageUrl,
         variantName: selectedVariant.name,
+        shape:       getAttributeLabel("shape"),
+        length:      getAttributeLabel("length"),
+        size:        getAttributeLabel("size"),
       },
       quantity
     );
@@ -386,6 +397,14 @@ export function ProductActions({
   const handleBuyNow = () => {
     if (!canAddToCart || !selectedVariant || isBuyingNow) return;
     setIsBuyingNow(true);
+
+    const getAttributeLabel = (groupCode: string) => {
+      const valueCode = selectedAttributes[groupCode];
+      if (!valueCode) return undefined;
+      const group = attributeGroups.find((g) => g.code === groupCode);
+      return group?.values.find((v) => v.code === valueCode)?.name;
+    };
+
     addToCart(
       {
         id:          selectedVariant.id,
@@ -393,6 +412,9 @@ export function ProductActions({
         price:       selectedVariant.price / 100,
         imageUrl:    productImageUrl,
         variantName: selectedVariant.name,
+        shape:       getAttributeLabel("shape"),
+        length:      getAttributeLabel("length"),
+        size:        getAttributeLabel("size"),
       },
       quantity
     );
