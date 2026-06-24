@@ -36,6 +36,7 @@ interface InventoryItem {
   reservedQuantity: number;
   availableStock: number;
   status: "in-stock" | "low-stock" | "out-of-stock";
+  imageUrl?: string | null;
 }
 
 interface TransactionLog {
@@ -385,13 +386,26 @@ export default function AdminInventoryPage() {
                         >
                           {/* Product details */}
                           <td className="py-3 px-4">
-                            <div className="space-y-0.5">
-                              <span className="font-semibold text-foreground text-xs leading-normal block">
-                                {item.productName}
-                              </span>
-                              <span className="text-[10px] text-muted-foreground font-light block">
-                                {item.variantName}
-                              </span>
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-xl bg-secondary/50 border border-border/60 overflow-hidden shrink-0 flex items-center justify-center">
+                                {item.imageUrl ? (
+                                  <img 
+                                    src={item.imageUrl} 
+                                    alt={item.productName} 
+                                    className="w-full h-full object-cover" 
+                                  />
+                                ) : (
+                                  <Boxes className="w-4 h-4 text-muted-foreground/45" />
+                                )}
+                              </div>
+                              <div className="space-y-0.5">
+                                <span className="font-semibold text-foreground text-xs leading-normal block">
+                                  {item.productName}
+                                </span>
+                                <span className="text-[10px] text-muted-foreground font-light block">
+                                  {item.variantName}
+                                </span>
+                              </div>
                             </div>
                           </td>
 

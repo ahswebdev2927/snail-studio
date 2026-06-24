@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { inventoryItems, inventoryReservations, inventoryTransactions, productVariants, products } from "@/db/schema";
+import { inventoryItems, inventoryReservations, inventoryTransactions, productVariants, products, productMedia, media } from "@/db/schema";
 import { eq, gt, lt, inArray, and, or, like, desc, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
@@ -265,11 +265,14 @@ export async function getInventoryItems(params: { q?: string; status?: string } 
       productSlug: products.slug,
       productId: products.id,
       reservedQuantity: sql<number>`COALESCE(${activeReservationsSubquery.reservedQuantity}, 0)`.mapWith(Number),
+      imageUrl: media.url,
     })
     .from(inventoryItems)
     .innerJoin(productVariants, eq(inventoryItems.variantId, productVariants.id))
     .innerJoin(products, eq(productVariants.productId, products.id))
-    .leftJoin(activeReservationsSubquery, eq(inventoryItems.id, activeReservationsSubquery.inventoryItemId));
+    .leftJoin(activeReservationsSubquery, eq(inventoryItems.id, activeReservationsSubquery.inventoryItemId))
+    .leftJoin(productMedia, and(eq(products.id, productMedia.productId), eq(productMedia.isFeatured, true)))
+    .leftJoin(media, eq(productMedia.mediaId, media.id));
 
   // If search query is provided
   if (q && q.trim() !== "") {
