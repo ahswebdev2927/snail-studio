@@ -88,9 +88,15 @@ export function ProductTabs({ description }: ProductTabsProps) {
               <h3 className="font-serif text-2xl font-normal text-foreground">
                 About This Nail Set
               </h3>
-              <p className="text-sm text-muted-foreground leading-loose font-light whitespace-pre-wrap">
-                {description || "No description provided for this product set. Snail Studio luxury press-on nails are handcrafted to perfection."}
-              </p>
+              <div className="text-sm text-muted-foreground leading-loose font-light">
+                {description ? (
+                  parseDescription(description)
+                ) : (
+                  <p className="text-sm text-muted-foreground leading-loose font-light">
+                    No description provided for this product set. Snail Studio luxury press-on nails are handcrafted to perfection.
+                  </p>
+                )}
+              </div>
             </div>
 
             <div className="border-t border-border/20 pt-8">
@@ -343,4 +349,254 @@ export function ProductTabs({ description }: ProductTabsProps) {
       </div>
     </div>
   );
+}
+
+/* -----------------------------------------------------------------------
+ * Markdown & HTML parser helper for product description
+ * --------------------------------------------------------------------- */
+function parseDescription(text: string): React.ReactNode {
+  // Check if it looks like HTML (contains HTML tags like <p>, <div>, <ul>, etc.)
+  const isHtml = /<[a-z][\s\S]*>/i.test(text);
+  if (isHtml) {
+    return (
+      <div 
+        className="pdp-description-content" 
+        dangerouslySetInnerHTML={{ __html: text }} 
+      />
+    );
+  }
+  return <div className="pdp-description-content">{parseMarkdown(text)}</div>;
+}
+
+function parseMarkdown(text: string): React.ReactNode {
+  const lines = text.split("\n");
+  const elements: React.ReactNode[] = [];
+  let elementCounter = 0;
+  
+  let listItems: string[] = [];
+  let orderedListItems: string[] = [];
+  let tableHeaders: string[] = [];
+  let tableRows: string[][] = [];
+
+  const flushList = () => {
+    if (listItems.length > 0) {
+      elements.push(
+        <ul key={`list-${elementCounter++}`} className="list-disc pl-5 my-4 space-y-1.5 text-sm text-muted-foreground font-light leading-relaxed">
+          {listItems.map((item, idx) => (
+            <li key={`li-${idx}`}>{parseInlineMarkdown(item)}</li>
+          ))}
+        </ul>
+      );
+      listItems = [];
+    }
+  };
+
+  const flushOrderedList = () => {
+    if (orderedListItems.length > 0) {
+      elements.push(
+        <ol key={`ol-${elementCounter++}`} className="list-decimal pl-5 my-4 space-y-1.5 text-sm text-muted-foreground font-light leading-relaxed">
+          {orderedListItems.map((item, idx) => (
+            <li key={`oli-${idx}`}>{parseInlineMarkdown(item)}</li>
+          ))}
+        </ol>
+      );
+      orderedListItems = [];
+    }
+  };
+
+  const flushTable = () => {
+    if (tableHeaders.length > 0 || tableRows.length > 0) {
+      elements.push(
+        <div key={`table-wrapper-${elementCounter++}`} className="overflow-x-auto my-6 border border-border/30 rounded-2xl">
+          <table className="w-full text-xs text-left border-collapse">
+            {tableHeaders.length > 0 && (
+              <thead>
+                <tr className="bg-secondary/40 border-b border-border/30">
+                  {tableHeaders.map((h, idx) => (
+                    <th key={`th-${idx}`} className="px-4 py-3 font-semibold text-foreground">
+                      {parseInlineMarkdown(h)}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+            )}
+            <tbody>
+              {tableRows.map((row, rIdx) => (
+                <tr key={`tr-${rIdx}`} className="border-b border-border/20 last:border-0 hover:bg-secondary/10 transition-colors">
+                  {row.map((cell, cIdx) => (
+                    <td key={`td-${cIdx}`} className="px-4 py-3 text-muted-foreground font-light font-sans">
+                      {parseInlineMarkdown(cell)}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
+      tableHeaders = [];
+      tableRows = [];
+    }
+  };
+
+  const flushAll = () => {
+    flushList();
+    flushOrderedList();
+    flushTable();
+  };
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+
+    let processedLine = line;
+    if (processedLine.includes("<br")) {
+      processedLine = processedLine.replace(/<br\s*\/?>/gi, "");
+    }
+
+    // Handle Tables
+    if (processedLine.startsWith("|")) {
+      flushList();
+      flushOrderedList();
+      
+      const cells = processedLine
+        .split("|")
+        .map(c => c.trim())
+        .filter((_, idx, arr) => idx > 0 && idx < arr.length - 1);
+
+      const isSeparator = cells.every(c => /^:?-+:?$/.test(c));
+      
+      if (isSeparator) {
+        continue;
+      }
+
+      if (tableHeaders.length === 0 && tableRows.length === 0) {
+        tableHeaders = cells;
+      } else {
+        tableRows.push(cells);
+      }
+      continue;
+    } else {
+      flushTable();
+    }
+
+    // Handle Ordered Lists
+    const orderedMatch = processedLine.match(/^(\d+)\.\s+(.*)/);
+    if (orderedMatch) {
+      flushList();
+      flushTable();
+      orderedListItems.push(orderedMatch[2]);
+      continue;
+    } else {
+      flushOrderedList();
+    }
+
+    // Handle Unordered Lists
+    if (processedLine.startsWith("- ") || processedLine.startsWith("* ")) {
+      flushOrderedList();
+      flushTable();
+      listItems.push(processedLine.substring(2));
+      continue;
+    } else {
+      flushList();
+    }
+
+    // Handle Headers
+    if (processedLine.startsWith("# ")) {
+      flushAll();
+      elements.push(
+        <h1 key={`h1-${elementCounter++}`} className="font-serif text-2xl font-normal text-foreground mt-6 mb-4">
+          {parseInlineMarkdown(processedLine.substring(2))}
+        </h1>
+      );
+      continue;
+    }
+    
+    if (processedLine.startsWith("## ")) {
+      flushAll();
+      elements.push(
+        <h2 key={`h2-${elementCounter++}`} className="font-serif text-lg font-normal text-foreground mt-6 mb-3 border-b border-border/10 pb-1.5">
+          {parseInlineMarkdown(processedLine.substring(3))}
+        </h2>
+      );
+      continue;
+    }
+
+    if (processedLine.startsWith("### ")) {
+      flushAll();
+      elements.push(
+        <h3 key={`h3-${elementCounter++}`} className="font-serif text-base font-normal text-foreground mt-4 mb-2">
+          {parseInlineMarkdown(processedLine.substring(4))}
+        </h3>
+      );
+      continue;
+    }
+
+    // Handle Horizontal Rules
+    if (processedLine === "---" || processedLine === "***" || processedLine === "___") {
+      flushAll();
+      elements.push(<hr key={`hr-${elementCounter++}`} className="border-border/30 my-6" />);
+      continue;
+    }
+
+    // Handle empty lines
+    if (processedLine === "") {
+      flushAll();
+      elements.push(<div key={`empty-${elementCounter++}`} className="h-2" />);
+      continue;
+    }
+
+    // Default paragraph
+    flushAll();
+    elements.push(
+      <p key={`p-${elementCounter++}`} className="text-sm text-muted-foreground leading-loose font-light mb-4">
+        {parseInlineMarkdown(processedLine)}
+      </p>
+    );
+  }
+
+  flushAll();
+
+  return <div className="space-y-1">{elements}</div>;
+}
+
+function parseInlineMarkdown(text: string): React.ReactNode[] {
+  const parts: React.ReactNode[] = [];
+  let remaining = text;
+  let keyIdx = 0;
+
+  remaining = remaining
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&nbsp;/g, " ");
+
+  while (remaining) {
+    const boldIndex = remaining.indexOf("**");
+    
+    if (boldIndex === -1) {
+      parts.push(remaining);
+      break;
+    }
+
+    if (boldIndex > 0) {
+      parts.push(remaining.substring(0, boldIndex));
+    }
+
+    const nextBoldIndex = remaining.indexOf("**", boldIndex + 2);
+    if (nextBoldIndex === -1) {
+      parts.push(remaining.substring(boldIndex));
+      break;
+    }
+
+    const boldText = remaining.substring(boldIndex + 2, nextBoldIndex);
+    parts.push(
+      <strong key={`b-${keyIdx++}`} className="font-semibold text-foreground">
+        {boldText}
+      </strong>
+    );
+
+    remaining = remaining.substring(nextBoldIndex + 2);
+  }
+
+  return parts;
 }

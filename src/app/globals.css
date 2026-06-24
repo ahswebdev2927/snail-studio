@@ -137,3 +137,47 @@ body {
 .fade-in {
   animation-name: fadeIn;
 }
+
+/* Premium Product Description Styling (supports Markdown output and raw HTML) */
+.pdp-description-content {
+  h1 {
+    @apply font-serif text-2xl font-normal text-foreground mt-6 mb-4;
+  }
+  h2 {
+    @apply font-serif text-lg font-normal text-foreground mt-6 mb-3 border-b border-border/20 pb-1.5;
+  }
+  h3 {
+    @apply font-serif text-base font-normal text-foreground mt-4 mb-2;
+  }
+  p {
+    @apply text-sm text-muted-foreground leading-loose font-light mb-4;
+  }
+  ul {
+    @apply list-disc pl-5 my-4 space-y-1.5 text-sm text-muted-foreground font-light leading-relaxed;
+  }
+  ol {
+    @apply list-decimal pl-5 my-4 space-y-1.5 text-sm text-muted-foreground font-light leading-relaxed;
+  }
+  hr {
+    @apply border-border/30 my-6;
+  }
+  table {
+    @apply w-full text-xs text-left border-collapse my-6 border border-border/30 rounded-2xl overflow-hidden;
+  }
+  thead {
+    @apply bg-secondary/40 border-b border-border/30;
+  }
+  th {
+    @apply px-4 py-3 font-semibold text-foreground;
+  }
+  tr {
+    @apply border-b border-border/20 last:border-0 hover:bg-secondary/10 transition-colors;
+  }
+  td {
+    @apply px-4 py-3 text-muted-foreground font-light font-sans;
+  }
+  strong {
+    @apply font-semibold text-foreground;
+  }
+}
+
