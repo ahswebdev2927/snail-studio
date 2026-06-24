@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { ProductSearchItem } from "@/services/search/fuse-search.service";
+import { SearchResponse } from "@/services/search/product-search.service";
 import { FilterSidebar, FilterState } from "@/features/catalog/filter-sidebar";
 import { FilterDrawer } from "@/features/catalog/filter-drawer";
 import { SearchBar } from "@/features/catalog/search-bar";
@@ -74,18 +76,18 @@ export default function ShopCatalog() {
   const initialQ = searchParams.get("q") || "";
   const initialCategory = searchParams.get("category") || undefined;
   const initialAvailability = searchParams.get("availability") === "in_stock" ? "in_stock" : undefined;
-  const initialSort = (searchParams.get("sort") || "relevance") as any;
+  const initialSort = (searchParams.get("sort") || "relevance") as "relevance" | "price_asc" | "price_desc" | "newest" | "best_selling" | "featured" | "alpha_asc" | "alpha_desc";
   const initialPage = parseInt(searchParams.get("page") || "1", 10);
   const initialMinPrice = searchParams.get("minPrice") ? parseInt(searchParams.get("minPrice")!, 10) : undefined;
   const initialMaxPrice = searchParams.get("maxPrice") ? parseInt(searchParams.get("maxPrice")!, 10) : undefined;
   const initialRating = searchParams.get("rating") ? parseInt(searchParams.get("rating")!, 10) : undefined;
 
-  const parseArray = (name: string) => {
+  const parseArray = useCallback((name: string) => {
     const val = searchParams.get(name);
     if (!val) return undefined;
     const arr = val.split(",").map((x) => x.trim()).filter(Boolean);
     return arr.length > 0 ? arr : undefined;
-  };
+  }, [searchParams]);
 
   // 2. React State management
   const [searchQuery, setSearchQuery] = useState(initialQ);
@@ -105,8 +107,8 @@ export default function ShopCatalog() {
     rating: initialRating,
   });
 
-  const [data, setData] = useState<any>(null);
-  const [productsList, setProductsList] = useState<any[]>([]);
+  const [data, setData] = useState<SearchResponse | null>(null);
+  const [productsList, setProductsList] = useState<ProductSearchItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -114,7 +116,7 @@ export default function ShopCatalog() {
   // Navigation and Grid Layout customization controls
   const [navMode, setNavMode] = useState<"pagination" | "infinite_scroll">("pagination");
   const [gridCols, setGridCols] = useState<2 | 3 | 4>(3);
-  const [recommendations, setRecommendations] = useState<any[]>([]);
+  const [recommendations, setRecommendations] = useState<ProductSearchItem[]>([]);
 
   // Track latest state values in refs to prevent stale closures while keeping dependency array minimal
   const filtersRef = useRef(filters);
@@ -122,10 +124,12 @@ export default function ShopCatalog() {
   const pageRef = useRef(page);
   const sortRef = useRef(sort);
 
-  filtersRef.current = filters;
-  searchQueryRef.current = searchQuery;
-  pageRef.current = page;
-  sortRef.current = sort;
+  useEffect(() => {
+    filtersRef.current = filters;
+    searchQueryRef.current = searchQuery;
+    pageRef.current = page;
+    sortRef.current = sort;
+  }, [filters, searchQuery, page, sort]);
 
   // Sync state with URL search params when they change (e.g. from Mega Menu click)
   useEffect(() => {
@@ -134,7 +138,7 @@ export default function ShopCatalog() {
       setSearchQuery(nextQ);
     }
 
-    const nextSort = searchParams.get("sort") || "relevance";
+    const nextSort = (searchParams.get("sort") || "relevance") as "relevance" | "price_asc" | "price_desc" | "newest" | "best_selling" | "featured" | "alpha_asc" | "alpha_desc";
     if (sortRef.current !== nextSort) {
       setSort(nextSort);
     }
@@ -161,7 +165,7 @@ export default function ShopCatalog() {
     if (!areFiltersEqual(filtersRef.current, nextFilters)) {
       setFilters(nextFilters);
     }
-  }, [searchParams]);
+  }, [searchParams, parseArray]);
 
   // 3. Fetch search results from API when parameters change
   useEffect(() => {
@@ -187,11 +191,23 @@ export default function ShopCatalog() {
             if (isMore) {
               setProductsList((prev) => {
                 const existingIds = new Set(prev.map((p) => p.id));
-                const filteredNew = newProducts.filter((p: any) => !existingIds.has(p.id));
+                const filteredNew = newProducts.filter((p: { id: string }) => !existingIds.has(p.id));
                 return [...prev, ...filteredNew];
               });
             } else {
               setProductsList(newProducts);
+            }
+
+            // Log search query for analytics on page 1 of new searches
+            if (searchQuery.trim() && page === 1) {
+              fetch("/api/search/log", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  query: searchQuery.trim(),
+                  resultsCount: json.pagination?.totalItems || newProducts.length,
+                }),
+              }).catch((e) => console.error("Failed to log catalog search query:", e));
             }
           }
         }
@@ -311,7 +327,7 @@ export default function ShopCatalog() {
     setProductsList([]);
   };
 
-  const handleSortChange = (val: string) => {
+  const handleSortChange = (val: "relevance" | "price_asc" | "price_desc" | "newest" | "best_selling" | "featured" | "alpha_asc" | "alpha_desc") => {
     if (sort === val) return;
     setIsLoading(true);
     setSort(val);
@@ -424,7 +440,7 @@ export default function ShopCatalog() {
                 <ArrowUpDown className="w-3.5 h-3.5 text-muted-foreground/80 mr-2" />
                 <select
                   value={sort}
-                  onChange={(e) => handleSortChange(e.target.value)}
+                  onChange={(e) => handleSortChange(e.target.value as "relevance" | "price_asc" | "price_desc" | "newest" | "best_selling" | "featured" | "alpha_asc" | "alpha_desc")}
                   className="bg-transparent text-xs font-medium pr-6 outline-none appearance-none cursor-pointer border-none text-foreground"
                 >
                   <option value="relevance">Sort: Relevance</option>
@@ -528,7 +544,7 @@ export default function ShopCatalog() {
                   {[2, 3, 4].map((cols) => (
                     <button
                       key={cols}
-                      onClick={() => setGridCols(cols as any)}
+                      onClick={() => setGridCols(cols as 2 | 3 | 4)}
                       className={`p-1.5 rounded-full transition-all duration-300 cursor-pointer ${
                         gridCols === cols
                           ? "bg-primary/20 text-primary"
@@ -587,7 +603,7 @@ export default function ShopCatalog() {
                 )}
                 {page >= pagination.totalPages && productsList.length > 0 && (
                   <p className="text-xs text-muted-foreground/60 font-light italic">
-                    You've viewed all {pagination.totalItems} luxury nail sets
+                    You&apos;ve viewed all {pagination.totalItems} luxury nail sets
                   </p>
                 )}
               </div>

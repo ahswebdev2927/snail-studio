@@ -50,6 +50,13 @@
       "when": 1781947109994,
       "tag": "0006_large_the_fury",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1782282621484,
+      "tag": "0007_odd_norman_osborn",
+      "breakpoints": true
     }
   ]
 }
