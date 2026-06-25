@@ -54,7 +54,7 @@ export function AccountNav({ user }: AccountNavProps) {
     },
     {
       name: "Wishlist",
-      href: "/wishlist",
+      href: "/account/wishlist",
       icon: Heart,
       exact: false
     },

@@ -262,3 +262,219 @@ export async function generateDemoOrder() {
     return { success: false, error: error.message || "Failed to generate demo order" };
   }
 }
+
+export async function getUserAddresses() {
+  try {
+    const user = await getAuthUser();
+    if (!user) return { success: false, error: "Unauthorized" };
+
+    const addresses = await db.query.userAddresses.findMany({
+      where: eq(userAddresses.userId, user.id),
+      orderBy: [desc(userAddresses.isDefault), desc(userAddresses.createdAt)],
+    });
+
+    return { success: true, addresses };
+  } catch (error: any) {
+    console.error("Failed to fetch user addresses:", error);
+    return { success: false, error: error.message || "Failed to fetch user addresses" };
+  }
+}
+
+export async function saveUserAddress(data: {
+  id?: string;
+  type: "shipping" | "billing";
+  name: string;
+  phone: string;
+  addressLine1: string;
+  addressLine2?: string | null;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
+  isDefault: boolean;
+}) {
+  try {
+    const user = await getAuthUser();
+    if (!user) return { success: false, error: "Unauthorized" };
+
+    const now = new Date();
+
+    // If setting as default, clear default status for other addresses of this type
+    if (data.isDefault) {
+      await db
+        .update(userAddresses)
+        .set({ isDefault: false, updatedAt: now })
+        .where(
+          and(
+            eq(userAddresses.userId, user.id),
+            eq(userAddresses.type, data.type)
+          )
+        );
+    }
+
+    if (data.id) {
+      // Security Check: Make sure the address belongs to the user
+      const existing = await db.query.userAddresses.findFirst({
+        where: and(
+          eq(userAddresses.id, data.id),
+          eq(userAddresses.userId, user.id)
+        ),
+      });
+
+      if (!existing) {
+        return { success: false, error: "Address not found or unauthorized access." };
+      }
+
+      // Update address
+      await db
+        .update(userAddresses)
+        .set({
+          type: data.type,
+          name: data.name,
+          phone: data.phone,
+          addressLine1: data.addressLine1,
+          addressLine2: data.addressLine2 || null,
+          city: data.city,
+          state: data.state,
+          postalCode: data.postalCode,
+          country: data.country,
+          isDefault: data.isDefault,
+          updatedAt: now,
+        })
+        .where(eq(userAddresses.id, data.id));
+    } else {
+      // Enforce limit of 5 saved addresses
+      const userAddressesCount = await db
+        .select({ val: count(userAddresses.id) })
+        .from(userAddresses)
+        .where(eq(userAddresses.userId, user.id));
+
+      const addressCount = userAddressesCount[0]?.val || 0;
+      if (addressCount >= 5) {
+        return {
+          success: false,
+          error: "You have reached the maximum limit of 5 saved addresses. Please delete an existing address to add a new one.",
+        };
+      }
+
+      // Insert new address
+      const addressId = `addr_${nanoid(10)}`;
+      await db.insert(userAddresses).values({
+        id: addressId,
+        userId: user.id,
+        type: data.type,
+        name: data.name,
+        phone: data.phone,
+        addressLine1: data.addressLine1,
+        addressLine2: data.addressLine2 || null,
+        city: data.city,
+        state: data.state,
+        postalCode: data.postalCode,
+        country: data.country,
+        isDefault: data.isDefault,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+
+    revalidatePath("/account/addresses");
+    revalidatePath("/account");
+    return { success: true };
+  } catch (error: any) {
+    console.error("Failed to save address:", error);
+    return { success: false, error: error.message || "Failed to save address" };
+  }
+}
+
+export async function deleteUserAddress(addressId: string) {
+  try {
+    const user = await getAuthUser();
+    if (!user) return { success: false, error: "Unauthorized" };
+
+    // Security check: Verify the user owns this address
+    const existing = await db.query.userAddresses.findFirst({
+      where: and(
+        eq(userAddresses.id, addressId),
+        eq(userAddresses.userId, user.id)
+      ),
+    });
+
+    if (!existing) {
+      return { success: false, error: "Address not found or unauthorized access." };
+    }
+
+    // Delete the address
+    await db.delete(userAddresses).where(eq(userAddresses.id, addressId));
+
+    // If the deleted address was default, promote the first remaining address to default
+    if (existing.isDefault) {
+      const firstRemaining = await db.query.userAddresses.findFirst({
+        where: and(
+          eq(userAddresses.userId, user.id),
+          eq(userAddresses.type, existing.type)
+        ),
+        orderBy: [desc(userAddresses.createdAt)],
+      });
+
+      if (firstRemaining) {
+        await db
+          .update(userAddresses)
+          .set({ isDefault: true, updatedAt: new Date() })
+          .where(eq(userAddresses.id, firstRemaining.id));
+      }
+    }
+
+    revalidatePath("/account/addresses");
+    revalidatePath("/account");
+    return { success: true };
+  } catch (error: any) {
+    console.error("Failed to delete address:", error);
+    return { success: false, error: error.message || "Failed to delete address" };
+  }
+}
+
+export async function setDefaultAddress(addressId: string, type: "shipping" | "billing") {
+  try {
+    const user = await getAuthUser();
+    if (!user) return { success: false, error: "Unauthorized" };
+
+    // Security check
+    const existing = await db.query.userAddresses.findFirst({
+      where: and(
+        eq(userAddresses.id, addressId),
+        eq(userAddresses.userId, user.id)
+      ),
+    });
+
+    if (!existing) {
+      return { success: false, error: "Address not found or unauthorized access." };
+    }
+
+    const now = new Date();
+
+    // Clear other defaults
+    await db
+      .update(userAddresses)
+      .set({ isDefault: false, updatedAt: now })
+      .where(
+        and(
+          eq(userAddresses.userId, user.id),
+          eq(userAddresses.type, type)
+        )
+      );
+
+    // Set this one as default
+    await db
+      .update(userAddresses)
+      .set({ isDefault: true, updatedAt: now })
+      .where(eq(userAddresses.id, addressId));
+
+    revalidatePath("/account/addresses");
+    revalidatePath("/account");
+    return { success: true };
+  } catch (error: any) {
+    console.error("Failed to set default address:", error);
+    return { success: false, error: error.message || "Failed to set default address" };
+  }
+}
+
