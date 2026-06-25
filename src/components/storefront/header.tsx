@@ -413,7 +413,7 @@ export function Header({ navigationData }: HeaderProps) {
 
             {/* Profile / Admin Login Link */}
             <Link
-              href="/admin"
+              href="/account"
               className="p-2 rounded-full text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-all"
               aria-label="User Account"
             >
