@@ -29,6 +29,9 @@ export interface CheckoutParams {
     country: string;
   };
   notes?: string;
+  couponCode?: string;
+  discountAmount?: number;
+  shippingAmount?: number;
 }
 
 export interface CheckoutResult {
@@ -93,7 +96,10 @@ export async function processCheckout(params: CheckoutParams): Promise<CheckoutR
         cartItems: orderItemsData,
         shippingAddress: params.shippingAddress,
         billingAddress: params.billingAddress,
-        notes: params.notes
+        notes: params.notes,
+        couponCode: params.couponCode,
+        discountAmount: params.discountAmount,
+        shippingAmount: params.shippingAmount
       },
       tx
     );

@@ -10,6 +10,11 @@ export default function AdminGeneralSettingsPage() {
   const [storeEmail, setStoreEmail] = useState("hello@snailstudio.com");
   const [storePhone, setStorePhone] = useState("+91 99999 99999");
 
+  // Shipping Configuration State
+  const [shippingStandardFee, setShippingStandardFee] = useState("99");
+  const [shippingFreeThreshold, setShippingFreeThreshold] = useState("1500");
+  const [shippingExpressFee, setShippingExpressFee] = useState("250");
+
   // Global State
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -30,6 +35,9 @@ export default function AdminGeneralSettingsPage() {
         if (data.store_slug) setStoreSlug(data.store_slug);
         if (data.store_email) setStoreEmail(data.store_email);
         if (data.store_phone) setStorePhone(data.store_phone);
+        if (data.shipping_standard_fee) setShippingStandardFee(data.shipping_standard_fee);
+        if (data.shipping_free_threshold) setShippingFreeThreshold(data.shipping_free_threshold);
+        if (data.shipping_express_fee) setShippingExpressFee(data.shipping_express_fee);
       } else {
         showStatus("error", "Failed to retrieve configuration settings.");
       }
@@ -62,6 +70,9 @@ export default function AdminGeneralSettingsPage() {
           store_slug: storeSlug,
           store_email: storeEmail,
           store_phone: storePhone,
+          shipping_standard_fee: shippingStandardFee,
+          shipping_free_threshold: shippingFreeThreshold,
+          shipping_express_fee: shippingExpressFee,
         }),
       });
 
@@ -182,6 +193,60 @@ export default function AdminGeneralSettingsPage() {
                 value={storePhone}
                 onChange={(e) => setStorePhone(e.target.value)}
                 placeholder="+91 99999 99999"
+                className="w-full px-4 py-2.5 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none transition-all text-foreground"
+              />
+            </div>
+          </div>
+
+          <hr className="border-border/40 my-6" />
+
+          <div className="space-y-1 pb-2">
+            <h3 className="font-serif text-sm font-normal text-foreground">Shipping Configuration</h3>
+            <p className="text-[10px] text-muted-foreground font-light">
+              Configure flat shipping rates and free delivery thresholds in Rupees (₹).
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                Standard Shipping Fee (₹)
+              </label>
+              <input
+                type="number"
+                required
+                min="0"
+                value={shippingStandardFee}
+                onChange={(e) => setShippingStandardFee(e.target.value)}
+                placeholder="99"
+                className="w-full px-4 py-2.5 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none transition-all text-foreground"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                Free Shipping Threshold (₹)
+              </label>
+              <input
+                type="number"
+                required
+                min="0"
+                value={shippingFreeThreshold}
+                onChange={(e) => setShippingFreeThreshold(e.target.value)}
+                placeholder="1500"
+                className="w-full px-4 py-2.5 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none transition-all text-foreground"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                Express Shipping Fee (₹)
+              </label>
+              <input
+                type="number"
+                required
+                min="0"
+                value={shippingExpressFee}
+                onChange={(e) => setShippingExpressFee(e.target.value)}
+                placeholder="250"
                 className="w-full px-4 py-2.5 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none transition-all text-foreground"
               />
             </div>

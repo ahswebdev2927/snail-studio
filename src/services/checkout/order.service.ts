@@ -42,6 +42,9 @@ export async function createPendingOrder(
       country: string;
     };
     notes?: string;
+    couponCode?: string;
+    discountAmount?: number;
+    shippingAmount?: number;
   },
   tx?: any
 ) {
@@ -54,15 +57,20 @@ export async function createPendingOrder(
     subtotal += item.quantity * item.price;
   }
 
+  const shipping = params.shippingAmount || 0;
+  const discount = params.discountAmount || 0;
+  const total = Math.max(0, subtotal + shipping - discount);
+
   // 1. Insert order record
   await client.insert(orders).values({
     id: orderId,
     userId: params.userId,
     status: "pending",
-    totalAmount: subtotal,
+    totalAmount: total,
     taxAmount: 0,
-    shippingAmount: 0,
-    discountAmount: 0,
+    shippingAmount: shipping,
+    discountAmount: discount,
+    couponCode: params.couponCode || null,
     notes: params.notes || null,
   });
 
