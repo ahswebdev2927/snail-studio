@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { orders, orderItems, orderAddresses, orderStatusHistory } from "@/db/schema";
+import { orders, orderItems, orderAddresses, orderStatusHistory, users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { sendMail } from "@/services/email/email.service";
@@ -124,6 +124,35 @@ export async function createPendingOrder(
     status: "pending",
     notes: "Order initiated in checkout state machine.",
   });
+
+  // EMAIL NOTIFICATION TRIGGER: Order Placed
+  (async () => {
+    try {
+      if (params.userId) {
+        const userRecord = await db.query.users.findFirst({
+          where: eq(users.id, params.userId),
+        });
+        const userEmail = userRecord?.email;
+        if (userEmail) {
+          const html = getOrderStatusUpdateTemplate({
+            customerName: userRecord.name || "Customer",
+            orderId,
+            newStatus: "pending",
+            statusNotes: "Your order has been successfully placed and is awaiting payment verification.",
+            updatedAt: new Date(),
+          });
+          await sendMail({
+            to: userEmail,
+            subject: `Order Placed - Snail Studio (#${orderId})`,
+            html,
+            templateName: "order_status_update",
+          });
+        }
+      }
+    } catch (err) {
+      console.error("[Email Trigger Error] Failed to send Order Placed email:", err);
+    }
+  })();
 
   return {
     id: orderId,

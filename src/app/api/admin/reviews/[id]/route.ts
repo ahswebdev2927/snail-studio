@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { reviews } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { reviews, reviewImages, media } from "@/db/schema";
+import { eq, inArray } from "drizzle-orm";
 import { authorize } from "@/middleware/auth";
 import { z } from "zod";
+import { deleteFromCloudinary } from "@/lib/cloudinary/uploader";
 
 const patchSchema = z.object({
   isApproved: z.boolean(),
@@ -96,11 +97,40 @@ export async function DELETE(
       return NextResponse.json({ error: "Review not found" }, { status: 404 });
     }
 
-    await db.delete(reviews).where(eq(reviews.id, reviewId));
+    // Fetch associated review images and their media details
+    const reviewImagesList = await db.query.reviewImages.findMany({
+      where: eq(reviewImages.reviewId, reviewId),
+      with: {
+        media: true,
+      },
+    });
+
+    // Run review deletion inside transaction to ensure atomicity
+    await db.transaction(async (tx) => {
+      // 1. Delete review (will cascade to reviewImages automatically)
+      await tx.delete(reviews).where(eq(reviews.id, reviewId));
+      
+      // 2. Delete media records from database
+      const mediaIds = reviewImagesList.map((ri) => ri.mediaId).filter(Boolean);
+      if (mediaIds.length > 0) {
+        await tx.delete(media).where(inArray(media.id, mediaIds));
+      }
+    });
+
+    // 3. Delete from Cloudinary (after transaction commits successfully)
+    for (const ri of reviewImagesList) {
+      if (ri.media && ri.media.publicId) {
+        try {
+          await deleteFromCloudinary(ri.media.publicId);
+        } catch (err) {
+          console.error(`Failed to delete Cloudinary asset ${ri.media.publicId} for review ${reviewId}:`, err);
+        }
+      }
+    }
 
     return NextResponse.json({
       success: true,
-      message: "Review deleted successfully",
+      message: "Review and associated media deleted successfully",
     }, { status: 200 });
 
   } catch (error: any) {

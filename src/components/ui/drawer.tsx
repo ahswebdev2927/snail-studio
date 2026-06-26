@@ -1,4 +1,7 @@
+"use client";
+
 import * as React from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -19,6 +22,12 @@ export function Drawer({
   className,
   closeOnOverlayClick = true,
 }: DrawerProps) {
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
   // Lock body scroll when drawer is open
   React.useEffect(() => {
     if (isOpen) {
@@ -46,7 +55,7 @@ export function Drawer({
     };
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted) return null;
 
   // Slide animations & positioning styles based on 'side'
   const sideStyles = {
@@ -56,8 +65,8 @@ export function Drawer({
     bottom: "bottom-0 left-0 right-0 max-h-[80vh] border-t rounded-t-[2.5rem] animate-in slide-in-from-bottom duration-300",
   };
 
-  return (
-    <div className="fixed inset-0 z-100 flex overflow-hidden">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex overflow-hidden">
       {/* Backdrop overlay */}
       <div
         className="fixed inset-0 bg-background/60 backdrop-blur-md transition-opacity duration-300 animate-in fade-in"
@@ -85,7 +94,8 @@ export function Drawer({
 
         {children}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

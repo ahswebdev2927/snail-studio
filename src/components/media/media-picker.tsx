@@ -50,6 +50,7 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
   const [altText, setAltText] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
 
   const fetchMedia = async () => {
     setIsLoading(true);
@@ -103,6 +104,7 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
 
     setUploadError("");
     setIsUploading(true);
+    setUploadProgress(0);
 
     try {
       const fileType = uploadFile.type.startsWith("video/") ? "video" : "image";
@@ -143,17 +145,42 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
       }
 
       const cloudUrl = `https://api.cloudinary.com/v1_1/${signData.cloudName}/${fileType}/upload`;
-      const cloudRes = await fetch(cloudUrl, {
-        method: "POST",
-        body: formData,
+      
+      const cloudData = await new Promise<any>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", cloudUrl, true);
+
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable) {
+            const percent = Math.round((event.loaded / event.total) * 100);
+            setUploadProgress(percent);
+          }
+        };
+
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            try {
+              const res = JSON.parse(xhr.responseText);
+              resolve(res);
+            } catch (err) {
+              reject(new Error("Failed to parse Cloudinary response."));
+            }
+          } else {
+            try {
+              const res = JSON.parse(xhr.responseText);
+              reject(new Error(res.error?.message || "Failed to upload file to Cloudinary."));
+            } catch {
+              reject(new Error("Failed to upload file to Cloudinary."));
+            }
+          }
+        };
+
+        xhr.onerror = () => {
+          reject(new Error("Network error during Cloudinary upload."));
+        };
+
+        xhr.send(formData);
       });
-
-      if (!cloudRes.ok) {
-        const cloudErr = await cloudRes.json();
-        throw new Error(cloudErr.error?.message || "Failed to upload file to Cloudinary.");
-      }
-
-      const cloudData = await cloudRes.json();
 
       const regRes = await fetch("/api/media/register", {
         method: "POST",
@@ -194,6 +221,7 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
       setUploadError(err.message || "Something went wrong during upload.");
     } finally {
       setIsUploading(false);
+      setUploadProgress(null);
     }
   };
 
@@ -367,7 +395,8 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
                 type="file"
                 accept="image/*,video/*"
                 onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
-                className="absolute inset-0 opacity-0 cursor-pointer"
+                disabled={isUploading}
+                className="absolute inset-0 opacity-0 cursor-pointer disabled:cursor-not-allowed"
               />
               <Upload className="w-10 h-10 text-neutral-400 group-hover:text-primary transition-colors duration-200 mb-2" />
               {uploadFile ? (
@@ -391,6 +420,21 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
               )}
             </div>
 
+            {uploadProgress !== null && (
+              <div className="w-full space-y-1.5 animate-fade-in bg-secondary/15 border border-border/40 p-3.5 rounded-2xl">
+                <div className="flex justify-between text-xs font-semibold text-foreground">
+                  <span className="truncate max-w-[80%]">{uploadFile?.name}</span>
+                  <span>{uploadProgress}%</span>
+                </div>
+                <div className="w-full h-2 bg-secondary/60 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-primary transition-all duration-300 ease-out rounded-full" 
+                    style={{ width: `${uploadProgress}%` }}
+                  />
+                </div>
+              </div>
+            )}
+ 
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-medium text-foreground/80">
                 Destination Folder
@@ -398,7 +442,8 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
               <select
                 value={uploadFolder}
                 onChange={(e: any) => setUploadFolder(e.target.value)}
-                className="w-full px-4 py-2 border border-border bg-secondary/30 text-foreground text-sm rounded-xl focus:outline-none focus:ring-1 focus:ring-primary"
+                disabled={isUploading}
+                className="w-full px-4 py-2 border border-border bg-secondary/30 text-foreground text-sm rounded-xl focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
               >
                 <option value="products/images" className="bg-card text-foreground">Product Images</option>
                 <option value="products/videos" className="bg-card text-foreground">Product Videos</option>
@@ -406,7 +451,7 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
                 <option value="categories/banners" className="bg-card text-foreground">Category Banners</option>
               </select>
             </div>
-
+ 
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-medium text-foreground/80">
                 Alt Text (SEO & Accessibility)
@@ -416,7 +461,8 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
                 placeholder="Describe this media..."
                 value={altText}
                 onChange={(e) => setAltText(e.target.value)}
-                className="w-full px-4 py-2 border border-border bg-secondary/30 text-foreground text-sm rounded-xl focus:outline-none focus:ring-1 focus:ring-primary"
+                disabled={isUploading}
+                className="w-full px-4 py-2 border border-border bg-secondary/30 text-foreground text-sm rounded-xl focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-60 disabled:cursor-not-allowed"
               />
             </div>
 

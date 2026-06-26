@@ -38,9 +38,14 @@ export async function GET(
       where: (p, { eq }) => eq(p.orderId, orderId),
     });
 
-    // Also fetch associated shipments
+    // Also fetch associated shipments with their events
     const shipments = await db.query.shipments.findMany({
       where: (s, { eq }) => eq(s.orderId, orderId),
+      with: {
+        events: {
+          orderBy: (e, { desc }) => [desc(e.timestamp)],
+        },
+      },
     });
 
     return NextResponse.json({

@@ -1,4 +1,7 @@
+"use client";
+
 import * as React from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "./button";
@@ -18,6 +21,12 @@ export function Modal({
   className,
   closeOnOverlayClick = true,
 }: ModalProps) {
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
   // Lock body scroll when modal is open
   React.useEffect(() => {
     if (isOpen) {
@@ -45,10 +54,10 @@ export function Modal({
     };
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted) return null;
 
-  return (
-    <div className="fixed inset-0 z-100 overflow-y-auto flex items-center justify-center p-4 sm:p-6 md:p-10">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] overflow-y-auto flex items-center justify-center p-4 sm:p-6 md:p-10">
       {/* Backdrop overlay */}
       <div
         className="fixed inset-0 bg-background/60 backdrop-blur-md transition-opacity duration-300 animate-in fade-in"
@@ -75,9 +84,11 @@ export function Modal({
 
         {children}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
+
 
 export function ModalHeader({
   className,

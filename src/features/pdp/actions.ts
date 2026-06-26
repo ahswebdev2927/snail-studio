@@ -1,11 +1,13 @@
 "use server";
 
 import { db } from "@/db";
-import { wishlists, wishlistItems, orders, orderItems, productVariants, reviews } from "@/db/schema";
+import { wishlists, wishlistItems, orders, orderItems, productVariants, reviews, media, reviewImages } from "@/db/schema";
 import { eq, and, inArray } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { getSessionUser } from "@/lib/auth/session";
 import { nanoid } from "nanoid";
+import { generateUploadSignature } from "@/lib/cloudinary/signatures";
+import { SignedUploadResponse } from "@/lib/cloudinary/types";
 
 /**
  * Helper to get the current authenticated session user from cookies
@@ -135,7 +137,16 @@ export async function submitProductReview(
   productId: string,
   rating: number,
   title: string,
-  comment: string
+  comment: string,
+  images?: {
+    url: string;
+    publicId: string;
+    fileName?: string;
+    fileSize?: number;
+    format?: string;
+    width?: number;
+    height?: number;
+  }[]
 ) {
   try {
     const user = await getAuthUser();
@@ -215,15 +226,42 @@ export async function submitProductReview(
       };
     }
 
-    // 4. Save review in database
-    await db.insert(reviews).values({
-      id: nanoid(),
-      productId,
-      userId: user.id,
-      rating,
-      title,
-      comment,
-      isApproved: false, // Moderated by default
+    // 4. Save review and images in database transaction
+    await db.transaction(async (tx) => {
+      const reviewId = nanoid();
+      await tx.insert(reviews).values({
+        id: reviewId,
+        productId,
+        userId: user.id,
+        rating,
+        title,
+        comment,
+        isApproved: false, // Moderated by default
+      });
+
+      if (images && images.length > 0) {
+        for (const img of images) {
+          const mediaId = `med_${nanoid(15)}`;
+          await tx.insert(media).values({
+            id: mediaId,
+            url: img.url,
+            publicId: img.publicId,
+            fileName: img.fileName || null,
+            fileSize: img.fileSize || null,
+            format: img.format || null,
+            width: img.width || null,
+            height: img.height || null,
+            resourceType: "image",
+            folder: "reviews/images",
+            altText: `${user.name || "User"}'s review image for ${productId}`,
+          });
+
+          await tx.insert(reviewImages).values({
+            reviewId,
+            mediaId,
+          });
+        }
+      }
     });
 
     return {
@@ -233,5 +271,26 @@ export async function submitProductReview(
   } catch (error: any) {
     console.error("Error submitting review:", error);
     return { success: false, error: error.message || "Failed to submit review" };
+  }
+}
+
+/**
+ * Generates a secure signature for direct client-side review photo uploads to Cloudinary.
+ */
+export async function getReviewImageUploadSignature(): Promise<
+  | ({ success: true } & SignedUploadResponse)
+  | { success: false; error: string }
+> {
+  try {
+    const user = await getAuthUser();
+    if (!user) {
+      return { success: false, error: "You must be logged in to upload images." };
+    }
+
+    const signatureConfig = generateUploadSignature("reviews/images", "image");
+    return { success: true, ...signatureConfig };
+  } catch (error: any) {
+    console.error("Error generating upload signature for review:", error);
+    return { success: false, error: error.message || "Failed to generate upload signature." };
   }
 }

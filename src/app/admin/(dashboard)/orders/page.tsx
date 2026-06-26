@@ -97,6 +97,13 @@ interface OrderDetail {
     status: string;
     shippedAt: string | null;
     estimatedDeliveryAt: string | null;
+    events?: {
+      id: string;
+      status: string;
+      location: string | null;
+      description: string | null;
+      timestamp: string;
+    }[];
   }[];
 }
 
@@ -114,6 +121,22 @@ export default function AdminOrdersPage() {
   const [updateStatus, setUpdateStatus] = useState<string>("");
   const [updateNotes, setUpdateNotes] = useState<string>("");
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+
+  // Shipment Specific Form States
+  const [shipCarrier, setShipCarrier] = useState("Delhivery");
+  const [shipTrackingNumber, setShipTrackingNumber] = useState("");
+  const [shipEstDelivery, setShipEstDelivery] = useState("");
+  const [isCreatingShipment, setIsCreatingShipment] = useState(false);
+
+  const [updateShipStatus, setUpdateShipStatus] = useState("pickup_requested");
+  const [updateShipLocation, setUpdateShipLocation] = useState("");
+  const [updateShipDescription, setUpdateShipDescription] = useState("");
+  const [isUpdatingShipment, setIsUpdatingShipment] = useState(false);
+  const [isCancellingShipment, setIsCancellingShipment] = useState(false);
+
+  // Label and Invoice Print Preview Modals
+  const [showPrintLabel, setShowPrintLabel] = useState(false);
+  const [showPrintInvoice, setShowPrintInvoice] = useState(false);
 
   // Load orders
   const loadOrders = async () => {
@@ -195,6 +218,97 @@ export default function AdminOrdersPage() {
       alert("An unexpected error occurred.");
     } finally {
       setIsUpdatingStatus(false);
+    }
+  };
+
+  const handleCreateShipment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedOrderId || !shipCarrier || !shipTrackingNumber) return;
+
+    setIsCreatingShipment(true);
+    try {
+      const res = await fetch(`/api/admin/orders/${selectedOrderId}/shipment`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          carrier: shipCarrier,
+          trackingNumber: shipTrackingNumber,
+          estimatedDeliveryAt: shipEstDelivery || null,
+        }),
+      });
+
+      if (res.ok) {
+        setShipTrackingNumber("");
+        setShipEstDelivery("");
+        await loadOrderDetail(selectedOrderId);
+        await loadOrders();
+      } else {
+        const err = await res.json();
+        alert(`Failed to generate shipment: ${err.error || "Server error"}`);
+      }
+    } catch (error) {
+      console.error("Error creating shipment:", error);
+      alert("An unexpected error occurred.");
+    } finally {
+      setIsCreatingShipment(false);
+    }
+  };
+
+  const handleUpdateShipmentStatus = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedOrderId || !updateShipStatus) return;
+
+    setIsUpdatingShipment(true);
+    try {
+      const res = await fetch(`/api/admin/orders/${selectedOrderId}/shipment`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: updateShipStatus,
+          location: updateShipLocation.trim() || null,
+          description: updateShipDescription.trim() || null,
+        }),
+      });
+
+      if (res.ok) {
+        setUpdateShipLocation("");
+        setUpdateShipDescription("");
+        await loadOrderDetail(selectedOrderId);
+        await loadOrders();
+      } else {
+        const err = await res.json();
+        alert(`Failed to update shipment: ${err.error || "Server error"}`);
+      }
+    } catch (error) {
+      console.error("Error updating shipment status:", error);
+      alert("An unexpected error occurred.");
+    } finally {
+      setIsUpdatingShipment(false);
+    }
+  };
+
+  const handleCancelShipment = async () => {
+    if (!selectedOrderId) return;
+    if (!confirm("Are you sure you want to cancel and delete this parcel shipment? This reverts the order state and cancels delivery.")) return;
+
+    setIsCancellingShipment(true);
+    try {
+      const res = await fetch(`/api/admin/orders/${selectedOrderId}/shipment`, {
+        method: "DELETE",
+      });
+
+      if (res.ok) {
+        await loadOrderDetail(selectedOrderId);
+        await loadOrders();
+      } else {
+        const err = await res.json();
+        alert(`Failed to cancel shipment: ${err.error || "Server error"}`);
+      }
+    } catch (error) {
+      console.error("Error cancelling shipment:", error);
+      alert("An unexpected error occurred.");
+    } finally {
+      setIsCancellingShipment(false);
     }
   };
 
@@ -593,27 +707,189 @@ export default function AdminOrdersPage() {
                         <Truck className="w-3.5 h-3.5" />
                         Parcel Shipments
                       </h4>
-                      <div className="border border-border/25 rounded-2xl p-4.5 space-y-2.5">
-                        {orderDetail.shipments.length === 0 ? (
+                      {orderDetail.shipments.length === 0 ? (
+                        <div className="border border-border/25 rounded-2xl p-4.5 space-y-4">
                           <p className="text-xs text-muted-foreground font-light italic">No active parcel waybill generated.</p>
-                        ) : (
-                          orderDetail.shipments.map((ship) => (
-                            <div key={ship.id} className="text-xs font-light space-y-1">
-                              <div className="flex justify-between font-semibold">
-                                <span className="text-foreground">{ship.carrier}</span>
-                                <span className="text-blue-500 uppercase text-[10px]">{ship.status}</span>
-                              </div>
-                              <p className="text-[10px] text-muted-foreground font-mono">Waybill: {ship.trackingNumber}</p>
-                              {ship.shippedAt && (
-                                <p className="text-[10px] text-muted-foreground">Dispatched: {formatDate(ship.shippedAt)}</p>
-                              )}
-                              {ship.estimatedDeliveryAt && (
-                                <p className="text-[10px] text-muted-foreground">Est. Delivery: {formatDate(ship.estimatedDeliveryAt)}</p>
-                              )}
+                          
+                          <form onSubmit={handleCreateShipment} className="space-y-3 pt-2 border-t border-border/10">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-primary block">Create Parcel Shipment</span>
+                            
+                            <div className="space-y-1">
+                              <label className="text-[8px] uppercase font-bold text-muted-foreground">Select Courier</label>
+                              <select
+                                value={shipCarrier}
+                                onChange={(e) => setShipCarrier(e.target.value)}
+                                className="w-full px-2.5 py-1.5 bg-background border border-border rounded-xl text-xs font-light text-foreground focus:outline-none focus:border-primary"
+                              >
+                                <option value="Delhivery">Delhivery</option>
+                                <option value="BlueDart">BlueDart</option>
+                                <option value="NimbusPost">NimbusPost</option>
+                                <option value="Shiprocket">Shiprocket</option>
+                                <option value="Local Courier">Local Courier</option>
+                                <option value="Self Delivery">Self Delivery / Store Pickup</option>
+                              </select>
                             </div>
-                          ))
-                        )}
-                      </div>
+
+                            <div className="space-y-1">
+                              <label className="text-[8px] uppercase font-bold text-muted-foreground">Waybill / Tracking Number</label>
+                              <input
+                                type="text"
+                                required
+                                placeholder="e.g. TRK9876543210"
+                                value={shipTrackingNumber}
+                                onChange={(e) => setShipTrackingNumber(e.target.value)}
+                                className="w-full px-2.5 py-1.5 bg-background border border-border rounded-xl text-xs font-light text-foreground focus:outline-none focus:border-primary"
+                              />
+                            </div>
+
+                            <div className="space-y-1">
+                              <label className="text-[8px] uppercase font-bold text-muted-foreground">Est. Delivery Date</label>
+                              <input
+                                type="date"
+                                value={shipEstDelivery}
+                                onChange={(e) => setShipEstDelivery(e.target.value)}
+                                className="w-full px-2.5 py-1.5 bg-background border border-border rounded-xl text-xs font-light text-foreground focus:outline-none focus:border-primary"
+                              />
+                            </div>
+
+                            <button
+                              type="submit"
+                              disabled={isCreatingShipment}
+                              className="w-full py-2 bg-primary text-primary-foreground hover:bg-primary/95 disabled:bg-muted disabled:text-muted-foreground rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1 mt-1.5"
+                            >
+                              {isCreatingShipment ? "Generating..." : "Generate Waybill"}
+                            </button>
+                          </form>
+                        </div>
+                      ) : (
+                        <div className="border border-border/25 rounded-2xl p-4.5 space-y-4">
+                          {orderDetail.shipments.map((ship) => (
+                            <div key={ship.id} className="space-y-4">
+                              {/* Header Info */}
+                              <div className="text-xs font-light space-y-1 bg-secondary/25 border border-border/20 rounded-xl p-3">
+                                <div className="flex justify-between font-semibold">
+                                  <span className="text-foreground">{ship.carrier}</span>
+                                  <span className="text-blue-500 uppercase text-[10px]">{ship.status.replace(/_/g, " ")}</span>
+                                </div>
+                                <p className="text-[10px] text-muted-foreground font-mono">Waybill: {ship.trackingNumber}</p>
+                                {ship.shippedAt && (
+                                  <p className="text-[10px] text-muted-foreground">Dispatched: {formatDate(ship.shippedAt)}</p>
+                                )}
+                                {ship.estimatedDeliveryAt && (
+                                  <p className="text-[10px] text-muted-foreground">Est. Delivery: {formatDate(ship.estimatedDeliveryAt)}</p>
+                                )}
+                              </div>
+
+                              {/* Print Documents Actions */}
+                              <div className="flex gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => setShowPrintLabel(true)}
+                                  className="flex-1 py-1.5 bg-secondary hover:bg-muted text-[9px] font-bold uppercase tracking-wider rounded-lg border border-border text-foreground transition-all cursor-pointer text-center"
+                                >
+                                  Print Label
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setShowPrintInvoice(true)}
+                                  className="flex-1 py-1.5 bg-secondary hover:bg-muted text-[9px] font-bold uppercase tracking-wider rounded-lg border border-border text-foreground transition-all cursor-pointer text-center"
+                                >
+                                  Print Invoice
+                                </button>
+                              </div>
+
+                              {/* Events List */}
+                              <div className="space-y-2 border-t border-border/10 pt-3">
+                                <span className="text-[9px] uppercase font-bold text-muted-foreground tracking-wider block">Shipment History</span>
+                                {ship.events && ship.events.length > 0 ? (
+                                  <div className="space-y-3.5 pl-2.5 border-l border-border/30 ml-1">
+                                    {ship.events.map((evt) => (
+                                      <div key={evt.id} className="relative text-[10px] leading-relaxed">
+                                        <div className="absolute -left-[14.5px] top-1.5 w-1.5 h-1.5 rounded-full bg-blue-500" />
+                                        <div className="flex justify-between items-center text-[9px] text-muted-foreground font-mono">
+                                          <span className="uppercase font-bold tracking-wide text-[8px]">{evt.status.replace(/_/g, " ")}</span>
+                                          <span>{new Date(evt.timestamp).toLocaleDateString("en-IN", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
+                                        </div>
+                                        {evt.location && <p className="font-semibold text-foreground text-[9px]">Location: {evt.location}</p>}
+                                        {evt.description && <p className="text-muted-foreground text-[9px] font-light italic mt-0.5">{evt.description}</p>}
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <p className="text-[10px] text-muted-foreground font-light italic">No events logged.</p>
+                                )}
+                              </div>
+
+                              {/* Update Shipment Status Form */}
+                              <form onSubmit={handleUpdateShipmentStatus} className="space-y-3 border-t border-border/10 pt-3">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-primary block">Update Shipment Event</span>
+                                
+                                <div className="space-y-1">
+                                  <label className="text-[8px] uppercase font-bold text-muted-foreground">Select Status</label>
+                                  <select
+                                    value={updateShipStatus}
+                                    onChange={(e) => setUpdateShipStatus(e.target.value)}
+                                    className="w-full px-2.5 py-1.5 bg-background border border-border rounded-xl text-xs font-light text-foreground focus:outline-none focus:border-primary"
+                                  >
+                                    <option value="pickup_requested">Pickup Requested</option>
+                                    <option value="pickup_scheduled">Pickup Scheduled</option>
+                                    <option value="pickup_completed">Pickup Completed (Dispatched)</option>
+                                    <option value="in_transit">In Transit</option>
+                                    <option value="reached_destination_hub">Reached Hub</option>
+                                    <option value="out_for_delivery">Out For Delivery</option>
+                                    <option value="delivered">Delivered</option>
+                                    <option value="delivery_attempted">Delivery Attempted</option>
+                                    <option value="delivery_failed">Delivery Failed</option>
+                                    <option value="rto_initiated">RTO Initiated</option>
+                                    <option value="cancelled">Cancel Shipment</option>
+                                  </select>
+                                </div>
+
+                                <div className="space-y-1">
+                                  <label className="text-[8px] uppercase font-bold text-muted-foreground">Current Hub Location</label>
+                                  <input
+                                    type="text"
+                                    placeholder="e.g. Mumbai Hub, Delhi Sorting"
+                                    value={updateShipLocation}
+                                    onChange={(e) => setUpdateShipLocation(e.target.value)}
+                                    className="w-full px-2.5 py-1.5 bg-background border border-border rounded-xl text-xs font-light text-foreground focus:outline-none focus:border-primary"
+                                  />
+                                </div>
+
+                                <div className="space-y-1">
+                                  <label className="text-[8px] uppercase font-bold text-muted-foreground">Shipment Note / Description</label>
+                                  <textarea
+                                    placeholder="e.g. Package arrived at Mumbai hub."
+                                    value={updateShipDescription}
+                                    onChange={(e) => setUpdateShipDescription(e.target.value)}
+                                    rows={2}
+                                    className="w-full px-2.5 py-1.5 bg-background border border-border rounded-xl text-xs font-light text-foreground focus:outline-none focus:border-primary resize-none"
+                                  />
+                                </div>
+
+                                <button
+                                  type="submit"
+                                  disabled={isUpdatingShipment}
+                                  className="w-full py-2 bg-primary text-primary-foreground hover:bg-primary/95 disabled:bg-muted disabled:text-muted-foreground rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1 mt-1"
+                                >
+                                  {isUpdatingShipment ? "Updating..." : "Add Event Update"}
+                                </button>
+                              </form>
+
+                              {/* Cancel Shipment button */}
+                              <button
+                                type="button"
+                                onClick={handleCancelShipment}
+                                disabled={isCancellingShipment}
+                                className="w-full py-2 border border-rose-500/30 text-rose-500 hover:bg-rose-500/10 disabled:bg-muted disabled:text-muted-foreground rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer text-center mt-2"
+                              >
+                                {isCancellingShipment ? "Cancelling..." : "Cancel Shipment"}
+                              </button>
+
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
 
                     {/* Notes by User */}
@@ -711,6 +987,225 @@ export default function AdminOrdersPage() {
                 </form>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Shipping Label Print Overlay */}
+      {showPrintLabel && orderDetail && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background/90 backdrop-blur-sm p-4">
+          <div className="bg-white border border-slate-300 shadow-2xl p-6 rounded-2xl w-full max-w-sm text-slate-900 font-sans print:p-0 print:border-0 print:shadow-none">
+            <div className="flex justify-between items-center pb-4 border-b border-slate-200 print:hidden">
+              <h3 className="font-semibold text-sm text-slate-800">Print Shipping Label</h3>
+              <button
+                onClick={() => setShowPrintLabel(false)}
+                className="p-1 rounded-full hover:bg-slate-100 text-slate-500 hover:text-slate-700 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Label Layout */}
+            <div className="py-6 space-y-6 text-xs leading-relaxed border-2 border-slate-950 p-4 rounded-lg my-4 bg-white">
+              {/* Header */}
+              <div className="flex justify-between items-start border-b border-slate-400 pb-3">
+                <div>
+                  <h4 className="font-bold text-sm tracking-wide">SNAIL STUDIO</h4>
+                  <p className="text-[8px] text-slate-500 font-light">Luxury Handcrafted Press-On Nails</p>
+                </div>
+                <span className="px-2 py-0.5 border border-slate-950 font-bold text-[8px] uppercase tracking-wider rounded">
+                  {orderDetail.shipments?.[0]?.carrier || "EXPRESS"}
+                </span>
+              </div>
+
+              {/* Barcode Mock */}
+              <div className="space-y-1 text-center">
+                <div className="h-10 bg-slate-950 w-full flex gap-[1px] px-2 items-center justify-center overflow-hidden">
+                  {Array.from({ length: 48 }).map((_, i) => (
+                    <div 
+                      key={i} 
+                      style={{ 
+                        width: i % 3 === 0 ? "4px" : i % 5 === 0 ? "1px" : "2px" 
+                      }} 
+                      className="bg-white h-full" 
+                    />
+                  ))}
+                </div>
+                <p className="font-mono text-[9px] tracking-widest font-bold">
+                  {orderDetail.shipments?.[0]?.trackingNumber || "TRK9876543210"}
+                </p>
+              </div>
+
+              {/* Addresses Grid */}
+              <div className="space-y-4 pt-2 text-[11px]">
+                <div>
+                  <span className="text-[8px] font-bold uppercase tracking-wider text-slate-500 block">SHIP TO:</span>
+                  {orderDetail.addresses.filter(a => a.type === "shipping").map((addr) => (
+                    <div key={addr.id} className="font-bold">
+                      <p>{addr.name}</p>
+                      <p>{addr.addressLine1}</p>
+                      {addr.addressLine2 && <p>{addr.addressLine2}</p>}
+                      <p>{addr.city}, {addr.state} - {addr.postalCode}</p>
+                      <p className="text-[9px] font-mono mt-0.5">Contact: {addr.phone}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="border-t border-slate-200 pt-2 text-[9px] text-slate-500">
+                  <span className="text-[7px] font-bold uppercase tracking-wider text-slate-400 block">RETURN ADDRESS:</span>
+                  <p className="font-bold text-slate-600">Snail Studio Warehouse</p>
+                  <p>12, Park Street Sector 2</p>
+                  <p>Mumbai, Maharashtra - 400001</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-3 pt-2 print:hidden">
+              <button
+                onClick={() => window.print()}
+                className="flex-1 py-2 bg-slate-900 text-white hover:bg-slate-800 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer text-center"
+              >
+                Print Label
+              </button>
+              <button
+                onClick={() => setShowPrintLabel(false)}
+                className="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer text-center"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Invoice Print Overlay */}
+      {showPrintInvoice && orderDetail && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background/90 backdrop-blur-sm p-4">
+          <div className="bg-white border border-slate-300 shadow-2xl p-6 rounded-2xl w-full max-w-xl text-slate-900 font-sans print:p-0 print:border-0 print:shadow-none max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center pb-4 border-b border-slate-200 print:hidden">
+              <h3 className="font-semibold text-sm text-slate-800">Print Store Invoice</h3>
+              <button
+                onClick={() => setShowPrintInvoice(false)}
+                className="p-1 rounded-full hover:bg-slate-100 text-slate-500 hover:text-slate-700 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Invoice Layout */}
+            <div className="py-6 space-y-6 text-xs leading-relaxed bg-white">
+              <div className="flex justify-between items-start border-b border-slate-200 pb-4">
+                <div>
+                  <h4 className="font-serif text-lg font-bold tracking-wide">Snail Studio</h4>
+                  <p className="text-[9px] text-slate-500">Luxury Press-On Nails Store</p>
+                </div>
+                <div className="text-right">
+                  <h3 className="font-bold text-sm">INVOICE</h3>
+                  <p className="font-mono text-[9px] text-slate-500">Order ID: #{orderDetail.id}</p>
+                  <p className="text-[9px] text-slate-500">Date: {formatDate(orderDetail.createdAt)}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-6 text-[10px]">
+                <div>
+                  <span className="font-bold text-slate-500 uppercase tracking-wider block mb-1">Billed To:</span>
+                  {orderDetail.addresses.filter(a => a.type === "billing").map((addr) => (
+                    <div key={addr.id} className="font-medium">
+                      <p className="font-bold">{addr.name}</p>
+                      <p>{addr.addressLine1}</p>
+                      {addr.addressLine2 && <p>{addr.addressLine2}</p>}
+                      <p>{addr.city}, {addr.state} - {addr.postalCode}</p>
+                      <p>{addr.country}</p>
+                      <p>Phone: {addr.phone}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <div>
+                  <span className="font-bold text-slate-500 uppercase tracking-wider block mb-1">Shipped To:</span>
+                  {orderDetail.addresses.filter(a => a.type === "shipping").map((addr) => (
+                    <div key={addr.id} className="font-medium">
+                      <p className="font-bold">{addr.name}</p>
+                      <p>{addr.addressLine1}</p>
+                      {addr.addressLine2 && <p>{addr.addressLine2}</p>}
+                      <p>{addr.city}, {addr.state} - {addr.postalCode}</p>
+                      <p>{addr.country}</p>
+                      <p>Phone: {addr.phone}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <table className="w-full border-collapse text-left text-[10px]">
+                <thead>
+                  <tr className="border-b border-slate-300 text-slate-500 font-bold uppercase">
+                    <th className="py-2">Item Name / Option</th>
+                    <th className="py-2 text-center">Qty</th>
+                    <th className="py-2 text-right">Unit Price</th>
+                    <th className="py-2 text-right">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {orderDetail.items.map((item) => (
+                    <tr key={item.id} className="border-b border-slate-100">
+                      <td className="py-2.5">
+                        <p className="font-bold text-slate-800">{item.variant?.name || "Product Variant Removed"}</p>
+                        <p className="text-[9px] text-slate-500">SKU: {item.variant?.sku || "N/A"}</p>
+                      </td>
+                      <td className="py-2.5 text-center font-semibold text-slate-800">{item.quantity}</td>
+                      <td className="py-2.5 text-right text-slate-600">{(item.price / 100).toFixed(2)}</td>
+                      <td className="py-2.5 text-right font-bold text-slate-800">{((item.price * item.quantity) / 100).toFixed(2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              <div className="flex justify-end pt-2">
+                <div className="w-64 space-y-1.5 text-[10px]">
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Subtotal</span>
+                    <span className="font-medium text-slate-800">
+                      {(orderDetail.items.reduce((sum, item) => sum + (item.price * item.quantity), 0) / 100).toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Shipping Fee</span>
+                    <span className="font-medium text-slate-800">{(orderDetail.shippingAmount / 100).toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Tax GST (18%)</span>
+                    <span className="font-medium text-slate-800">{(orderDetail.taxAmount / 100).toFixed(2)}</span>
+                  </div>
+                  {orderDetail.discountAmount > 0 && (
+                    <div className="flex justify-between text-emerald-600 font-bold">
+                      <span>Discount</span>
+                      <span>-{(orderDetail.discountAmount / 100).toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div className="pt-2 border-t border-slate-300 flex justify-between text-xs font-bold text-slate-900">
+                    <span>Grand Total (INR)</span>
+                    <span>₹{(orderDetail.totalAmount / 100).toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-3 pt-4 border-t border-slate-200 print:hidden">
+              <button
+                onClick={() => window.print()}
+                className="flex-1 py-2 bg-slate-900 text-white hover:bg-slate-800 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer text-center"
+              >
+                Print Invoice
+              </button>
+              <button
+                onClick={() => setShowPrintInvoice(false)}
+                className="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer text-center"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}

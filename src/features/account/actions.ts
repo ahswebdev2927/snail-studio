@@ -20,6 +20,8 @@ import { getSessionUser } from "@/lib/auth/session";
 import { nanoid } from "nanoid";
 import { revalidatePath } from "next/cache";
 import crypto from "crypto";
+import { generateUploadSignature } from "@/lib/cloudinary/signatures";
+import { SignedUploadResponse } from "@/lib/cloudinary/types";
 
 
 async function getAuthUser() {
@@ -38,6 +40,8 @@ export async function getCurrentUser() {
       name: user.name,
       email: user.email,
       role: user.role,
+      image: user.image,
+      phoneNumber: user.phoneNumber,
     };
   } catch (err) {
     return null;
@@ -547,6 +551,24 @@ export async function updateUserProfile(data: {
   } catch (error: any) {
     console.error("Failed to update profile:", error);
     return { success: false, error: error.message || "Failed to update profile" };
+  }
+}
+
+export async function getAvatarUploadSignature(): Promise<
+  | ({ success: true } & SignedUploadResponse)
+  | { success: false; error: string }
+> {
+  try {
+    const user = await getAuthUser();
+    if (!user) {
+      return { success: false, error: "Unauthorized" };
+    }
+
+    const signatureConfig = generateUploadSignature("customers/avatars", "image");
+    return { success: true, ...signatureConfig };
+  } catch (error: any) {
+    console.error("Error generating upload signature for avatar:", error);
+    return { success: false, error: error.message || "Failed to generate upload signature." };
   }
 }
 

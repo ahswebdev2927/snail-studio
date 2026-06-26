@@ -125,6 +125,11 @@ export default async function ProductPage({
     ),
     with: {
       user: true,
+      images: {
+        with: {
+          media: true
+        }
+      }
     },
     orderBy: (r, { desc }) => [desc(r.createdAt)],
   });
@@ -152,6 +157,13 @@ export default async function ProductPage({
     createdAt: r.createdAt,
     reviewerName: r.user?.name || "Verified Buyer",
     isVerifiedPurchase: verifiedUserIds.has(r.userId),
+    images: r.images
+      .filter((ri) => ri.media)
+      .map((ri) => ({
+        id: ri.media.id,
+        url: ri.media.url,
+        altText: ri.media.altText,
+      })),
   }));
 
   /* ----- 2.2 User Session Eligibility Check ----- */

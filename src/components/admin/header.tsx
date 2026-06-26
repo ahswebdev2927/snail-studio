@@ -1,14 +1,14 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { usePathname } from "next/navigation";
-import { 
-  Menu, 
-  ChevronLeft, 
-  ChevronRight, 
-  Sun, 
-  Moon, 
-  Bell, 
+import {
+  Menu,
+  ChevronLeft,
+  ChevronRight,
+  Sun,
+  Moon,
+  Bell,
   Search,
   User,
   LogOut,
@@ -19,6 +19,8 @@ import {
 import { cn } from "@/lib/utils";
 import { SessionUser } from "@/lib/auth/session";
 import Link from "next/link";
+import { Modal, ModalHeader, ModalTitle, ModalDescription, ModalFooter } from "@/components/ui/modal";
+import { Button } from "@/components/ui/button";
 
 interface HeaderProps {
   isCollapsed: boolean;
@@ -29,23 +31,73 @@ interface HeaderProps {
   user: SessionUser;
 }
 
-export default function Header({ 
-  isCollapsed, 
-  toggleSidebar, 
-  toggleMobileSidebar, 
-  theme, 
-  toggleTheme, 
-  user 
+export default function Header({
+  isCollapsed,
+  toggleSidebar,
+  toggleMobileSidebar,
+  theme,
+  toggleTheme,
+  user
 }: HeaderProps) {
   const pathname = usePathname();
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
 
+  const profileTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const notificationsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleProfileMouseEnter = () => {
+    if (profileTimeoutRef.current) {
+      clearTimeout(profileTimeoutRef.current);
+      profileTimeoutRef.current = null;
+    }
+    // Immediately close notifications and clear its timer
+    if (notificationsTimeoutRef.current) {
+      clearTimeout(notificationsTimeoutRef.current);
+      notificationsTimeoutRef.current = null;
+    }
+    setNotificationsOpen(false);
+    setProfileDropdownOpen(true);
+  };
+
+  const handleProfileMouseLeave = () => {
+    profileTimeoutRef.current = setTimeout(() => {
+      setProfileDropdownOpen(false);
+    }, 200); // 200ms delay
+  };
+
+  const handleNotificationsMouseEnter = () => {
+    if (notificationsTimeoutRef.current) {
+      clearTimeout(notificationsTimeoutRef.current);
+      notificationsTimeoutRef.current = null;
+    }
+    // Immediately close profile and clear its timer
+    if (profileTimeoutRef.current) {
+      clearTimeout(profileTimeoutRef.current);
+      profileTimeoutRef.current = null;
+    }
+    setProfileDropdownOpen(false);
+    setNotificationsOpen(true);
+  };
+
+  const handleNotificationsMouseLeave = () => {
+    notificationsTimeoutRef.current = setTimeout(() => {
+      setNotificationsOpen(false);
+    }, 200); // 200ms delay
+  };
+
+  useEffect(() => {
+    return () => {
+      if (profileTimeoutRef.current) clearTimeout(profileTimeoutRef.current);
+      if (notificationsTimeoutRef.current) clearTimeout(notificationsTimeoutRef.current);
+    };
+  }, []);
+
   // Derive page title from pathname
   const getPageTitle = () => {
     const segments = pathname.split("/").filter(Boolean);
     if (segments.length <= 1) return "Overview";
-    
+
     // settings/general -> "General Settings"
     if (segments[1] === "settings" && segments[2]) {
       return `${segments[2].charAt(0).toUpperCase() + segments[2].slice(1)} Settings`;
@@ -64,7 +116,16 @@ export default function Header({
     return mainTitle;
   };
 
-  const handleLogout = async () => {
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleLogout = () => {
+    setProfileDropdownOpen(false);
+    setShowLogoutModal(true);
+  };
+
+  const confirmLogout = async () => {
+    setIsLoggingOut(true);
     try {
       const res = await fetch("/api/auth/logout", { method: "POST" });
       if (res.ok) {
@@ -72,6 +133,9 @@ export default function Header({
       }
     } catch (err) {
       console.error("Logout failed:", err);
+    } finally {
+      setIsLoggingOut(false);
+      setShowLogoutModal(false);
     }
   };
 
@@ -82,7 +146,8 @@ export default function Header({
   ];
 
   return (
-    <header className="h-20 sticky top-0 z-30 bg-card/80 backdrop-blur-md border-b border-border/40 flex items-center justify-between px-6 transition-all duration-300">
+    <>
+      <header className="h-20 sticky top-0 z-30 bg-card/80 backdrop-blur-md border-b border-border/40 flex items-center justify-between px-6 transition-all duration-300">
       {/* Left side actions (Sidebar Toggles & Page Title) */}
       <div className="flex items-center gap-4">
         {/* Mobile menu trigger */}
@@ -139,7 +204,11 @@ export default function Header({
         </button>
 
         {/* Notifications Dropdown */}
-        <div className="relative">
+        <div
+          className="relative"
+          onMouseEnter={handleNotificationsMouseEnter}
+          onMouseLeave={handleNotificationsMouseLeave}
+        >
           <button
             onClick={() => {
               setNotificationsOpen(!notificationsOpen);
@@ -153,34 +222,42 @@ export default function Header({
           </button>
 
           {notificationsOpen && (
-            <div className="absolute right-0 mt-3 w-80 bg-card border border-border rounded-2xl shadow-xl py-3 z-50 animate-fade-in">
-              <div className="px-4 pb-2 border-b border-border/40 flex items-center justify-between">
-                <span className="text-xs font-semibold uppercase tracking-wider">
-                  Notifications
-                </span>
-                <span className="text-[10px] text-primary hover:underline cursor-pointer">
-                  Mark all read
-                </span>
+            <>
+              {/* Invisible backdrop click-away (mobile only) */}
+              <div
+                className="fixed inset-0 z-40 cursor-default md:hidden"
+                onClick={() => setNotificationsOpen(false)}
+              />
+
+              <div className="absolute right-0 mt-3 w-80 bg-card border border-border rounded-2xl shadow-xl py-3 z-50 animate-fade-in">
+                <div className="px-4 pb-2 border-b border-border/40 flex items-center justify-between">
+                  <span className="text-xs font-semibold uppercase tracking-wider">
+                    Notifications
+                  </span>
+                  <span className="text-[10px] text-primary hover:underline cursor-pointer">
+                    Mark all read
+                  </span>
+                </div>
+                <div className="max-h-60 overflow-y-auto pt-2">
+                  {notifications.map((n) => (
+                    <div
+                      key={n.id}
+                      className={cn(
+                        "px-4 py-2.5 hover:bg-secondary/35 flex flex-col gap-0.5 cursor-pointer border-b border-border/10 last:border-0",
+                        !n.read && "bg-primary/5 dark:bg-primary/2"
+                      )}
+                    >
+                      <p className="text-xs text-foreground leading-normal font-light">
+                        {n.text}
+                      </p>
+                      <span className="text-[9px] text-muted-foreground">
+                        {n.time}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div className="max-h-60 overflow-y-auto pt-2">
-                {notifications.map((n) => (
-                  <div 
-                    key={n.id} 
-                    className={cn(
-                      "px-4 py-2.5 hover:bg-secondary/35 flex flex-col gap-0.5 cursor-pointer border-b border-border/10 last:border-0",
-                      !n.read && "bg-primary/5 dark:bg-primary/2"
-                    )}
-                  >
-                    <p className="text-xs text-foreground leading-normal font-light">
-                      {n.text}
-                    </p>
-                    <span className="text-[9px] text-muted-foreground">
-                      {n.time}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
+            </>
           )}
         </div>
 
@@ -188,7 +265,11 @@ export default function Header({
         <div className="h-6 w-px bg-border/40 hidden sm:block" />
 
         {/* Profile Dropdown */}
-        <div className="relative">
+        <div
+          className="relative"
+          onMouseEnter={handleProfileMouseEnter}
+          onMouseLeave={handleProfileMouseLeave}
+        >
           <button
             onClick={() => {
               setProfileDropdownOpen(!profileDropdownOpen);
@@ -211,10 +292,10 @@ export default function Header({
 
           {profileDropdownOpen && (
             <>
-              {/* Invisible backdrop click-away */}
-              <div 
-                className="fixed inset-0 z-40 cursor-default" 
-                onClick={() => setProfileDropdownOpen(false)} 
+              {/* Invisible backdrop click-away (mobile only) */}
+              <div
+                className="fixed inset-0 z-40 cursor-default md:hidden"
+                onClick={() => setProfileDropdownOpen(false)}
               />
 
               <div className="absolute right-0 mt-3 w-48 bg-card border border-border rounded-2xl shadow-xl py-2 z-50 animate-fade-in">
@@ -242,13 +323,6 @@ export default function Header({
                   <ExternalLink className="w-4 h-4" />
                   Go to Storefront
                 </Link>
-                <a
-                  href="#"
-                  className="flex items-center gap-2.5 px-4 py-2 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/35 transition-all"
-                >
-                  <HelpCircle className="w-4 h-4" />
-                  Help Docs
-                </a>
                 <div className="border-t border-border/40 my-1.5" />
                 <button
                   onClick={handleLogout}
@@ -263,5 +337,32 @@ export default function Header({
         </div>
       </div>
     </header>
-  );
+
+    <Modal isOpen={showLogoutModal} onClose={() => setShowLogoutModal(false)}>
+      <ModalHeader>
+        <ModalTitle>Confirm Sign Out</ModalTitle>
+        <ModalDescription>
+          Are you sure you want to sign out of the Snail Studio Admin Portal? You will need to sign in again to access the management dashboard, products database, and order logs.
+        </ModalDescription>
+      </ModalHeader>
+      <ModalFooter>
+        <Button
+          variant="outline"
+          onClick={() => setShowLogoutModal(false)}
+          className="w-full sm:w-auto cursor-pointer"
+        >
+          Cancel
+        </Button>
+        <Button
+          variant="destructive"
+          onClick={confirmLogout}
+          isLoading={isLoggingOut}
+          className="w-full sm:w-auto cursor-pointer"
+        >
+          Sign Out
+        </Button>
+      </ModalFooter>
+    </Modal>
+  </>
+);
 }

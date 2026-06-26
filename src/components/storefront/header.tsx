@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -23,6 +23,8 @@ import { Button } from "../ui/button";
 import type { StorefrontNavigation } from "@/services/navigation";
 import { syncWishlistDb } from "@/features/pdp/actions";
 import { getCurrentUser } from "@/features/account/actions";
+import { UserAvatar } from "@/app/(shop)/account/user-avatar";
+import { Modal, ModalHeader, ModalTitle, ModalDescription, ModalFooter } from "../ui/modal";
 
 interface HeaderProps {
   navigationData?: StorefrontNavigation;
@@ -33,8 +35,31 @@ export function Header({ navigationData }: HeaderProps) {
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [nav, setNav] = useState<StorefrontNavigation | null>(navigationData || null);
-  const [currentUser, setCurrentUser] = useState<{ id: string; name: string | null; email: string | null; role: string } | null>(null);
+  const [currentUser, setCurrentUser] = useState<{ id: string; name: string | null; email: string | null; role: string; image: string | null; phoneNumber: string } | null>(null);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const dropdownTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleDropdownMouseEnter = () => {
+    if (dropdownTimeoutRef.current) {
+      clearTimeout(dropdownTimeoutRef.current);
+      dropdownTimeoutRef.current = null;
+    }
+    setUserDropdownOpen(true);
+  };
+
+  const handleDropdownMouseLeave = () => {
+    dropdownTimeoutRef.current = setTimeout(() => {
+      setUserDropdownOpen(false);
+    }, 200); // 200ms delay to bridge the hover gap
+  };
+
+  useEffect(() => {
+    return () => {
+      if (dropdownTimeoutRef.current) {
+        clearTimeout(dropdownTimeoutRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     async function loadUser() {
@@ -48,16 +73,27 @@ export function Header({ navigationData }: HeaderProps) {
     loadUser();
   }, []);
 
-  const handleLogout = async () => {
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleLogout = () => {
+    setUserDropdownOpen(false);
+    setShowLogoutModal(true);
+  };
+
+  const confirmLogout = async () => {
+    setIsLoggingOut(true);
     try {
       const res = await fetch("/api/auth/logout", { method: "POST" });
       if (res.ok) {
         setCurrentUser(null);
-        setUserDropdownOpen(false);
+        setShowLogoutModal(false);
         router.push("/login");
       }
     } catch (err) {
       console.error("Logout failed:", err);
+    } finally {
+      setIsLoggingOut(false);
     }
   };
   
@@ -440,7 +476,11 @@ export function Header({ navigationData }: HeaderProps) {
             </button>
 
             {/* Profile / Admin Login Link Dropdown */}
-            <div className="relative">
+            <div 
+              className="relative"
+              onMouseEnter={handleDropdownMouseEnter}
+              onMouseLeave={handleDropdownMouseLeave}
+            >
               <button
                 onClick={() => setUserDropdownOpen(!userDropdownOpen)}
                 className="p-2 rounded-full text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-all cursor-pointer flex items-center gap-1 focus:outline-hidden"
@@ -452,9 +492,9 @@ export function Header({ navigationData }: HeaderProps) {
 
               {userDropdownOpen && (
                 <>
-                  {/* Invisible backdrop click-away */}
+                  {/* Invisible backdrop click-away (mobile only) */}
                   <div
-                    className="fixed inset-0 z-40 cursor-default"
+                    className="fixed inset-0 z-40 cursor-default md:hidden"
                     onClick={() => setUserDropdownOpen(false)}
                   />
 
@@ -463,18 +503,26 @@ export function Header({ navigationData }: HeaderProps) {
                     {currentUser ? (
                       <>
                         {/* User Header */}
-                        <div className="px-3.5 py-2.5 border-b border-border/10">
-                          <p className="text-xs font-semibold text-foreground truncate">
-                            {currentUser.name || "My Account"}
-                          </p>
-                          <p className="text-[10px] text-muted-foreground truncate font-light mt-0.5">
-                            {currentUser.email}
-                          </p>
-                          {currentUser.role === "admin" && (
-                            <span className="inline-block mt-1.5 px-2 py-0.5 bg-primary/10 text-[8px] font-bold uppercase tracking-wider rounded text-primary">
-                              Admin Account
-                            </span>
-                          )}
+                        <div className="px-3.5 py-2.5 border-b border-border/10 flex items-center gap-2.5">
+                          <UserAvatar
+                            image={currentUser.image}
+                            name={currentUser.name}
+                            phone={currentUser.phoneNumber}
+                            className="w-9 h-9 rounded-xl shadow-inner border border-primary/5 shrink-0"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-semibold text-foreground truncate">
+                              {currentUser.name || "My Account"}
+                            </p>
+                            <p className="text-[10px] text-muted-foreground truncate font-light mt-0.5">
+                              {currentUser.phoneNumber}
+                            </p>
+                            {currentUser.role === "admin" && (
+                              <span className="inline-block mt-1 px-1.5 py-0.5 bg-primary/10 text-[8px] font-bold uppercase tracking-wider rounded text-primary">
+                                Admin Account
+                              </span>
+                            )}
+                          </div>
                         </div>
 
                         {/* Navigation Links */}
@@ -727,6 +775,32 @@ export function Header({ navigationData }: HeaderProps) {
           </Button>
         </DrawerFooter>
       </Drawer>
+
+      <Modal isOpen={showLogoutModal} onClose={() => setShowLogoutModal(false)}>
+        <ModalHeader>
+          <ModalTitle>Confirm Sign Out</ModalTitle>
+          <ModalDescription>
+            Are you sure you want to sign out of Snail Studio? You will need to sign in again to access your wishlist, saved orders, and account profile details.
+          </ModalDescription>
+        </ModalHeader>
+        <ModalFooter>
+          <Button
+            variant="outline"
+            onClick={() => setShowLogoutModal(false)}
+            className="w-full sm:w-auto cursor-pointer"
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={confirmLogout}
+            isLoading={isLoggingOut}
+            className="w-full sm:w-auto cursor-pointer"
+          >
+            Sign Out
+          </Button>
+        </ModalFooter>
+      </Modal>
     </>
   );
 }

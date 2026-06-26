@@ -17,6 +17,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { UserAvatar } from "./user-avatar";
+import { Modal, ModalHeader, ModalTitle, ModalDescription, ModalFooter } from "@/components/ui/modal";
+import { Button } from "@/components/ui/button";
 
 interface AccountNavProps {
   user: {
@@ -73,7 +75,13 @@ export function AccountNav({ user }: AccountNavProps) {
     }
   ];
 
-  const handleLogout = async () => {
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
+  const handleLogout = () => {
+    setShowLogoutConfirm(true);
+  };
+
+  const confirmLogout = async () => {
     setLoggingOut(true);
     try {
       const res = await fetch("/api/auth/logout", { method: "POST" });
@@ -84,6 +92,7 @@ export function AccountNav({ user }: AccountNavProps) {
       console.error("Logout failed:", err);
     } finally {
       setLoggingOut(false);
+      setShowLogoutConfirm(false);
     }
   };
 
@@ -242,6 +251,32 @@ export function AccountNav({ user }: AccountNavProps) {
           </div>
         </div>
       )}
+
+      <Modal isOpen={showLogoutConfirm} onClose={() => setShowLogoutConfirm(false)}>
+        <ModalHeader>
+          <ModalTitle>Confirm Sign Out</ModalTitle>
+          <ModalDescription>
+            Are you sure you want to sign out of Snail Studio? You will need to sign in again to access your wishlist, saved orders, and account profile details.
+          </ModalDescription>
+        </ModalHeader>
+        <ModalFooter>
+          <Button
+            variant="outline"
+            onClick={() => setShowLogoutConfirm(false)}
+            className="w-full sm:w-auto cursor-pointer"
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={confirmLogout}
+            isLoading={loggingOut}
+            className="w-full sm:w-auto cursor-pointer"
+          >
+            Sign Out
+          </Button>
+        </ModalFooter>
+      </Modal>
     </div>
   );
 }

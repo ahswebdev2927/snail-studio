@@ -12,7 +12,9 @@ import {
   ThumbsUp, 
   Heart,
   Eye,
-  AlertCircle
+  AlertCircle,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 
 interface ReviewItem {
@@ -28,6 +30,12 @@ interface ReviewItem {
   reviewerPhone: string | null;
   reviewerEmail: string | null;
   productName: string;
+  isVerifiedPurchase?: boolean;
+  images?: {
+    id: string;
+    url: string;
+    altText: string | null;
+  }[];
 }
 
 export default function AdminReviewsPage() {
@@ -35,6 +43,31 @@ export default function AdminReviewsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [filterMode, setFilterMode] = useState<"all" | "approved" | "pending">("all");
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
+
+  // Lightbox States
+  const [lightboxImages, setLightboxImages] = useState<{ url: string; altText: string | null }[]>([]);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (lightboxIndex === null || lightboxImages.length === 0) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setLightboxIndex(null);
+      } else if (e.key === "ArrowLeft") {
+        setLightboxIndex((prev) =>
+          prev !== null ? (prev - 1 + lightboxImages.length) % lightboxImages.length : null
+        );
+      } else if (e.key === "ArrowRight") {
+        setLightboxIndex((prev) =>
+          prev !== null ? (prev + 1) % lightboxImages.length : null
+        );
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [lightboxIndex, lightboxImages]);
 
   const loadReviews = async () => {
     setIsLoading(true);
@@ -267,13 +300,41 @@ export default function AdminReviewsPage() {
                     <p className="text-xs text-muted-foreground font-light leading-relaxed">
                       {review.comment || <span className="italic">No text description provided.</span>}
                     </p>
+
+                    {/* Review Photos */}
+                    {review.images && review.images.length > 0 && (
+                      <div className="flex flex-wrap gap-2 pt-2">
+                        {review.images.map((img, idx) => (
+                          <button
+                            key={img.id}
+                            type="button"
+                            onClick={() => {
+                              setLightboxImages(review.images || []);
+                              setLightboxIndex(idx);
+                            }}
+                            className="relative w-12 h-12 rounded-lg overflow-hidden border border-border/40 hover:border-primary/40 transition-all cursor-pointer hover:scale-[1.03] duration-200 shrink-0 bg-secondary/10"
+                          >
+                            <img
+                              src={img.url}
+                              alt={img.altText || "Review photo"}
+                              className="w-full h-full object-cover"
+                            />
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
-                  {/* Customer context info */}
-                  <div className="pt-2.5 border-t border-border/20 flex flex-wrap gap-x-5 gap-y-1.5 text-[10px] text-muted-foreground font-light">
+                   {/* Customer context info */}
+                  <div className="pt-2.5 border-t border-border/20 flex flex-wrap gap-x-5 gap-y-1.5 text-[10px] text-muted-foreground font-light items-center">
                     <span className="flex items-center gap-1 text-foreground font-medium">
                       Author: {review.reviewerName || "Shopper"}
                     </span>
+                    {review.isVerifiedPurchase && (
+                      <span className="inline-flex items-center gap-1 text-[9px] font-semibold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 dark:text-emerald-400 dark:bg-emerald-950/30 dark:border-emerald-900/50 uppercase tracking-wider">
+                        <Check className="w-3 h-3 shrink-0" /> Verified Purchase
+                      </span>
+                    )}
                     {review.reviewerPhone && (
                       <span className="font-mono">Phone: {review.reviewerPhone}</span>
                     )}
@@ -321,6 +382,59 @@ export default function AdminReviewsPage() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Lightbox Modal Overlay */}
+      {lightboxIndex !== null && lightboxImages.length > 0 && (
+        <div className="fixed inset-0 z-150 bg-black/90 backdrop-blur-md flex items-center justify-center animate-in fade-in duration-205">
+          {/* Close Area / Click backdrop to close */}
+          <div className="absolute inset-0 cursor-zoom-out" onClick={() => setLightboxIndex(null)} />
+
+          {/* Close Button */}
+          <button
+            onClick={() => setLightboxIndex(null)}
+            className="absolute top-4 right-4 p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all cursor-pointer z-10"
+            aria-label="Close Lightbox"
+          >
+            <X className="w-5 h-5" />
+          </button>
+
+          {/* Main Image Slider Container */}
+          <div className="relative z-5 max-w-4xl max-h-[85vh] w-[90vw] flex items-center justify-center px-4">
+            <img
+              src={lightboxImages[lightboxIndex].url}
+              alt={lightboxImages[lightboxIndex].altText || "Fullscreen review image"}
+              className="max-w-full max-h-[85vh] object-contain rounded-lg select-none"
+            />
+
+            {/* Slide Navigation Counters */}
+            <span className="absolute bottom-[-32px] left-1/2 -translate-x-1/2 text-xs font-semibold text-white/70 tracking-widest uppercase">
+              {lightboxIndex + 1} / {lightboxImages.length}
+            </span>
+
+            {/* Left Nav Button */}
+            {lightboxImages.length > 1 && (
+              <button
+                onClick={() => setLightboxIndex((prev) => (prev !== null ? (prev - 1 + lightboxImages.length) % lightboxImages.length : null))}
+                className="absolute left-2 sm:left-4 p-2 sm:p-3 rounded-full bg-white/10 hover:bg-white/25 text-white transition-all cursor-pointer"
+                aria-label="Previous slide"
+              >
+                <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
+              </button>
+            )}
+
+            {/* Right Nav Button */}
+            {lightboxImages.length > 1 && (
+              <button
+                onClick={() => setLightboxIndex((prev) => (prev !== null ? (prev + 1) % lightboxImages.length : null))}
+                className="absolute right-2 sm:right-4 p-2 sm:p-3 rounded-full bg-white/10 hover:bg-white/25 text-white transition-all cursor-pointer"
+                aria-label="Next slide"
+              >
+                <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
+              </button>
+            )}
+          </div>
         </div>
       )}
     </div>
