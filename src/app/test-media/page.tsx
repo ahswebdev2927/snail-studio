@@ -152,8 +152,8 @@ export default function TestMediaPage() {
         </div>
 
         {showPicker && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-            <div className="w-full max-w-4xl shadow-2xl rounded-2xl bg-white dark:bg-neutral-900">
+          <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 backdrop-blur-sm p-4 flex items-center justify-center">
+            <div className="w-full max-w-4xl shadow-2xl rounded-2xl bg-white dark:bg-neutral-900 my-auto">
               <MediaPicker
                 onSelect={(items) => setSelectedItems(items)}
                 onClose={() => setShowPicker(false)}

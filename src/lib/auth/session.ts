@@ -1,8 +1,10 @@
 import { db } from "@/db";
-import { users } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { users, refreshTokens } from "@/db/schema";
+import { eq, and, isNull, gt } from "drizzle-orm";
 import { verifyAccessToken } from "./jwt";
 import { isBlacklisted } from "./blacklist";
+import { cookies } from "next/headers";
+import crypto from "crypto";
 
 export interface SessionUser {
   id: string;
@@ -19,18 +21,50 @@ export interface SessionUser {
 /**
  * Resolves current user details from a validated access token string.
  * Returns null if the token is invalid, expired, blacklisted, or if the user is inactive/not found.
+ * At runtime, it also validates that the client's refresh token cookie points to an active, unrevoked database session.
  */
 export async function getSessionUser(accessToken: string): Promise<SessionUser | null> {
   try {
     const decoded = verifyAccessToken(accessToken);
 
-    // Verify JTI is not blacklisted
+    // 1. Verify JTI is not blacklisted
     const blacklisted = await isBlacklisted(decoded.jti);
     if (blacklisted) {
       return null;
     }
 
-    // Load user profile
+    // 2. Verify that the refresh token cookie is still active in the database
+    let refreshTokenVal: string | undefined;
+    let cookiesMethodSupported = true;
+    try {
+      const cookieStore = await cookies();
+      refreshTokenVal = cookieStore.get("refreshToken")?.value;
+    } catch (e) {
+      // cookies() is not supported in this context (e.g. static prerendering during build)
+      cookiesMethodSupported = false;
+    }
+
+    if (cookiesMethodSupported) {
+      if (!refreshTokenVal) {
+        return null; // Session cookie is missing at runtime
+      }
+
+      const tokenHash = crypto.createHash("sha256").update(refreshTokenVal).digest("hex");
+      const activeSession = await db.query.refreshTokens.findFirst({
+        where: and(
+          eq(refreshTokens.tokenHash, tokenHash),
+          eq(refreshTokens.userId, decoded.sub),
+          isNull(refreshTokens.revokedAt),
+          gt(refreshTokens.expiresAt, new Date())
+        ),
+      });
+
+      if (!activeSession) {
+        return null; // Session was revoked or expired in the database
+      }
+    }
+
+    // 3. Load user profile
     const user = await db.query.users.findFirst({
       where: eq(users.id, decoded.sub),
     });
@@ -54,3 +88,4 @@ export async function getSessionUser(accessToken: string): Promise<SessionUser |
     return null;
   }
 }
+

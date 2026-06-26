@@ -371,7 +371,7 @@ export default function AdminSizeProfilesPage() {
       {/* Modal Form */}
       {isModalOpen && currentProfile && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 overflow-y-auto">
-          <div className="relative w-full max-w-lg bg-card border border-border/40 rounded-3xl shadow-2xl overflow-hidden my-8">
+          <div className="relative w-full max-w-lg bg-card border border-border/40 rounded-3xl shadow-2xl overflow-hidden my-auto">
             {/* Modal Header */}
             <div className="flex items-center justify-between p-6 border-b border-border/30">
               <h2 className="font-serif text-lg text-foreground font-semibold">

@@ -402,8 +402,8 @@ export default function AdminHeroBannersPage() {
 
       {/* Editor Modal Overlay */}
       {isModalOpen && currentBanner && (
-        <div className="fixed inset-0 z-50 bg-foreground/20 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-card border border-border/40 rounded-3xl w-full max-w-xl shadow-2xl relative max-h-[90vh] overflow-y-auto p-6 space-y-6">
+        <div className="fixed inset-0 z-50 bg-foreground/20 backdrop-blur-xs overflow-y-auto flex items-center justify-center p-4">
+          <div className="bg-card border border-border/40 rounded-3xl w-full max-w-xl shadow-2xl relative max-h-[90vh] overflow-y-auto p-6 space-y-6 my-auto">
             <button
               onClick={() => setIsModalOpen(false)}
               className="absolute top-4 right-4 p-2 text-muted-foreground hover:text-foreground rounded-full hover:bg-secondary/50 cursor-pointer"
@@ -553,8 +553,8 @@ export default function AdminHeroBannersPage() {
 
       {/* Cloudinary Media Picker Modal */}
       {showMediaPicker && (
-        <div className="fixed inset-0 z-60 bg-foreground/20 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-card border border-border/40 rounded-3xl w-full max-w-4xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto relative">
+        <div className="fixed inset-0 z-60 bg-foreground/20 backdrop-blur-xs overflow-y-auto flex items-center justify-center p-4">
+          <div className="bg-card border border-border/40 rounded-3xl w-full max-w-4xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto relative my-auto">
             <MediaPicker
               onSelect={handleMediaSelect}
               onClose={() => setShowMediaPicker(false)}

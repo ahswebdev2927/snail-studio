@@ -197,7 +197,7 @@ export function InstagramGallery() {
       {/* Lightbox / Modal Viewer */}
       {selectedIdx !== null && (
         <div 
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-md p-4 sm:p-6 md:p-10 animate-fade-in"
+          className="fixed inset-0 z-50 overflow-y-auto bg-black/95 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 md:p-10 animate-fade-in"
           onClick={handleClose}
         >
           {/* Close Button */}
@@ -234,7 +234,7 @@ export function InstagramGallery() {
 
           {/* Image & Detail Container */}
           <div 
-            className="relative max-w-4xl w-full bg-neutral-900 border border-neutral-800 rounded-3xl overflow-hidden shadow-2xl flex flex-col md:flex-row aspect-video max-h-[85vh] md:max-h-[80vh]"
+            className="relative max-w-4xl w-full bg-neutral-900 border border-neutral-800 rounded-3xl overflow-hidden shadow-2xl flex flex-col md:flex-row aspect-video max-h-[85vh] md:max-h-[80vh] my-auto"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Left Side: Image */}

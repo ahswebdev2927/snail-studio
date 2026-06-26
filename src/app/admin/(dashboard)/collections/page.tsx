@@ -530,8 +530,8 @@ export default function AdminCollectionsPage() {
 
       {/* Category Creation Overlay Modal */}
       {isCatModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm transition-opacity p-4">
-          <div className="w-full max-w-lg bg-card border border-border rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-background/80 backdrop-blur-sm transition-opacity p-4 flex items-center justify-center">
+          <div className="w-full max-w-lg bg-card border border-border rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 my-auto">
             {/* Modal Header */}
             <div className="flex items-center justify-between p-6 border-b border-border/40">
               <h3 className="font-serif text-lg font-normal text-foreground">
@@ -667,8 +667,8 @@ export default function AdminCollectionsPage() {
 
       {/* Brand Creation Overlay Modal */}
       {isBrdModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm transition-opacity p-4">
-          <div className="w-full max-w-lg bg-card border border-border rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-background/80 backdrop-blur-sm transition-opacity p-4 flex items-center justify-center">
+          <div className="w-full max-w-lg bg-card border border-border rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 my-auto">
             {/* Modal Header */}
             <div className="flex items-center justify-between p-6 border-b border-border/40">
               <h3 className="font-serif text-lg font-normal text-foreground">
@@ -784,8 +784,8 @@ export default function AdminCollectionsPage() {
 
       {/* Category Media Picker Modal */}
       {showCatMediaPicker && (
-        <div className="fixed inset-0 z-60 bg-foreground/20 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-card border border-border/40 rounded-3xl w-full max-w-4xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto relative">
+        <div className="fixed inset-0 z-60 bg-foreground/20 backdrop-blur-xs overflow-y-auto flex items-center justify-center p-4">
+          <div className="bg-card border border-border/40 rounded-3xl w-full max-w-4xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto relative my-auto">
             <MediaPicker
               onSelect={handleCatMediaSelect}
               onClose={() => setShowCatMediaPicker(false)}
@@ -798,8 +798,8 @@ export default function AdminCollectionsPage() {
 
       {/* Brand Media Picker Modal */}
       {showBrdMediaPicker && (
-        <div className="fixed inset-0 z-60 bg-foreground/20 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-card border border-border/40 rounded-3xl w-full max-w-4xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto relative">
+        <div className="fixed inset-0 z-60 bg-foreground/20 backdrop-blur-xs overflow-y-auto flex items-center justify-center p-4">
+          <div className="bg-card border border-border/40 rounded-3xl w-full max-w-4xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto relative my-auto">
             <MediaPicker
               onSelect={handleBrdMediaSelect}
               onClose={() => setShowBrdMediaPicker(false)}

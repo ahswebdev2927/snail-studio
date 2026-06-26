@@ -10,19 +10,38 @@ import {
   products, 
   wishlists,
   wishlistItems,
-  reviews
+  reviews,
+  users,
+  refreshTokens
 } from "@/db/schema";
-import { eq, and, desc, sql, count } from "drizzle-orm";
+import { eq, and, desc, sql, count, gt, isNull } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { getSessionUser } from "@/lib/auth/session";
 import { nanoid } from "nanoid";
 import { revalidatePath } from "next/cache";
+import crypto from "crypto";
+
 
 async function getAuthUser() {
   const cookieStore = await cookies();
   const token = cookieStore.get("accessToken")?.value;
   if (!token) return null;
   return getSessionUser(token);
+}
+
+export async function getCurrentUser() {
+  try {
+    const user = await getAuthUser();
+    if (!user) return null;
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+    };
+  } catch (err) {
+    return null;
+  }
 }
 
 export async function getDashboardData() {
@@ -477,4 +496,196 @@ export async function setDefaultAddress(addressId: string, type: "shipping" | "b
     return { success: false, error: error.message || "Failed to set default address" };
   }
 }
+
+function hashToken(token: string): string {
+  return crypto.createHash("sha256").update(token).digest("hex");
+}
+
+export async function updateUserProfile(data: {
+  name: string;
+  email: string | null;
+  whatsappNumber: string | null;
+  image: string | null;
+  marketingConsent: boolean;
+}) {
+  try {
+    const user = await getAuthUser();
+    if (!user) return { success: false, error: "Unauthorized" };
+
+    const now = new Date();
+
+    if (!data.name.trim()) {
+      return { success: false, error: "Name is required." };
+    }
+
+    if (data.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+      return { success: false, error: "Invalid email address format." };
+    }
+
+    if (data.whatsappNumber) {
+      const cleanPhone = data.whatsappNumber.replace(/[\s\-()]/g, "");
+      if (!/^\+?[1-9]\d{1,14}$/.test(cleanPhone)) {
+        return { success: false, error: "Invalid WhatsApp number. Please use E.164 format (e.g. +919876543210)." };
+      }
+    }
+
+    await db
+      .update(users)
+      .set({
+        name: data.name.trim(),
+        email: data.email?.trim() || null,
+        whatsappNumber: data.whatsappNumber?.trim() || null,
+        image: data.image || null,
+        marketingConsent: data.marketingConsent,
+        updatedAt: now,
+      })
+      .where(eq(users.id, user.id));
+
+    revalidatePath("/account");
+    revalidatePath("/account/profile");
+    return { success: true };
+  } catch (error: any) {
+    console.error("Failed to update profile:", error);
+    return { success: false, error: error.message || "Failed to update profile" };
+  }
+}
+
+export async function getUserSessions() {
+  try {
+    const user = await getAuthUser();
+    if (!user) return { success: false, error: "Unauthorized" };
+
+    const now = new Date();
+
+    // Get active sessions
+    const sessions = await db.query.refreshTokens.findMany({
+      where: and(
+        eq(refreshTokens.userId, user.id),
+        isNull(refreshTokens.revokedAt),
+        gt(refreshTokens.expiresAt, now)
+      ),
+      orderBy: [desc(refreshTokens.expiresAt)],
+    });
+
+    const cookieStore = await cookies();
+    const currentRefreshToken = cookieStore.get("refreshToken")?.value;
+    const currentHash = currentRefreshToken ? hashToken(currentRefreshToken) : null;
+
+    const formattedSessions = sessions.map((s) => ({
+      id: s.id,
+      deviceInfo: s.deviceInfo,
+      ipAddress: s.ipAddress,
+      expiresAt: s.expiresAt,
+      isCurrent: currentHash ? s.tokenHash === currentHash : false,
+    }));
+
+    return { success: true, sessions: formattedSessions };
+  } catch (error: any) {
+    console.error("Failed to fetch user sessions:", error);
+    return { success: false, error: error.message || "Failed to fetch user sessions" };
+  }
+}
+
+export async function revokeSession(sessionId: string) {
+  try {
+    const user = await getAuthUser();
+    if (!user) return { success: false, error: "Unauthorized" };
+
+    const targetSession = await db.query.refreshTokens.findFirst({
+      where: and(
+        eq(refreshTokens.id, sessionId),
+        eq(refreshTokens.userId, user.id)
+      ),
+    });
+
+    if (!targetSession) {
+      return { success: false, error: "Session not found." };
+    }
+
+    const cookieStore = await cookies();
+    const currentRefreshToken = cookieStore.get("refreshToken")?.value;
+    const currentHash = currentRefreshToken ? hashToken(currentRefreshToken) : null;
+    const isCurrent = targetSession.tokenHash === currentHash;
+
+    const now = new Date();
+
+    await db
+      .update(refreshTokens)
+      .set({ revokedAt: now })
+      .where(eq(refreshTokens.id, sessionId));
+
+    if (isCurrent) {
+      cookieStore.delete("accessToken");
+      cookieStore.delete("refreshToken");
+      return { success: true, loggedOut: true };
+    }
+
+    revalidatePath("/account/security");
+    return { success: true, loggedOut: false };
+  } catch (error: any) {
+    console.error("Failed to revoke session:", error);
+    return { success: false, error: error.message || "Failed to revoke session" };
+  }
+}
+
+export async function revokeOtherSessions() {
+  try {
+    const user = await getAuthUser();
+    if (!user) return { success: false, error: "Unauthorized" };
+
+    const cookieStore = await cookies();
+    const currentRefreshToken = cookieStore.get("refreshToken")?.value;
+    const currentHash = currentRefreshToken ? hashToken(currentRefreshToken) : null;
+
+    const now = new Date();
+
+    if (currentHash) {
+      await db
+        .update(refreshTokens)
+        .set({ revokedAt: now })
+        .where(
+          and(
+            eq(refreshTokens.userId, user.id),
+            sql`${refreshTokens.id} not in (select id from refresh_tokens where token_hash = ${currentHash})`
+          )
+        );
+    } else {
+      // If we don't have current hash, revoke all
+      await db
+        .update(refreshTokens)
+        .set({ revokedAt: now })
+        .where(eq(refreshTokens.userId, user.id));
+    }
+
+    revalidatePath("/account/security");
+    return { success: true };
+  } catch (error: any) {
+    console.error("Failed to revoke other sessions:", error);
+    return { success: false, error: error.message || "Failed to revoke other sessions" };
+  }
+}
+
+export async function revokeAllSessions() {
+  try {
+    const user = await getAuthUser();
+    if (!user) return { success: false, error: "Unauthorized" };
+
+    const now = new Date();
+
+    await db
+      .update(refreshTokens)
+      .set({ revokedAt: now })
+      .where(eq(refreshTokens.userId, user.id));
+
+    const cookieStore = await cookies();
+    cookieStore.delete("accessToken");
+    cookieStore.delete("refreshToken");
+
+    return { success: true };
+  } catch (error: any) {
+    console.error("Failed to revoke all sessions:", error);
+    return { success: false, error: error.message || "Failed to revoke all sessions" };
+  }
+}
+
 

@@ -16,6 +16,7 @@ import {
   X
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { UserAvatar } from "./user-avatar";
 
 interface AccountNavProps {
   user: {
@@ -35,7 +36,7 @@ export function AccountNav({ user }: AccountNavProps) {
 
   const navItems = [
     {
-      name: "Dashboard",
+      name: "My Account",
       href: "/account",
       icon: LayoutDashboard,
       exact: true
@@ -112,9 +113,12 @@ export function AccountNav({ user }: AccountNavProps) {
         <div className="absolute -right-8 -bottom-8 w-20 h-20 rounded-full bg-primary/5 blur-xl pointer-events-none" />
         
         <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 border border-primary/20 flex items-center justify-center font-serif text-lg font-bold text-primary shrink-0">
-            {getInitials(user.name, user.phoneNumber)}
-          </div>
+          <UserAvatar
+            image={user.image}
+            name={user.name}
+            phone={user.phoneNumber}
+            className="w-14 h-14 rounded-2xl"
+          />
           <div className="space-y-0.5 min-w-0">
             <h3 className="font-serif text-base font-semibold text-foreground truncate">
               {user.name || "Guest Customer"}
@@ -130,9 +134,12 @@ export function AccountNav({ user }: AccountNavProps) {
       {/* Mobile Toggle & Horizontal Scroll */}
       <div className="md:hidden flex items-center justify-between bg-card border border-border/40 rounded-2xl p-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/10 to-accent/10 border border-primary/15 flex items-center justify-center font-serif text-sm font-bold text-primary">
-            {getInitials(user.name, user.phoneNumber)}
-          </div>
+          <UserAvatar
+            image={user.image}
+            name={user.name}
+            phone={user.phoneNumber}
+            className="w-10 h-10 rounded-xl"
+          />
           <div>
             <h4 className="font-serif text-sm font-semibold text-foreground">
               {user.name || "My Account"}

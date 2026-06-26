@@ -488,9 +488,9 @@ export default function AdminCouponsPage() {
 
       {/* Create Coupon Modal */}
       {isOpenModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-fade-in">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-background/80 backdrop-blur-sm p-4 flex items-center justify-center animate-fade-in">
           <div 
-            className="w-full max-w-lg bg-card border border-border rounded-3xl shadow-xl overflow-hidden scale-in p-6 space-y-6"
+            className="w-full max-w-lg bg-card border border-border rounded-3xl shadow-xl overflow-hidden scale-in p-6 space-y-6 my-auto"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}

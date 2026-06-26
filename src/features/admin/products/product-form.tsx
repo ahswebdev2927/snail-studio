@@ -1365,8 +1365,8 @@ export default function ProductForm({ mode, productId, initialData }: ProductFor
 
       {/* Cloudinary Media Selection Modal */}
       {showMediaPicker && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-foreground/35 backdrop-blur-sm">
-          <div className="bg-card border border-border w-full max-w-4xl max-h-[85vh] rounded-3xl overflow-hidden shadow-2xl flex flex-col animate-scale-up">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-foreground/35 backdrop-blur-sm p-4 flex items-center justify-center">
+          <div className="bg-card border border-border w-full max-w-4xl max-h-[85vh] rounded-3xl overflow-hidden shadow-2xl flex flex-col animate-scale-up my-auto">
             <div className="p-4 border-b border-border/40 flex items-center justify-between shrink-0">
               <span className="text-sm font-semibold tracking-wide uppercase">
                 Select Cloudinary Assets
@@ -1436,8 +1436,8 @@ function VariantEditDialog({ variant, onClose, onSave, saving }: VariantEditDial
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-foreground/35 backdrop-blur-sm">
-      <div className="bg-card border border-border w-full max-w-md rounded-3xl overflow-hidden shadow-2xl flex flex-col p-6 animate-scale-up space-y-4">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-foreground/35 backdrop-blur-sm p-4 flex items-center justify-center">
+      <div className="bg-card border border-border w-full max-w-md rounded-3xl overflow-hidden shadow-2xl flex flex-col p-6 animate-scale-up space-y-4 my-auto">
         <div className="flex items-center justify-between border-b border-border/30 pb-2">
           <div className="space-y-0.5">
             <h3 className="text-sm font-semibold tracking-wide">Edit Product Variant</h3>

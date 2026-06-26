@@ -48,7 +48,7 @@ export function Modal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-100 flex items-center justify-center p-4 sm:p-6 md:p-10">
+    <div className="fixed inset-0 z-100 overflow-y-auto flex items-center justify-center p-4 sm:p-6 md:p-10">
       {/* Backdrop overlay */}
       <div
         className="fixed inset-0 bg-background/60 backdrop-blur-md transition-opacity duration-300 animate-in fade-in"
@@ -58,7 +58,7 @@ export function Modal({
       {/* Modal Dialog Content */}
       <div
         className={cn(
-          "relative z-10 w-full max-w-lg overflow-hidden rounded-3xl bg-card border border-border/40 p-6 shadow-2xl transition-all duration-300 animate-in fade-in zoom-in-95 slide-in-from-bottom-4 flex flex-col max-h-[85vh]",
+          "relative z-10 w-full max-w-lg overflow-hidden rounded-3xl bg-card border border-border/40 p-6 shadow-2xl transition-all duration-300 animate-in fade-in zoom-in-95 slide-in-from-bottom-4 flex flex-col max-h-[85vh] my-auto",
           className
         )}
         role="dialog"

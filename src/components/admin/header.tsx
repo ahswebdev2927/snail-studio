@@ -13,7 +13,8 @@ import {
   User,
   LogOut,
   Settings,
-  HelpCircle
+  HelpCircle,
+  ExternalLink
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SessionUser } from "@/lib/auth/session";
@@ -209,31 +210,55 @@ export default function Header({
           </button>
 
           {profileDropdownOpen && (
-            <div className="absolute right-0 mt-3 w-48 bg-card border border-border rounded-2xl shadow-xl py-2 z-50 animate-fade-in">
-              <Link
-                href="/admin/settings/general"
-                onClick={() => setProfileDropdownOpen(false)}
-                className="flex items-center gap-2.5 px-4 py-2 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/35 transition-all"
-              >
-                <Settings className="w-4 h-4" />
-                Settings
-              </Link>
-              <a
-                href="#"
-                className="flex items-center gap-2.5 px-4 py-2 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/35 transition-all"
-              >
-                <HelpCircle className="w-4 h-4" />
-                Help Docs
-              </a>
-              <div className="border-t border-border/40 my-1.5" />
-              <button
-                onClick={handleLogout}
-                className="w-full flex items-center gap-2.5 px-4 py-2 text-xs text-destructive hover:bg-destructive/10 transition-all text-left cursor-pointer"
-              >
-                <LogOut className="w-4 h-4" />
-                Sign Out
-              </button>
-            </div>
+            <>
+              {/* Invisible backdrop click-away */}
+              <div 
+                className="fixed inset-0 z-40 cursor-default" 
+                onClick={() => setProfileDropdownOpen(false)} 
+              />
+
+              <div className="absolute right-0 mt-3 w-48 bg-card border border-border rounded-2xl shadow-xl py-2 z-50 animate-fade-in">
+                <Link
+                  href="/admin/settings/general"
+                  onClick={() => setProfileDropdownOpen(false)}
+                  className="flex items-center gap-2.5 px-4 py-2 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/35 transition-all"
+                >
+                  <Settings className="w-4 h-4" />
+                  Settings
+                </Link>
+                <Link
+                  href="/account"
+                  onClick={() => setProfileDropdownOpen(false)}
+                  className="flex items-center gap-2.5 px-4 py-2 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/35 transition-all"
+                >
+                  <User className="w-4 h-4" />
+                  My Account
+                </Link>
+                <Link
+                  href="/"
+                  onClick={() => setProfileDropdownOpen(false)}
+                  className="flex items-center gap-2.5 px-4 py-2 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/35 transition-all"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  Go to Storefront
+                </Link>
+                <a
+                  href="#"
+                  className="flex items-center gap-2.5 px-4 py-2 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/35 transition-all"
+                >
+                  <HelpCircle className="w-4 h-4" />
+                  Help Docs
+                </a>
+                <div className="border-t border-border/40 my-1.5" />
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center gap-2.5 px-4 py-2 text-xs text-destructive hover:bg-destructive/10 transition-all text-left cursor-pointer"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Sign Out
+                </button>
+              </div>
+            </>
           )}
         </div>
       </div>

@@ -22,6 +22,7 @@ import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "..
 import { Button } from "../ui/button";
 import type { StorefrontNavigation } from "@/services/navigation";
 import { syncWishlistDb } from "@/features/pdp/actions";
+import { getCurrentUser } from "@/features/account/actions";
 
 interface HeaderProps {
   navigationData?: StorefrontNavigation;
@@ -32,6 +33,33 @@ export function Header({ navigationData }: HeaderProps) {
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [nav, setNav] = useState<StorefrontNavigation | null>(navigationData || null);
+  const [currentUser, setCurrentUser] = useState<{ id: string; name: string | null; email: string | null; role: string } | null>(null);
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+
+  useEffect(() => {
+    async function loadUser() {
+      try {
+        const user = await getCurrentUser();
+        setCurrentUser(user);
+      } catch (err) {
+        console.error("Failed to load user in header:", err);
+      }
+    }
+    loadUser();
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      const res = await fetch("/api/auth/logout", { method: "POST" });
+      if (res.ok) {
+        setCurrentUser(null);
+        setUserDropdownOpen(false);
+        router.push("/login");
+      }
+    } catch (err) {
+      console.error("Logout failed:", err);
+    }
+  };
   
   // Zustand store triggers
   const cart = useCartStore((state) => state.cart);
@@ -411,14 +439,98 @@ export function Header({ navigationData }: HeaderProps) {
               )}
             </button>
 
-            {/* Profile / Admin Login Link */}
-            <Link
-              href="/account"
-              className="p-2 rounded-full text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-all"
-              aria-label="User Account"
-            >
-              <User className="w-4 h-4" />
-            </Link>
+            {/* Profile / Admin Login Link Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+                className="p-2 rounded-full text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-all cursor-pointer flex items-center gap-1 focus:outline-hidden"
+                aria-label="User Account Menu"
+              >
+                <User className="w-4 h-4" />
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${userDropdownOpen ? "rotate-180" : ""}`} />
+              </button>
+
+              {userDropdownOpen && (
+                <>
+                  {/* Invisible backdrop click-away */}
+                  <div
+                    className="fixed inset-0 z-40 cursor-default"
+                    onClick={() => setUserDropdownOpen(false)}
+                  />
+
+                  {/* Dropdown Card */}
+                  <div className="absolute right-0 mt-2.5 w-56 rounded-2xl border border-border/40 bg-card p-2 shadow-xl z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                    {currentUser ? (
+                      <>
+                        {/* User Header */}
+                        <div className="px-3.5 py-2.5 border-b border-border/10">
+                          <p className="text-xs font-semibold text-foreground truncate">
+                            {currentUser.name || "My Account"}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground truncate font-light mt-0.5">
+                            {currentUser.email}
+                          </p>
+                          {currentUser.role === "admin" && (
+                            <span className="inline-block mt-1.5 px-2 py-0.5 bg-primary/10 text-[8px] font-bold uppercase tracking-wider rounded text-primary">
+                              Admin Account
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Navigation Links */}
+                        <div className="pt-1.5 space-y-0.5">
+                          {currentUser.role === "admin" && (
+                            <Link
+                              href="/admin/dashboard"
+                              onClick={() => setUserDropdownOpen(false)}
+                              className="w-full flex items-center gap-2 px-3 py-2 text-[11px] font-medium rounded-xl text-foreground hover:bg-secondary/65 transition-colors"
+                            >
+                              Admin Dashboard
+                            </Link>
+                          )}
+                          <Link
+                            href="/account"
+                            onClick={() => setUserDropdownOpen(false)}
+                            className="w-full flex items-center gap-2 px-3 py-2 text-[11px] font-medium rounded-xl text-foreground hover:bg-secondary/65 transition-colors"
+                          >
+                            My Account
+                          </Link>
+                          <button
+                            onClick={handleLogout}
+                            className="w-full text-left flex items-center gap-2 px-3 py-2 text-[11px] font-bold rounded-xl text-rose-500 hover:bg-rose-500/5 transition-colors cursor-pointer"
+                          >
+                            Sign Out
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        {/* Guest Header */}
+                        <div className="px-3.5 py-2.5 border-b border-border/10">
+                          <p className="text-xs font-semibold text-foreground">
+                            Hello, Guest user
+                          </p>
+                          <p className="text-[10px] text-muted-foreground font-light mt-0.5 leading-normal">
+                            login to have immense shopping experience
+                          </p>
+                        </div>
+
+                        {/* Guest Action Links */}
+                        <div className="pt-1.5 space-y-0.5">
+                          <Link
+                            href="/account"
+                            onClick={() => setUserDropdownOpen(false)}
+                            className="w-full flex items-center gap-2 px-3 py-2 text-[11px] font-bold rounded-xl text-primary hover:bg-primary/5 transition-colors"
+                          >
+                            Sign in \ Register
+                          </Link>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </header>
@@ -568,12 +680,40 @@ export function Header({ navigationData }: HeaderProps) {
               Find Your Size
             </button>
 
-            <button
-              onClick={() => handleMobileNav("/admin")}
-              className="w-full text-left font-serif text-base text-foreground hover:text-primary transition-colors py-2 border-b border-border/10 cursor-pointer"
-            >
-              Admin Dashboard
-            </button>
+            {currentUser ? (
+              <>
+                {currentUser.role === "admin" && (
+                  <button
+                    onClick={() => handleMobileNav("/admin/dashboard")}
+                    className="w-full text-left font-serif text-base text-foreground hover:text-primary transition-colors py-2 border-b border-border/10 cursor-pointer"
+                  >
+                    Admin Dashboard
+                  </button>
+                )}
+                <button
+                  onClick={() => handleMobileNav("/account")}
+                  className="w-full text-left font-serif text-base text-foreground hover:text-primary transition-colors py-2 border-b border-border/10 cursor-pointer"
+                >
+                  My Account
+                </button>
+                <button
+                  onClick={() => {
+                    handleLogout();
+                    setMobileMenuOpen(false);
+                  }}
+                  className="w-full text-left font-serif text-base text-rose-500 hover:text-rose-600 transition-colors py-2 border-b border-border/10 cursor-pointer"
+                >
+                  Sign Out
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => handleMobileNav("/account")}
+                className="w-full text-left font-serif text-base text-foreground hover:text-primary transition-colors py-2 border-b border-border/10 cursor-pointer"
+              >
+                Sign In / Register
+              </button>
+            )}
           </div>
         </DrawerBody>
 

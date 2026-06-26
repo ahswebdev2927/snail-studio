@@ -21,7 +21,7 @@ export default async function AccountPage() {
   if (!res.success || !res.data) {
     return (
       <div className="p-6 text-center space-y-4">
-        <h2 className="font-serif text-xl font-semibold text-destructive">Error Loading Dashboard</h2>
+        <h2 className="font-serif text-xl font-semibold text-destructive">Error Loading My Account</h2>
         <p className="text-sm text-muted-foreground font-light">
           {res.error || "We encountered an issue retrieving your account details."}
         </p>
@@ -53,7 +53,7 @@ export default async function AccountPage() {
       {/* 1. Welcoming Banner */}
       <div className="space-y-1">
         <h2 className="font-serif text-2xl md:text-3xl font-semibold text-foreground tracking-wide flex items-center gap-2">
-          Dashboard
+          My Account
         </h2>
         <p className="text-xs md:text-sm text-muted-foreground font-light">
           Here is a quick overview of your recent account activity.
@@ -83,7 +83,7 @@ export default async function AccountPage() {
 
         {/* Wishlist Card */}
         <Link 
-          href="/wishlist"
+          href="/account/wishlist"
           className="bg-card border border-border/30 rounded-2xl p-5 hover:border-primary/30 transition-all group flex flex-col justify-between h-32"
         >
           <div className="flex items-center justify-between">
@@ -302,7 +302,7 @@ export default async function AccountPage() {
                 Wishlist Preview
               </h3>
               <Link 
-                href="/wishlist"
+                href="/account/wishlist"
                 className="text-[9px] uppercase font-bold tracking-widest text-primary hover:text-accent"
               >
                 View All
