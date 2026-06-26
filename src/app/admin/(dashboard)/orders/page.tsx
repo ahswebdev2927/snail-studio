@@ -137,6 +137,7 @@ export default function AdminOrdersPage() {
   // Label and Invoice Print Preview Modals
   const [showPrintLabel, setShowPrintLabel] = useState(false);
   const [showPrintInvoice, setShowPrintInvoice] = useState(false);
+  const [showCreateShipmentModal, setShowCreateShipmentModal] = useState(false);
 
   // Load orders
   const loadOrders = async () => {
@@ -240,6 +241,7 @@ export default function AdminOrdersPage() {
       if (res.ok) {
         setShipTrackingNumber("");
         setShipEstDelivery("");
+        setShowCreateShipmentModal(false);
         await loadOrderDetail(selectedOrderId);
         await loadOrders();
       } else {
@@ -708,58 +710,15 @@ export default function AdminOrdersPage() {
                         Parcel Shipments
                       </h4>
                       {orderDetail.shipments.length === 0 ? (
-                        <div className="border border-border/25 rounded-2xl p-4.5 space-y-4">
+                        <div className="border border-border/25 rounded-2xl p-4.5 space-y-3 text-center">
                           <p className="text-xs text-muted-foreground font-light italic">No active parcel waybill generated.</p>
-                          
-                          <form onSubmit={handleCreateShipment} className="space-y-3 pt-2 border-t border-border/10">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-primary block">Create Parcel Shipment</span>
-                            
-                            <div className="space-y-1">
-                              <label className="text-[8px] uppercase font-bold text-muted-foreground">Select Courier</label>
-                              <select
-                                value={shipCarrier}
-                                onChange={(e) => setShipCarrier(e.target.value)}
-                                className="w-full px-2.5 py-1.5 bg-background border border-border rounded-xl text-xs font-light text-foreground focus:outline-none focus:border-primary"
-                              >
-                                <option value="Delhivery">Delhivery</option>
-                                <option value="BlueDart">BlueDart</option>
-                                <option value="NimbusPost">NimbusPost</option>
-                                <option value="Shiprocket">Shiprocket</option>
-                                <option value="Local Courier">Local Courier</option>
-                                <option value="Self Delivery">Self Delivery / Store Pickup</option>
-                              </select>
-                            </div>
-
-                            <div className="space-y-1">
-                              <label className="text-[8px] uppercase font-bold text-muted-foreground">Waybill / Tracking Number</label>
-                              <input
-                                type="text"
-                                required
-                                placeholder="e.g. TRK9876543210"
-                                value={shipTrackingNumber}
-                                onChange={(e) => setShipTrackingNumber(e.target.value)}
-                                className="w-full px-2.5 py-1.5 bg-background border border-border rounded-xl text-xs font-light text-foreground focus:outline-none focus:border-primary"
-                              />
-                            </div>
-
-                            <div className="space-y-1">
-                              <label className="text-[8px] uppercase font-bold text-muted-foreground">Est. Delivery Date</label>
-                              <input
-                                type="date"
-                                value={shipEstDelivery}
-                                onChange={(e) => setShipEstDelivery(e.target.value)}
-                                className="w-full px-2.5 py-1.5 bg-background border border-border rounded-xl text-xs font-light text-foreground focus:outline-none focus:border-primary"
-                              />
-                            </div>
-
-                            <button
-                              type="submit"
-                              disabled={isCreatingShipment}
-                              className="w-full py-2 bg-primary text-primary-foreground hover:bg-primary/95 disabled:bg-muted disabled:text-muted-foreground rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1 mt-1.5"
-                            >
-                              {isCreatingShipment ? "Generating..." : "Generate Waybill"}
-                            </button>
-                          </form>
+                          <button
+                            type="button"
+                            onClick={() => setShowCreateShipmentModal(true)}
+                            className="w-full py-2 bg-primary text-primary-foreground hover:bg-primary/95 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1.5 mt-1"
+                          >
+                            + Create Shipment
+                          </button>
                         </div>
                       ) : (
                         <div className="border border-border/25 rounded-2xl p-4.5 space-y-4">
@@ -1206,6 +1165,80 @@ export default function AdminOrdersPage() {
                 Close
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create Shipment Modal Overlay */}
+      {showCreateShipmentModal && orderDetail && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background/80 backdrop-blur-sm p-4">
+          <div className="bg-card border border-border shadow-2xl p-6 rounded-3xl w-full max-w-sm text-foreground space-y-4">
+            <div className="flex justify-between items-center pb-3 border-b border-border/40">
+              <h3 className="font-serif text-base font-normal text-foreground">Create Parcel Shipment</h3>
+              <button
+                onClick={() => setShowCreateShipmentModal(false)}
+                className="p-1 rounded-full bg-secondary hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateShipment} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Select Courier</label>
+                <select
+                  value={shipCarrier}
+                  onChange={(e) => setShipCarrier(e.target.value)}
+                  className="w-full px-3 py-2 bg-background border border-border rounded-xl text-xs font-light text-foreground focus:outline-none focus:border-primary"
+                >
+                  <option value="Delhivery">Delhivery</option>
+                  <option value="BlueDart">BlueDart</option>
+                  <option value="NimbusPost">NimbusPost</option>
+                  <option value="Shiprocket">Shiprocket</option>
+                  <option value="Local Courier">Local Courier</option>
+                  <option value="Self Delivery">Self Delivery / Store Pickup</option>
+                </select>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Waybill / Tracking Number</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. TRK9876543210"
+                  value={shipTrackingNumber}
+                  onChange={(e) => setShipTrackingNumber(e.target.value)}
+                  className="w-full px-3 py-2 bg-background border border-border rounded-xl text-xs font-light text-foreground focus:outline-none focus:border-primary"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Est. Delivery Date</label>
+                <input
+                  type="date"
+                  value={shipEstDelivery}
+                  onChange={(e) => setShipEstDelivery(e.target.value)}
+                  className="w-full px-3 py-2 bg-background border border-border rounded-xl text-xs font-light text-foreground focus:outline-none focus:border-primary"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="submit"
+                  disabled={isCreatingShipment}
+                  className="flex-1 py-2.5 bg-primary text-primary-foreground hover:bg-primary/95 disabled:bg-muted disabled:text-muted-foreground rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer text-center"
+                >
+                  {isCreatingShipment ? "Generating..." : "Generate Waybill"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowCreateShipmentModal(false)}
+                  className="flex-1 py-2.5 bg-secondary hover:bg-muted text-muted-foreground hover:text-foreground rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer text-center border border-border"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
