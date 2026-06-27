@@ -1,57 +1,85 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { ChevronLeft, ChevronRight, Clock } from "lucide-react";
 import { ProductCard } from "@/components/storefront/product-card";
 
 /* -----------------------------------------------------------------------
  * RecentlyViewedTracker — Client Tracker Component
  * --------------------------------------------------------------------- */
-interface TrackerProps {
+export interface TrackerProduct {
+  id: string;
+  name: string;
   slug: string;
+  shortDescription?: string | null;
+  description?: string | null;
+  priceMin: number;
+  priceMax: number;
+  rating?: number;
+  reviewsCount?: number;
+  images: { url: string }[];
 }
 
-export function RecentlyViewedTracker({ slug }: TrackerProps) {
+interface TrackerProps {
+  product: TrackerProduct;
+}
+
+export function RecentlyViewedTracker({ product }: TrackerProps) {
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined" || !product) return;
 
-    // Helper to get cookie value
-    const getCookie = (name: string): string | null => {
-      const value = `; ${document.cookie}`;
-      const parts = value.split(`; ${name}=`);
-      if (parts.length === 2) return parts.pop()!.split(";").shift() ?? null;
-      return null;
-    };
+    try {
+      const saved = localStorage.getItem("snail_recently_viewed");
+      let items = saved ? JSON.parse(saved) : [];
+      if (!Array.isArray(items)) {
+        items = [];
+      }
 
-    // Helper to set cookie
-    const setCookie = (name: string, val: string, days: number) => {
-      const maxAge = days * 24 * 60 * 60;
-      document.cookie = `${name}=${val}; path=/; max-age=${maxAge}; SameSite=Lax`;
-    };
+      // Filter out any existing copy of this product to avoid duplicates
+      items = items.filter((item: any) => item && item.id !== product.id);
 
-    const saved = getCookie("snail_recently_viewed");
-    let slugs = saved ? saved.split(",") : [];
+      // Prepend current product and keep at most 10 items
+      items = [product, ...items].slice(0, 10);
 
-    // Add current slug, removing existing duplicate references
-    slugs = [slug, ...slugs.filter((s) => s && s !== slug)].slice(0, 6);
+      localStorage.setItem("snail_recently_viewed", JSON.stringify(items));
+    } catch (e) {
+      console.error("Error updating recently viewed products:", e);
+    }
+  }, [product]);
 
-    setCookie("snail_recently_viewed", slugs.join(","), 30);
-  }, [slug]);
-
-  return null; // Silent render
+  return null; // Silent render tracker
 }
 
 /* -----------------------------------------------------------------------
  * RecentlyViewed — Slider Carousel Component
  * --------------------------------------------------------------------- */
 interface RecentlyViewedProps {
-  products: any[];
+  currentSlug?: string;
 }
 
-export function RecentlyViewed({ products }: RecentlyViewedProps) {
+export function RecentlyViewed({ currentSlug }: RecentlyViewedProps) {
+  const [viewedProducts, setViewedProducts] = useState<TrackerProduct[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  if (!products || products.length === 0) {
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    try {
+      const saved = localStorage.getItem("snail_recently_viewed");
+      let items = saved ? JSON.parse(saved) : [];
+      if (Array.isArray(items)) {
+        // Exclude current product if we are on a Product Details Page
+        if (currentSlug) {
+          items = items.filter((item: any) => item && item.slug !== currentSlug);
+        }
+        setViewedProducts(items);
+      }
+    } catch (e) {
+      console.error("Error loading recently viewed products:", e);
+    }
+  }, [currentSlug]);
+
+  if (viewedProducts.length === 0) {
     return null;
   }
 
@@ -110,7 +138,7 @@ export function RecentlyViewed({ products }: RecentlyViewedProps) {
             ref={scrollRef}
             className="flex gap-6 overflow-x-auto scrollbar-none snap-x snap-mandatory scroll-smooth pb-4"
           >
-            {products.map((product) => (
+            {viewedProducts.map((product) => (
               <div
                 key={product.id}
                 className="w-[280px] md:w-[300px] shrink-0 snap-start snap-always"

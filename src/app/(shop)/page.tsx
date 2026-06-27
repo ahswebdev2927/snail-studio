@@ -15,6 +15,7 @@ import { WhyChooseUs } from "@/components/storefront/why-choose-us";
 import { InstagramGallery } from "@/components/storefront/instagram-gallery";
 import { CustomerTestimonials } from "@/components/storefront/customer-testimonials";
 import { InteractiveSizing } from "@/components/storefront/interactive-sizing";
+import { RecentlyViewed } from "@/features/pdp/recently-viewed";
 
 
 
@@ -144,6 +145,9 @@ export default async function Home() {
           </div>
         </section>
       )}
+
+      {/* Recently Viewed Products Section */}
+      <RecentlyViewed />
 
       {/* Instagram/Social Gallery Showcase */}
       <InstagramGallery />

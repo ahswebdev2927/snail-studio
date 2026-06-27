@@ -405,30 +405,19 @@ export default async function ProductPage({
     };
   });
 
-  /* ----- 7.2 Fetch Recently Viewed Products ----- */
-  const recentlyViewedCookie = cookieStore.get("snail_recently_viewed")?.value;
-  const viewedSlugs = recentlyViewedCookie
-    ? recentlyViewedCookie.split(",").filter((s) => s && s !== slug)
-    : [];
-
-  const dbRecentlyViewed = viewedSlugs.length > 0
-    ? await db.query.products.findMany({
-        where: and(
-          eq(products.isActive, true),
-          inArray(products.slug, viewedSlugs)
-        ),
-        with: {
-          media: {
-            with: { media: true },
-            orderBy: (pm, { asc }) => [asc(pm.sortOrder)],
-          },
-        },
-      })
-    : [];
-
-  const recentlyViewedProducts = dbRecentlyViewed.sort((a, b) => {
-    return viewedSlugs.indexOf(a.slug) - viewedSlugs.indexOf(b.slug);
-  });
+  /* ----- 7.2 Prepare Recently Viewed Tracker Details ----- */
+  const trackerProduct = {
+    id: product.id,
+    name: product.name,
+    slug: product.slug,
+    shortDescription: product.shortDescription,
+    description: product.description,
+    priceMin: product.priceMin,
+    priceMax: product.priceMax,
+    rating: averageRating,
+    reviewsCount: reviewCount,
+    images: galleryMedia.map((m) => ({ url: m.url })),
+  };
 
   /* ----- 8. Render ----- */
   return (
@@ -439,8 +428,8 @@ export default async function ProductPage({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }}
       />
 
-      {/* Background tracking for Recently Viewed cookie */}
-      <RecentlyViewedTracker slug={product.slug} />
+      {/* Background tracking for Recently Viewed history */}
+      <RecentlyViewedTracker product={trackerProduct} />
 
       <div className="bg-background text-foreground transition-colors duration-300">
         {/* ---- PDP Main Grid ---- */}
@@ -513,7 +502,7 @@ export default async function ProductPage({
         <RelatedProducts products={relatedProducts} />
 
         {/* ---- Recently Viewed Section ---- */}
-        <RecentlyViewed products={recentlyViewedProducts} />
+        <RecentlyViewed currentSlug={product.slug} />
       </div>
     </>
   );
