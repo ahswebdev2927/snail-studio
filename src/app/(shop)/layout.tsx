@@ -5,6 +5,9 @@ import { SearchOverlay } from "@/components/storefront/search-overlay";
 import { CartDrawer } from "@/components/storefront/cart-drawer";
 import { Footer } from "@/components/storefront/footer";
 import { getStorefrontNavigation } from "@/services/navigation";
+import { db } from "@/db";
+import { announcements, systemSettings } from "@/db/schema";
+import { eq, and, asc } from "drizzle-orm";
 
 export const metadata = {
   title: "Shop Luxury Nails | Snail Studio",
@@ -18,9 +21,37 @@ export default async function StorefrontLayout({
 }) {
   const navigationData = await getStorefrontNavigation();
 
+  // Fetch active announcements from DB
+  const allActive = await db.query.announcements.findMany({
+    where: eq(announcements.isActive, true),
+    orderBy: asc(announcements.sortOrder),
+  });
+
+  // Filter scheduled announcements
+  const now = new Date();
+  const activeAnnouncements = allActive.filter((ann) => {
+    const startValid = !ann.startDate || new Date(ann.startDate) <= now;
+    const endValid = !ann.endDate || new Date(ann.endDate) >= now;
+    return startValid && endValid;
+  });
+
+  // Fetch global bar settings
+  const settingsRow = await db.query.systemSettings.findFirst({
+    where: eq(systemSettings.key, "announcement_bar_settings"),
+  });
+
+  let barSettings = null;
+  if (settingsRow && settingsRow.value) {
+    try {
+      barSettings = JSON.parse(settingsRow.value);
+    } catch (e) {
+      console.error("Failed to parse announcement bar settings JSON:", e);
+    }
+  }
+
   return (
     <>
-      <AnnouncementBar />
+      <AnnouncementBar announcements={activeAnnouncements} settings={barSettings} />
       <Header navigationData={navigationData} />
       <main className="flex-1 flex flex-col transition-colors duration-300">
         {children}

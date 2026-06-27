@@ -54,3 +54,20 @@ export const sizeProfiles = sqliteTable('size_profiles', {
 }, (table) => [
   uniqueIndex('size_profiles_name_unique').on(table.name)
 ]);
+
+export const announcements = sqliteTable('announcements', {
+  id: text('id').primaryKey(),
+  text: text('text').notNull(),
+  icon: text('icon'), // none, sparkles, truck, tag, gift, star, percent, shoppingBag, info, shieldCheck
+  ctaText: text('cta_text'),
+  ctaLink: text('cta_link'),
+  textColor: text('text_color').notNull().default('#ffffff'),
+  backgroundColor: text('background_color').notNull().default('#0b0f19'),
+  startDate: integer('start_date', { mode: 'timestamp' }),
+  endDate: integer('end_date', { mode: 'timestamp' }),
+  isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
+  sortOrder: integer('sort_order').notNull().default(0),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)
+});
+
