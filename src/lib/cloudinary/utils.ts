@@ -16,9 +16,12 @@ export function getPublicIdFromUrl(url: string): string | null {
 interface ImageOptimizationOptions {
   width?: number;
   height?: number;
-  crop?: "scale" | "fill" | "thumb" | "crop";
-  quality?: "auto" | "good" | "eco" | "low";
-  format?: "auto" | "webp" | "jpg" | "png";
+  crop?: "scale" | "fill" | "thumb" | "crop" | "limit";
+  quality?: "auto" | "good" | "eco" | "low" | string;
+  format?: "auto" | "webp" | "jpg" | "png" | string;
+  dpr?: string | number;
+  gravity?: string;
+  blur?: string | number;
 }
 
 /**
@@ -31,19 +34,27 @@ export function getOptimizedImageUrl(
   if (!src) return "";
 
   let publicId = src;
+  let cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "dwrxo4hvx";
+
   if (src.startsWith("http")) {
+    const cloudNameMatch = src.match(/res\.cloudinary\.com\/([^/]+)/);
+    if (cloudNameMatch) {
+      cloudName = cloudNameMatch[1];
+    }
     const extracted = getPublicIdFromUrl(src);
     if (!extracted) return src; // Fallback to original URL if extraction fails
     publicId = extracted;
   }
 
-  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "dwrxo4hvx";
   const {
     width,
     height,
     crop = "scale",
     quality = "auto",
     format = "auto",
+    dpr,
+    gravity,
+    blur,
   } = options;
 
   const transforms: string[] = [];
@@ -53,11 +64,48 @@ export function getOptimizedImageUrl(
   if (width) transforms.push(`w_${width}`);
   if (height) transforms.push(`h_${height}`);
   if (width || height) transforms.push(`c_${crop}`);
+  if (gravity && (crop === "fill" || crop === "thumb" || crop === "crop")) {
+    transforms.push(`g_${gravity}`);
+  }
+  if (blur) transforms.push(`e_blur:${blur}`);
+  if (dpr) transforms.push(`dpr_${dpr}`);
 
   const transformString = transforms.join(",");
   const cleanPublicId = publicId.replace(/^\//, "");
 
   return `https://res.cloudinary.com/${cloudName}/image/upload/${transformString}/${cleanPublicId}`;
+}
+
+/**
+ * Generates a low-quality, highly compressed, and blurred image URL to use as a placeholder.
+ */
+export function getBlurPlaceholderUrl(src: string): string {
+  if (!src) return "";
+
+  let publicId = src;
+  let cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "dwrxo4hvx";
+
+  if (src.startsWith("http")) {
+    const cloudNameMatch = src.match(/res\.cloudinary\.com\/([^/]+)/);
+    if (cloudNameMatch) {
+      cloudName = cloudNameMatch[1];
+    }
+    const extracted = getPublicIdFromUrl(src);
+    if (!extracted) return src; // Fallback
+    publicId = extracted;
+  } else if (src.startsWith("/")) {
+    // Local image, cannot generate Cloudinary blur placeholder easily.
+    return src;
+  }
+
+  const cleanPublicId = publicId.replace(/^\//, "");
+
+  // Cloudinary transformations for a small blurred image placeholder:
+  // w_40: small width
+  // q_auto:eco: low quality
+  // e_blur:1000: max blur
+  // f_auto: automatic format
+  return `https://res.cloudinary.com/${cloudName}/image/upload/w_40,q_auto:eco,e_blur:1000,f_auto/${cleanPublicId}`;
 }
 
 interface VideoOptimizationOptions {
@@ -78,13 +126,18 @@ export function getOptimizedVideoUrl(
   if (!src) return "";
 
   let publicId = src;
+  let cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "dwrxo4hvx";
+
   if (src.startsWith("http")) {
+    const cloudNameMatch = src.match(/res\.cloudinary\.com\/([^/]+)/);
+    if (cloudNameMatch) {
+      cloudName = cloudNameMatch[1];
+    }
     const extracted = getPublicIdFromUrl(src);
     if (!extracted) return src;
     publicId = extracted;
   }
 
-  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "dwrxo4hvx";
   const {
     width,
     height,
@@ -117,13 +170,18 @@ export function getVideoPosterUrl(
   if (!src) return "";
 
   let publicId = src;
+  let cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "dwrxo4hvx";
+
   if (src.startsWith("http")) {
+    const cloudNameMatch = src.match(/res\.cloudinary\.com\/([^/]+)/);
+    if (cloudNameMatch) {
+      cloudName = cloudNameMatch[1];
+    }
     const extracted = getPublicIdFromUrl(src);
     if (!extracted) return src;
     publicId = extracted;
   }
 
-  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "dwrxo4hvx";
   const { width, height, crop = "scale" } = options;
 
   const transforms: string[] = ["f_jpg", "q_auto", "so_auto"];

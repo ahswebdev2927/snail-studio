@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from "react";
 import { Sparkles, Check, ShoppingBag, Info } from "lucide-react";
 import { useCartStore } from "@/lib/hooks/use-cart-store";
+import CloudinaryImage from "@/components/media/cloudinary-image";
 
 interface AttributeValue {
   id: string;
@@ -351,10 +352,11 @@ export function ProductBundleWidget({ bundles, currentProductId }: ProductBundle
 
                         {/* Thumbnail */}
                         {image && (
-                          <img
+                          <CloudinaryImage
                             src={image}
+                            variant="thumbnail"
                             alt={prod.name}
-                            className="w-12 h-12 rounded-lg object-cover bg-slate-100 border border-border/5 shrink-0"
+                            className="w-12 h-12 rounded-lg bg-slate-100 border border-border/5 shrink-0"
                           />
                         )}
 

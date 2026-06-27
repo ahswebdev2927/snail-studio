@@ -1,87 +1,107 @@
 "use client";
 
-import React, { useState } from "react";
-import { getOptimizedImageUrl } from "@/lib/cloudinary/utils";
+import React from "react";
+import Image, { ImageProps } from "next/image";
+import { getBlurPlaceholderUrl } from "@/lib/cloudinary/utils";
 
-type ImageVariant = "thumbnail" | "card" | "page" | "zoom" | "banner" | "custom";
+export type ImageVariant = "thumbnail" | "card" | "page" | "zoom" | "banner" | "custom";
 
-interface CloudinaryImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
+export interface CloudinaryImageProps extends Omit<ImageProps, "src" | "placeholder" | "blurDataURL"> {
   src: string; // publicId or full secure Cloudinary URL
   variant?: ImageVariant;
-  width?: number;
-  height?: number;
-  crop?: "scale" | "fill" | "thumb" | "crop";
+  crop?: "scale" | "fill" | "thumb" | "crop" | "limit";
+  gravity?: "auto" | "face" | "center" | "north" | "south" | "east" | "west" | string;
+  blur?: number | string;
+  objectFit?: "cover" | "contain" | "fill" | "none" | "scale-down";
   alt: string;
 }
 
 export const CloudinaryImage: React.FC<CloudinaryImageProps> = ({
   src,
   variant = "custom",
+  crop,
+  gravity,
+  blur,
+  objectFit = "cover",
   width,
   height,
-  crop = "fill",
   alt,
   className = "",
+  sizes,
+  fill,
   ...props
 }) => {
-  const [isLoaded, setIsLoaded] = useState(false);
-
-  let widthOpt: number | undefined = width;
-  let heightOpt: number | undefined = height;
+  let widthOpt: number | undefined = width ? Number(width) : undefined;
+  let heightOpt: number | undefined = height ? Number(height) : undefined;
   let cropOpt = crop;
 
   switch (variant) {
     case "thumbnail":
-      widthOpt = 200;
-      heightOpt = 200;
-      cropOpt = "fill";
+      widthOpt = widthOpt || 200;
+      heightOpt = heightOpt || 200;
+      cropOpt = cropOpt || "fill";
       break;
     case "card":
-      widthOpt = 400;
-      heightOpt = 400;
-      cropOpt = "fill";
+      widthOpt = widthOpt || 400;
+      heightOpt = heightOpt || 400;
+      cropOpt = cropOpt || "fill";
       break;
     case "page":
-      widthOpt = 800;
-      heightOpt = 800;
-      cropOpt = "fill";
+      widthOpt = widthOpt || 800;
+      heightOpt = heightOpt || 800;
+      cropOpt = cropOpt || "fill";
       break;
     case "zoom":
-      widthOpt = 1200;
-      heightOpt = 1200;
-      cropOpt = "fill";
+      widthOpt = widthOpt || 1200;
+      heightOpt = heightOpt || 1200;
+      cropOpt = cropOpt || "fill";
       break;
     case "banner":
-      widthOpt = 1920;
-      heightOpt = 800;
-      cropOpt = "fill";
+      widthOpt = widthOpt || 1920;
+      heightOpt = heightOpt || 800;
+      cropOpt = cropOpt || "fill";
       break;
   }
 
-  const optimizedUrl = getOptimizedImageUrl(src, {
-    width: widthOpt,
-    height: heightOpt,
-    crop: cropOpt,
-  });
+  // Determine whether to use absolute layout (fill) or fixed dimensions
+  const useFill = fill !== undefined ? fill : (!widthOpt && !heightOpt);
+
+  // Construct query params to pass configuration to the custom loader
+  const queryParams = new URLSearchParams();
+  if (cropOpt) queryParams.set("crop", cropOpt);
+  if (gravity) queryParams.set("gravity", gravity);
+  if (blur) queryParams.set("blur", String(blur));
+  if (heightOpt && !useFill) queryParams.set("height", String(heightOpt));
+
+  const queryString = queryParams.toString();
+  const srcWithParams = queryString ? `${src}?${queryString}` : src;
+
+  // Generate blur placeholder URL for Cloudinary images
+  const isCloudinary = src && (src.includes("res.cloudinary.com") || (!src.startsWith("/") && !src.startsWith("http")));
+  const blurUrl = isCloudinary ? getBlurPlaceholderUrl(src) : undefined;
+
+  const objectFitClass = 
+    objectFit === "cover" ? "object-cover" :
+    objectFit === "contain" ? "object-contain" :
+    objectFit === "fill" ? "object-fill" :
+    objectFit === "scale-down" ? "object-scale-down" : "object-none";
 
   return (
     <div className={`relative overflow-hidden bg-rose-50/50 dark:bg-neutral-900/40 rounded-lg ${className}`}>
-      {!isLoaded && (
-        <div className="absolute inset-0 animate-pulse flex items-center justify-center bg-rose-100/50 dark:bg-rose-950/20">
-          <div className="w-8 h-8 rounded-full border-2 border-rose-300 border-t-rose-500 animate-spin" />
-        </div>
-      )}
-
-      <img
-        src={optimizedUrl}
+      <Image
+        src={srcWithParams}
         alt={alt}
-        onLoad={() => setIsLoaded(true)}
-        className={`w-full h-full object-cover transition-opacity duration-500 ease-out ${
-          isLoaded ? "opacity-100" : "opacity-0"
-        }`}
+        width={useFill ? undefined : widthOpt}
+        height={useFill ? undefined : heightOpt}
+        fill={useFill}
+        sizes={sizes || (useFill ? "100vw" : undefined)}
+        placeholder={blurUrl ? "blur" : "empty"}
+        blurDataURL={blurUrl}
+        className={`w-full h-full transition-opacity duration-500 ease-out ${objectFitClass}`}
         {...props}
       />
     </div>
   );
 };
+
 export default CloudinaryImage;

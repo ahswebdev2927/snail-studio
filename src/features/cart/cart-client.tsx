@@ -23,6 +23,7 @@ import { ProductCard } from "@/components/storefront/product-card";
 import { formatPrice, cn } from "@/lib/utils";
 import { getCartCrossSellProducts } from "@/features/cart/actions";
 import { calculateBundleDiscount } from "@/lib/bundles";
+import CloudinaryImage from "@/components/media/cloudinary-image";
 import { getWishlistProducts } from "@/features/wishlist/actions";
 
 export default function CartClient() {
@@ -292,7 +293,13 @@ export default function CartClient() {
           <div key={product.id} className="py-4.5 flex gap-4 first:pt-0 last:pb-0">
             {/* Image */}
             <div className="w-16 h-16 bg-secondary/30 border border-border/40 rounded-xl overflow-hidden shrink-0 relative flex items-center justify-center">
-              <img src={primaryImage} alt={product.name} className="w-full h-full object-cover" />
+              <CloudinaryImage
+                src={primaryImage}
+                variant="thumbnail"
+                alt={product.name}
+                fill
+                className="w-full h-full object-cover"
+              />
             </div>
 
             {/* Details */}
@@ -447,7 +454,13 @@ export default function CartClient() {
                         {/* Image */}
                         <div className="w-24 h-24 bg-secondary/30 border border-border/40 rounded-xl overflow-hidden shrink-0 relative flex items-center justify-center">
                           {item.imageUrl ? (
-                            <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" />
+                            <CloudinaryImage
+                              src={item.imageUrl}
+                              variant="thumbnail"
+                              alt={item.name}
+                              fill
+                              className="w-full h-full object-cover"
+                            />
                           ) : (
                             <ShoppingBag className="w-10 h-10 text-muted-foreground/30" />
                           )}

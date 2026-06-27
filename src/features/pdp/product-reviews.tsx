@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { submitProductReview, getReviewImageUploadSignature } from "./actions";
+import CloudinaryImage from "@/components/media/cloudinary-image";
 
 export interface ReviewItem {
   id: string;
@@ -485,11 +486,12 @@ export function ProductReviews({
                           <div className="flex flex-wrap gap-3">
                             {uploadedImages.map((img, index) => (
                               <div key={img.publicId} className="relative w-18 h-18 rounded-xl overflow-hidden border border-border bg-secondary/10 group shrink-0">
-                                <img
-                                  src={img.url}
-                                  alt="preview"
-                                  className="w-full h-full object-cover"
-                                />
+                                 <CloudinaryImage
+                                   src={img.url}
+                                   variant="thumbnail"
+                                   alt="preview"
+                                   className="w-full h-full"
+                                 />
                                 <button
                                   type="button"
                                   onClick={() => handleRemoveUploadedImage(index)}
@@ -677,11 +679,12 @@ export function ProductReviews({
                               }}
                               className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden border border-border/40 hover:border-primary/40 transition-all cursor-pointer hover:scale-[1.03] duration-200 shrink-0 bg-secondary/10"
                             >
-                              <img
-                                src={img.url}
-                                alt={img.altText || "Review photo"}
-                                className="w-full h-full object-cover"
-                              />
+                               <CloudinaryImage
+                                 src={img.url}
+                                 variant="thumbnail"
+                                 alt={img.altText || "Review photo"}
+                                 className="w-full h-full"
+                               />
                             </button>
                           ))}
                         </div>
@@ -727,10 +730,12 @@ export function ProductReviews({
 
           {/* Main Image Slider Container */}
           <div className="relative z-5 max-w-4xl max-h-[85vh] w-[90vw] flex items-center justify-center px-4">
-            <img
+            <CloudinaryImage
               src={lightboxImages[lightboxIndex].url}
+              variant="zoom"
               alt={lightboxImages[lightboxIndex].altText || "Fullscreen review image"}
-              className="max-w-full max-h-[85vh] object-contain rounded-lg select-none"
+              className="max-w-full h-[80vh] w-[90vw]"
+              objectFit="contain"
             />
 
             {/* Slide Navigation Counters */}

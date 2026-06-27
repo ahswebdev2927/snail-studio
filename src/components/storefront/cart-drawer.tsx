@@ -9,6 +9,7 @@ import { Drawer, DrawerHeader, DrawerTitle, DrawerBody, DrawerFooter } from "../
 import { Button } from "../ui/button";
 import { formatPrice, cn } from "@/lib/utils";
 import { calculateBundleDiscount } from "@/lib/bundles";
+import CloudinaryImage from "../media/cloudinary-image";
 
 export function CartDrawer() {
   const router = useRouter();
@@ -206,7 +207,13 @@ export function CartDrawer() {
                     {/* Image */}
                     <div className="w-20 h-20 bg-secondary/30 border border-border/40 rounded-xl overflow-hidden shrink-0 relative flex items-center justify-center">
                       {item.imageUrl ? (
-                        <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" />
+                        <CloudinaryImage
+                          src={item.imageUrl}
+                          variant="thumbnail"
+                          alt={item.name}
+                          fill
+                          className="w-full h-full object-cover"
+                        />
                       ) : (
                         <ShoppingBag className="w-8 h-8 text-muted-foreground/30" />
                       )}

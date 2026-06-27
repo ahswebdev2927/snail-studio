@@ -26,6 +26,7 @@ import { useCartStore } from "@/lib/hooks/use-cart-store";
 import { Button } from "@/components/ui/button";
 import { formatPrice, cn } from "@/lib/utils";
 import { calculateBundleDiscount } from "@/lib/bundles";
+import CloudinaryImage from "@/components/media/cloudinary-image";
 import { 
   getCheckoutCustomer, 
   syncCartToDb, 
@@ -1223,10 +1224,11 @@ export default function CheckoutClient() {
               return (
                 <div key={item.id} className="flex gap-3 text-xs">
                   {item.imageUrl ? (
-                    <img 
+                    <CloudinaryImage 
                       src={item.imageUrl} 
+                      variant="thumbnail"
                       alt={item.name} 
-                      className="w-12 h-12 object-cover rounded-lg border border-border/30 bg-secondary/10 shrink-0" 
+                      className="w-12 h-12 rounded-lg border border-border/30 bg-secondary/10 shrink-0" 
                     />
                   ) : (
                     <div className="w-12 h-12 rounded-lg border border-border/30 bg-secondary/20 flex items-center justify-center shrink-0">

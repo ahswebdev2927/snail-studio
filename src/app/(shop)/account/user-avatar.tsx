@@ -1,7 +1,8 @@
 "use client";
 
-import React from "react";
-import { Crown, Gem, Sparkles, Star, Heart, User } from "lucide-react";
+import React, { useState } from "react";
+import { Crown, Gem, Sparkles, Star, Heart } from "lucide-react";
+import CloudinaryImage from "@/components/media/cloudinary-image";
 
 export interface UserAvatarProps {
   image: string | null;
@@ -16,6 +17,8 @@ export function UserAvatar({
   phone,
   className = "w-12 h-12 rounded-2xl"
 }: UserAvatarProps) {
+  const [hasError, setHasError] = useState(false);
+
   // Helper to extract initials
   const getInitials = (n: string | null, p: string) => {
     if (n && n.trim()) {
@@ -30,8 +33,8 @@ export function UserAvatar({
     return cleanPhone.slice(-2) || "U";
   };
 
-  // If no image is provided, display standard initials with neutral gradient
-  if (!image) {
+  // If no image is provided or loading failed, display standard initials with neutral gradient
+  if (!image || hasError) {
     return (
       <div
         className={`${className} bg-gradient-to-br from-primary/20 to-accent/20 border border-primary/20 flex items-center justify-center font-serif font-bold text-primary shrink-0 select-none`}
@@ -87,23 +90,12 @@ export function UserAvatar({
   // Handle external/custom image URL
   return (
     <div className={`${className} border border-border/40 overflow-hidden relative shrink-0 select-none bg-secondary/20`}>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
+      <CloudinaryImage
         src={image}
+        variant="thumbnail"
         alt={name || "User avatar"}
         className="w-full h-full object-cover"
-        onError={(e) => {
-          // Dynamic javascript fallback if URL fails to load
-          e.currentTarget.style.display = "none";
-          const parent = e.currentTarget.parentElement;
-          if (parent) {
-            const fallbackDiv = document.createElement("div");
-            fallbackDiv.className =
-              "w-full h-full bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center font-serif font-bold text-primary";
-            fallbackDiv.innerText = getInitials(name, phone);
-            parent.appendChild(fallbackDiv);
-          }
-        }}
+        onError={() => setHasError(true)}
       />
     </div>
   );

@@ -19,6 +19,7 @@ import {
   ChevronDown,
   Info
 } from "lucide-react";
+import CloudinaryImage from "@/components/media/cloudinary-image";
 
 interface TrackingResult {
   success: boolean;
@@ -651,9 +652,11 @@ function TrackingSearchContent() {
                     <div key={item.id} className="flex gap-3 py-3 first:pt-0 last:pb-0 items-center justify-between">
                       <div className="flex gap-3 items-center min-w-0">
                         <div className="relative w-12 h-12 rounded-xl overflow-hidden shrink-0 border border-border/20 bg-secondary/15">
-                          <img 
+                          <CloudinaryImage 
                             src={imgUrl} 
+                            variant="thumbnail"
                             alt={item.variant?.product?.name || "Nails"} 
+                            fill
                             className="object-cover w-full h-full"
                           />
                         </div>
