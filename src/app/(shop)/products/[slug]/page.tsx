@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { products, reviews, orders, orderItems, productVariants } from "@/db/schema";
+import { products, reviews, orders, orderItems, productVariants, productBundles, productBundleItems } from "@/db/schema";
 import { eq, ne, avg, count, and, inArray, sql } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
@@ -9,6 +9,7 @@ import { ProductGallery, GalleryMediaItem } from "@/features/pdp/product-gallery
 import { ProductInfo } from "@/features/pdp/product-info";
 import { ProductActions, ProductVariantFull } from "@/features/pdp/product-actions";
 import { BreadcrumbItem } from "@/features/pdp/pdp-breadcrumb";
+import { ProductBundleWidget } from "@/features/pdp/product-bundle-widget";
 import { ProductTabs } from "@/features/pdp/product-tabs";
 import { ProductReviews } from "@/features/pdp/product-reviews";
 import { RelatedProducts } from "@/features/pdp/related-products";
@@ -274,9 +275,41 @@ export default async function ProductPage({
     }
   }
 
+  /* ----- 2.2 Query active bundles that include this product ----- */
+  const dbBundles = await db.query.productBundles.findMany({
+    where: eq(productBundles.isActive, true),
+    with: {
+      items: {
+        with: {
+          product: {
+            with: {
+              variants: {
+                with: {
+                  inventory: true,
+                  attributes: {
+                    with: {
+                      attributeValue: {
+                        with: { group: true }
+                      }
+                    }
+                  }
+                }
+              },
+              media: {
+                with: { media: true },
+                orderBy: (pm, { asc }) => [asc(pm.sortOrder)]
+              }
+            }
+          }
+        }
+      }
+    }
+  });
 
-
-  /* ----- 3. Shape gallery media ----- */
+  const relevantBundles = dbBundles.filter((b) =>
+    b.items.some((item) => item.productId === product.id)
+  );
+  const formattedBundles = relevantBundles as any;
   const galleryMedia: GalleryMediaItem[] = product.media
     .filter((pm) => pm.media)
     .map((pm) => ({
@@ -488,6 +521,11 @@ export default async function ProductPage({
 
         {/* ---- Product Tabs Section (Description, Wear Guide, Shipping, FAQs) ---- */}
         <ProductTabs description={product.description} />
+
+        {/* ---- Product Bundle Widget ---- */}
+        {formattedBundles.length > 0 && (
+          <ProductBundleWidget bundles={formattedBundles} currentProductId={product.id} />
+        )}
 
         {/* ---- Customer Reviews Section ---- */}
         <ProductReviews

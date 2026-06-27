@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ShoppingBag, Trash2, Plus, Minus, ArrowRight } from "lucide-react";
@@ -8,6 +8,7 @@ import { useCartStore } from "@/lib/hooks/use-cart-store";
 import { Drawer, DrawerHeader, DrawerTitle, DrawerBody, DrawerFooter } from "../ui/drawer";
 import { Button } from "../ui/button";
 import { formatPrice, cn } from "@/lib/utils";
+import { calculateBundleDiscount } from "@/lib/bundles";
 
 export function CartDrawer() {
   const router = useRouter();
@@ -17,6 +18,21 @@ export function CartDrawer() {
   const removeFromCart = useCartStore((state) => state.removeFromCart);
   const updateQuantity = useCartStore((state) => state.updateQuantity);
   const addToCart = useCartStore((state) => state.addToCart);
+
+  const [activeBundles, setActiveBundles] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (cartOpen) {
+      fetch("/api/bundles/active")
+        .then((res) => res.json())
+        .then((data) => {
+          if (Array.isArray(data)) {
+            setActiveBundles(data);
+          }
+        })
+        .catch((err) => console.error("Failed to load active bundles in cart drawer:", err));
+    }
+  }, [cartOpen]);
 
   // Calculate subtotal. If price is in paise, subtotal will be in paise.
   // Standard prices in DB are in paise (e.g. 299900 = ₹2,999.00).
@@ -33,6 +49,8 @@ export function CartDrawer() {
     (sum, item) => sum + getNormalizedPriceInPaise(item.price) * item.quantity,
     0
   );
+
+  const { totalDiscount: bundleDiscount } = calculateBundleDiscount(cart, activeBundles);
 
   // Free shipping progress calculations (Threshold: ₹3,000 / 300000 paise)
   const freeShippingThreshold = 300000;
@@ -361,9 +379,15 @@ export function CartDrawer() {
               <span>Estimated Shipping</span>
               <span className="text-foreground font-medium">{isFreeShipping ? "FREE" : "Calculated at checkout"}</span>
             </div>
+            {bundleDiscount > 0 && (
+              <div className="flex justify-between items-center text-xs text-emerald-600 font-medium">
+                <span>Bundle Discount</span>
+                <span>-{formatPrice(bundleDiscount)}</span>
+              </div>
+            )}
             <div className="flex justify-between items-center text-sm font-semibold border-t border-border/10 pt-2 text-foreground">
               <span>Subtotal</span>
-              <span className="text-primary font-serif">{formatPrice(subtotal)}</span>
+              <span className="text-primary font-serif">{formatPrice(subtotal - bundleDiscount)}</span>
             </div>
           </div>
           <div className="flex flex-col gap-2">

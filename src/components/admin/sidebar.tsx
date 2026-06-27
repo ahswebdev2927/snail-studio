@@ -88,6 +88,11 @@ export default function Sidebar({ isCollapsed, isMobileOpen, closeMobileSidebar,
       icon: Ticket
     },
     {
+      name: "Bundles",
+      href: "/admin/bundles",
+      icon: Layers
+    },
+    {
       name: "Settings",
       icon: Settings,
       subItems: [

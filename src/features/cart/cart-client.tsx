@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/storefront/product-card";
 import { formatPrice, cn } from "@/lib/utils";
 import { getCartCrossSellProducts } from "@/features/cart/actions";
+import { calculateBundleDiscount } from "@/lib/bundles";
 import { getWishlistProducts } from "@/features/wishlist/actions";
 
 export default function CartClient() {
@@ -38,6 +39,21 @@ export default function CartClient() {
   const [wishlistProducts, setWishlistProducts] = useState<any[]>([]);
   const [loadingCrossSells, setLoadingCrossSells] = useState(false);
   const [loadingWishlist, setLoadingWishlist] = useState(false);
+
+  const [activeBundles, setActiveBundles] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (mounted) {
+      fetch("/api/bundles/active")
+        .then((res) => res.json())
+        .then((data) => {
+          if (Array.isArray(data)) {
+            setActiveBundles(data);
+          }
+        })
+        .catch((err) => console.error("Failed to load active bundles on cart page:", err));
+    }
+  }, [mounted]);
 
   const cart = useCartStore((state) => state.cart);
   const wishlist = useCartStore((state) => state.wishlist);
@@ -130,7 +146,9 @@ export default function CartClient() {
     }
   }
 
-  const total = subtotal - discountAmount + shippingFee;
+  const { totalDiscount: bundleDiscount } = calculateBundleDiscount(cart, activeBundles);
+
+  const total = subtotal - discountAmount - bundleDiscount + shippingFee;
 
   // Premium upgrades state
   const hasSizingKit = cart.some((item) => item.id === "accessory_sizing_kit");
@@ -682,6 +700,14 @@ export default function CartClient() {
                     <span>Subtotal</span>
                     <span className="font-semibold text-foreground">{formatPrice(subtotal)}</span>
                   </div>
+
+                  {/* Bundle Discount */}
+                  {bundleDiscount > 0 && (
+                    <div className="flex justify-between text-emerald-600 font-medium">
+                      <span>Bundle Discount</span>
+                      <span className="font-semibold">-{formatPrice(bundleDiscount)}</span>
+                    </div>
+                  )}
 
                   {/* Coupon Application */}
                   {appliedCoupon ? (

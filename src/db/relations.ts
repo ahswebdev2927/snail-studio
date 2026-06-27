@@ -75,7 +75,8 @@ export const productsRelations = relations(schema.products, ({ one, many }) => (
   collections: many(schema.productCollections),
   wishlistItems: many(schema.wishlistItems),
   reviews: many(schema.reviews),
-  media: many(schema.productMedia)
+  media: many(schema.productMedia),
+  bundles: many(schema.productBundleItems)
 }));
 
 export const attributeGroupsRelations = relations(schema.attributeGroups, ({ many }) => ({
@@ -362,5 +363,20 @@ export const couponUsageRelations = relations(schema.couponUsage, ({ one }) => (
   user: one(schema.users, {
     fields: [schema.couponUsage.userId],
     references: [schema.users.id]
+  })
+}));
+
+export const productBundlesRelations = relations(schema.productBundles, ({ many }) => ({
+  items: many(schema.productBundleItems)
+}));
+
+export const productBundleItemsRelations = relations(schema.productBundleItems, ({ one }) => ({
+  bundle: one(schema.productBundles, {
+    fields: [schema.productBundleItems.bundleId],
+    references: [schema.productBundles.id]
+  }),
+  product: one(schema.products, {
+    fields: [schema.productBundleItems.productId],
+    references: [schema.products.id]
   })
 }));

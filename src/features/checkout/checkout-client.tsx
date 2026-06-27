@@ -25,6 +25,7 @@ import {
 import { useCartStore } from "@/lib/hooks/use-cart-store";
 import { Button } from "@/components/ui/button";
 import { formatPrice, cn } from "@/lib/utils";
+import { calculateBundleDiscount } from "@/lib/bundles";
 import { 
   getCheckoutCustomer, 
   syncCartToDb, 
@@ -89,6 +90,19 @@ export default function CheckoutClient() {
   const [couponSuccess, setCouponSuccess] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
   const [validatingCoupon, setValidatingCoupon] = useState(false);
+
+  const [activeBundles, setActiveBundles] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetch("/api/bundles/active")
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setActiveBundles(data);
+        }
+      })
+      .catch((err) => console.error("Failed to load active bundles on checkout page:", err));
+  }, []);
 
   // Step wizard navigation
   const [currentStep, setCurrentStep] = useState<CheckoutStep>("address");
@@ -249,8 +263,10 @@ export default function CheckoutClient() {
   // Coupon calculations (already in paise from validate endpoint)
   const discountVal = appliedCoupon ? appliedCoupon.discountAmount : 0;
 
+  const { totalDiscount: bundleDiscount } = calculateBundleDiscount(cart, activeBundles);
+
   // Final Total in paise
-  const finalTotal = Math.max(0, cartSubtotal + shippingCost - discountVal);
+  const finalTotal = Math.max(0, cartSubtotal + shippingCost - discountVal - bundleDiscount);
 
   // Validate coupon
   const handleValidateCoupon = async (e: React.FormEvent) => {
@@ -373,7 +389,7 @@ export default function CheckoutClient() {
         billingAddress: billingDetails,
         notes: deliveryInstructions || undefined,
         couponCode: appliedCoupon ? appliedCoupon.code : undefined,
-        discountAmount: appliedCoupon ? appliedCoupon.discountAmount : undefined, // already in paise
+        discountAmount: (appliedCoupon ? appliedCoupon.discountAmount : 0) + bundleDiscount, // sum of coupon and bundle discounts (paise)
         shippingAmount: shippingCost // already in paise
       });
 
@@ -1309,6 +1325,13 @@ export default function CheckoutClient() {
               <div className="flex justify-between text-emerald-500">
                 <span className="flex items-center gap-1">Discount ({appliedCoupon.code})</span>
                 <span className="font-mono font-semibold text-emerald-500">-{formatPrice(discountVal)}</span>
+              </div>
+            )}
+
+            {bundleDiscount > 0 && (
+              <div className="flex justify-between text-emerald-500">
+                <span>Bundle Discount</span>
+                <span className="font-mono font-semibold text-emerald-500">-{formatPrice(bundleDiscount)}</span>
               </div>
             )}
 

@@ -1,7 +1,8 @@
-import { sqliteTable, text, integer, uniqueIndex } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, uniqueIndex, primaryKey } from 'drizzle-orm/sqlite-core';
 import { sql } from 'drizzle-orm';
 import { orders } from './orders';
 import { users } from './auth';
+import { products } from './catalog';
 
 export const coupons = sqliteTable('coupons', {
   id: text('id').primaryKey(),
@@ -70,4 +71,22 @@ export const announcements = sqliteTable('announcements', {
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)
 });
+
+export const productBundles = sqliteTable('product_bundles', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  description: text('description'),
+  discountType: text('discount_type', { enum: ['percentage', 'fixed'] }).notNull().default('percentage'),
+  discountValue: integer('discount_value').notNull(), // percentage point (e.g. 15 for 15%) or paise
+  isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)
+});
+
+export const productBundleItems = sqliteTable('product_bundle_items', {
+  bundleId: text('bundle_id').notNull().references(() => productBundles.id, { onDelete: 'cascade' }),
+  productId: text('product_id').notNull().references(() => products.id, { onDelete: 'cascade' })
+}, (t) => [
+  primaryKey({ columns: [t.bundleId, t.productId] })
+]);
 

@@ -201,6 +201,66 @@ export async function seedProducts() {
         style: "minimalist",
         occasion: "casual"
       }
+    },
+    {
+      name: "Professional Strong Nail Glue",
+      slug: "professional-strong-nail-glue",
+      description: "Long-wear professional nail glue for secure, salon-quality adhesion that lasts up to 2-3 weeks.",
+      shortDescription: "Long-wear professional nail glue.",
+      categorySlug: "nail-glue",
+      price: 249, // INR
+      compareAtPrice: 299, // INR
+      isFeatured: false,
+      isBestSeller: true,
+      isNewArrival: false,
+      isTrending: false,
+      imageUrl: "/luxury_nails_hero.png",
+      attributes: {}
+    },
+    {
+      name: "Adhesive Double-Sided Nail Tabs",
+      slug: "adhesive-double-sided-nail-tabs",
+      description: "Temporary double-sided nail adhesive tabs. Perfect for photo shoots, events, or short-term weekend wear.",
+      shortDescription: "Temporary double-sided nail adhesive tabs.",
+      categorySlug: "adhesive-tabs",
+      price: 149, // INR
+      compareAtPrice: 199, // INR
+      isFeatured: false,
+      isBestSeller: false,
+      isNewArrival: false,
+      isTrending: false,
+      imageUrl: "/luxury_nails_hero.png",
+      attributes: {}
+    },
+    {
+      name: "Nail Prep & Care Kit",
+      slug: "nail-prep-and-care-kit",
+      description: "Includes a mini nail file, buffer block, cuticle wood pusher, and alcohol prep wipes for perfect application prep.",
+      shortDescription: "Complete prep kit for press-on nails application.",
+      categorySlug: "prep-kits",
+      price: 199, // INR
+      compareAtPrice: 249, // INR
+      isFeatured: false,
+      isBestSeller: true,
+      isNewArrival: false,
+      isTrending: false,
+      imageUrl: "/luxury_nails_hero.png",
+      attributes: {}
+    },
+    {
+      name: "Sizing Kit (All Nail Shapes)",
+      slug: "sizing-kit-all-nail-shapes",
+      description: "Sample kit containing all 10 standard sizes of our nail shapes so you can find your perfect fit.",
+      shortDescription: "Nails sizing sample kit.",
+      categorySlug: "prep-kits",
+      price: 150, // INR
+      compareAtPrice: 199, // INR
+      isFeatured: false,
+      isBestSeller: false,
+      isNewArrival: true,
+      isTrending: true,
+      imageUrl: "/luxury_nails_hero.png",
+      attributes: {}
     }
   ];
 
@@ -266,38 +326,62 @@ export async function seedProducts() {
         sortOrder: 0
       });
 
-      // 4. Create Variants (XS, S, M, L)
-      const sizes = [
-        { name: "XS (Extra Small)", code: "xs" },
-        { name: "S (Small)", code: "s" },
-        { name: "M (Medium)", code: "m" },
-        { name: "L (Large)", code: "l" }
-      ];
+      // 4. Create Variants (XS, S, M, L or Default for accessories)
+      const isAccessory = ["adhesive-tabs", "nail-glue", "prep-kits"].includes(p.categorySlug);
 
-      for (const size of sizes) {
+      if (isAccessory) {
         const variantId = `var_${nanoid(10)}`;
-        const sku = `SKU-${p.slug.substring(0, 8).toUpperCase()}-${size.code.toUpperCase()}`;
+        const sku = `SKU-${p.slug.substring(0, 8).toUpperCase()}-DEFAULT`;
 
         await tx.insert(productVariants).values({
           id: variantId,
           productId,
           sku,
-          name: `${p.name} - ${size.name}`,
+          name: `${p.name} - Default`,
           price: priceMinPaise,
           compareAtPrice: p.compareAtPrice ? p.compareAtPrice * 100 : null,
           status: "Active"
         });
 
-        // Insert inventory stock item (make one variant of "French Classic Almond" out of stock for testing)
-        const isOutOfStock = p.slug === "french-classic-almond" && size.code === "xs";
-        const stockLevel = isOutOfStock ? 0 : 15;
-
         await tx.insert(inventoryItems).values({
           id: `inv_${nanoid(10)}`,
           variantId,
-          stockLevel,
+          stockLevel: 100, // plenty of stock for accessories
           lowStockThreshold: 5
         });
+      } else {
+        const sizes = [
+          { name: "XS (Extra Small)", code: "xs" },
+          { name: "S (Small)", code: "s" },
+          { name: "M (Medium)", code: "m" },
+          { name: "L (Large)", code: "l" }
+        ];
+
+        for (const size of sizes) {
+          const variantId = `var_${nanoid(10)}`;
+          const sku = `SKU-${p.slug.substring(0, 8).toUpperCase()}-${size.code.toUpperCase()}`;
+
+          await tx.insert(productVariants).values({
+            id: variantId,
+            productId,
+            sku,
+            name: `${p.name} - ${size.name}`,
+            price: priceMinPaise,
+            compareAtPrice: p.compareAtPrice ? p.compareAtPrice * 100 : null,
+            status: "Active"
+          });
+
+          // Insert inventory stock item (make one variant of "French Classic Almond" out of stock for testing)
+          const isOutOfStock = p.slug === "french-classic-almond" && size.code === "xs";
+          const stockLevel = isOutOfStock ? 0 : 15;
+
+          await tx.insert(inventoryItems).values({
+            id: `inv_${nanoid(10)}`,
+            variantId,
+            stockLevel,
+            lowStockThreshold: 5
+          });
+        }
       }
     }
   });
