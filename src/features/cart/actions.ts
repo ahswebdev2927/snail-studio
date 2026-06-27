@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/db";
-import { products, reviews, productVariants } from "@/db/schema";
+import { products, reviews, productVariants, orderItems, wishlistItems } from "@/db/schema";
 import { eq, notInArray, and, sql, inArray } from "drizzle-orm";
 
 /**
@@ -22,7 +22,7 @@ export async function getCartCrossSellProducts(cartVariantIds: string[] = []) {
       excludedProductIds = variantsInCart.map((v) => v.productId);
     }
 
-    // Query active products excluding any currently in the cart
+    // Query all active products excluding any currently in the cart
     const dbProducts = await db.query.products.findMany({
       where: and(
         eq(products.isActive, true),
@@ -39,14 +39,50 @@ export async function getCartCrossSellProducts(cartVariantIds: string[] = []) {
           orderBy: (pm, { asc }) => [asc(pm.sortOrder)],
         },
       },
-      limit: 4, // Fetch up to 4 recommendations
     });
 
     if (dbProducts.length === 0) {
       return { success: true, products: [] };
     }
 
-    const productIds = dbProducts.map((p) => p.id);
+    // Fetch sales count (total quantity sold) per product
+    const salesData = await db
+      .select({
+        productId: productVariants.productId,
+        salesCount: sql<number>`sum(${orderItems.quantity})`,
+      })
+      .from(orderItems)
+      .innerJoin(productVariants, eq(productVariants.id, orderItems.variantId))
+      .groupBy(productVariants.productId);
+
+    const salesMap = new Map(salesData.map((s) => [s.productId, Number(s.salesCount || 0)]));
+
+    // Fetch wishlist counts per product
+    const wishlistData = await db
+      .select({
+        productId: wishlistItems.productId,
+        wishlistCount: sql<number>`count(${wishlistItems.productId})`,
+      })
+      .from(wishlistItems)
+      .groupBy(wishlistItems.productId);
+
+    const wishlistMap = new Map(wishlistData.map((w) => [w.productId, Number(w.wishlistCount || 0)]));
+
+    // Calculate dynamic recommendation scores and sort products
+    // Weightings: SalesCount = 5x, WishlistCount = 3x, ViewsCount = 1x
+    const scoredProducts = dbProducts
+      .map((p) => {
+        const viewsCount = p.views || 0;
+        const salesCount = salesMap.get(p.id) || 0;
+        const wishlistCount = wishlistMap.get(p.id) || 0;
+        const score = (viewsCount * 1) + (salesCount * 5) + (wishlistCount * 3);
+        return { product: p, score };
+      })
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 4) // Fetch top 4 recommendations
+      .map((item) => item.product);
+
+    const productIds = scoredProducts.map((p) => p.id);
 
     // Fetch reviews statistics for rating display
     const reviewsData = await db
@@ -66,7 +102,7 @@ export async function getCartCrossSellProducts(cartVariantIds: string[] = []) {
 
     const reviewsMap = new Map(reviewsData.map((r) => [r.productId, r]));
 
-    const formattedProducts = dbProducts.map((p) => {
+    const formattedProducts = scoredProducts.map((p) => {
       const prices = p.variants.map((v) => v.price);
       const priceMin = prices.length > 0 ? Math.min(...prices) : 0;
       const priceMax = prices.length > 0 ? Math.max(...prices) : 0;

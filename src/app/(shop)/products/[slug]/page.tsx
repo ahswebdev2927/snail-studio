@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { products, reviews, orders, orderItems, productVariants } from "@/db/schema";
-import { eq, ne, avg, count, and, inArray } from "drizzle-orm";
+import { eq, ne, avg, count, and, inArray, sql } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
 import { cookies } from "next/headers";
@@ -99,6 +99,12 @@ export default async function ProductPage({
   if (!product || !product.isActive) {
     notFound();
   }
+
+  // Increment views count asynchronously (non-blocking)
+  db.update(products)
+    .set({ views: sql`${products.views} + 1` })
+    .where(eq(products.id, product.id))
+    .catch((err) => console.error("Error incrementing product views:", err));
 
   /* ----- 2. Approved reviews aggregate ----- */
   const reviewStats = await db

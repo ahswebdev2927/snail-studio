@@ -42,6 +42,7 @@ export const products = sqliteTable('products', {
   ogImage: text('og_image'),
   status: text('status', { enum: ['Active', 'Draft', 'Out Of Stock', 'Archived'] }).notNull().default('Active'),
   isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
+  views: integer('views').notNull().default(0),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)
 }, (table) => [
