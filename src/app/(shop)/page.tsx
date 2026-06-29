@@ -20,6 +20,8 @@ import { RecentlyViewed } from "@/features/pdp/recently-viewed";
 
 
 
+export const revalidate = 3600; // Cache homepage for 1 hour
+
 export default async function Home() {
   // Fetch hero banners, dynamic product rows, and size profiles in parallel
   const [activeBanners, bestSellers, newArrivals, trending, activeSizes] = await Promise.all([

@@ -3,8 +3,6 @@ import { products, reviews, orders, orderItems, productVariants, productBundles,
 import { eq, ne, avg, count, and, inArray, sql } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
-import { cookies } from "next/headers";
-import { getSessionUser } from "@/lib/auth/session";
 import { ProductGallery, GalleryMediaItem } from "@/features/pdp/product-gallery";
 import { ProductInfo } from "@/features/pdp/product-info";
 import { ProductActions, ProductVariantFull } from "@/features/pdp/product-actions";
@@ -15,6 +13,22 @@ import { ProductReviews } from "@/features/pdp/product-reviews";
 import { RelatedProducts } from "@/features/pdp/related-products";
 import { FrequentlyBoughtTogether } from "@/features/pdp/frequently-bought-together";
 import { RecentlyViewedTracker, RecentlyViewed } from "@/features/pdp/recently-viewed";
+
+export const revalidate = 3600; // Cache pages for 1 hour, then regenerate in background
+export const dynamicParams = true; // Support dynamic rendering of newly added products
+
+export async function generateStaticParams() {
+  const activeProducts = await db.query.products.findMany({
+    where: eq(products.isActive, true),
+    columns: {
+      slug: true,
+    },
+  });
+
+  return activeProducts.map((p) => ({
+    slug: p.slug,
+  }));
+}
 
 /* -----------------------------------------------------------------------
  * generateMetadata — SSR SEO per product
@@ -101,11 +115,7 @@ export default async function ProductPage({
     notFound();
   }
 
-  // Increment views count asynchronously (non-blocking)
-  db.update(products)
-    .set({ views: sql`${products.views} + 1` })
-    .where(eq(products.id, product.id))
-    .catch((err) => console.error("Error incrementing product views:", err));
+
 
   /* ----- 2. Approved reviews aggregate ----- */
   const reviewStats = await db
@@ -173,66 +183,13 @@ export default async function ProductPage({
       })),
   }));
 
-  /* ----- 2.2 User Session Eligibility Check ----- */
-  const cookieStore = await cookies();
-  const token = cookieStore.get("accessToken")?.value;
-  const user = token ? await getSessionUser(token) : null;
-
-  let eligibility = {
+  const eligibility = {
     isLoggedIn: false,
     hasPurchased: false,
     isDelivered: false,
     isEligible: false,
     remainingMinutes: 0,
   };
-
-  if (user) {
-    // Check if this user purchased the product
-    const userOrders = variantIds.length > 0 ? await db
-      .select({
-        id: orders.id,
-        status: orders.status,
-        updatedAt: orders.updatedAt,
-      })
-      .from(orders)
-      .innerJoin(orderItems, eq(orderItems.orderId, orders.id))
-      .where(
-        and(
-          eq(orders.userId, user.id),
-          inArray(orderItems.variantId, variantIds)
-        )
-      ) : [];
-
-    const hasPurchased = userOrders.length > 0;
-    const deliveredOrders = userOrders.filter((o) => o.status === "delivered");
-    const isDelivered = deliveredOrders.length > 0;
-
-    let isEligible = false;
-    let remainingMinutes = 0;
-    
-    if (isDelivered) {
-      const mostRecent = deliveredOrders.reduce((latest, current) => {
-        return current.updatedAt > latest.updatedAt ? current : latest;
-      }, deliveredOrders[0]);
-
-      const timeDiff = Date.now() - mostRecent.updatedAt.getTime();
-      const TWO_HOURS = 2 * 60 * 60 * 1000;
-      
-      if (timeDiff >= TWO_HOURS) {
-        isEligible = true;
-      } else {
-        remainingMinutes = Math.ceil((TWO_HOURS - timeDiff) / (60 * 1000));
-      }
-    }
-
-    eligibility = {
-      isLoggedIn: true,
-      hasPurchased,
-      isDelivered,
-      isEligible,
-      remainingMinutes,
-    };
-  }
 
   /* ----- 2.3 Fetch Related Category Products ----- */
   let relatedProducts = await db.query.products.findMany({

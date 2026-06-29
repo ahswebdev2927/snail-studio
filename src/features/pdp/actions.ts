@@ -1,8 +1,8 @@
 "use server";
 
 import { db } from "@/db";
-import { wishlists, wishlistItems, orders, orderItems, productVariants, reviews, media, reviewImages } from "@/db/schema";
-import { eq, and, inArray } from "drizzle-orm";
+import { wishlists, wishlistItems, orders, orderItems, productVariants, reviews, media, reviewImages, products } from "@/db/schema";
+import { eq, and, inArray, sql } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { getSessionUser } from "@/lib/auth/session";
 import { nanoid } from "nanoid";
@@ -292,5 +292,114 @@ export async function getReviewImageUploadSignature(): Promise<
   } catch (error: any) {
     console.error("Error generating upload signature for review:", error);
     return { success: false, error: error.message || "Failed to generate upload signature." };
+  }
+}
+
+/**
+ * Checks if the current user is eligible to submit a review for a product.
+ */
+export async function checkReviewEligibility(productId: string) {
+  try {
+    const user = await getAuthUser();
+    
+    // Fetch product variants to map to orders
+    const product = await db.query.products.findFirst({
+      where: eq(products.id, productId),
+      with: {
+        variants: true,
+      },
+    });
+
+    if (!product) {
+      return {
+        isLoggedIn: false,
+        hasPurchased: false,
+        isDelivered: false,
+        isEligible: false,
+        remainingMinutes: 0,
+      };
+    }
+
+    const variantIds = product.variants.map((v) => v.id);
+
+    if (!user) {
+      return {
+        isLoggedIn: false,
+        hasPurchased: false,
+        isDelivered: false,
+        isEligible: false,
+        remainingMinutes: 0,
+      };
+    }
+
+    // Check if this user purchased the product
+    const userOrders = variantIds.length > 0 ? await db
+      .select({
+        id: orders.id,
+        status: orders.status,
+        updatedAt: orders.updatedAt,
+      })
+      .from(orders)
+      .innerJoin(orderItems, eq(orderItems.orderId, orders.id))
+      .where(
+        and(
+          eq(orders.userId, user.id),
+          inArray(orderItems.variantId, variantIds)
+        )
+      ) : [];
+
+    const hasPurchased = userOrders.length > 0;
+    const deliveredOrders = userOrders.filter((o) => o.status === "delivered");
+    const isDelivered = deliveredOrders.length > 0;
+
+    let isEligible = false;
+    let remainingMinutes = 0;
+    
+    if (isDelivered) {
+      const mostRecent = deliveredOrders.reduce((latest, current) => {
+        return current.updatedAt > latest.updatedAt ? current : latest;
+      }, deliveredOrders[0]);
+
+      const timeDiff = Date.now() - mostRecent.updatedAt.getTime();
+      const TWO_HOURS = 2 * 60 * 60 * 1000;
+      
+      if (timeDiff >= TWO_HOURS) {
+        isEligible = true;
+      } else {
+        remainingMinutes = Math.ceil((TWO_HOURS - timeDiff) / (60 * 1000));
+      }
+    }
+
+    return {
+      isLoggedIn: true,
+      hasPurchased,
+      isDelivered,
+      isEligible,
+      remainingMinutes,
+    };
+  } catch (error) {
+    console.error("Error checking review eligibility:", error);
+    return {
+      isLoggedIn: false,
+      hasPurchased: false,
+      isDelivered: false,
+      isEligible: false,
+      remainingMinutes: 0,
+    };
+  }
+}
+
+/**
+ * Increments the views count of a product.
+ */
+export async function incrementProductViews(productId: string) {
+  try {
+    await db.update(products)
+      .set({ views: sql`${products.views} + 1` })
+      .where(eq(products.id, productId));
+    return { success: true };
+  } catch (error) {
+    console.error("Error incrementing product views:", error);
+    return { success: false };
   }
 }

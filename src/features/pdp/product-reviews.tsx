@@ -17,7 +17,7 @@ import {
   Loader2 
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { submitProductReview, getReviewImageUploadSignature } from "./actions";
+import { submitProductReview, getReviewImageUploadSignature, checkReviewEligibility } from "./actions";
 import CloudinaryImage from "@/components/media/cloudinary-image";
 
 export interface ReviewItem {
@@ -87,6 +87,31 @@ export function ProductReviews({
 
   // Show All / Limit reviews State
   const [showAllReviews, setShowAllReviews] = useState(false);
+
+  const [currentEligibility, setCurrentEligibility] = useState<ReviewEligibility>(eligibility);
+  const [isLoadingEligibility, setIsLoadingEligibility] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function loadEligibility() {
+      try {
+        const res = await checkReviewEligibility(productId);
+        if (isMounted) {
+          setCurrentEligibility(res);
+          setIsLoadingEligibility(false);
+        }
+      } catch (err) {
+        console.error("Failed to load review eligibility:", err);
+        if (isMounted) {
+          setIsLoadingEligibility(false);
+        }
+      }
+    }
+    loadEligibility();
+    return () => {
+      isMounted = false;
+    };
+  }, [productId]);
 
   useEffect(() => {
     if (lightboxIndex === null || lightboxImages.length === 0) return;
@@ -359,7 +384,12 @@ export function ProductReviews({
             <div className="p-6 rounded-3xl bg-secondary/10 border border-border/30 max-w-2xl mx-auto animate-in fade-in duration-300">
               
               {/* Submission Status Message / Checks */}
-              {submitSuccess ? (
+              {isLoadingEligibility ? (
+                <div className="text-center py-8 space-y-2">
+                  <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto" />
+                  <p className="text-xs text-muted-foreground font-light font-sans">Verifying eligibility...</p>
+                </div>
+              ) : submitSuccess ? (
                 <div className="text-center py-6 space-y-3">
                   <div className="w-12 h-12 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center mx-auto">
                     <Check className="w-6 h-6" />
@@ -369,7 +399,7 @@ export function ProductReviews({
                     Thank you for your feedback! Your review has been submitted and is currently awaiting moderation/approval before publication.
                   </p>
                 </div>
-              ) : !eligibility.isLoggedIn ? (
+              ) : !currentEligibility.isLoggedIn ? (
                 <div className="text-center py-4 space-y-2">
                   <User className="w-8 h-8 text-muted-foreground/60 mx-auto" />
                   <p className="text-xs text-muted-foreground font-light">
@@ -382,7 +412,7 @@ export function ProductReviews({
                     Go to Authentication
                   </a>
                 </div>
-              ) : !eligibility.hasPurchased ? (
+              ) : !currentEligibility.hasPurchased ? (
                 <div className="text-center py-4 space-y-2">
                   <AlertTriangle className="w-8 h-8 text-amber-500/80 mx-auto" />
                   <h4 className="text-xs font-bold uppercase tracking-wider text-foreground">Verified Buyer Only</h4>
@@ -390,7 +420,7 @@ export function ProductReviews({
                     You can only write a review for products you have purchased. Buy this item to share your feedback!
                   </p>
                 </div>
-              ) : !eligibility.isDelivered ? (
+              ) : !currentEligibility.isDelivered ? (
                 <div className="text-center py-4 space-y-2">
                   <Clock className="w-8 h-8 text-amber-500/80 mx-auto" />
                   <h4 className="text-xs font-bold uppercase tracking-wider text-foreground">Order Not Delivered</h4>
@@ -398,7 +428,7 @@ export function ProductReviews({
                     Your order contains this product but has not been marked as delivered yet. You can submit a review once your package is delivered.
                   </p>
                 </div>
-              ) : !eligibility.isEligible ? (
+              ) : !currentEligibility.isEligible ? (
                 <div className="text-center py-6 space-y-3">
                   <Clock className="w-10 h-10 text-primary mx-auto animate-pulse" />
                   <h4 className="text-xs font-bold uppercase tracking-wider text-foreground">Delivery Validation Pending</h4>
@@ -406,7 +436,7 @@ export function ProductReviews({
                     Your package was recently delivered! For quality control, reviews are locked until <strong>2 hours after delivery</strong>.
                   </p>
                   <p className="text-[11px] text-primary font-semibold">
-                    Please try again in about {eligibility.remainingMinutes} minute{eligibility.remainingMinutes !== 1 && "s"}.
+                    Please try again in about {currentEligibility.remainingMinutes} minute{currentEligibility.remainingMinutes !== 1 && "s"}.
                   </p>
                 </div>
               ) : (

@@ -29,30 +29,39 @@ export const CloudinaryVideo: React.FC<CloudinaryVideoProps> = ({
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [showPlayOverlay, setShowPlayOverlay] = useState(false);
+  const [shouldLoad, setShouldLoad] = useState(false);
 
   const optimizedVideoUrl = getOptimizedVideoUrl(src, { width, height, crop });
   const autoPosterUrl = posterUrl || getVideoPosterUrl(src, { width, height, crop });
 
   useEffect(() => {
-    if (!autoplayOnScroll || !videoRef.current) return;
+    if (!videoRef.current) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (videoRef.current) {
             if (entry.isIntersecting) {
-              videoRef.current.play().catch(() => {
-                // Autoplay blocked or failed
-              });
-              setIsPlaying(true);
+              setShouldLoad(true);
+              if (autoplayOnScroll) {
+                videoRef.current.play().catch(() => {
+                  // Autoplay blocked or failed
+                });
+                setIsPlaying(true);
+              }
             } else {
-              videoRef.current.pause();
-              setIsPlaying(false);
+              if (autoplayOnScroll) {
+                videoRef.current.pause();
+                setIsPlaying(false);
+              }
             }
           }
         });
       },
-      { threshold: 0.5 }
+      { 
+        rootMargin: "200px", // Start loading/playing 200px before entering viewport
+        threshold: 0.1 
+      }
     );
 
     observer.observe(videoRef.current);
@@ -63,6 +72,12 @@ export const CloudinaryVideo: React.FC<CloudinaryVideoProps> = ({
 
   const handleTogglePlay = () => {
     if (!videoRef.current) return;
+    
+    // Ensure video is loaded if clicked
+    if (!shouldLoad) {
+      setShouldLoad(true);
+    }
+
     if (isPlaying) {
       videoRef.current.pause();
       setIsPlaying(false);
@@ -80,13 +95,13 @@ export const CloudinaryVideo: React.FC<CloudinaryVideoProps> = ({
     <div className={`relative overflow-hidden bg-black rounded-lg group ${className}`}>
       <video
         ref={videoRef}
-        src={optimizedVideoUrl}
+        src={shouldLoad ? optimizedVideoUrl : undefined}
         poster={autoPosterUrl}
         controls={controls}
         loop={loop}
         muted={muted}
         playsInline
-        preload="metadata"
+        preload={shouldLoad ? "metadata" : "none"}
         onClick={handleTogglePlay}
         onPlay={() => setIsPlaying(true)}
         onPause={() => setIsPlaying(false)}

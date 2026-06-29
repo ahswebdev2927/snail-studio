@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { ChevronLeft, ChevronRight, Clock } from "lucide-react";
 import { ProductCard } from "@/components/storefront/product-card";
+import { incrementProductViews } from "./actions";
 
 /* -----------------------------------------------------------------------
  * RecentlyViewedTracker — Client Tracker Component
@@ -27,6 +28,11 @@ interface TrackerProps {
 export function RecentlyViewedTracker({ product }: TrackerProps) {
   useEffect(() => {
     if (typeof window === "undefined" || !product) return;
+
+    // Increment views via server action
+    incrementProductViews(product.id).catch((err) =>
+      console.error("Failed to increment views:", err)
+    );
 
     try {
       const saved = localStorage.getItem("snail_recently_viewed");

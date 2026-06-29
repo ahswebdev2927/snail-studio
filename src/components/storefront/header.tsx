@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useRef } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import {
   Menu,
   Search,
@@ -32,6 +32,7 @@ interface HeaderProps {
 
 export function Header({ navigationData }: HeaderProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [nav, setNav] = useState<StorefrontNavigation | null>(navigationData || null);
@@ -71,7 +72,7 @@ export function Header({ navigationData }: HeaderProps) {
       }
     }
     loadUser();
-  }, []);
+  }, [pathname]);
 
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
