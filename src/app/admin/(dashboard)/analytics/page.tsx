@@ -17,7 +17,8 @@ import {
   Inbox,
   Award,
   AlertTriangle,
-  Boxes
+  Boxes,
+  Heart
 } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 
@@ -140,6 +141,31 @@ interface StockAnalyticsResponse {
   outOfStockItems: StockAlertItem[];
 }
 
+// Types for Wishlist Analytics
+interface WishlistHistoryItem {
+  date: string;
+  count: number;
+}
+
+interface TopWishlistItem {
+  id: string;
+  name: string;
+  slug: string;
+  categoryName: string;
+  addCount: number;
+  conversionRate: number;
+}
+
+interface WishlistAnalyticsResponse {
+  summary: {
+    totalWishlistAdds: number;
+    uniqueEngagedUsers: number;
+    globalConversionRate: number;
+  };
+  wishlistHistory: WishlistHistoryItem[];
+  topWishlisted: TopWishlistItem[];
+}
+
 export default function AnalyticsPage() {
   const [activeTab, setActiveTab] = useState("revenue"); // "revenue" | "orders"
   const [dateRange, setDateRange] = useState("7d");
@@ -150,10 +176,12 @@ export default function AnalyticsPage() {
   const [ordersData, setOrdersData] = useState<OrdersAnalyticsResponse | null>(null);
   const [productsData, setProductsData] = useState<ProductsAnalyticsResponse | null>(null);
   const [stockData, setStockData] = useState<StockAnalyticsResponse | null>(null);
+  const [wishlistData, setWishlistData] = useState<WishlistAnalyticsResponse | null>(null);
 
   // Active chart hover points
   const [activeRevenuePoint, setActiveRevenuePoint] = useState<any | null>(null);
   const [activeOrderPoint, setActiveOrderPoint] = useState<any | null>(null);
+  const [activeWishlistPoint, setActiveWishlistPoint] = useState<any | null>(null);
 
   // Fetch data depending on activeTab & range
   async function loadAnalytics() {
@@ -174,10 +202,15 @@ export default function AnalyticsPage() {
         if (res.ok) {
           setProductsData(await res.json());
         }
-      } else {
+      } else if (activeTab === "stock") {
         const res = await fetch(`/api/admin/analytics/inventory`);
         if (res.ok) {
           setStockData(await res.json());
+        }
+      } else {
+        const res = await fetch(`/api/admin/analytics/wishlists?range=${dateRange}`);
+        if (res.ok) {
+          setWishlistData(await res.json());
         }
       }
     } catch (error) {
@@ -192,6 +225,7 @@ export default function AnalyticsPage() {
     // Reset active hover points on tab or range changes
     setActiveRevenuePoint(null);
     setActiveOrderPoint(null);
+    setActiveWishlistPoint(null);
   }, [activeTab, dateRange]);
 
   const formatPriceDecimal = (paise: number) => {
@@ -1135,6 +1169,272 @@ export default function AnalyticsPage() {
     );
   };
 
+  // 5. Wishlists tab rendering
+  const renderWishlistTab = () => {
+    if (!wishlistData) return null;
+    const { summary, wishlistHistory, topWishlisted } = wishlistData;
+
+    // SVG Area/Line Chart Configurations
+    const chartWidth = 600;
+    const chartHeight = 220;
+    const paddingLeft = 40;
+    const paddingRight = 20;
+    const paddingTop = 20;
+    const paddingBottom = 35;
+
+    const graphWidth = chartWidth - paddingLeft - paddingRight;
+    const graphHeight = chartHeight - paddingTop - paddingBottom;
+
+    const maxAdds = Math.max(...wishlistHistory.map(h => h.count), 5); // min scale to 5 to prevent flatline
+
+    const points = wishlistHistory.map((h, idx) => {
+      const x = paddingLeft + (idx / Math.max(wishlistHistory.length - 1, 1)) * graphWidth;
+      const y = chartHeight - paddingBottom - (h.count / maxAdds) * graphHeight;
+      return { x, y, date: h.date, count: h.count };
+    });
+
+    const chartPointsStr = points.map(p => `${p.x},${p.y}`).join(" ");
+    const chartFillPointsStr = `${paddingLeft},${chartHeight - paddingBottom} ${chartPointsStr} ${chartWidth - paddingRight},${chartHeight - paddingBottom}`;
+
+    // Y-axis gridlines
+    const yGridLines = [0, 0.25, 0.5, 0.75, 1].map(pct => {
+      const y = chartHeight - paddingBottom - pct * graphHeight;
+      const value = Math.round(pct * maxAdds);
+      return { y, value };
+    });
+
+    return (
+      <div className="space-y-6">
+        {/* Metric Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {/* Total Wishlist Additions */}
+          <div className="bg-card border border-border/40 rounded-3xl p-5 hover:border-primary/20 transition-all duration-300 group flex flex-col justify-between shadow-sm relative overflow-hidden">
+            <div className="absolute right-0 bottom-0 w-24 h-24 bg-primary/5 rounded-full translate-x-6 translate-y-6 pointer-events-none" />
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Wishlist Additions</span>
+              <div className="p-2 rounded-2xl text-primary bg-primary/10 group-hover:scale-105 transition-all">
+                <Heart className="w-4.5 h-4.5 fill-primary/10" />
+              </div>
+            </div>
+            <div className="mt-4 space-y-1">
+              <p className="font-serif text-2xl font-semibold tracking-wide text-foreground">
+                {summary.totalWishlistAdds} adds
+              </p>
+              <p className="text-[10px] text-muted-foreground font-light font-sans">Total products wishlisted in this period</p>
+            </div>
+          </div>
+
+          {/* Unique engaged users */}
+          <div className="bg-card border border-border/40 rounded-3xl p-5 hover:border-primary/20 transition-all duration-300 group flex flex-col justify-between shadow-sm relative overflow-hidden">
+            <div className="absolute right-0 bottom-0 w-24 h-24 bg-secondary/5 rounded-full translate-x-6 translate-y-6 pointer-events-none" />
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Engaged Customers</span>
+              <div className="p-2 rounded-2xl text-foreground bg-secondary group-hover:scale-105 transition-all">
+                <Inbox className="w-4.5 h-4.5" />
+              </div>
+            </div>
+            <div className="mt-4 space-y-1">
+              <p className="font-serif text-2xl font-semibold tracking-wide text-foreground">
+                {summary.uniqueEngagedUsers} users
+              </p>
+              <p className="text-[10px] text-muted-foreground font-light font-sans">Unique shoppers saving to wishlists</p>
+            </div>
+          </div>
+
+          {/* Wishlist to purchase conversion */}
+          <div className="bg-card border border-border/40 rounded-3xl p-5 hover:border-primary/20 transition-all duration-300 group flex flex-col justify-between shadow-sm relative overflow-hidden">
+            <div className="absolute right-0 bottom-0 w-24 h-24 bg-primary/5 rounded-full translate-x-6 translate-y-6 pointer-events-none" />
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Wishlist-to-Purchase Conversion</span>
+              <div className="p-2 rounded-2xl text-accent bg-accent/10 group-hover:scale-105 transition-all">
+                <Sparkles className="w-4.5 h-4.5" />
+              </div>
+            </div>
+            <div className="mt-4 space-y-1">
+              <p className="font-serif text-2xl font-semibold tracking-wide text-foreground">
+                {summary.globalConversionRate}%
+              </p>
+              <p className="text-[10px] text-muted-foreground font-light font-sans">Rate of saved items ending in checkouts</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Time-series interactive SVG line chart */}
+        <div className="bg-card border border-border/40 rounded-3xl p-6 hover:border-primary/10 transition-all shadow-sm space-y-4">
+          <div>
+            <h3 className="text-sm font-semibold tracking-wide text-foreground">Wishlist Additions Trend</h3>
+            <p className="text-[10px] text-muted-foreground font-light font-sans">Daily wishlist addition counts showing customer purchase intent.</p>
+          </div>
+
+          <div className="relative pt-4">
+            <svg 
+              viewBox={`0 0 ${chartWidth} ${chartHeight}`} 
+              className="w-full h-auto select-none overflow-visible"
+            >
+              {/* Gridlines */}
+              {yGridLines.map((line, idx) => (
+                <g key={idx} className="opacity-40">
+                  <line 
+                    x1={paddingLeft} 
+                    y1={line.y} 
+                    x2={chartWidth - paddingRight} 
+                    y2={line.y} 
+                    stroke="currentColor" 
+                    strokeWidth="0.5" 
+                    className="text-border/40"
+                    strokeDasharray="4 4"
+                  />
+                  <text 
+                    x={paddingLeft - 8} 
+                    y={line.y + 3} 
+                    textAnchor="end" 
+                    className="text-[9px] fill-muted-foreground font-mono"
+                  >
+                    {line.value}
+                  </text>
+                </g>
+              ))}
+
+              {/* Area Under the Line */}
+              {points.length > 1 && (
+                <polygon 
+                  points={chartFillPointsStr} 
+                  className="fill-primary/5 dark:fill-primary/10"
+                />
+              )}
+
+              {/* Line Path */}
+              {points.length > 1 && (
+                <polyline 
+                  fill="none" 
+                  stroke="currentColor" 
+                  strokeWidth="2" 
+                  points={chartPointsStr} 
+                  className="text-primary"
+                />
+              )}
+
+              {/* Points & Interactive Nodes */}
+              {points.map((p, idx) => {
+                const isHovered = activeWishlistPoint?.idx === idx;
+                return (
+                  <g key={idx}>
+                    <circle 
+                      cx={p.x} 
+                      cy={p.y} 
+                      r={isHovered ? 4.5 : 2.5} 
+                      className={`fill-card stroke-primary transition-all duration-150 ${isHovered ? "stroke-[2.5]" : "stroke-[1.5]"}`} 
+                    />
+                    {/* Transparent touch area for hover */}
+                    <rect 
+                      x={p.x - 12} 
+                      y={paddingTop} 
+                      width={24} 
+                      height={graphHeight} 
+                      className="fill-transparent cursor-pointer"
+                      onMouseEnter={() => setActiveWishlistPoint({ idx, ...p })}
+                      onMouseLeave={() => setActiveWishlistPoint(null)}
+                    />
+                  </g>
+                );
+              })}
+
+              {/* Dates labels on X axis */}
+              {points.map((p, idx) => {
+                const shouldRender = idx === 0 || idx === points.length - 1 || (points.length > 5 && idx === Math.round(points.length / 2));
+                if (!shouldRender) return null;
+                return (
+                  <text 
+                    key={idx}
+                    x={p.x} 
+                    y={chartHeight - paddingBottom + 16} 
+                    textAnchor="middle" 
+                    className="text-[8px] fill-muted-foreground font-light font-mono"
+                  >
+                    {formatDateLabel(p.date)}
+                  </text>
+                );
+              })}
+            </svg>
+
+            {/* Hover Tooltip display */}
+            {activeWishlistPoint && (
+              <div 
+                className="absolute bg-popover/90 backdrop-blur-md border border-border/80 px-3 py-2 rounded-2xl shadow-xl pointer-events-none transition-all duration-100 flex flex-col gap-0.5"
+                style={{ 
+                  left: `${(activeWishlistPoint.x / chartWidth) * 100}%`,
+                  top: `${(activeWishlistPoint.y / chartHeight) * 100 - 15}%`,
+                  transform: "translate(-50%, -100%)"
+                }}
+              >
+                <span className="text-[8px] text-muted-foreground font-mono font-light">
+                  {formatDateLabel(activeWishlistPoint.date)}
+                </span>
+                <span className="text-xs font-bold text-foreground">
+                  {activeWishlistPoint.count} wishlist adds
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Most Wishlisted Products Table */}
+        <div className="bg-card border border-border/40 rounded-3xl p-6 hover:border-primary/10 transition-all shadow-sm space-y-4">
+          <h3 className="text-sm font-semibold tracking-wide text-foreground">Most Wishlisted Products</h3>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs font-light border-collapse">
+              <thead>
+                <tr className="border-b border-border/40 text-muted-foreground uppercase text-[9px] font-bold tracking-wider">
+                  <th className="py-2.5 px-3">Product Name</th>
+                  <th className="py-2.5 px-3">Category</th>
+                  <th className="py-2.5 px-3 text-center">Wishlist Adds</th>
+                  <th className="py-2.5 px-3 text-center">Conversion Rate</th>
+                  <th className="py-2.5 px-3 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {topWishlisted.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="py-8 text-center text-muted-foreground font-light italic">No wishlist entries recorded in this period.</td>
+                  </tr>
+                ) : (
+                  topWishlisted.map((p) => (
+                    <tr key={p.id} className="border-b border-border/10 last:border-0 hover:bg-secondary/15 transition-all">
+                      <td className="py-2.5 px-3 font-medium text-foreground">{p.name}</td>
+                      <td className="py-2.5 px-3 text-muted-foreground">{p.categoryName}</td>
+                      <td className="py-2.5 px-3 text-center font-semibold text-foreground">{p.addCount}</td>
+                      <td className="py-2.5 px-3 text-center">
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold font-mono border ${
+                          p.conversionRate >= 20 
+                            ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" 
+                            : p.conversionRate > 0 
+                              ? "bg-primary/10 text-primary border-primary/20" 
+                              : "bg-secondary text-muted-foreground border-border/40"
+                        }`}>
+                          {p.conversionRate}%
+                        </span>
+                      </td>
+                      <td className="py-2.5 px-3 text-right">
+                        <a 
+                          href={`/products/${p.slug}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center px-2.5 py-1 bg-secondary hover:bg-muted border border-border text-[9px] font-semibold uppercase tracking-wider text-foreground rounded-lg transition-all"
+                        >
+                          View Live
+                        </a>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
       {/* Welcome & Time Filters Header */}
@@ -1222,6 +1522,17 @@ export default function AnalyticsPage() {
           <Boxes className="w-4 h-4" />
           Stock Alerts
         </button>
+        <button
+          onClick={() => setActiveTab("wishlist")}
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer ${
+            activeTab === "wishlist"
+              ? "bg-primary text-primary-foreground shadow-sm shadow-primary/10"
+              : "text-muted-foreground hover:bg-secondary/40 hover:text-foreground"
+          }`}
+        >
+          <Heart className="w-4 h-4" />
+          Wishlists
+        </button>
       </div>
 
       {/* Dynamic Tab Body content */}
@@ -1236,8 +1547,10 @@ export default function AnalyticsPage() {
         renderOrdersTab()
       ) : activeTab === "products" ? (
         renderProductsTab()
-      ) : (
+      ) : activeTab === "stock" ? (
         renderStockTab()
+      ) : (
+        renderWishlistTab()
       )}
     </div>
   );
