@@ -18,7 +18,8 @@ import {
   Award,
   AlertTriangle,
   Boxes,
-  Heart
+  Heart,
+  Users
 } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 
@@ -166,6 +167,34 @@ interface WishlistAnalyticsResponse {
   topWishlisted: TopWishlistItem[];
 }
 
+// Types for Customer Analytics
+interface AcquisitionHistoryItem {
+  date: string;
+  count: number;
+}
+
+interface VIPSpenderItem {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  orderCount: number;
+  totalSpent: number;
+}
+
+interface CustomerAnalyticsResponse {
+  summary: {
+    totalSignups: number;
+    periodSignups: number;
+    repeatPurchaseRate: number;
+    averageLTV: number;
+    returningRevenuePercent: number;
+    returningRevenueTotal: number;
+  };
+  acquisitionHistory: AcquisitionHistoryItem[];
+  topSpenders: VIPSpenderItem[];
+}
+
 export default function AnalyticsPage() {
   const [activeTab, setActiveTab] = useState("revenue"); // "revenue" | "orders"
   const [dateRange, setDateRange] = useState("7d");
@@ -177,11 +206,13 @@ export default function AnalyticsPage() {
   const [productsData, setProductsData] = useState<ProductsAnalyticsResponse | null>(null);
   const [stockData, setStockData] = useState<StockAnalyticsResponse | null>(null);
   const [wishlistData, setWishlistData] = useState<WishlistAnalyticsResponse | null>(null);
+  const [customerData, setCustomerData] = useState<CustomerAnalyticsResponse | null>(null);
 
   // Active chart hover points
   const [activeRevenuePoint, setActiveRevenuePoint] = useState<any | null>(null);
   const [activeOrderPoint, setActiveOrderPoint] = useState<any | null>(null);
   const [activeWishlistPoint, setActiveWishlistPoint] = useState<any | null>(null);
+  const [activeCustomerPoint, setActiveCustomerPoint] = useState<any | null>(null);
 
   // Fetch data depending on activeTab & range
   async function loadAnalytics() {
@@ -207,10 +238,15 @@ export default function AnalyticsPage() {
         if (res.ok) {
           setStockData(await res.json());
         }
-      } else {
+      } else if (activeTab === "wishlist") {
         const res = await fetch(`/api/admin/analytics/wishlists?range=${dateRange}`);
         if (res.ok) {
           setWishlistData(await res.json());
+        }
+      } else {
+        const res = await fetch(`/api/admin/analytics/customers?range=${dateRange}`);
+        if (res.ok) {
+          setCustomerData(await res.json());
         }
       }
     } catch (error) {
@@ -226,6 +262,7 @@ export default function AnalyticsPage() {
     setActiveRevenuePoint(null);
     setActiveOrderPoint(null);
     setActiveWishlistPoint(null);
+    setActiveCustomerPoint(null);
   }, [activeTab, dateRange]);
 
   const formatPriceDecimal = (paise: number) => {
@@ -1435,6 +1472,282 @@ export default function AnalyticsPage() {
     );
   };
 
+  // 6. Customer growth tab rendering
+  const renderCustomerTab = () => {
+    if (!customerData) return null;
+    const { summary, acquisitionHistory, topSpenders } = customerData;
+
+    // SVG Area/Line Chart Configurations
+    const chartWidth = 600;
+    const chartHeight = 220;
+    const paddingLeft = 40;
+    const paddingRight = 20;
+    const paddingTop = 20;
+    const paddingBottom = 35;
+
+    const graphWidth = chartWidth - paddingLeft - paddingRight;
+    const graphHeight = chartHeight - paddingTop - paddingBottom;
+
+    const maxAcquisitions = Math.max(...acquisitionHistory.map(h => h.count), 5); // min scale to 5 to prevent flatline
+
+    const points = acquisitionHistory.map((h, idx) => {
+      const x = paddingLeft + (idx / Math.max(acquisitionHistory.length - 1, 1)) * graphWidth;
+      const y = chartHeight - paddingBottom - (h.count / maxAcquisitions) * graphHeight;
+      return { x, y, date: h.date, count: h.count };
+    });
+
+    const chartPointsStr = points.map(p => `${p.x},${p.y}`).join(" ");
+    const chartFillPointsStr = `${paddingLeft},${chartHeight - paddingBottom} ${chartPointsStr} ${chartWidth - paddingRight},${chartHeight - paddingBottom}`;
+
+    // Y-axis gridlines
+    const yGridLines = [0, 0.25, 0.5, 0.75, 1].map(pct => {
+      const y = chartHeight - paddingBottom - pct * graphHeight;
+      const value = Math.round(pct * maxAcquisitions);
+      return { y, value };
+    });
+
+    return (
+      <div className="space-y-6 animate-fade-in">
+        {/* Summary Metric Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Period Signups */}
+          <div className="bg-card border border-border/40 rounded-3xl p-5 hover:border-primary/20 transition-all duration-300 group flex flex-col justify-between shadow-sm relative overflow-hidden">
+            <div className="absolute right-0 bottom-0 w-24 h-24 bg-primary/5 rounded-full translate-x-6 translate-y-6 pointer-events-none" />
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">New Customers Acquired</span>
+              <div className="p-2 rounded-2xl text-primary bg-primary/10 group-hover:scale-105 transition-all">
+                <Users className="w-4.5 h-4.5" />
+              </div>
+            </div>
+            <div className="mt-4 space-y-1">
+              <p className="font-serif text-2xl font-semibold tracking-wide text-foreground">
+                {summary.periodSignups} signups
+              </p>
+              <p className="text-[10px] text-muted-foreground font-light font-sans">New customer registrations in range</p>
+            </div>
+          </div>
+
+          {/* Returning Customer Revenue Share */}
+          <div className="bg-card border border-border/40 rounded-3xl p-5 hover:border-primary/20 transition-all duration-300 group flex flex-col justify-between shadow-sm relative overflow-hidden">
+            <div className="absolute right-0 bottom-0 w-24 h-24 bg-primary/5 rounded-full translate-x-6 translate-y-6 pointer-events-none" />
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Returning Revenue Share</span>
+              <div className="p-2 rounded-2xl text-primary bg-primary/10 group-hover:scale-105 transition-all">
+                <TrendingUp className="w-4.5 h-4.5" />
+              </div>
+            </div>
+            <div className="mt-4 space-y-1">
+              <p className="font-serif text-2xl font-semibold tracking-wide text-foreground">
+                {formatPriceDecimal(summary.returningRevenueTotal)}
+              </p>
+              <p className="text-[10px] text-muted-foreground font-light font-sans">
+                Repeat customers spend share ({summary.returningRevenuePercent}%)
+              </p>
+            </div>
+          </div>
+
+          {/* Repeat purchase rate */}
+          <div className="bg-card border border-border/40 rounded-3xl p-5 hover:border-primary/20 transition-all duration-300 group flex flex-col justify-between shadow-sm relative overflow-hidden">
+            <div className="absolute right-0 bottom-0 w-24 h-24 bg-primary/5 rounded-full translate-x-6 translate-y-6 pointer-events-none" />
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Repeat Purchase Rate</span>
+              <div className="p-2 rounded-2xl text-accent bg-accent/10 group-hover:scale-105 transition-all">
+                <Percent className="w-4.5 h-4.5" />
+              </div>
+            </div>
+            <div className="mt-4 space-y-1">
+              <p className="font-serif text-2xl font-semibold tracking-wide text-foreground">
+                {summary.repeatPurchaseRate}%
+              </p>
+              <p className="text-[10px] text-muted-foreground font-light font-sans">Customers with more than one checkout</p>
+            </div>
+          </div>
+
+          {/* Customer Lifetime Value */}
+          <div className="bg-card border border-border/40 rounded-3xl p-5 hover:border-primary/20 transition-all duration-300 group flex flex-col justify-between shadow-sm relative overflow-hidden">
+            <div className="absolute right-0 bottom-0 w-24 h-24 bg-primary/5 rounded-full translate-x-6 translate-y-6 pointer-events-none" />
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Lifetime Value (LTV)</span>
+              <div className="p-2 rounded-2xl text-primary bg-primary/10 group-hover:scale-105 transition-all">
+                <DollarSign className="w-4.5 h-4.5" />
+              </div>
+            </div>
+            <div className="mt-4 space-y-1">
+              <p className="font-serif text-2xl font-semibold tracking-wide text-foreground">
+                {formatPriceDecimal(summary.averageLTV)}
+              </p>
+              <p className="text-[10px] text-muted-foreground font-light font-sans">Average lifetime order value per buyer</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Time-series acquisition SVG line chart */}
+        <div className="bg-card border border-border/40 rounded-3xl p-6 hover:border-primary/10 transition-all shadow-sm space-y-4">
+          <div>
+            <h3 className="text-sm font-semibold tracking-wide text-foreground">Customer Curve</h3>
+            <p className="text-[10px] text-muted-foreground font-light font-sans">Daily curve of new customer sign-ups over the active period.</p>
+          </div>
+
+          <div className="relative pt-4">
+            <svg 
+              viewBox={`0 0 ${chartWidth} ${chartHeight}`} 
+              className="w-full h-auto select-none overflow-visible"
+            >
+              {/* Gridlines */}
+              {yGridLines.map((line, idx) => (
+                <g key={idx} className="opacity-40">
+                  <line 
+                    x1={paddingLeft} 
+                    y1={line.y} 
+                    x2={chartWidth - paddingRight} 
+                    y2={line.y} 
+                    stroke="currentColor" 
+                    strokeWidth="0.5" 
+                    className="text-border/40"
+                    strokeDasharray="4 4"
+                  />
+                  <text 
+                    x={paddingLeft - 8} 
+                    y={line.y + 3} 
+                    textAnchor="end" 
+                    className="text-[9px] fill-muted-foreground font-mono"
+                  >
+                    {line.value}
+                  </text>
+                </g>
+              ))}
+
+              {/* Area Under the Line */}
+              {points.length > 1 && (
+                <polygon 
+                  points={chartFillPointsStr} 
+                  className="fill-primary/5 dark:fill-primary/10"
+                />
+              )}
+
+              {/* Line Path */}
+              {points.length > 1 && (
+                <polyline 
+                  fill="none" 
+                  stroke="currentColor" 
+                  strokeWidth="2" 
+                  points={chartPointsStr} 
+                  className="text-primary"
+                />
+              )}
+
+              {/* Points & Interactive Nodes */}
+              {points.map((p, idx) => {
+                const isHovered = activeCustomerPoint?.idx === idx;
+                return (
+                  <g key={idx}>
+                    <circle 
+                      cx={p.x} 
+                      cy={p.y} 
+                      r={isHovered ? 4.5 : 2.5} 
+                      className={`fill-card stroke-primary transition-all duration-150 ${isHovered ? "stroke-[2.5]" : "stroke-[1.5]"}`} 
+                    />
+                    {/* Transparent touch area for hover */}
+                    <rect 
+                      x={p.x - 12} 
+                      y={paddingTop} 
+                      width={24} 
+                      height={graphHeight} 
+                      className="fill-transparent cursor-pointer"
+                      onMouseEnter={() => setActiveCustomerPoint({ idx, ...p })}
+                      onMouseLeave={() => setActiveCustomerPoint(null)}
+                    />
+                  </g>
+                );
+              })}
+
+              {/* Dates labels on X axis */}
+              {points.map((p, idx) => {
+                const shouldRender = idx === 0 || idx === points.length - 1 || (points.length > 5 && idx === Math.round(points.length / 2));
+                if (!shouldRender) return null;
+                return (
+                  <text 
+                    key={idx}
+                    x={p.x} 
+                    y={chartHeight - paddingBottom + 16} 
+                    textAnchor="middle" 
+                    className="text-[8px] fill-muted-foreground font-light font-mono"
+                  >
+                    {formatDateLabel(p.date)}
+                  </text>
+                );
+              })}
+            </svg>
+
+            {/* Hover Tooltip display */}
+            {activeCustomerPoint && (
+              <div 
+                className="absolute bg-popover/90 backdrop-blur-md border border-border/80 px-3 py-2 rounded-2xl shadow-xl pointer-events-none transition-all duration-100 flex flex-col gap-0.5"
+                style={{ 
+                  left: `${(activeCustomerPoint.x / chartWidth) * 100}%`,
+                  top: `${(activeCustomerPoint.y / chartHeight) * 100 - 15}%`,
+                  transform: "translate(-50%, -100%)"
+                }}
+              >
+                <span className="text-[8px] text-muted-foreground font-mono font-light">
+                  {formatDateLabel(activeCustomerPoint.date)}
+                </span>
+                <span className="text-xs font-bold text-foreground">
+                  {activeCustomerPoint.count} signups
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Top VIP Spenders Table */}
+        <div className="bg-card border border-border/40 rounded-3xl p-6 hover:border-primary/10 transition-all shadow-sm space-y-4">
+          <h3 className="text-sm font-semibold tracking-wide text-foreground">Top 10 VIP Spenders</h3>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs font-light border-collapse">
+              <thead>
+                <tr className="border-b border-border/40 text-muted-foreground uppercase text-[9px] font-bold tracking-wider">
+                  <th className="py-2.5 px-3">Customer Details</th>
+                  <th className="py-2.5 px-3">Contact Email</th>
+                  <th className="py-2.5 px-3 text-center">Orders Count</th>
+                  <th className="py-2.5 px-3 text-right">Lifetime Value spent</th>
+                  <th className="py-2.5 px-3 text-center">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {topSpenders.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="py-8 text-center text-muted-foreground font-light italic">No buyer data logged in Snail Studio history.</td>
+                  </tr>
+                ) : (
+                  topSpenders.map((s) => (
+                    <tr key={s.id} className="border-b border-border/10 last:border-0 hover:bg-secondary/15 transition-all">
+                      <td className="py-2.5 px-3">
+                        <span className="font-semibold block text-foreground">{s.name}</span>
+                        <span className="text-[10px] text-muted-foreground font-mono block">{s.phone}</span>
+                      </td>
+                      <td className="py-2.5 px-3 text-muted-foreground text-xs">{s.email}</td>
+                      <td className="py-2.5 px-3 text-center font-semibold text-foreground font-mono">{s.orderCount}</td>
+                      <td className="py-2.5 px-3 text-right font-bold text-foreground">{formatPriceDecimal(s.totalSpent)}</td>
+                      <td className="py-2.5 px-3 text-center">
+                        <a 
+                          href={`/admin/customers?search=${encodeURIComponent(s.phone)}`}
+                          className="inline-flex items-center px-2.5 py-1 bg-secondary hover:bg-muted border border-border text-[9px] font-semibold uppercase tracking-wider text-foreground rounded-lg transition-all"
+                        >
+                          Customer File
+                        </a>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
       {/* Welcome & Time Filters Header */}
@@ -1533,6 +1846,17 @@ export default function AnalyticsPage() {
           <Heart className="w-4 h-4" />
           Wishlists
         </button>
+        <button
+          onClick={() => setActiveTab("customers")}
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer ${
+            activeTab === "customers"
+              ? "bg-primary text-primary-foreground shadow-sm shadow-primary/10"
+              : "text-muted-foreground hover:bg-secondary/40 hover:text-foreground"
+          }`}
+        >
+          <Users className="w-4 h-4" />
+          Customers
+        </button>
       </div>
 
       {/* Dynamic Tab Body content */}
@@ -1549,8 +1873,10 @@ export default function AnalyticsPage() {
         renderProductsTab()
       ) : activeTab === "stock" ? (
         renderStockTab()
-      ) : (
+      ) : activeTab === "wishlist" ? (
         renderWishlistTab()
+      ) : (
+        renderCustomerTab()
       )}
     </div>
   );

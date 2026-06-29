@@ -38,6 +38,17 @@ export default function AdminCustomersPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
+  // Parse initial query params on mount
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const search = params.get("search") || params.get("q") || "";
+      if (search) {
+        setSearchQuery(search);
+      }
+    }
+  }, []);
+
   const loadCustomers = async () => {
     setIsLoading(true);
     try {
