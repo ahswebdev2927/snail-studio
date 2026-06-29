@@ -15,7 +15,9 @@ import {
   Truck,
   Sparkles,
   Inbox,
-  Award
+  Award,
+  AlertTriangle,
+  Boxes
 } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 
@@ -112,6 +114,32 @@ interface ProductsAnalyticsResponse {
   trendingLabel?: string;
 }
 
+// Types for Stock Alerts
+interface StockAlertItem {
+  id: string;
+  variantId: string;
+  sku: string;
+  variantName: string;
+  productName: string;
+  stockLevel: number;
+  reservedQuantity: number;
+  availableStock: number;
+  lowStockThreshold: number;
+  price: number;
+  restockQty: number;
+  restockCost: number;
+}
+
+interface StockAnalyticsResponse {
+  summary: {
+    lowStockCount: number;
+    outOfStockCount: number;
+    totalRestockCost: number;
+  };
+  lowStockItems: StockAlertItem[];
+  outOfStockItems: StockAlertItem[];
+}
+
 export default function AnalyticsPage() {
   const [activeTab, setActiveTab] = useState("revenue"); // "revenue" | "orders"
   const [dateRange, setDateRange] = useState("7d");
@@ -121,6 +149,7 @@ export default function AnalyticsPage() {
   const [revenueData, setRevenueData] = useState<AnalyticsResponse | null>(null);
   const [ordersData, setOrdersData] = useState<OrdersAnalyticsResponse | null>(null);
   const [productsData, setProductsData] = useState<ProductsAnalyticsResponse | null>(null);
+  const [stockData, setStockData] = useState<StockAnalyticsResponse | null>(null);
 
   // Active chart hover points
   const [activeRevenuePoint, setActiveRevenuePoint] = useState<any | null>(null);
@@ -140,10 +169,15 @@ export default function AnalyticsPage() {
         if (res.ok) {
           setOrdersData(await res.json());
         }
-      } else {
+      } else if (activeTab === "products") {
         const res = await fetch(`/api/admin/analytics/products?range=${dateRange}`);
         if (res.ok) {
           setProductsData(await res.json());
+        }
+      } else {
+        const res = await fetch(`/api/admin/analytics/inventory`);
+        if (res.ok) {
+          setStockData(await res.json());
         }
       }
     } catch (error) {
@@ -887,6 +921,220 @@ export default function AnalyticsPage() {
     );
   };
 
+  // 4. Stock Alerts tab rendering
+  const renderStockTab = () => {
+    if (!stockData) return null;
+    const { summary, lowStockItems, outOfStockItems } = stockData;
+
+    let healthText = "Healthy";
+    let healthColor = "text-emerald-500 bg-emerald-500/10 border-emerald-500/20";
+    if (summary.outOfStockCount > 0) {
+      healthText = "Attention Needed";
+      healthColor = "text-rose-500 bg-rose-500/10 border-rose-500/20 animate-pulse";
+    } else if (summary.lowStockCount > 0) {
+      healthText = "Action Recommended";
+      healthColor = "text-amber-500 bg-amber-500/10 border-amber-500/20";
+    }
+
+    return (
+      <div className="space-y-6">
+        {/* Summary Metric Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Out of Stock Count */}
+          <div className="bg-card border border-border/40 rounded-3xl p-5 hover:border-rose-500/20 transition-all duration-300 group flex flex-col justify-between shadow-sm relative overflow-hidden">
+            <div className="absolute right-0 bottom-0 w-24 h-24 bg-rose-500/5 rounded-full translate-x-6 translate-y-6 pointer-events-none" />
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Out of Stock SKUs</span>
+              <div className={`p-2 rounded-2xl group-hover:scale-105 transition-all ${
+                summary.outOfStockCount > 0 ? "text-rose-500 bg-rose-500/10 animate-pulse" : "text-muted-foreground bg-secondary"
+              }`}>
+                <AlertCircle className="w-4.5 h-4.5" />
+              </div>
+            </div>
+            <div className="mt-4 space-y-1">
+              <p className={`font-serif text-2xl font-semibold tracking-wide ${summary.outOfStockCount > 0 ? "text-rose-500 font-bold" : "text-foreground"}`}>
+                {summary.outOfStockCount} SKUs
+              </p>
+              <p className="text-[10px] text-muted-foreground font-light font-sans">Variants requiring immediate restocking</p>
+            </div>
+          </div>
+
+          {/* Low Stock Count */}
+          <div className="bg-card border border-border/40 rounded-3xl p-5 hover:border-amber-500/20 transition-all duration-300 group flex flex-col justify-between shadow-sm relative overflow-hidden">
+            <div className="absolute right-0 bottom-0 w-24 h-24 bg-amber-500/5 rounded-full translate-x-6 translate-y-6 pointer-events-none" />
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Low Stock SKUs</span>
+              <div className={`p-2 rounded-2xl group-hover:scale-105 transition-all ${
+                summary.lowStockCount > 0 ? "text-amber-500 bg-amber-500/10" : "text-muted-foreground bg-secondary"
+              }`}>
+                <AlertTriangle className="w-4.5 h-4.5" />
+              </div>
+            </div>
+            <div className="mt-4 space-y-1">
+              <p className={`font-serif text-2xl font-semibold tracking-wide ${summary.lowStockCount > 0 ? "text-amber-500 font-bold" : "text-foreground"}`}>
+                {summary.lowStockCount} SKUs
+              </p>
+              <p className="text-[10px] text-muted-foreground font-light font-sans">Variants near reorder thresholds</p>
+            </div>
+          </div>
+
+          {/* Reorder Investment */}
+          <div className="bg-card border border-border/40 rounded-3xl p-5 hover:border-primary/20 transition-all duration-300 group flex flex-col justify-between shadow-sm relative overflow-hidden">
+            <div className="absolute right-0 bottom-0 w-24 h-24 bg-primary/5 rounded-full translate-x-6 translate-y-6 pointer-events-none" />
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Replenishment Cost</span>
+              <div className="p-2 rounded-2xl text-primary bg-primary/10 group-hover:scale-105 transition-all">
+                <DollarSign className="w-4.5 h-4.5" />
+              </div>
+            </div>
+            <div className="mt-4 space-y-1">
+              <p className="font-serif text-2xl font-semibold tracking-wide text-foreground">
+                {formatPriceDecimal(summary.totalRestockCost)}
+              </p>
+              <p className="text-[10px] text-muted-foreground font-light font-sans">Est. cost to replenish low/out variants</p>
+            </div>
+          </div>
+
+          {/* System Health Status */}
+          <div className="bg-card border border-border/40 rounded-3xl p-5 hover:border-primary/20 transition-all duration-300 group flex flex-col justify-between shadow-sm relative overflow-hidden">
+            <div className="absolute right-0 bottom-0 w-24 h-24 bg-secondary/5 rounded-full translate-x-6 translate-y-6 pointer-events-none" />
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Inventory Health</span>
+              <div className="p-2 rounded-2xl text-secondary-foreground bg-secondary group-hover:scale-105 transition-all">
+                <Boxes className="w-4.5 h-4.5" />
+              </div>
+            </div>
+            <div className="mt-4 space-y-1">
+              <div className={`px-3 py-1.5 text-center font-bold text-[10px] border rounded-xl inline-block uppercase tracking-wider ${healthColor}`}>
+                {healthText}
+              </div>
+              <p className="text-[10px] text-muted-foreground font-light mt-1.5 block font-sans">Catalog stock replenishment health</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Tables grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Out of Stock table */}
+          <div className="bg-card border border-border/40 rounded-3xl p-6 hover:border-rose-500/10 transition-all shadow-sm space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold tracking-wide text-foreground flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+                Out of Stock Catalog
+              </h3>
+              <span className="text-[9px] px-2 py-0.5 rounded-full font-bold bg-rose-500/10 text-rose-500 border border-rose-500/20">
+                Replenishment Critical
+              </span>
+            </div>
+            
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs font-light border-collapse">
+                <thead>
+                  <tr className="border-b border-border/40 text-muted-foreground uppercase text-[9px] font-bold tracking-wider">
+                    <th className="py-2.5 px-3">SKU</th>
+                    <th className="py-2.5 px-3">Variant Details</th>
+                    <th className="py-2.5 px-3 text-center">Reservations</th>
+                    <th className="py-2.5 px-3 text-right">Replenish</th>
+                    <th className="py-2.5 px-3 text-center">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {outOfStockItems.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="py-8 text-center text-muted-foreground font-light italic">All catalog items have stock. Healthy state.</td>
+                    </tr>
+                  ) : (
+                    outOfStockItems.map((v) => (
+                      <tr key={v.id} className="border-b border-border/10 last:border-0 hover:bg-secondary/15 transition-all">
+                        <td className="py-2.5 px-3 font-mono font-bold text-xs text-foreground">{v.sku}</td>
+                        <td className="py-2.5 px-3">
+                          <span className="font-semibold block text-foreground text-xs">{v.variantName}</span>
+                          <span className="text-[9px] text-muted-foreground block">{v.productName}</span>
+                        </td>
+                        <td className="py-2.5 px-3 text-center text-muted-foreground font-mono">{v.reservedQuantity}</td>
+                        <td className="py-2.5 px-3 text-right">
+                          <span className="font-bold text-rose-500 block">+{v.restockQty} units</span>
+                          <span className="text-[9px] text-muted-foreground block">{formatPriceDecimal(v.restockCost)} est</span>
+                        </td>
+                        <td className="py-2.5 px-3 text-center">
+                          <a 
+                            href={`/admin/inventory?q=${encodeURIComponent(v.sku)}`}
+                            className="inline-flex items-center px-2.5 py-1 bg-secondary hover:bg-muted border border-border text-[9px] font-semibold uppercase tracking-wider text-foreground rounded-lg transition-all"
+                          >
+                            Restock
+                          </a>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Low Stock table */}
+          <div className="bg-card border border-border/40 rounded-3xl p-6 hover:border-amber-500/10 transition-all shadow-sm space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold tracking-wide text-foreground flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                Low Stock Catalog
+              </h3>
+              <span className="text-[9px] px-2 py-0.5 rounded-full font-bold bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                Replenishment Recommended
+              </span>
+            </div>
+            
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs font-light border-collapse">
+                <thead>
+                  <tr className="border-b border-border/40 text-muted-foreground uppercase text-[9px] font-bold tracking-wider">
+                    <th className="py-2.5 px-3">SKU</th>
+                    <th className="py-2.5 px-3">Variant Details</th>
+                    <th className="py-2.5 px-3 text-center">Stock / Alert</th>
+                    <th className="py-2.5 px-3 text-right">Replenish</th>
+                    <th className="py-2.5 px-3 text-center">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {lowStockItems.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="py-8 text-center text-muted-foreground font-light italic">No low-stock items registered.</td>
+                    </tr>
+                  ) : (
+                    lowStockItems.map((v) => (
+                      <tr key={v.id} className="border-b border-border/10 last:border-0 hover:bg-secondary/15 transition-all">
+                        <td className="py-2.5 px-3 font-mono font-bold text-xs text-foreground">{v.sku}</td>
+                        <td className="py-2.5 px-3">
+                          <span className="font-semibold block text-foreground text-xs">{v.variantName}</span>
+                          <span className="text-[9px] text-muted-foreground block">{v.productName}</span>
+                        </td>
+                        <td className="py-2.5 px-3 text-center font-mono text-foreground font-semibold">
+                          {v.availableStock} <span className="text-muted-foreground font-light text-[9px]">/ {v.lowStockThreshold}</span>
+                        </td>
+                        <td className="py-2.5 px-3 text-right">
+                          <span className="font-bold text-amber-500 block">+{v.restockQty} units</span>
+                          <span className="text-[9px] text-muted-foreground block">{formatPriceDecimal(v.restockCost)} est</span>
+                        </td>
+                        <td className="py-2.5 px-3 text-center">
+                          <a 
+                            href={`/admin/inventory?q=${encodeURIComponent(v.sku)}`}
+                            className="inline-flex items-center px-2.5 py-1 bg-secondary hover:bg-muted border border-border text-[9px] font-semibold uppercase tracking-wider text-foreground rounded-lg transition-all"
+                          >
+                            Restock
+                          </a>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
       {/* Welcome & Time Filters Header */}
@@ -963,6 +1211,17 @@ export default function AnalyticsPage() {
           <Award className="w-4 h-4" />
           Best Sellers
         </button>
+        <button
+          onClick={() => setActiveTab("stock")}
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer ${
+            activeTab === "stock"
+              ? "bg-primary text-primary-foreground shadow-sm shadow-primary/10"
+              : "text-muted-foreground hover:bg-secondary/40 hover:text-foreground"
+          }`}
+        >
+          <Boxes className="w-4 h-4" />
+          Stock Alerts
+        </button>
       </div>
 
       {/* Dynamic Tab Body content */}
@@ -975,8 +1234,10 @@ export default function AnalyticsPage() {
         renderRevenueTab()
       ) : activeTab === "orders" ? (
         renderOrdersTab()
-      ) : (
+      ) : activeTab === "products" ? (
         renderProductsTab()
+      ) : (
+        renderStockTab()
       )}
     </div>
   );
