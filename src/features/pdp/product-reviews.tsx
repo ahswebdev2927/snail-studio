@@ -43,6 +43,46 @@ export interface ReviewEligibility {
   remainingMinutes: number;
 }
 
+function ReviewFormSkeleton() {
+  return (
+    <div className="space-y-6 animate-pulse w-full max-w-lg mx-auto py-4">
+      {/* Title skeleton */}
+      <div className="h-6 bg-secondary/40 rounded w-1/2 mx-auto" />
+
+      {/* Star Selector skeleton */}
+      <div className="flex flex-col items-center space-y-2">
+        <div className="h-3.5 bg-secondary/30 rounded w-1/4" />
+        <div className="flex gap-2">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="w-7 h-7 bg-secondary/30 rounded-full" />
+          ))}
+        </div>
+      </div>
+
+      {/* Review Title Input skeleton */}
+      <div className="space-y-2">
+        <div className="h-3.5 bg-secondary/30 rounded w-1/5" />
+        <div className="h-10 bg-secondary/20 rounded-xl w-full" />
+      </div>
+
+      {/* Review Comment Textarea skeleton */}
+      <div className="space-y-2">
+        <div className="h-3.5 bg-secondary/30 rounded w-1/4" />
+        <div className="h-28 bg-secondary/20 rounded-xl w-full" />
+      </div>
+
+      {/* Review Photos Upload skeleton */}
+      <div className="space-y-2">
+        <div className="h-3.5 bg-secondary/30 rounded w-1/3" />
+        <div className="h-16 bg-secondary/20 rounded-xl w-24" />
+      </div>
+
+      {/* Submit Button skeleton */}
+      <div className="h-11 bg-secondary/40 rounded-full w-full mt-4" />
+    </div>
+  );
+}
+
 interface ProductReviewsProps {
   productId: string;
   reviews: ReviewItem[];
@@ -385,10 +425,7 @@ export function ProductReviews({
               
               {/* Submission Status Message / Checks */}
               {isLoadingEligibility ? (
-                <div className="text-center py-8 space-y-2">
-                  <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto" />
-                  <p className="text-xs text-muted-foreground font-light font-sans">Verifying eligibility...</p>
-                </div>
+                <ReviewFormSkeleton />
               ) : submitSuccess ? (
                 <div className="text-center py-6 space-y-3">
                   <div className="w-12 h-12 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center mx-auto">
