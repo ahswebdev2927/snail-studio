@@ -14,7 +14,8 @@ import {
   AlertCircle,
   Truck,
   Sparkles,
-  Inbox
+  Inbox,
+  Award
 } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 
@@ -68,6 +69,49 @@ interface OrdersAnalyticsResponse {
   ordersHistory: OrdersHistoryItem[];
 }
 
+// Types for Product Analytics
+interface TopProductItem {
+  id: string;
+  name: string;
+  slug: string;
+  categoryName: string;
+  quantitySold: number;
+  revenue: number;
+}
+
+interface TopVariantItem {
+  id: string;
+  sku: string;
+  name: string;
+  productName: string;
+  quantitySold: number;
+  revenue: number;
+}
+
+interface CategoryDistItem {
+  categoryId: string;
+  categoryName: string;
+  quantitySold: number;
+  revenue: number;
+}
+
+interface TrendingProductItem {
+  id: string;
+  name: string;
+  slug: string;
+  qtyA: number;
+  qtyB: number;
+  growthPercent: number;
+}
+
+interface ProductsAnalyticsResponse {
+  topProducts: TopProductItem[];
+  topVariants: TopVariantItem[];
+  categoryDistribution: CategoryDistItem[];
+  trendingProducts: TrendingProductItem[];
+  trendingLabel?: string;
+}
+
 export default function AnalyticsPage() {
   const [activeTab, setActiveTab] = useState("revenue"); // "revenue" | "orders"
   const [dateRange, setDateRange] = useState("7d");
@@ -76,6 +120,7 @@ export default function AnalyticsPage() {
   // Loaded data states
   const [revenueData, setRevenueData] = useState<AnalyticsResponse | null>(null);
   const [ordersData, setOrdersData] = useState<OrdersAnalyticsResponse | null>(null);
+  const [productsData, setProductsData] = useState<ProductsAnalyticsResponse | null>(null);
 
   // Active chart hover points
   const [activeRevenuePoint, setActiveRevenuePoint] = useState<any | null>(null);
@@ -90,10 +135,15 @@ export default function AnalyticsPage() {
         if (res.ok) {
           setRevenueData(await res.json());
         }
-      } else {
+      } else if (activeTab === "orders") {
         const res = await fetch(`/api/admin/analytics/orders?range=${dateRange}`);
         if (res.ok) {
           setOrdersData(await res.json());
+        }
+      } else {
+        const res = await fetch(`/api/admin/analytics/products?range=${dateRange}`);
+        if (res.ok) {
+          setProductsData(await res.json());
         }
       }
     } catch (error) {
@@ -679,6 +729,164 @@ export default function AnalyticsPage() {
     );
   };
 
+  // 3. Best Sellers tab rendering
+  const renderProductsTab = () => {
+    if (!productsData) return null;
+    const { topProducts, topVariants, categoryDistribution, trendingProducts } = productsData;
+
+    const totalCategoryRevenue = categoryDistribution.reduce((acc, c) => acc + c.revenue, 0);
+
+    return (
+      <div className="space-y-6">
+        {/* Trending & Category Distributions Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Category distribution splits */}
+          <div className="bg-card border border-border/40 rounded-3xl p-6 lg:col-span-2 hover:border-primary/10 transition-all shadow-sm space-y-4">
+            <div>
+              <h3 className="text-sm font-semibold tracking-wide text-foreground">Category Performance Splits</h3>
+              <p className="text-[10px] text-muted-foreground font-light font-sans">
+                Distribution of sales revenue and quantities split by catalog categories.
+              </p>
+            </div>
+            
+            <div className="space-y-4">
+              {categoryDistribution.length === 0 ? (
+                <p className="text-xs text-muted-foreground font-light italic">No category sales recorded in this period.</p>
+              ) : (
+                categoryDistribution.map((c) => {
+                  const sharePercent = totalCategoryRevenue > 0 ? (c.revenue / totalCategoryRevenue) * 100 : 0;
+                  return (
+                    <div key={c.categoryId} className="space-y-1.5">
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="font-semibold text-foreground">{c.categoryName}</span>
+                        <span className="text-[10px] text-muted-foreground font-mono">
+                          {c.quantitySold} units | {formatPriceDecimal(c.revenue)} ({sharePercent.toFixed(1)}%)
+                        </span>
+                      </div>
+                      <div className="w-full h-2 bg-secondary/40 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-gradient-to-r from-primary to-accent rounded-full transition-all duration-500" 
+                          style={{ width: `${sharePercent}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+
+          {/* Trending products list */}
+          <div className="bg-card border border-border/40 rounded-3xl p-6 hover:border-primary/10 transition-all shadow-sm flex flex-col justify-between space-y-4">
+            <div>
+              <h3 className="text-sm font-semibold tracking-wide text-foreground flex items-center gap-1.5">
+                <Sparkles className="w-4.5 h-4.5 text-accent animate-pulse" />
+                Trending Spikes
+              </h3>
+              <p className="text-[10px] text-muted-foreground font-light font-sans">
+                Highest sales velocity percentage growth ({productsData.trendingLabel || "7d vs previous 7d"}).
+              </p>
+            </div>
+
+            <div className="space-y-3 flex-1 justify-center flex flex-col">
+              {trendingProducts.length === 0 ? (
+                <p className="text-xs text-muted-foreground font-light italic py-8 text-center">No trending spikes detected in this period.</p>
+              ) : (
+                trendingProducts.map((p) => (
+                  <div key={p.id} className="flex justify-between items-center border-b border-border/10 pb-2 last:border-0 last:pb-0">
+                    <div className="space-y-0.5">
+                      <span className="text-xs font-semibold text-foreground truncate max-w-[170px] block" title={p.name}>
+                        {p.name}
+                      </span>
+                      <span className="text-[9px] text-muted-foreground font-light block">
+                        Sales: {p.qtyB} units → {p.qtyA} units
+                      </span>
+                    </div>
+                    <span className="text-[10px] px-2.5 py-0.5 rounded-full font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                      +{p.growthPercent.toFixed(0)}%
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Top Products & Top Variants splits grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Top Selling Products */}
+          <div className="bg-card border border-border/40 rounded-3xl p-6 hover:border-primary/10 transition-all shadow-sm space-y-4">
+            <h3 className="text-sm font-semibold tracking-wide text-foreground">Top 10 Products</h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs font-light border-collapse">
+                <thead>
+                  <tr className="border-b border-border/40 text-muted-foreground uppercase text-[9px] font-bold tracking-wider">
+                    <th className="py-2.5 px-3">Product Name</th>
+                    <th className="py-2.5 px-3">Category</th>
+                    <th className="py-2.5 px-3 text-center">Units Sold</th>
+                    <th className="py-2.5 px-3 text-right">Revenue</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {topProducts.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="py-6 text-center text-muted-foreground font-light italic">No sales recorded.</td>
+                    </tr>
+                  ) : (
+                    topProducts.map((p) => (
+                      <tr key={p.id} className="border-b border-border/10 last:border-0 hover:bg-secondary/15 transition-all">
+                        <td className="py-2.5 px-3 font-medium text-foreground">{p.name}</td>
+                        <td className="py-2.5 px-3 text-muted-foreground">{p.categoryName}</td>
+                        <td className="py-2.5 px-3 text-center font-semibold text-foreground">{p.quantitySold}</td>
+                        <td className="py-2.5 px-3 text-right font-bold text-foreground">{formatPriceDecimal(p.revenue)}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Top Selling Variants */}
+          <div className="bg-card border border-border/40 rounded-3xl p-6 hover:border-primary/10 transition-all shadow-sm space-y-4">
+            <h3 className="text-sm font-semibold tracking-wide text-foreground">Top 10 SKUs / Variants</h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs font-light border-collapse">
+                <thead>
+                  <tr className="border-b border-border/40 text-muted-foreground uppercase text-[9px] font-bold tracking-wider">
+                    <th className="py-2.5 px-3">SKU</th>
+                    <th className="py-2.5 px-3">Variant details</th>
+                    <th className="py-2.5 px-3 text-center">Units Sold</th>
+                    <th className="py-2.5 px-3 text-right">Revenue</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {topVariants.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="py-6 text-center text-muted-foreground font-light italic">No sales recorded.</td>
+                    </tr>
+                  ) : (
+                    topVariants.map((v) => (
+                      <tr key={v.id} className="border-b border-border/10 last:border-0 hover:bg-secondary/15 transition-all">
+                        <td className="py-2.5 px-3 font-mono font-bold text-foreground text-xs">{v.sku}</td>
+                        <td className="py-2.5 px-3 text-foreground">
+                          <span className="font-semibold block">{v.name}</span>
+                          <span className="text-[9px] text-muted-foreground block">{v.productName}</span>
+                        </td>
+                        <td className="py-2.5 px-3 text-center font-semibold text-foreground">{v.quantitySold}</td>
+                        <td className="py-2.5 px-3 text-right font-bold text-foreground">{formatPriceDecimal(v.revenue)}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
       {/* Welcome & Time Filters Header */}
@@ -744,6 +952,17 @@ export default function AnalyticsPage() {
           <ShoppingBag className="w-4 h-4" />
           Orders Dashboard
         </button>
+        <button
+          onClick={() => setActiveTab("products")}
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer ${
+            activeTab === "products"
+              ? "bg-primary text-primary-foreground shadow-sm shadow-primary/10"
+              : "text-muted-foreground hover:bg-secondary/40 hover:text-foreground"
+          }`}
+        >
+          <Award className="w-4 h-4" />
+          Best Sellers
+        </button>
       </div>
 
       {/* Dynamic Tab Body content */}
@@ -754,8 +973,10 @@ export default function AnalyticsPage() {
         </div>
       ) : activeTab === "revenue" ? (
         renderRevenueTab()
-      ) : (
+      ) : activeTab === "orders" ? (
         renderOrdersTab()
+      ) : (
+        renderProductsTab()
       )}
     </div>
   );
