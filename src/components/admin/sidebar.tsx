@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { 
   Home, 
+  BarChart3,
   Layers, 
   Boxes, 
   ClipboardList, 
@@ -50,6 +51,11 @@ export default function Sidebar({ isCollapsed, isMobileOpen, closeMobileSidebar,
       name: "Dashboard",
       href: "/admin/dashboard",
       icon: Home
+    },
+    {
+      name: "Analytics",
+      href: "/admin/analytics",
+      icon: BarChart3
     },
     {
       name: "Catalog",
