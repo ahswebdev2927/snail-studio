@@ -19,7 +19,8 @@ import {
   AlertTriangle,
   Boxes,
   Heart,
-  Users
+  Users,
+  Tag
 } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 
@@ -195,6 +196,27 @@ interface CustomerAnalyticsResponse {
   topSpenders: VIPSpenderItem[];
 }
 
+// Types for Coupon Analytics
+interface CouponPerformanceItem {
+  code: string;
+  usageCount: number;
+  totalDiscount: number;
+  influencedRevenue: number;
+  discountType: "percentage" | "fixed";
+  discountValue: number;
+  isActive: boolean;
+}
+
+interface CouponAnalyticsResponse {
+  summary: {
+    totalDiscountValue: number;
+    influencedRevenue: number;
+    usageCount: number;
+    avgDiscountPerOrder: number;
+  };
+  couponPerformances: CouponPerformanceItem[];
+}
+
 export default function AnalyticsPage() {
   const [activeTab, setActiveTab] = useState("revenue"); // "revenue" | "orders"
   const [dateRange, setDateRange] = useState("7d");
@@ -207,6 +229,7 @@ export default function AnalyticsPage() {
   const [stockData, setStockData] = useState<StockAnalyticsResponse | null>(null);
   const [wishlistData, setWishlistData] = useState<WishlistAnalyticsResponse | null>(null);
   const [customerData, setCustomerData] = useState<CustomerAnalyticsResponse | null>(null);
+  const [couponData, setCouponData] = useState<CouponAnalyticsResponse | null>(null);
 
   // Active chart hover points
   const [activeRevenuePoint, setActiveRevenuePoint] = useState<any | null>(null);
@@ -243,10 +266,15 @@ export default function AnalyticsPage() {
         if (res.ok) {
           setWishlistData(await res.json());
         }
-      } else {
+      } else if (activeTab === "customers") {
         const res = await fetch(`/api/admin/analytics/customers?range=${dateRange}`);
         if (res.ok) {
           setCustomerData(await res.json());
+        }
+      } else {
+        const res = await fetch(`/api/admin/analytics/coupons?range=${dateRange}`);
+        if (res.ok) {
+          setCouponData(await res.json());
         }
       }
     } catch (error) {
@@ -1748,6 +1776,149 @@ export default function AnalyticsPage() {
     );
   };
 
+  // 7. Coupon performance rendering
+  const renderCouponsTab = () => {
+    if (!couponData) return null;
+    const { summary, couponPerformances } = couponData;
+
+    return (
+      <div className="space-y-6 animate-fade-in">
+        {/* Summary Metric Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Total Discount Value Generated */}
+          <div className="bg-card border border-border/40 rounded-3xl p-5 hover:border-primary/20 transition-all duration-300 group flex flex-col justify-between shadow-sm relative overflow-hidden">
+            <div className="absolute right-0 bottom-0 w-24 h-24 bg-primary/5 rounded-full translate-x-6 translate-y-6 pointer-events-none" />
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Total Discount Value</span>
+              <div className="p-2 rounded-2xl text-primary bg-primary/10 group-hover:scale-105 transition-all">
+                <Percent className="w-4.5 h-4.5" />
+              </div>
+            </div>
+            <div className="mt-4 space-y-1">
+              <p className="font-serif text-2xl font-semibold tracking-wide text-foreground">
+                {formatPriceDecimal(summary.totalDiscountValue)}
+              </p>
+              <p className="text-[10px] text-muted-foreground font-light font-sans">Total coupon value deducted from cart totals</p>
+            </div>
+          </div>
+
+          {/* Coupon-Influenced Order Revenue */}
+          <div className="bg-card border border-border/40 rounded-3xl p-5 hover:border-primary/20 transition-all duration-300 group flex flex-col justify-between shadow-sm relative overflow-hidden">
+            <div className="absolute right-0 bottom-0 w-24 h-24 bg-secondary/5 rounded-full translate-x-6 translate-y-6 pointer-events-none" />
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Influenced Revenue</span>
+              <div className="p-2 rounded-2xl text-foreground bg-secondary group-hover:scale-105 transition-all">
+                <DollarSign className="w-4.5 h-4.5" />
+              </div>
+            </div>
+            <div className="mt-4 space-y-1">
+              <p className="font-serif text-2xl font-semibold tracking-wide text-foreground">
+                {formatPriceDecimal(summary.influencedRevenue)}
+              </p>
+              <p className="text-[10px] text-muted-foreground font-light font-sans">Total revenue from checkouts using coupon codes</p>
+            </div>
+          </div>
+
+          {/* Usage Count */}
+          <div className="bg-card border border-border/40 rounded-3xl p-5 hover:border-primary/20 transition-all duration-300 group flex flex-col justify-between shadow-sm relative overflow-hidden">
+            <div className="absolute right-0 bottom-0 w-24 h-24 bg-primary/5 rounded-full translate-x-6 translate-y-6 pointer-events-none" />
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Total Coupon Usage</span>
+              <div className="p-2 rounded-2xl text-accent bg-accent/10 group-hover:scale-105 transition-all">
+                <Tag className="w-4.5 h-4.5" />
+              </div>
+            </div>
+            <div className="mt-4 space-y-1">
+              <p className="font-serif text-2xl font-semibold tracking-wide text-foreground">
+                {summary.usageCount} checkouts
+              </p>
+              <p className="text-[10px] text-muted-foreground font-light font-sans">Total count of successful coupon applications</p>
+            </div>
+          </div>
+
+          {/* Average Discount per Order */}
+          <div className="bg-card border border-border/40 rounded-3xl p-5 hover:border-primary/20 transition-all duration-300 group flex flex-col justify-between shadow-sm relative overflow-hidden">
+            <div className="absolute right-0 bottom-0 w-24 h-24 bg-primary/5 rounded-full translate-x-6 translate-y-6 pointer-events-none" />
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Avg. Deducted Discount</span>
+              <div className="p-2 rounded-2xl text-primary bg-primary/10 group-hover:scale-105 transition-all">
+                <Sparkles className="w-4.5 h-4.5" />
+              </div>
+            </div>
+            <div className="mt-4 space-y-1">
+              <p className="font-serif text-2xl font-semibold tracking-wide text-foreground">
+                {formatPriceDecimal(summary.avgDiscountPerOrder)}
+              </p>
+              <p className="text-[10px] text-muted-foreground font-light font-sans">Average discount savings per checkout order</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Coupons Performance List Table */}
+        <div className="bg-card border border-border/40 rounded-3xl p-6 hover:border-primary/10 transition-all shadow-sm space-y-4">
+          <h3 className="text-sm font-semibold tracking-wide text-foreground">Active Coupon Ledger</h3>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs font-light border-collapse">
+              <thead>
+                <tr className="border-b border-border/40 text-muted-foreground uppercase text-[9px] font-bold tracking-wider">
+                  <th className="py-2.5 px-3">Coupon Code</th>
+                  <th className="py-2.5 px-3">Discount Details</th>
+                  <th className="py-2.5 px-3 text-center">Status</th>
+                  <th className="py-2.5 px-3 text-center">Times Used</th>
+                  <th className="py-2.5 px-3 text-right">Total Discount Value</th>
+                  <th className="py-2.5 px-3 text-right">Influenced Revenue</th>
+                  <th className="py-2.5 px-3 text-center">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {couponPerformances.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="py-8 text-center text-muted-foreground font-light italic">No coupons logged or active in this time frame.</td>
+                  </tr>
+                ) : (
+                  couponPerformances.map((c) => (
+                    <tr key={c.code} className="border-b border-border/10 last:border-0 hover:bg-secondary/15 transition-all">
+                      <td className="py-2.5 px-3">
+                        <span className="font-mono font-bold text-foreground text-xs uppercase bg-secondary/85 px-2 py-1 rounded-lg border border-border/30 inline-block">
+                          {c.code}
+                        </span>
+                      </td>
+                      <td className="py-2.5 px-3">
+                        <span className="text-xs text-foreground font-semibold">
+                          {c.discountType === "percentage" ? `${c.discountValue}% Off` : `${formatPriceDecimal(c.discountValue)} Off`}
+                        </span>
+                      </td>
+                      <td className="py-2.5 px-3 text-center">
+                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase border tracking-wider inline-block ${
+                          c.isActive
+                            ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                            : "bg-rose-500/10 text-rose-500 border-rose-500/20"
+                        }`}>
+                          {c.isActive ? "Active" : "Expired"}
+                        </span>
+                      </td>
+                      <td className="py-2.5 px-3 text-center font-bold text-foreground font-mono">{c.usageCount}</td>
+                      <td className="py-2.5 px-3 text-right font-bold text-foreground">{formatPriceDecimal(c.totalDiscount)}</td>
+                      <td className="py-2.5 px-3 text-right font-bold text-foreground">{formatPriceDecimal(c.influencedRevenue)}</td>
+                      <td className="py-2.5 px-3 text-center">
+                        <a 
+                          href={`/admin/coupons?q=${encodeURIComponent(c.code)}`}
+                          className="inline-flex items-center px-2.5 py-1 bg-secondary hover:bg-muted border border-border text-[9px] font-semibold uppercase tracking-wider text-foreground rounded-lg transition-all"
+                        >
+                          Manage Coupon
+                        </a>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
       {/* Welcome & Time Filters Header */}
@@ -1857,6 +2028,17 @@ export default function AnalyticsPage() {
           <Users className="w-4 h-4" />
           Customers
         </button>
+        <button
+          onClick={() => setActiveTab("coupons")}
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer ${
+            activeTab === "coupons"
+              ? "bg-primary text-primary-foreground shadow-sm shadow-primary/10"
+              : "text-muted-foreground hover:bg-secondary/40 hover:text-foreground"
+          }`}
+        >
+          <Tag className="w-4 h-4" />
+          Coupons
+        </button>
       </div>
 
       {/* Dynamic Tab Body content */}
@@ -1875,8 +2057,10 @@ export default function AnalyticsPage() {
         renderStockTab()
       ) : activeTab === "wishlist" ? (
         renderWishlistTab()
-      ) : (
+      ) : activeTab === "customers" ? (
         renderCustomerTab()
+      ) : (
+        renderCouponsTab()
       )}
     </div>
   );

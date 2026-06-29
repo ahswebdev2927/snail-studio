@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { coupons } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { coupons, orders } from "@/db/schema";
+import { eq, and, sql, inArray } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { z } from "zod";
 import { authorize } from "@/middleware/auth";
@@ -33,11 +33,40 @@ export async function GET(req: NextRequest) {
       return auth.response!;
     }
 
+    // 1. Fetch all coupons
     const allCoupons = await db.query.coupons.findMany({
       orderBy: (coupons, { desc }) => [desc(coupons.createdAt)],
     });
 
-    return NextResponse.json(allCoupons, { status: 200 });
+    // 2. Fetch usage counts dynamically from orders
+    const usages = await db
+      .select({
+        code: orders.couponCode,
+        count: sql<number>`count(${orders.id})`.mapWith(Number)
+      })
+      .from(orders)
+      .where(
+        and(
+          sql`${orders.couponCode} is not null`,
+          inArray(orders.status, ["paid", "processing", "shipped", "delivered"])
+        )
+      )
+      .groupBy(orders.couponCode);
+
+    const usageMap = new Map<string, number>();
+    usages.forEach(u => {
+      if (u.code) {
+        usageMap.set(u.code.toUpperCase(), u.count);
+      }
+    });
+
+    // 3. Map usage count dynamically
+    const couponsWithUsage = allCoupons.map(c => ({
+      ...c,
+      usageCount: usageMap.get(c.code.toUpperCase()) || 0
+    }));
+
+    return NextResponse.json(couponsWithUsage, { status: 200 });
   } catch (error: any) {
     console.error("GET /api/coupons error:", error);
     return NextResponse.json(
