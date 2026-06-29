@@ -20,7 +20,8 @@ import {
   Boxes,
   Heart,
   Users,
-  Tag
+  Tag,
+  Search
 } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 
@@ -217,6 +218,27 @@ interface CouponAnalyticsResponse {
   couponPerformances: CouponPerformanceItem[];
 }
 
+// Types for Search Analytics
+interface SearchLogItem {
+  query: string;
+  count: number;
+  avgResults?: number;
+}
+
+interface RecentLogItem {
+  id: string;
+  query: string;
+  resultsCount: number;
+  ipAddress: string | null;
+  createdAt: string;
+}
+
+interface SearchAnalyticsResponse {
+  popular: SearchLogItem[];
+  recent: RecentLogItem[];
+  failed: SearchLogItem[];
+}
+
 export default function AnalyticsPage() {
   const [activeTab, setActiveTab] = useState("revenue"); // "revenue" | "orders"
   const [dateRange, setDateRange] = useState("7d");
@@ -230,6 +252,7 @@ export default function AnalyticsPage() {
   const [wishlistData, setWishlistData] = useState<WishlistAnalyticsResponse | null>(null);
   const [customerData, setCustomerData] = useState<CustomerAnalyticsResponse | null>(null);
   const [couponData, setCouponData] = useState<CouponAnalyticsResponse | null>(null);
+  const [searchAnalyticsData, setSearchAnalyticsData] = useState<SearchAnalyticsResponse | null>(null);
 
   // Active chart hover points
   const [activeRevenuePoint, setActiveRevenuePoint] = useState<any | null>(null);
@@ -271,10 +294,15 @@ export default function AnalyticsPage() {
         if (res.ok) {
           setCustomerData(await res.json());
         }
-      } else {
+      } else if (activeTab === "coupons") {
         const res = await fetch(`/api/admin/analytics/coupons?range=${dateRange}`);
         if (res.ok) {
           setCouponData(await res.json());
+        }
+      } else {
+        const res = await fetch(`/api/admin/settings/search-analytics`);
+        if (res.ok) {
+          setSearchAnalyticsData(await res.json());
         }
       }
     } catch (error) {
@@ -1759,7 +1787,7 @@ export default function AnalyticsPage() {
                       <td className="py-2.5 px-3 text-right font-bold text-foreground">{formatPriceDecimal(s.totalSpent)}</td>
                       <td className="py-2.5 px-3 text-center">
                         <a 
-                          href={`/admin/customers?search=${encodeURIComponent(s.phone)}`}
+                          href={`/admin/customers?q=${encodeURIComponent(s.phone)}`}
                           className="inline-flex items-center px-2.5 py-1 bg-secondary hover:bg-muted border border-border text-[9px] font-semibold uppercase tracking-wider text-foreground rounded-lg transition-all"
                         >
                           Customer File
@@ -1919,6 +1947,168 @@ export default function AnalyticsPage() {
     );
   };
 
+  // 8. Search analytics tab rendering
+  const renderSearchAnalyticsTab = () => {
+    if (!searchAnalyticsData) return null;
+    const { popular, failed, recent } = searchAnalyticsData;
+
+    const formatDateString = (isoStr: string) => {
+      try {
+        const date = new Date(isoStr);
+        return date.toLocaleDateString("en-IN", {
+          day: "2-digit",
+          month: "short",
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: true
+        });
+      } catch {
+        return isoStr;
+      }
+    };
+
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Popular Searches */}
+          <div className="bg-card border border-border/40 rounded-3xl p-6 space-y-4 hover:border-primary/10 transition-all shadow-sm">
+            <div className="flex items-center gap-2 border-b border-border/10 pb-3">
+              <TrendingUp className="w-4 h-4 text-emerald-500" />
+              <h3 className="text-xs font-bold uppercase tracking-wider text-foreground">
+                Top Trending Search Terms
+              </h3>
+            </div>
+            {popular.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs font-light">
+                  <thead>
+                    <tr className="border-b border-border/10 text-muted-foreground font-medium uppercase tracking-wider text-[10px]">
+                      <th className="py-2 px-1">Query</th>
+                      <th className="py-2 text-center">Frequency</th>
+                      <th className="py-2 text-right px-1">Avg. Results Found</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/5">
+                    {popular.map((item, idx) => (
+                      <tr key={idx} className="hover:bg-secondary/10 transition-colors">
+                        <td className="py-2.5 px-1 font-medium text-foreground capitalize">
+                          {item.query}
+                        </td>
+                        <td className="py-2.5 text-center text-muted-foreground">
+                          {item.count}
+                        </td>
+                        <td className="py-2.5 text-right font-medium text-foreground px-1">
+                          {item.avgResults}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground/80 font-light italic py-8 text-center">
+                No searches recorded yet.
+              </p>
+            )}
+          </div>
+
+          {/* Failed Searches (0 Results) */}
+          <div className="bg-card border border-border/40 rounded-3xl p-6 space-y-4 hover:border-primary/10 transition-all shadow-sm">
+            <div className="flex items-center gap-2 border-b border-border/10 pb-3">
+              <AlertTriangle className="w-4 h-4 text-amber-500" />
+              <h3 className="text-xs font-bold uppercase tracking-wider text-foreground">
+                Missed Searches (0 Results Found)
+              </h3>
+            </div>
+            {failed.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs font-light">
+                  <thead>
+                    <tr className="border-b border-border/10 text-muted-foreground font-medium uppercase tracking-wider text-[10px]">
+                      <th className="py-2 px-1">Query</th>
+                      <th className="py-2 text-right px-1">Missed Search Frequency</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/5">
+                    {failed.map((item, idx) => (
+                      <tr key={idx} className="hover:bg-secondary/10 transition-colors">
+                        <td className="py-2.5 px-1 font-medium text-amber-600 dark:text-amber-500 capitalize flex items-center gap-1.5">
+                          <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                          {item.query}
+                        </td>
+                        <td className="py-2.5 text-right font-medium text-foreground px-1">
+                          {item.count}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground/80 font-light italic py-8 text-center">
+                Great! No queries returned 0 results yet.
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Recent Searches */}
+        <div className="bg-card border border-border/40 rounded-3xl p-6 space-y-4 hover:border-primary/10 transition-all shadow-sm">
+          <div className="flex items-center gap-2 border-b border-border/10 pb-3">
+            <Clock className="w-4 h-4 text-primary" />
+            <h3 className="text-xs font-bold uppercase tracking-wider text-foreground">
+              Recent Search Activity Logs
+            </h3>
+          </div>
+          {recent.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs font-light">
+                <thead>
+                  <tr className="border-b border-border/10 text-muted-foreground font-medium uppercase tracking-wider text-[10px]">
+                    <th className="py-2 px-1">Time</th>
+                    <th className="py-2">Search Query</th>
+                    <th className="py-2 text-center">Results Returned</th>
+                    <th className="py-2 text-right px-1">Client IP Address</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/5">
+                  {recent.map((item) => (
+                    <tr key={item.id} className="hover:bg-secondary/10 transition-colors">
+                      <td className="py-2.5 px-1 text-muted-foreground font-light">
+                        {formatDateString(item.createdAt)}
+                      </td>
+                      <td className="py-2.5 font-medium text-foreground capitalize">
+                        {item.query}
+                      </td>
+                      <td className="py-2.5 text-center">
+                        <span
+                          className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                            item.resultsCount > 0
+                              ? "bg-emerald-500/10 text-emerald-500"
+                              : "bg-amber-500/10 text-amber-500"
+                          }`}
+                        >
+                          {item.resultsCount} items
+                        </span>
+                      </td>
+                      <td className="py-2.5 text-right font-mono text-muted-foreground px-1">
+                        {item.ipAddress || "127.0.0.1"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground/80 font-light italic py-8 text-center">
+              No searches logged yet.
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
       {/* Welcome & Time Filters Header */}
@@ -2039,6 +2229,17 @@ export default function AnalyticsPage() {
           <Tag className="w-4 h-4" />
           Coupons
         </button>
+        <button
+          onClick={() => setActiveTab("searches")}
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer ${
+            activeTab === "searches"
+              ? "bg-primary text-primary-foreground shadow-sm shadow-primary/10"
+              : "text-muted-foreground hover:bg-secondary/40 hover:text-foreground"
+          }`}
+        >
+          <Search className="w-4 h-4" />
+          Searches
+        </button>
       </div>
 
       {/* Dynamic Tab Body content */}
@@ -2059,8 +2260,10 @@ export default function AnalyticsPage() {
         renderWishlistTab()
       ) : activeTab === "customers" ? (
         renderCustomerTab()
-      ) : (
+      ) : activeTab === "coupons" ? (
         renderCouponsTab()
+      ) : (
+        renderSearchAnalyticsTab()
       )}
     </div>
   );
