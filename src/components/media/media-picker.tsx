@@ -45,7 +45,7 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
 
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploadFolder, setUploadFolder] = useState<
-    "products/images" | "products/videos" | "collections/banners" | "categories/banners"
+    "products/images" | "products/videos" | "collections/banners" | "categories/banners" | "store/logo"
   >("products/images");
   const [altText, setAltText] = useState("");
   const [isUploading, setIsUploading] = useState(false);
@@ -330,6 +330,7 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
                 <option value="products/videos" className="bg-card text-foreground">Product Videos</option>
                 <option value="collections/banners" className="bg-card text-foreground">Collection Banners</option>
                 <option value="categories/banners" className="bg-card text-foreground">Category Banners</option>
+                <option value="store/logo" className="bg-card text-foreground">Store Logos</option>
               </select>
             </div>
 
@@ -449,6 +450,7 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
                 <option value="products/videos" className="bg-card text-foreground">Product Videos</option>
                 <option value="collections/banners" className="bg-card text-foreground">Collection Banners</option>
                 <option value="categories/banners" className="bg-card text-foreground">Category Banners</option>
+                <option value="store/logo" className="bg-card text-foreground">Store Logos</option>
               </select>
             </div>
  

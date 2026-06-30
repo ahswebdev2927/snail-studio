@@ -70,8 +70,8 @@ export default function AdminHeroBannersPage() {
   };
 
   const handleOpenAddModal = () => {
-    if (banners.length >= 3) {
-      showStatus("error", "You can only manage a maximum of 3 banners.");
+    if (banners.length >= 5) {
+      showStatus("error", "You can only manage a maximum of 5 banners.");
       return;
     }
     setCurrentBanner({
@@ -234,13 +234,13 @@ export default function AdminHeroBannersPage() {
         <div className="space-y-1">
           <h1 className="font-serif text-2xl font-normal text-foreground">Hero Carousel Banners</h1>
           <p className="text-xs text-muted-foreground font-light">
-            Manage the hero section slider on the homepage storefront. Up to 3 active banners are supported.
+            Manage the hero section slider on the homepage storefront. Up to 5 active banners are supported.
           </p>
         </div>
         <div>
           <button
             onClick={handleOpenAddModal}
-            disabled={banners.length >= 3}
+            disabled={banners.length >= 5}
             className="inline-flex items-center gap-1.5 px-4.5 py-2.5 bg-primary text-primary-foreground hover:bg-primary/95 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed rounded-xl text-xs font-medium transition-all shadow-sm cursor-pointer"
           >
             <Plus className="w-4 h-4" />
@@ -249,10 +249,10 @@ export default function AdminHeroBannersPage() {
         </div>
       </div>
 
-      {banners.length >= 3 && (
+      {banners.length >= 5 && (
         <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-500 text-xs flex items-center gap-3">
           <AlertCircle className="w-4.5 h-4.5 shrink-0" />
-          <span>Maximum banner limit (3) reached. Remove or edit existing banners to make changes.</span>
+          <span>Maximum banner limit (5) reached. Remove or edit existing banners to make changes.</span>
         </div>
       )}
 

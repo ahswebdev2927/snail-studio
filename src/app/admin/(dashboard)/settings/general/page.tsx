@@ -2,10 +2,13 @@
 
 import React, { useState, useEffect } from "react";
 import { Settings, Save, RefreshCw, CheckCircle2, AlertCircle } from "lucide-react";
+import MediaPicker from "@/components/media/media-picker";
 
 export default function AdminGeneralSettingsPage() {
   // Form State
   const [storeName, setStoreName] = useState("Snail Studio");
+  const [storeLogo, setStoreLogo] = useState("");
+  const [showMediaPicker, setShowMediaPicker] = useState(false);
   const [storeSlug, setStoreSlug] = useState("snail-studio");
   const [storeEmail, setStoreEmail] = useState("hello@snailstudio.com");
   const [storePhone, setStorePhone] = useState("+91 99999 99999");
@@ -33,6 +36,7 @@ export default function AdminGeneralSettingsPage() {
         const data = await res.json();
         if (data.store_name) setStoreName(data.store_name);
         if (data.store_slug) setStoreSlug(data.store_slug);
+        if (data.store_logo) setStoreLogo(data.store_logo);
         if (data.store_email) setStoreEmail(data.store_email);
         if (data.store_phone) setStorePhone(data.store_phone);
         if (data.shipping_standard_fee) setShippingStandardFee(data.shipping_standard_fee);
@@ -70,6 +74,7 @@ export default function AdminGeneralSettingsPage() {
           store_slug: storeSlug,
           store_email: storeEmail,
           store_phone: storePhone,
+          store_logo: storeLogo,
           shipping_standard_fee: shippingStandardFee,
           shipping_free_threshold: shippingFreeThreshold,
           shipping_express_fee: shippingExpressFee,
@@ -88,6 +93,13 @@ export default function AdminGeneralSettingsPage() {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleMediaSelect = (selected: any[]) => {
+    if (selected.length > 0) {
+      setStoreLogo(selected[0].url);
+    }
+    setShowMediaPicker(false);
   };
 
   if (isLoading) {
@@ -143,6 +155,49 @@ export default function AdminGeneralSettingsPage() {
       {/* Main Form container */}
       <div className="bg-card border border-border/40 rounded-3xl p-6 space-y-6 max-w-3xl">
         <form onSubmit={handleSave} className="space-y-4">
+          {/* Logo Upload Section */}
+          <div className="space-y-2 pb-4 border-b border-border/40">
+            <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+              Store Logo
+            </label>
+            <div className="flex items-center gap-4.5">
+              <div className="relative h-16 w-32 rounded-2xl bg-secondary/30 border border-border flex items-center justify-center overflow-hidden">
+                {storeLogo ? (
+                  <img
+                    src={storeLogo}
+                    alt="Store Logo Preview"
+                    className="h-full w-full object-contain p-2 animate-fade-in"
+                  />
+                ) : (
+                  <span className="text-[10px] text-muted-foreground font-light">No Logo</span>
+                )}
+              </div>
+              <div className="flex flex-col gap-2">
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowMediaPicker(true)}
+                    className="px-3.5 py-2 bg-secondary hover:bg-muted text-foreground rounded-xl text-xs font-medium border border-border transition-colors cursor-pointer"
+                  >
+                    {storeLogo ? "Change Logo" : "Upload Logo"}
+                  </button>
+                  {storeLogo && (
+                    <button
+                      type="button"
+                      onClick={() => setStoreLogo("")}
+                      className="px-3.5 py-2 bg-destructive/10 hover:bg-destructive/20 text-destructive rounded-xl text-xs font-medium border border-destructive/20 transition-colors cursor-pointer"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+                <p className="text-[10px] text-muted-foreground font-light leading-relaxed">
+                  Recommended size: 300x80px or wider aspect ratio. WebP, PNG, or SVG. Max 2MB.
+                </p>
+              </div>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
@@ -253,6 +308,20 @@ export default function AdminGeneralSettingsPage() {
           </div>
         </form>
       </div>
+
+      {/* Cloudinary Media Picker Modal */}
+      {showMediaPicker && (
+        <div className="fixed inset-0 z-60 bg-foreground/20 backdrop-blur-xs overflow-y-auto flex items-center justify-center p-4">
+          <div className="bg-card border border-border/40 rounded-3xl w-full max-w-4xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto relative my-auto">
+            <MediaPicker
+              onSelect={handleMediaSelect}
+              onClose={() => setShowMediaPicker(false)}
+              maxSelection={1}
+              title="Select Store Logo"
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

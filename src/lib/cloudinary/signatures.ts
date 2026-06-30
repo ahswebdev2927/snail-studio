@@ -32,6 +32,9 @@ export function generateUploadSignature(
     case "customers/avatars":
       uploadPreset = process.env.CLOUDINARY_PRESET_AVATAR_IMAGE || process.env.CLOUDINARY_PRESET_PRODUCT_IMAGE || "";
       break;
+    case "store/logo":
+      uploadPreset = process.env.CLOUDINARY_PRESET_PRODUCT_IMAGE || "";
+      break;
     default:
       throw new Error(`Unsupported upload folder: ${folder}`);
   }

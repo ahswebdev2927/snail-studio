@@ -2,10 +2,16 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Mail, ArrowRight, Heart } from "lucide-react";
 import { Button } from "../ui/button";
 
-export function Footer() {
+interface FooterProps {
+  storeLogo?: string;
+  storeName?: string;
+}
+
+export function Footer({ storeLogo = "", storeName = "Snail Studio" }: FooterProps) {
   const [email, setEmail] = useState("");
   const [subscribed, setSubscribed] = useState(false);
 
@@ -63,9 +69,19 @@ export function Footer() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 grid grid-cols-1 md:grid-cols-4 gap-12">
         <div className="space-y-6 col-span-1 md:col-span-1">
           <Link href="/" className="inline-block">
-            <span className="font-serif text-2xl font-semibold tracking-wide bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              Snail Studio
-            </span>
+            {storeLogo ? (
+              <Image
+                src={storeLogo}
+                alt={storeName}
+                width={300}
+                height={64}
+                className="h-16 w-auto object-contain invert dark:invert-0"
+              />
+            ) : (
+              <span className="font-serif text-2xl font-semibold tracking-wide bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                {storeName}
+              </span>
+            )}
           </Link>
           <p className="text-xs text-background/60 font-light leading-relaxed max-w-sm">
             Handcrafting premium, luxury press-on nails that offer high-fashion aesthetics without compromise. Experience salon-quality manicures in minutes.

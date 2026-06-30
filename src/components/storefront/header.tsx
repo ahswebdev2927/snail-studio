@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
 import {
   Menu,
@@ -28,9 +29,11 @@ import { Modal, ModalHeader, ModalTitle, ModalDescription, ModalFooter } from ".
 
 interface HeaderProps {
   navigationData?: StorefrontNavigation;
+  storeLogo?: string;
+  storeName?: string;
 }
 
-export function Header({ navigationData }: HeaderProps) {
+export function Header({ navigationData, storeLogo = "", storeName = "Snail Studio" }: HeaderProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [theme, setTheme] = useState<"light" | "dark">("light");
@@ -252,9 +255,22 @@ export function Header({ navigationData }: HeaderProps) {
             </button>
 
             <Link href="/" className="flex items-center gap-2">
-              <span className="font-serif text-2xl font-semibold tracking-wide bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                Snail Studio
-              </span>
+              {storeLogo ? (
+                <div className="relative h-16 w-auto flex items-center">
+                  <Image
+                    src={storeLogo}
+                    alt={storeName}
+                    width={300}
+                    height={64}
+                    className="h-16 w-auto object-contain"
+                    priority
+                  />
+                </div>
+              ) : (
+                <span className="font-serif text-2xl font-semibold tracking-wide bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                  {storeName}
+                </span>
+              )}
             </Link>
           </div>
 
@@ -588,7 +604,19 @@ export function Header({ navigationData }: HeaderProps) {
       <Drawer isOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} side="left">
         <DrawerHeader>
           <DrawerTitle className="font-serif text-xl font-semibold tracking-wide bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            Snail Studio
+            {storeLogo ? (
+              <div className="relative h-12 w-auto flex items-center">
+                <Image
+                  src={storeLogo}
+                  alt={storeName}
+                  width={240}
+                  height={48}
+                  className="h-12 w-auto object-contain"
+                />
+              </div>
+            ) : (
+              storeName
+            )}
           </DrawerTitle>
         </DrawerHeader>
 

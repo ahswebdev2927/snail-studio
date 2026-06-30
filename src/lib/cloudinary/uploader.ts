@@ -44,6 +44,9 @@ export async function uploadFromServer(
       case "categories/banners":
         uploadPreset = process.env.CLOUDINARY_PRESET_CATEGORY_BANNER || "";
         break;
+      case "store/logo":
+        uploadPreset = process.env.CLOUDINARY_PRESET_PRODUCT_IMAGE || "";
+        break;
       default:
         throw new Error(`Unsupported upload folder: ${folder}`);
     }

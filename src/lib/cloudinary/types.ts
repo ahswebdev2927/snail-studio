@@ -4,7 +4,8 @@ export type CloudinaryFolder =
   | "collections/banners"
   | "categories/banners"
   | "reviews/images"
-  | "customers/avatars";
+  | "customers/avatars"
+  | "store/logo";
 
 export type CloudinaryResourceType = "image" | "video";
 

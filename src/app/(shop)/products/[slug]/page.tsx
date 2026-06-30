@@ -7,7 +7,6 @@ import { ProductGallery, GalleryMediaItem } from "@/features/pdp/product-gallery
 import { ProductInfo } from "@/features/pdp/product-info";
 import { ProductActions, ProductVariantFull } from "@/features/pdp/product-actions";
 import { BreadcrumbItem } from "@/features/pdp/pdp-breadcrumb";
-import { ProductBundleWidget } from "@/features/pdp/product-bundle-widget";
 import { ProductTabs } from "@/features/pdp/product-tabs";
 import { ProductReviews } from "@/features/pdp/product-reviews";
 import { RelatedProducts } from "@/features/pdp/related-products";
@@ -266,7 +265,7 @@ export default async function ProductPage({
   const relevantBundles = dbBundles.filter((b) =>
     b.items.some((item) => item.productId === product.id)
   );
-  const formattedBundles = relevantBundles as any;
+  const rawBundles = relevantBundles as any;
   const galleryMedia: GalleryMediaItem[] = product.media
     .filter((pm) => pm.media)
     .map((pm) => ({
@@ -374,32 +373,80 @@ export default async function ProductPage({
     },
   });
 
-  const currentProductFbt = {
-    id: product.id,
-    name: product.name,
-    imageUrl: primaryImageUrl,
-    variants: fullVariants.map((v) => ({
-      id: v.id,
-      name: v.name,
-      price: v.price,
-      stockLevel: v.stockLevel,
-    })),
-  };
+  // Map database bundles that contain this product
+  const dbFormattedBundles = relevantBundles.map((b) => ({
+    id: b.id,
+    name: b.name,
+    description: b.description,
+    discountType: b.discountType,
+    discountValue: b.discountValue,
+    items: b.items.map((item) => {
+      const prod = item.product;
+      const prodPrimaryImageUrl = prod.media.find((m) => m.isFeatured)?.media?.url ?? prod.media[0]?.media?.url ?? "";
+      return {
+        productId: item.productId,
+        product: {
+          id: prod.id,
+          name: prod.name,
+          imageUrl: prodPrimaryImageUrl,
+          variants: prod.variants.map((v) => ({
+            id: v.id,
+            name: v.name,
+            price: v.price,
+            stockLevel: v.inventory?.stockLevel ?? 0,
+          })),
+        },
+      };
+    }),
+  }));
 
-  const recommendationsFbt = dbRecommendations.map((p) => {
-    const pPrimaryImageUrl = p.media.find((m) => m.isFeatured)?.media?.url ?? p.media[0]?.media?.url;
-    return {
-      id: p.id,
-      name: p.name,
-      imageUrl: pPrimaryImageUrl,
-      variants: p.variants.map((v) => ({
-        id: v.id,
-        name: v.name,
-        price: v.price,
-        stockLevel: v.inventory?.stockLevel ?? 0,
-      })),
+  // Fallback to dynamic recommendation bundle if no DB bundles are defined
+  let formattedBundles;
+  if (dbFormattedBundles.length > 0) {
+    formattedBundles = dbFormattedBundles;
+  } else {
+    const fallbackBundle = {
+      id: "fbt_fallback",
+      name: "Frequently Bought Together",
+      description: "Bundle complementary accessories and styles to complete your luxury manicure setup.",
+      discountType: "percentage" as const,
+      discountValue: 15, // 15% discount
+      items: [
+        {
+          productId: product.id,
+          product: {
+            id: product.id,
+            name: product.name,
+            imageUrl: primaryImageUrl,
+            variants: fullVariants.map((v) => ({
+              id: v.id,
+              name: v.name,
+              price: v.price,
+              stockLevel: v.stockLevel,
+            })),
+          },
+        },
+        ...dbRecommendations.map((rec) => {
+          const recPrimaryImageUrl = rec.media.find((m) => m.isFeatured)?.media?.url ?? rec.media[0]?.media?.url ?? "";
+          return {
+            productId: rec.id,
+            product: {
+              id: rec.id,
+              name: rec.name,
+              imageUrl: recPrimaryImageUrl,
+              variants: rec.variants.map((v) => ({
+                id: v.id,
+                name: v.name,
+                price: v.price,
+                stockLevel: v.inventory?.stockLevel ?? 0,
+              })),
+            },
+          };
+        }),
+      ],
     };
-  });
+    formattedBundles = [fallbackBundle];
+  }
 
   /* ----- 7.2 Prepare Recently Viewed Tracker Details ----- */
   const trackerProduct = {
@@ -479,10 +526,11 @@ export default async function ProductPage({
         {/* ---- Product Tabs Section (Description, Wear Guide, Shipping, FAQs) ---- */}
         <ProductTabs description={product.description} />
 
-        {/* ---- Product Bundle Widget ---- */}
-        {formattedBundles.length > 0 && (
-          <ProductBundleWidget bundles={formattedBundles} currentProductId={product.id} />
-        )}
+        {/* ---- Frequently Bought Together Section ---- */}
+        <FrequentlyBoughtTogether
+          bundles={formattedBundles}
+          currentProductId={product.id}
+        />
 
         {/* ---- Customer Reviews Section ---- */}
         <ProductReviews
@@ -491,12 +539,6 @@ export default async function ProductPage({
           averageRating={averageRating}
           reviewCount={reviewCount}
           eligibility={eligibility}
-        />
-
-        {/* ---- Frequently Bought Together Section ---- */}
-        <FrequentlyBoughtTogether
-          currentProduct={currentProductFbt}
-          recommendations={recommendationsFbt}
         />
 
         {/* ---- Related Products Section ---- */}

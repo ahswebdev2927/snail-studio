@@ -16,6 +16,7 @@ const signUploadSchema = z
       "products/videos",
       "collections/banners",
       "categories/banners",
+      "store/logo",
     ]),
     resourceType: z.enum(["image", "video"]),
     fileSize: z.number().int().positive("File size must be positive"),

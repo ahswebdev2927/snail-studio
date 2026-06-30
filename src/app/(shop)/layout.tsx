@@ -49,16 +49,26 @@ export default async function StorefrontLayout({
     }
   }
 
+  // Fetch all system settings to extract store name and logo
+  const systemSettingsRows = await db.select().from(systemSettings);
+  const settingsMap = systemSettingsRows.reduce((acc, row) => {
+    acc[row.key] = row.value;
+    return acc;
+  }, {} as Record<string, string>);
+
+  const storeLogo = settingsMap["store_logo"] || "";
+  const storeName = settingsMap["store_name"] || "Snail Studio";
+
   return (
     <>
       <AnnouncementBar announcements={activeAnnouncements} settings={barSettings} />
-      <Header navigationData={navigationData} />
+      <Header navigationData={navigationData} storeLogo={storeLogo} storeName={storeName} />
       <main className="flex-1 flex flex-col transition-colors duration-300">
         {children}
       </main>
       <SearchOverlay />
       <CartDrawer />
-      <Footer />
+      <Footer storeLogo={storeLogo} storeName={storeName} />
     </>
   );
 }

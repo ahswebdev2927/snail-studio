@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
 }
 
 /**
- * POST /api/admin/hero-banners - Create a new hero banner (Admin only, Max 3)
+ * POST /api/admin/hero-banners - Create a new hero banner (Admin only, Max 5)
  */
 export async function POST(req: NextRequest) {
   try {
@@ -67,15 +67,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check count limit (Max 3)
+    // Check count limit (Max 5)
     const existingCountResult = await db
       .select({ val: count() })
       .from(heroBanners);
     
     const totalCount = existingCountResult[0]?.val || 0;
-    if (totalCount >= 3) {
+    if (totalCount >= 5) {
       return NextResponse.json(
-        { error: "Limit reached", details: "Maximum of 3 banners are allowed." },
+        { error: "Limit reached", details: "Maximum of 5 banners are allowed." },
         { status: 400 }
       );
     }
