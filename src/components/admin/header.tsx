@@ -139,11 +139,136 @@ export default function Header({
     }
   };
 
-  const notifications = [
-    { id: 1, text: "Low stock alert: 'Rosewood Matte Coffin'", time: "10m ago", read: false },
-    { id: 2, text: "New order received #10484", time: "1h ago", read: false },
-    { id: 3, text: "Review request submitted for approval", time: "4h ago", read: true },
-  ];
+  const [notificationList, setNotificationList] = useState<any[]>([]);
+  const [hasUnread, setHasUnread] = useState(false);
+
+  // Format time ago utility
+  const formatTimeAgo = (dateInput: string | Date) => {
+    const date = new Date(dateInput);
+    const now = new Date();
+    const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+    if (seconds < 60) return "Just now";
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    return `${days}d ago`;
+  };
+
+  // Play browser Web Audio chime for high priority alerts
+  const playPremiumNotificationSound = () => {
+    try {
+      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      
+      const playTone = (freq: number, startTime: number, duration: number) => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(freq, startTime);
+        
+        gain.gain.setValueAtTime(0.08, startTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+        
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        
+        osc.start(startTime);
+        osc.stop(startTime + duration);
+      };
+      
+      const now = audioCtx.currentTime;
+      playTone(523.25, now, 0.25); // C5
+      playTone(659.25, now + 0.12, 0.35); // E5
+    } catch (err) {
+      console.error("Audio cue play failed:", err);
+    }
+  };
+
+  useEffect(() => {
+    if (!user || user.role !== "admin") return;
+
+    // 1. Initial fetch of unread list
+    const fetchNotifications = async () => {
+      try {
+        const res = await fetch("/api/admin/notifications?status=unread&limit=5");
+        if (res.ok) {
+          const data = await res.json();
+          setNotificationList(data.notifications);
+          setHasUnread(data.notifications.length > 0);
+        }
+      } catch (err) {
+        console.error("Failed to load initial notifications:", err);
+      }
+    };
+    fetchNotifications();
+
+    // 2. Real-time notifications listener
+    const eventSource = new EventSource("/api/notifications/sse");
+
+    eventSource.addEventListener("new_notification", (event: MessageEvent) => {
+      try {
+        const newNotif = JSON.parse(event.data);
+        if (newNotif.userId === user.id) {
+          setNotificationList((prev) => {
+            if (prev.some((n) => n.id === newNotif.id)) return prev;
+            return [newNotif, ...prev].slice(0, 5);
+          });
+          setHasUnread(true);
+
+          if (newNotif.priority === "high" || newNotif.priority === "critical") {
+            playPremiumNotificationSound();
+          }
+        }
+      } catch (err) {
+        console.error("Failed to parse incoming SSE message:", err);
+      }
+    });
+
+    eventSource.onerror = (err) => {
+      console.warn("SSE connection encountered an error, closing source:", err);
+      eventSource.close();
+    };
+
+    return () => {
+      eventSource.close();
+    };
+  }, [user.id, user.role]);
+
+  const handleMarkAllRead = async () => {
+    try {
+      const res = await fetch("/api/admin/notifications", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ all: true }),
+      });
+      if (res.ok) {
+        setNotificationList([]);
+        setHasUnread(false);
+      }
+    } catch (err) {
+      console.error("Failed to mark all as read:", err);
+    }
+  };
+
+  const handleMarkRead = async (id: string) => {
+    try {
+      const res = await fetch("/api/admin/notifications", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ notificationId: id }),
+      });
+      if (res.ok) {
+        setNotificationList((prev) => prev.filter((n) => n.id !== id));
+        // Check if any unread ones remain in state
+        setHasUnread((prev) => notificationList.length > 1);
+      }
+    } catch (err) {
+      console.error("Failed to mark notification as read:", err);
+    }
+  };
 
   return (
     <>
@@ -218,7 +343,9 @@ export default function Header({
             className="p-2.5 rounded-2xl text-muted-foreground hover:bg-secondary/60 hover:text-foreground relative cursor-pointer border border-border/10"
           >
             <Bell className="w-4.5 h-4.5" />
-            <span className="absolute top-1.5 right-1.5 h-2.5 w-2.5 rounded-full bg-destructive animate-pulse" />
+            {hasUnread && (
+              <span className="absolute top-1.5 right-1.5 h-2.5 w-2.5 rounded-full bg-destructive animate-pulse" />
+            )}
           </button>
 
           {notificationsOpen && (
@@ -234,27 +361,49 @@ export default function Header({
                   <span className="text-xs font-semibold uppercase tracking-wider">
                     Notifications
                   </span>
-                  <span className="text-[10px] text-primary hover:underline cursor-pointer">
+                  <span
+                    onClick={handleMarkAllRead}
+                    className="text-[10px] text-primary hover:underline cursor-pointer"
+                  >
                     Mark all read
                   </span>
                 </div>
-                <div className="max-h-60 overflow-y-auto pt-2">
-                  {notifications.map((n) => (
-                    <div
-                      key={n.id}
-                      className={cn(
-                        "px-4 py-2.5 hover:bg-secondary/35 flex flex-col gap-0.5 cursor-pointer border-b border-border/10 last:border-0",
-                        !n.read && "bg-primary/5 dark:bg-primary/2"
-                      )}
-                    >
-                      <p className="text-xs text-foreground leading-normal font-light">
-                        {n.text}
-                      </p>
-                      <span className="text-[9px] text-muted-foreground">
-                        {n.time}
-                      </span>
-                    </div>
-                  ))}
+                <div className="max-h-60 overflow-y-auto pt-2 px-1">
+                  {notificationList.length === 0 ? (
+                    <p className="text-[11px] text-muted-foreground text-center py-8 italic font-light">
+                      No unread notifications
+                    </p>
+                  ) : (
+                    notificationList.map((n) => (
+                      <div
+                        key={n.id}
+                        onClick={() => handleMarkRead(n.id)}
+                        className={cn(
+                          "px-3 py-2.5 hover:bg-secondary/40 flex flex-col gap-0.5 cursor-pointer border-b border-border/10 last:border-0 rounded-xl transition-all",
+                          !n.read && "bg-primary/5 dark:bg-primary/2"
+                        )}
+                      >
+                        <p className="text-xs text-foreground leading-normal font-medium">
+                          {n.title}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground leading-normal font-light">
+                          {n.message}
+                        </p>
+                        <span className="text-[9px] text-muted-foreground mt-0.5">
+                          {formatTimeAgo(n.createdAt)}
+                        </span>
+                      </div>
+                    ))
+                  )}
+                </div>
+                <div className="border-t border-border/40 mt-2 pt-2 px-4 text-center">
+                  <Link
+                    href="/admin/notifications"
+                    onClick={() => setNotificationsOpen(false)}
+                    className="text-[10px] text-primary hover:underline font-semibold block"
+                  >
+                    View All Notifications
+                  </Link>
                 </div>
               </div>
             </>

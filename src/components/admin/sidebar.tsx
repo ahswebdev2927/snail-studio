@@ -16,7 +16,8 @@ import {
   Settings, 
   ChevronDown,
   Sparkles,
-  ChevronRight
+  ChevronRight,
+  Bell
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SessionUser } from "@/lib/auth/session";
@@ -51,6 +52,11 @@ export default function Sidebar({ isCollapsed, isMobileOpen, closeMobileSidebar,
       name: "Dashboard",
       href: "/admin/dashboard",
       icon: Home
+    },
+    {
+      name: "Notifications",
+      href: "/admin/notifications",
+      icon: Bell
     },
     {
       name: "Analytics",
