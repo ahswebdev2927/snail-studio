@@ -21,7 +21,16 @@ function LoginFormContent() {
   const [devPhone, setDevPhone] = useState("+91 99999 88888");
   const [devName, setDevName] = useState("Jane Doe");
   const [devEmail, setDevEmail] = useState("jane.doe@example.com");
+  const [devWhatsapp, setDevWhatsapp] = useState("+91 99999 88888");
+  const [sameAsMobile, setSameAsMobile] = useState(true);
   const [devLoading, setDevLoading] = useState(false);
+
+  // Sync whatsapp number if 'same as mobile' is toggled
+  useEffect(() => {
+    if (sameAsMobile) {
+      setDevWhatsapp(devPhone);
+    }
+  }, [devPhone, sameAsMobile]);
 
   // Check if a session already exists to skip login
   useEffect(() => {
@@ -80,6 +89,7 @@ function LoginFormContent() {
           phoneNumber: devPhone,
           name: devName,
           email: devEmail,
+          whatsappNumber: sameAsMobile ? devPhone : devWhatsapp,
         }),
       });
 
@@ -247,7 +257,7 @@ function LoginFormContent() {
             
             <div className="space-y-1">
               <label className="text-[8px] font-bold text-muted-foreground uppercase pl-0.5">
-                Test Email
+                Test Email (For offers/orders update)
               </label>
               <input
                 type="email"
@@ -256,6 +266,36 @@ function LoginFormContent() {
                 onChange={(e) => setDevEmail(e.target.value)}
                 className="w-full px-2.5 py-1.5 rounded-lg bg-card border border-border/35 text-[11px] outline-none"
               />
+            </div>
+            
+            <div className="space-y-2">
+              <div className="flex items-center gap-1.5 pl-0.5">
+                <input
+                  id="same-whatsapp"
+                  type="checkbox"
+                  checked={sameAsMobile}
+                  onChange={(e) => setSameAsMobile(e.target.checked)}
+                  className="rounded border-border text-primary focus:ring-primary w-3 h-3 cursor-pointer"
+                />
+                <label htmlFor="same-whatsapp" className="text-[8px] font-bold text-muted-foreground uppercase cursor-pointer select-none">
+                  WhatsApp same as mobile number
+                </label>
+              </div>
+
+              {!sameAsMobile && (
+                <div className="space-y-1 animate-in fade-in duration-200">
+                  <label className="text-[8px] font-bold text-muted-foreground uppercase pl-0.5">
+                    WhatsApp Number
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={devWhatsapp}
+                    onChange={(e) => setDevWhatsapp(e.target.value)}
+                    className="w-full px-2.5 py-1.5 rounded-lg bg-card border border-border/35 text-[11px] outline-none"
+                  />
+                </div>
+              )}
             </div>
           </div>
 

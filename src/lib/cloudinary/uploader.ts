@@ -13,8 +13,26 @@ export async function deleteFromCloudinary(
       resource_type: resourceType,
     });
     return result;
-  } catch (error) {
+  } catch (error: any) {
     console.error(`Failed to delete asset ${publicId} from Cloudinary:`, error);
+    
+    try {
+      const { triggerAdminNotification } = await import("@/services/notifications/notification-service");
+      await triggerAdminNotification({
+        category: "system",
+        title: "Cloudinary Delete Failure",
+        message: `Failed to delete asset ${publicId} from Cloudinary.\nError: ${error.message || String(error)}`,
+        priority: "medium",
+        data: {
+          action: "cloudinary_delete_failure",
+          entityType: "media",
+          entityId: publicId,
+        }
+      });
+    } catch (notifErr) {
+      console.error("Failed to trigger Cloudinary failure notification:", notifErr);
+    }
+
     throw error;
   }
 }
@@ -77,8 +95,26 @@ export async function uploadFromServer(
     }
 
     return result as CloudinaryUploadResult;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Failed to upload asset from server to Cloudinary:", error);
+    
+    try {
+      const { triggerAdminNotification } = await import("@/services/notifications/notification-service");
+      await triggerAdminNotification({
+        category: "system",
+        title: "Cloudinary Server Upload Failure",
+        message: `Failed to upload server asset to folder '${folder}'.\nError: ${error.message || String(error)}`,
+        priority: "high",
+        data: {
+          action: "cloudinary_upload_failure",
+          entityType: "media",
+          entityId: folder,
+        }
+      });
+    } catch (notifErr) {
+      console.error("Failed to trigger Cloudinary failure notification:", notifErr);
+    }
+
     throw error;
   }
 }

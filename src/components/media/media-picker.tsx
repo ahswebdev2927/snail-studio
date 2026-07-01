@@ -219,6 +219,21 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
 
     } catch (err: any) {
       setUploadError(err.message || "Something went wrong during upload.");
+      
+      // Report upload failure to backend to generate system notification
+      try {
+        fetch("/api/media/report-failure", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            error: err.message || "Failed upload",
+            fileName: uploadFile?.name,
+            folder: uploadFolder,
+          })
+        });
+      } catch (reportErr) {
+        console.error("Failed to report media picker upload failure:", reportErr);
+      }
     } finally {
       setIsUploading(false);
       setUploadProgress(null);

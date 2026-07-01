@@ -173,6 +173,24 @@ Note: SMTP credentials are not configured in system settings or environment vari
       console.error("Failed to write email error logs to database:", dbError);
     }
 
+    // Trigger admin system notification for SMTP failure
+    try {
+      const { triggerAdminNotification } = await import("../notifications/notification-service");
+      await triggerAdminNotification({
+        category: "system",
+        title: "SMTP Mailer Failure",
+        message: `Failed to deliver email to ${params.to}. Subject: ${params.subject}.\nError: ${error.message || String(error)}`,
+        priority: "high",
+        data: {
+          action: "smtp_failure",
+          entityType: "email_log",
+          entityId: logId,
+        }
+      });
+    } catch (notifErr) {
+      console.error("Failed to trigger SMTP failure notification:", notifErr);
+    }
+
     return { success: false, error: error.message || String(error), logId };
   }
 }

@@ -171,6 +171,21 @@ export function ProfileClient({ user }: ProfileClientProps) {
     } catch (err: any) {
       console.error(err);
       setErrorMessage(err.message || "Failed to upload profile picture.");
+      
+      // Report upload failure to backend to generate system notification
+      try {
+        fetch("/api/media/report-failure", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            error: err.message || "Failed avatar upload",
+            fileName: file.name,
+            folder: "avatars",
+          })
+        });
+      } catch (reportErr) {
+        console.error("Failed to report profile avatar upload failure:", reportErr);
+      }
     } finally {
       setAvatarUploading(false);
       setAvatarProgress(null);

@@ -100,6 +100,24 @@ export async function POST(req: NextRequest) {
         .returning();
       
       user = insertedUsers[0];
+
+      // Trigger new customer registration notification
+      try {
+        const { triggerAdminNotification } = await import("@/services/notifications/notification-service");
+        await triggerAdminNotification({
+          category: "system",
+          title: "New Customer Registered",
+          message: `Customer '${user.name || "Customer"}' registered successfully.\nEmail: ${user.email || "N/A"}\nPhone: ${user.phoneNumber}\nWhatsApp: ${user.whatsappNumber || "N/A"}`,
+          priority: "medium",
+          data: {
+            action: "customer_registered",
+            entityType: "user",
+            entityId: user.id
+          }
+        });
+      } catch (err) {
+        console.error("Failed to trigger registration notification:", err);
+      }
     }
 
     // Extract client IP address and device User-Agent

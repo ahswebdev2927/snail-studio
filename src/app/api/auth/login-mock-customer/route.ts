@@ -46,10 +46,29 @@ export async function POST(req: NextRequest) {
           updatedAt: now,
           name: body.name || `Customer ${phoneNumber.slice(-4)}`,
           email: body.email || `customer-${phoneNumber.slice(-4)}@example.com`,
+          whatsappNumber: body.whatsappNumber || null,
         })
         .returning();
       
       user = insertedUsers[0];
+
+      // Trigger new customer registration notification
+      try {
+        const { triggerAdminNotification } = await import("@/services/notifications/notification-service");
+        await triggerAdminNotification({
+          category: "system",
+          title: "New Customer Registered",
+          message: `Customer '${user.name || "Customer"}' registered successfully.\nEmail: ${user.email || "N/A"}\nPhone: ${user.phoneNumber}\nWhatsApp: ${user.whatsappNumber || "N/A"}`,
+          priority: "medium",
+          data: {
+            action: "customer_registered",
+            entityType: "user",
+            entityId: user.id
+          }
+        });
+      } catch (err) {
+        console.error("Failed to trigger registration notification:", err);
+      }
     } else {
       // Update last login and potentially email/name if provided
       const updateData: any = {
