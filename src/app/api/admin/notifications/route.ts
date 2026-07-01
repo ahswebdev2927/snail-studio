@@ -5,6 +5,8 @@ import {
   getAdminNotifications,
   markNotificationAsRead,
   markAllNotificationsAsRead,
+  markNotificationAsUnread,
+  deleteNotification,
 } from "@/services/notifications/notification-service";
 
 export const dynamic = "force-dynamic";
@@ -44,7 +46,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// PUT /api/admin/notifications - Mark notification(s) as read
+// PUT /api/admin/notifications - Mark notification(s) as read or unread
 export async function PUT(req: NextRequest) {
   try {
     const cookieStore = await cookies();
@@ -60,11 +62,15 @@ export async function PUT(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { notificationId, all } = body;
+    const { notificationId, all, read } = body;
 
     if (notificationId) {
-      // Mark single notification as read
-      await markNotificationAsRead(notificationId, user.id);
+      const targetReadState = read !== undefined ? read : true;
+      if (targetReadState) {
+        await markNotificationAsRead(notificationId, user.id);
+      } else {
+        await markNotificationAsUnread(notificationId, user.id);
+      }
     } else if (all === true) {
       // Mark all unread notifications as read
       await markAllNotificationsAsRead(user.id);
@@ -75,6 +81,36 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (error: any) {
     console.error("PUT /api/admin/notifications error:", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  }
+}
+
+// DELETE /api/admin/notifications - Delete a notification log
+export async function DELETE(req: NextRequest) {
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get("accessToken")?.value;
+
+    if (!token) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const user = await getSessionUser(token);
+    if (!user || user.role !== "admin") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(req.url);
+    const notificationId = searchParams.get("id");
+
+    if (!notificationId) {
+      return NextResponse.json({ error: "Notification ID is required" }, { status: 400 });
+    }
+
+    await deleteNotification(notificationId, user.id);
+    return NextResponse.json({ success: true }, { status: 200 });
+  } catch (error: any) {
+    console.error("DELETE /api/admin/notifications error:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

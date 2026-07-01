@@ -1,10 +1,11 @@
 import { db } from "@/db";
-import { payments, orders, refunds, inventoryItems, inventoryReservations, inventoryTransactions, cartItems, carts } from "@/db/schema";
+import { payments, orders, refunds, inventoryItems, inventoryReservations, inventoryTransactions, cartItems, carts, productVariants } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { getPaymentProvider } from "@/lib/payments/payment-factory";
 import { PaymentSession, PaymentVerificationResult, RefundResult } from "@/lib/payments/types";
 import { updateOrderStatus } from "../checkout/order.service";
+import { triggerAdminNotification } from "../notifications/notification-service";
 
 /**
  * Creates a payment session with the active gateway and logs a pending payment record in the DB.
@@ -172,7 +173,9 @@ export async function confirmOrderPayment(params: {
   signature?: string;
   cartId?: string;
 }) {
-  return db.transaction(async (tx) => {
+  const lowStockAlerts: { name: string; stock: number; productId: string }[] = [];
+
+  const result = await db.transaction(async (tx) => {
     // 1. Fetch the order record
     const orderRecord = await tx.query.orders.findFirst({
       where: eq(orders.id, params.orderId),
@@ -284,6 +287,21 @@ export async function confirmOrderPayment(params: {
         quantity: item.quantity,
         reference: `order_${orderRecord.id}`
       });
+
+      // Check if item went under low-stock threshold
+      if (newStockLevel <= invItem.lowStockThreshold) {
+        const variant = await tx.query.productVariants.findFirst({
+          where: eq(productVariants.id, item.variantId),
+          with: { product: true }
+        });
+        if (variant) {
+          lowStockAlerts.push({
+            name: `${variant.product.name} - ${variant.name}`,
+            stock: newStockLevel,
+            productId: variant.productId
+          });
+        }
+      }
     }
 
     // 7. Clear cart items upon successful checkout completion
@@ -297,4 +315,37 @@ export async function confirmOrderPayment(params: {
       alreadyPaid: false
     };
   });
+
+  // If transaction was successful and order was newly paid, trigger notification(s)
+  if (result.success && !result.alreadyPaid) {
+    // 1. Trigger New Order notification
+    triggerAdminNotification({
+      category: "orders",
+      title: "New Order Placed",
+      message: `Order #${params.orderId} was successfully paid and placed.`,
+      priority: "medium",
+      data: {
+        action: "order_placed",
+        entityType: "order",
+        entityId: params.orderId,
+      }
+    }).catch((err) => console.error("Failed to trigger order confirmation notification:", err));
+
+    // 2. Trigger Low Stock alert notifications if any variant dropped below threshold
+    for (const alert of lowStockAlerts) {
+      triggerAdminNotification({
+        category: "inventory",
+        title: "Low Stock Alert",
+        message: `Variant '${alert.name}' is running low on stock. Only ${alert.stock} remaining.`,
+        priority: "high",
+        data: {
+          action: "stock_low",
+          entityType: "product",
+          entityId: alert.productId,
+        }
+      }).catch((err) => console.error("Failed to trigger low stock notification:", err));
+    }
+  }
+
+  return result;
 }

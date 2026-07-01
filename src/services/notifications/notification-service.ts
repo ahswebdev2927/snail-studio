@@ -197,6 +197,38 @@ export async function markAllNotificationsAsRead(adminId: string) {
 }
 
 /**
+ * Marks a specific notification as unread.
+ */
+export async function markNotificationAsUnread(notificationId: string, adminId: string) {
+  return db
+    .update(notifications)
+    .set({
+      read: false,
+      readAt: null,
+    })
+    .where(
+      and(
+        eq(notifications.id, notificationId),
+        eq(notifications.userId, adminId)
+      )
+    );
+}
+
+/**
+ * Deletes a specific notification from the database.
+ */
+export async function deleteNotification(notificationId: string, adminId: string) {
+  return db
+    .delete(notifications)
+    .where(
+      and(
+        eq(notifications.id, notificationId),
+        eq(notifications.userId, adminId)
+      )
+    );
+}
+
+/**
  * Retrieves paginated and filtered notifications for an administrator.
  */
 export async function getAdminNotifications(

@@ -4,6 +4,7 @@ import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { createSession } from "@/lib/auth/refresh-token";
+import { triggerAdminNotification } from "@/services/notifications/notification-service";
 
 export async function POST(req: NextRequest) {
   // Only permit this endpoint in non-production environments
@@ -68,6 +69,23 @@ export async function POST(req: NextRequest) {
       userAgent,
       ipAddress
     );
+
+    // Dispatch system alert notification for admin login
+    try {
+      await triggerAdminNotification({
+        category: "system",
+        title: "Administrator Sign-In",
+        message: `Admin user '${user.name || "Admin"}' signed in successfully from IP: ${ipAddress || "local"}.`,
+        priority: "low",
+        data: {
+          action: "admin_login",
+          entityType: "user",
+          entityId: user.id
+        }
+      });
+    } catch (err) {
+      console.error("Failed to trigger admin login notification:", err);
+    }
 
     const response = NextResponse.json({
       success: true,

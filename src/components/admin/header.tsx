@@ -14,11 +14,18 @@ import {
   LogOut,
   Settings,
   HelpCircle,
-  ExternalLink
+  ExternalLink,
+  ShoppingBag,
+  AlertTriangle,
+  MessageSquare,
+  Server,
+  AlertCircle,
+  X
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SessionUser } from "@/lib/auth/session";
 import Link from "next/link";
+import { nanoid } from "nanoid";
 import { Modal, ModalHeader, ModalTitle, ModalDescription, ModalFooter } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 
@@ -142,6 +149,56 @@ export default function Header({
   const [notificationList, setNotificationList] = useState<any[]>([]);
   const [hasUnread, setHasUnread] = useState(false);
 
+  interface ToastItem {
+    id: string;
+    category: string;
+    title: string;
+    message: string;
+    priority: string;
+    timestamp: Date;
+  }
+
+  const [toasts, setToasts] = useState<ToastItem[]>([]);
+
+  const dismissToast = (id: string) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  };
+
+  const getCategoryDetails = (category: string) => {
+    switch (category) {
+      case "orders":
+        return {
+          label: "Orders",
+          icon: ShoppingBag,
+          color: "bg-emerald-500/10 border-emerald-500/20 text-emerald-500",
+        };
+      case "inventory":
+        return {
+          label: "Inventory",
+          icon: AlertTriangle,
+          color: "bg-amber-500/10 border-amber-500/20 text-amber-500",
+        };
+      case "reviews":
+        return {
+          label: "Reviews",
+          icon: MessageSquare,
+          color: "bg-blue-500/10 border-blue-500/20 text-blue-500",
+        };
+      case "system":
+        return {
+          label: "System",
+          icon: Server,
+          color: "bg-rose-500/10 border-rose-500/20 text-rose-500",
+        };
+      default:
+        return {
+          label: "Alert",
+          icon: AlertCircle,
+          color: "bg-secondary text-foreground",
+        };
+    }
+  };
+
   // Format time ago utility
   const formatTimeAgo = (dateInput: string | Date) => {
     const date = new Date(dateInput);
@@ -204,33 +261,99 @@ export default function Header({
       }
     };
     fetchNotifications();
-
-    // 2. Real-time notifications listener
-    const eventSource = new EventSource("/api/notifications/sse");
-
-    eventSource.addEventListener("new_notification", (event: MessageEvent) => {
+ 
+    // 3. Register FCM Push Notifications
+    const setupFCM = async () => {
       try {
-        const newNotif = JSON.parse(event.data);
-        if (newNotif.userId === user.id) {
-          setNotificationList((prev) => {
-            if (prev.some((n) => n.id === newNotif.id)) return prev;
-            return [newNotif, ...prev].slice(0, 5);
-          });
-          setHasUnread(true);
-
-          if (newNotif.priority === "high" || newNotif.priority === "critical") {
-            playPremiumNotificationSound();
-          }
+        if (!("Notification" in window) || !("serviceWorker" in navigator)) {
+          console.warn("[FCM] Browser does not support service workers or notifications.");
+          return;
         }
-      } catch (err) {
-        console.error("Failed to parse incoming SSE message:", err);
+ 
+        let permission = Notification.permission;
+        if (permission === "default") {
+          permission = await Notification.requestPermission();
+        }
+ 
+        if (permission !== "granted") {
+          console.warn("[FCM] Notification permission denied.");
+          return;
+        }
+ 
+        // Register service worker explicitly
+        const registration = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
+        
+        // Dynamically import Firebase messaging methods
+        const { getMessaging, getToken } = await import("firebase/messaging");
+        const { app } = await import("@/lib/firebase/client");
+ 
+        const messaging = getMessaging(app);
+        
+        const token = await getToken(messaging, {
+          vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
+          serviceWorkerRegistration: registration,
+        });
+ 
+        if (token) {
+          await fetch("/api/notifications/push/subscribe", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token }),
+          });
+          console.log("[FCM] Device token registered successfully.");
+        } else {
+          console.warn("[FCM] No registration token received.");
+        }
+      } catch (fcmErr) {
+        console.warn("[FCM] Client registration failed:", fcmErr);
       }
-    });
-
-    eventSource.onerror = (err) => {
-      console.warn("SSE connection encountered an error, closing source:", err);
-      eventSource.close();
     };
+    setupFCM();
+ 
+     // 2. Real-time notifications listener
+     const eventSource = new EventSource("/api/notifications/sse");
+ 
+     eventSource.addEventListener("new_notification", (event: MessageEvent) => {
+       try {
+         const newNotif = JSON.parse(event.data);
+         if (newNotif.userId === user.id) {
+           setNotificationList((prev) => {
+             if (prev.some((n) => n.id === newNotif.id)) return prev;
+             return [newNotif, ...prev].slice(0, 5);
+           });
+           setHasUnread(true);
+ 
+           // Add to active toast notification banners
+           const toastId = `toast_${nanoid(8)}`;
+           setToasts((prev) => [
+             ...prev,
+             {
+               id: toastId,
+               category: newNotif.category,
+               title: newNotif.title,
+               message: newNotif.message,
+               priority: newNotif.priority,
+               timestamp: new Date()
+             }
+           ]);
+ 
+           // Auto-remove toast after 6 seconds
+           setTimeout(() => {
+             setToasts((prev) => prev.filter((t) => t.id !== toastId));
+           }, 6000);
+ 
+           if (newNotif.priority === "high" || newNotif.priority === "critical") {
+             playPremiumNotificationSound();
+           }
+         }
+       } catch (err) {
+         console.error("Failed to parse incoming SSE message:", err);
+       }
+     });
+ 
+     eventSource.onerror = (err) => {
+       console.warn("SSE connection error. EventSource will automatically retry connecting.", err);
+     };
 
     return () => {
       eventSource.close();
@@ -512,6 +635,49 @@ export default function Header({
         </Button>
       </ModalFooter>
     </Modal>
+ 
+    {/* Toast Notification Container */}
+    <div className="fixed bottom-5 right-5 z-[9999] flex flex-col gap-3 max-w-sm w-full pointer-events-none">
+      {toasts.map((toast) => {
+        const catDetails = getCategoryDetails(toast.category);
+        const CatIcon = catDetails.icon;
+ 
+        return (
+          <div
+            key={toast.id}
+            className="pointer-events-auto w-full bg-card/95 dark:bg-card/95 border border-border/80 shadow-2xl rounded-2xl p-4 flex gap-3 animate-in slide-in-from-bottom-5 duration-300 relative overflow-hidden"
+          >
+            {/* Category Indicator Dot/Icon */}
+            <div className={cn("p-2 rounded-xl border flex items-center justify-center shrink-0 h-9 w-9 mt-0.5", catDetails.color)}>
+              <CatIcon className="w-4.5 h-4.5" />
+            </div>
+ 
+            {/* Toast Details */}
+            <div className="flex-1 min-w-0 pr-5">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">
+                  {catDetails.label}
+                </span>
+                <span className="text-[9px] text-muted-foreground font-mono">
+                  Just now
+                </span>
+              </div>
+              <h5 className="text-xs font-semibold text-foreground mt-1">{toast.title}</h5>
+              <p className="text-[11px] text-muted-foreground font-light leading-relaxed mt-0.5">{toast.message}</p>
+            </div>
+ 
+            {/* Close Button */}
+            <button
+              onClick={() => dismissToast(toast.id)}
+              className="absolute top-3 right-3 text-muted-foreground hover:text-foreground cursor-pointer transition-all p-1 hover:bg-secondary rounded-lg"
+              aria-label="Close Toast"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        );
+      })}
+    </div>
   </>
 );
 }

@@ -44,11 +44,7 @@ export default function CheckoutClient() {
   const [errorMsg, setErrorMsg] = useState("");
   const [user, setUser] = useState<any>(null);
   
-  // Login Bypass State
-  const [loginPhone, setLoginPhone] = useState("");
-  const [loginName, setLoginName] = useState("");
-  const [loginEmail, setLoginEmail] = useState("");
-  const [loginLoading, setLoginLoading] = useState(false);
+
 
   // Address Step State
   const [savedAddresses, setSavedAddresses] = useState<any[]>([]);
@@ -125,13 +121,27 @@ export default function CheckoutClient() {
       }
     };
   }, []);
-
   // Fetch session, addresses, and shipping configurations
   const initCheckout = async () => {
     setLoading(true);
     setErrorMsg("");
     try {
-      const custRes = await getCheckoutCustomer();
+      let custRes = await getCheckoutCustomer();
+
+      // If unauthorized, attempt to refresh the token first
+      if (!custRes.success || !custRes.user) {
+        console.log("No valid user session. Attempting to refresh access token...");
+        try {
+          const refreshRes = await fetch("/api/auth/refresh", { method: "POST" });
+          if (refreshRes.ok) {
+            // Token refreshed, retry fetching customer data
+            custRes = await getCheckoutCustomer();
+          }
+        } catch (refreshErr) {
+          console.error("Token refresh attempt failed:", refreshErr);
+        }
+      }
+
       if (custRes.success && custRes.user) {
         setUser(custRes.user);
         setSavedAddresses(custRes.savedAddresses || []);
@@ -148,6 +158,8 @@ export default function CheckoutClient() {
         }
       } else {
         setUser(null);
+        router.push("/login?callbackUrl=/checkout");
+        return; // exit early
       }
 
       const rulesRes = await getShippingRules();
@@ -165,7 +177,6 @@ export default function CheckoutClient() {
       setLoading(false);
     }
   };
-
   useEffect(() => {
     if (mounted) {
       initCheckout();
@@ -202,42 +213,7 @@ export default function CheckoutClient() {
     }
   };
 
-  // Mock login bypass for testing
-  const handleLoginBypass = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!loginPhone) {
-      setErrorMsg("Phone number is required");
-      return;
-    }
 
-    setLoginLoading(true);
-    setErrorMsg("");
-
-    try {
-      const res = await fetch("/api/auth/login-mock-customer", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          phoneNumber: loginPhone,
-          name: loginName || undefined,
-          email: loginEmail || undefined,
-        }),
-      });
-
-      const data = await res.json();
-      if (res.ok && data.success) {
-        // Reload to re-fetch session details
-        await initCheckout();
-      } else {
-        setErrorMsg(data.error || "Failed to log in via dev bypass.");
-      }
-    } catch (err: any) {
-      console.error(err);
-      setErrorMsg("Error authenticating. Please try again.");
-    } finally {
-      setLoginLoading(false);
-    }
-  };
 
   const getNormalizedPriceInPaise = (price: number) => {
     if (price < 10000) {
@@ -482,92 +458,12 @@ export default function CheckoutClient() {
     );
   }
 
-  // Intercept and show storefront login bypass if unauthenticated
+  // Redirect to login page if unauthenticated
   if (!user) {
     return (
-      <div className="flex-1 bg-background text-foreground flex flex-col items-center justify-center min-h-[70vh] px-4 py-12">
-        <div className="w-full max-w-md bg-card border border-border/40 rounded-3xl p-8 space-y-6 shadow-sm">
-          <div className="text-center space-y-2">
-            <div className="inline-flex p-3 bg-secondary/40 rounded-full text-primary mb-1">
-              <Sparkles className="w-6 h-6 animate-pulse" />
-            </div>
-            <h2 className="font-serif text-2xl font-normal tracking-wide text-foreground">Secure Checkout</h2>
-            <p className="text-xs text-muted-foreground font-light max-w-xs mx-auto">
-              Please sign in to proceed with your premium press-on nails order.
-            </p>
-          </div>
-
-          {errorMsg && (
-            <div className="p-3 bg-destructive/10 border border-destructive/20 text-destructive text-[11px] rounded-xl flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              <span>{errorMsg}</span>
-            </div>
-          )}
-
-          <form onSubmit={handleLoginBypass} className="space-y-4">
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
-                <Phone className="w-3 h-3 text-primary" /> Mobile Number
-              </label>
-              <input
-                type="tel"
-                required
-                value={loginPhone}
-                onChange={(e) => setLoginPhone(e.target.value)}
-                placeholder="+91 99999 88888"
-                className="w-full px-4 py-3 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none transition-all text-foreground font-mono"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
-                <UserIcon className="w-3 h-3 text-primary" /> Full Name (Optional)
-              </label>
-              <input
-                type="text"
-                value={loginName}
-                onChange={(e) => setLoginName(e.target.value)}
-                placeholder="Elina Roy"
-                className="w-full px-4 py-3 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none transition-all text-foreground"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
-                <Mail className="w-3 h-3 text-primary" /> Email Address (Optional)
-              </label>
-              <input
-                type="email"
-                value={loginEmail}
-                onChange={(e) => setLoginEmail(e.target.value)}
-                placeholder="elina@example.com"
-                className="w-full px-4 py-3 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none transition-all text-foreground"
-              />
-            </div>
-
-            <div className="pt-2">
-              <div className="border-t border-border/10 my-4 pt-4 flex flex-col items-center">
-                <span className="text-[10px] uppercase tracking-widest text-primary font-bold mb-3 flex items-center gap-1">
-                  <Lock className="w-3 h-3" /> Developer Mode
-                </span>
-                <button
-                  type="submit"
-                  disabled={loginLoading}
-                  className="w-full py-3 px-5 bg-accent text-accent-foreground hover:bg-accent/90 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:scale-100 rounded-xl text-xs font-semibold tracking-wide transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  {loginLoading ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <>
-                      <span>AUTO-LOGIN AS CUSTOMER (DEV BYPASS)</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          </form>
-        </div>
+      <div className="flex-1 bg-background text-foreground flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+        <Loader2 className="w-8 h-8 text-primary animate-spin" />
+        <span className="text-xs font-light text-muted-foreground font-sans">Redirecting to authentication...</span>
       </div>
     );
   }

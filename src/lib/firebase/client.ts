@@ -9,5 +9,5 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase client instance
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+export const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 export const auth = getAuth(app);

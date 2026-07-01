@@ -15,7 +15,8 @@ import {
   MessageSquare,
   Server,
   Loader2,
-  Trash2
+  Trash2,
+  X
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -101,28 +102,63 @@ export default function NotificationsInboxPage() {
   }, [activeTab, activeCategory, page]);
 
   useEffect(() => {
+    const eventSource = new EventSource("/api/notifications/sse");
+    eventSource.addEventListener("new_notification", (event: MessageEvent) => {
+      try {
+        const newNotif = JSON.parse(event.data);
+        setNotifications((prev) => {
+          if (prev.some((n) => n.id === newNotif.id)) return prev;
+          if (activeCategory !== "all" && newNotif.category !== activeCategory) return prev;
+          if (activeTab === "read") return prev;
+          return [newNotif, ...prev];
+        });
+      } catch (err) {
+        console.error("Failed to parse incoming SSE notification:", err);
+      }
+    });
+    return () => {
+      eventSource.close();
+    };
+  }, [activeTab, activeCategory]);
+
+  useEffect(() => {
     if (showSettings) {
       fetchPreferences();
     }
   }, [showSettings]);
 
-  const handleMarkRead = async (id: string) => {
+  const handleToggleRead = async (id: string, currentRead: boolean) => {
     try {
       const res = await fetch("/api/admin/notifications", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ notificationId: id }),
+        body: JSON.stringify({ notificationId: id, read: !currentRead }),
       });
       if (res.ok) {
         setNotifications((prev) =>
-          prev.map((n) => (n.id === id ? { ...n, read: true } : n))
+          prev.map((n) => (n.id === id ? { ...n, read: !currentRead } : n))
         );
-        if (activeTab === "unread") {
+        if (activeTab === "unread" && !currentRead === true) {
+          setNotifications((prev) => prev.filter((n) => n.id !== id));
+        } else if (activeTab === "read" && !currentRead === false) {
           setNotifications((prev) => prev.filter((n) => n.id !== id));
         }
       }
     } catch (err) {
-      console.error("Failed to mark read:", err);
+      console.error("Failed to toggle read state:", err);
+    }
+  };
+
+  const handleDeleteNotification = async (id: string) => {
+    try {
+      const res = await fetch(`/api/admin/notifications?id=${id}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        setNotifications((prev) => prev.filter((n) => n.id !== id));
+      }
+    } catch (err) {
+      console.error("Failed to delete notification:", err);
     }
   };
 
@@ -371,16 +407,32 @@ export default function NotificationsInboxPage() {
                       <p className="text-xs text-muted-foreground font-light leading-relaxed">{n.message}</p>
                     </div>
 
-                    {/* Read Action Button */}
-                    {!n.read && (
-                      <button
-                        onClick={() => handleMarkRead(n.id)}
-                        className="text-[10px] font-semibold text-primary hover:underline px-2 py-1 bg-primary/5 hover:bg-primary/10 rounded-md shrink-0 transition-colors cursor-pointer"
-                      >
-                        Read
-                      </button>
-                    )}
-                  </div>
+                     {/* Action Buttons Group */}
+                     <div className="flex items-center gap-1.5 shrink-0 self-center">
+                       {/* Toggle Read/Unread Button */}
+                       <button
+                         onClick={() => handleToggleRead(n.id, n.read)}
+                         title={n.read ? "Mark as unread" : "Mark as read"}
+                         className={cn(
+                           "p-2 rounded-lg border transition-all cursor-pointer flex items-center justify-center",
+                           n.read
+                             ? "bg-secondary text-muted-foreground border-border/40 hover:bg-muted"
+                             : "bg-primary/5 text-primary border-primary/20 hover:bg-primary/10 hover:border-primary/40"
+                         )}
+                       >
+                         {n.read ? <Mail className="w-3.5 h-3.5" /> : <CheckCheck className="w-3.5 h-3.5" />}
+                       </button>
+
+                       {/* Delete Button */}
+                       <button
+                         onClick={() => handleDeleteNotification(n.id)}
+                         title="Delete notification"
+                         className="p-2 rounded-lg border border-destructive/20 bg-destructive/5 text-destructive hover:bg-destructive/10 hover:border-destructive/40 transition-all cursor-pointer flex items-center justify-center"
+                       >
+                         <Trash2 className="w-3.5 h-3.5" />
+                       </button>
+                     </div>
+                   </div>
                 );
               })}
 
@@ -452,13 +504,23 @@ export default function NotificationsInboxPage() {
                           onClick={() => handleTogglePreference(pref.category, "inApp", pref.inApp)}
                           disabled={savingPrefs !== null}
                           className={cn(
-                            "flex flex-col items-center justify-center p-2.5 border rounded-xl gap-1 text-center transition-all cursor-pointer",
-                            pref.inApp ? "bg-primary/5 border-primary text-primary" : "border-border/30 hover:border-border text-muted-foreground"
+                            "relative flex flex-col items-center justify-center p-2.5 pt-3.5 border rounded-xl gap-1 text-center transition-all cursor-pointer min-h-[72px] overflow-hidden",
+                            pref.inApp 
+                              ? "bg-primary/5 border-primary text-primary" 
+                              : "border-destructive/20 bg-destructive/5 text-destructive/60 hover:bg-destructive/10"
                           )}
                         >
+                          <div className="absolute top-1.5 right-1.5">
+                            {pref.inApp ? (
+                              <span className="flex h-2 w-2 rounded-full bg-emerald-500 shadow-sm" />
+                            ) : (
+                              <X className="w-2.5 h-2.5 text-destructive" />
+                            )}
+                          </div>
+                          
                           <Monitor className="w-4 h-4" />
                           <span className="text-[9px] font-medium">In-App</span>
-                          {savingPrefs === `${pref.category}-inApp` && <Loader2 className="w-2.5 h-2.5 animate-spin" />}
+                          {savingPrefs === `${pref.category}-inApp` && <Loader2 className="w-2.5 h-2.5 animate-spin absolute bottom-1" />}
                         </button>
 
                         {/* Email Toggle */}
@@ -466,13 +528,23 @@ export default function NotificationsInboxPage() {
                           onClick={() => handleTogglePreference(pref.category, "email", pref.email)}
                           disabled={savingPrefs !== null}
                           className={cn(
-                            "flex flex-col items-center justify-center p-2.5 border rounded-xl gap-1 text-center transition-all cursor-pointer",
-                            pref.email ? "bg-primary/5 border-primary text-primary" : "border-border/30 hover:border-border text-muted-foreground"
+                            "relative flex flex-col items-center justify-center p-2.5 pt-3.5 border rounded-xl gap-1 text-center transition-all cursor-pointer min-h-[72px] overflow-hidden",
+                            pref.email 
+                              ? "bg-primary/5 border-primary text-primary" 
+                              : "border-destructive/20 bg-destructive/5 text-destructive/60 hover:bg-destructive/10"
                           )}
                         >
+                          <div className="absolute top-1.5 right-1.5">
+                            {pref.email ? (
+                              <span className="flex h-2 w-2 rounded-full bg-emerald-500 shadow-sm" />
+                            ) : (
+                              <X className="w-2.5 h-2.5 text-destructive" />
+                            )}
+                          </div>
+                          
                           <Mail className="w-4 h-4" />
                           <span className="text-[9px] font-medium">Email</span>
-                          {savingPrefs === `${pref.category}-email` && <Loader2 className="w-2.5 h-2.5 animate-spin" />}
+                          {savingPrefs === `${pref.category}-email` && <Loader2 className="w-2.5 h-2.5 animate-spin absolute bottom-1" />}
                         </button>
 
                         {/* Push Toggle */}
@@ -480,13 +552,23 @@ export default function NotificationsInboxPage() {
                           onClick={() => handleTogglePreference(pref.category, "push", pref.push)}
                           disabled={savingPrefs !== null}
                           className={cn(
-                            "flex flex-col items-center justify-center p-2.5 border rounded-xl gap-1 text-center transition-all cursor-pointer",
-                            pref.push ? "bg-primary/5 border-primary text-primary" : "border-border/30 hover:border-border text-muted-foreground"
+                            "relative flex flex-col items-center justify-center p-2.5 pt-3.5 border rounded-xl gap-1 text-center transition-all cursor-pointer min-h-[72px] overflow-hidden",
+                            pref.push 
+                              ? "bg-primary/5 border-primary text-primary" 
+                              : "border-destructive/20 bg-destructive/5 text-destructive/60 hover:bg-destructive/10"
                           )}
                         >
+                          <div className="absolute top-1.5 right-1.5">
+                            {pref.push ? (
+                              <span className="flex h-2 w-2 rounded-full bg-emerald-500 shadow-sm" />
+                            ) : (
+                              <X className="w-2.5 h-2.5 text-destructive" />
+                            )}
+                          </div>
+                          
                           <Smartphone className="w-4 h-4" />
                           <span className="text-[9px] font-medium">Push</span>
-                          {savingPrefs === `${pref.category}-push` && <Loader2 className="w-2.5 h-2.5 animate-spin" />}
+                          {savingPrefs === `${pref.category}-push` && <Loader2 className="w-2.5 h-2.5 animate-spin absolute bottom-1" />}
                         </button>
                       </div>
                     </div>

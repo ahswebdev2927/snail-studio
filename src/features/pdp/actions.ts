@@ -8,6 +8,7 @@ import { getSessionUser } from "@/lib/auth/session";
 import { nanoid } from "nanoid";
 import { generateUploadSignature } from "@/lib/cloudinary/signatures";
 import { SignedUploadResponse } from "@/lib/cloudinary/types";
+import { triggerAdminNotification } from "@/services/notifications/notification-service";
 
 /**
  * Helper to get the current authenticated session user from cookies
@@ -263,7 +264,29 @@ export async function submitProductReview(
         }
       }
     });
-
+ 
+    // Trigger admin notification for new review submission
+    try {
+      const productObj = await db.query.products.findFirst({
+        where: eq(products.id, productId)
+      });
+      const productName = productObj ? productObj.name : "Product";
+ 
+      await triggerAdminNotification({
+        category: "reviews",
+        title: "New Review Submitted",
+        message: `Customer '${user.name || "User"}' submitted a ${rating}-star review for '${productName}' waiting for moderation.`,
+        priority: "low",
+        data: {
+          action: "review_submitted",
+          entityType: "review",
+          entityId: productId,
+        }
+      });
+    } catch (err) {
+      console.error("Failed to trigger review notification:", err);
+    }
+ 
     return {
       success: true,
       message: "Thank you! Your review has been submitted and is awaiting approval.",
