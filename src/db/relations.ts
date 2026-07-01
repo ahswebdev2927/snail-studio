@@ -12,7 +12,11 @@ export const usersRelations = relations(schema.users, ({ many }) => ({
   reviews: many(schema.reviews),
   wishlists: many(schema.wishlists),
   carts: many(schema.carts),
-  couponUsages: many(schema.couponUsage)
+  couponUsages: many(schema.couponUsage),
+  notifications: many(schema.notifications),
+  notificationPreferences: many(schema.notificationPreferences),
+  pushSubscriptions: many(schema.pushSubscriptions),
+  activities: many(schema.activityTimeline)
 }));
 
 export const refreshTokensRelations = relations(schema.refreshTokens, ({ one }) => ({
@@ -39,6 +43,34 @@ export const userAddressesRelations = relations(schema.userAddresses, ({ one }) 
 export const userAuditLogsRelations = relations(schema.userAuditLogs, ({ one }) => ({
   user: one(schema.users, {
     fields: [schema.userAuditLogs.userId],
+    references: [schema.users.id]
+  })
+}));
+
+export const notificationsRelations = relations(schema.notifications, ({ one }) => ({
+  user: one(schema.users, {
+    fields: [schema.notifications.userId],
+    references: [schema.users.id]
+  })
+}));
+
+export const notificationPreferencesRelations = relations(schema.notificationPreferences, ({ one }) => ({
+  user: one(schema.users, {
+    fields: [schema.notificationPreferences.userId],
+    references: [schema.users.id]
+  })
+}));
+
+export const activityTimelineRelations = relations(schema.activityTimeline, ({ one }) => ({
+  user: one(schema.users, {
+    fields: [schema.activityTimeline.userId],
+    references: [schema.users.id]
+  })
+}));
+
+export const pushSubscriptionsRelations = relations(schema.pushSubscriptions, ({ one }) => ({
+  user: one(schema.users, {
+    fields: [schema.pushSubscriptions.userId],
     references: [schema.users.id]
   })
 }));
