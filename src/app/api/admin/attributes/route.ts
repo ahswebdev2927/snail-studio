@@ -15,6 +15,12 @@ const createGroupSchema = z.object({
     .regex(/^[a-z0-9]+(?:-[a-z0-9_]+)*$/, "Code must be lowercase alphanumeric with hyphens or underscores")
     .optional()
     .or(z.literal("")),
+  attributeType: z.enum(["VARIANT", "CATALOG"], { required_error: "Attribute Type is required" }),
+  filterable: z.boolean().default(true),
+  searchable: z.boolean().default(true),
+  visibleOnPdp: z.boolean().default(true),
+  comparable: z.boolean().default(true),
+  displayOrder: z.coerce.number({ invalid_type_error: "Display Order must be numeric" }).default(0),
 });
 
 // GET /api/admin/attributes - List all attribute groups and values (Admin only)
@@ -31,7 +37,7 @@ export async function GET(req: NextRequest) {
           orderBy: (av, { asc }) => [asc(av.value)],
         },
       },
-      orderBy: (ag, { asc }) => [asc(ag.name)],
+      orderBy: (ag, { asc }) => [asc(ag.displayOrder), asc(ag.name)],
     });
 
     return NextResponse.json(allGroups, { status: 200 });
@@ -67,7 +73,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { name } = result.data;
+    const { name, attributeType, filterable, searchable, visibleOnPdp, comparable, displayOrder } = result.data;
     let code = result.data.code;
 
     if (!code) {
@@ -90,6 +96,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Configure variantAxis automatically
+    const variantAxis = attributeType === "VARIANT";
+
     const newGroupId = `attr_grp_${nanoid(10)}`;
     const inserted = await db
       .insert(attributeGroups)
@@ -97,6 +106,13 @@ export async function POST(req: NextRequest) {
         id: newGroupId,
         name,
         code,
+        attributeType,
+        variantAxis,
+        filterable,
+        searchable,
+        visibleOnPdp,
+        comparable,
+        displayOrder,
       })
       .returning();
 

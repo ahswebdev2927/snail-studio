@@ -13,6 +13,12 @@ const updateGroupSchema = z.object({
     .max(100, "Code is too long")
     .regex(/^[a-z0-9]+(?:-[a-z0-9_]+)*$/, "Code must be lowercase alphanumeric with hyphens or underscores")
     .optional(),
+  attributeType: z.enum(["VARIANT", "CATALOG"]).optional(),
+  filterable: z.boolean().optional(),
+  searchable: z.boolean().optional(),
+  visibleOnPdp: z.boolean().optional(),
+  comparable: z.boolean().optional(),
+  displayOrder: z.coerce.number({ invalid_type_error: "Display Order must be numeric" }).optional(),
 });
 
 // PUT /api/admin/attributes/[id] - Update attribute group details (Admin only)
@@ -46,7 +52,7 @@ export async function PUT(
       );
     }
 
-    const { name, code } = result.data;
+    const { name, code, attributeType, filterable, searchable, visibleOnPdp, comparable, displayOrder } = result.data;
 
     // Check existence
     const existing = await db.query.attributeGroups.findFirst({
@@ -71,11 +77,24 @@ export async function PUT(
       }
     }
 
+    // Configure variantAxis automatically if attributeType is provided
+    let variantAxis: boolean | undefined = undefined;
+    if (attributeType !== undefined) {
+      variantAxis = attributeType === "VARIANT";
+    }
+
     const updated = await db
       .update(attributeGroups)
       .set({
         ...(name !== undefined && { name }),
         ...(code !== undefined && { code }),
+        ...(attributeType !== undefined && { attributeType }),
+        ...(variantAxis !== undefined && { variantAxis }),
+        ...(filterable !== undefined && { filterable }),
+        ...(searchable !== undefined && { searchable }),
+        ...(visibleOnPdp !== undefined && { visibleOnPdp }),
+        ...(comparable !== undefined && { comparable }),
+        ...(displayOrder !== undefined && { displayOrder }),
       })
       .where(eq(attributeGroups.id, id))
       .returning();
