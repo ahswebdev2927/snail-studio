@@ -15,12 +15,12 @@ const createGroupSchema = z.object({
     .regex(/^[a-z0-9]+(?:-[a-z0-9_]+)*$/, "Code must be lowercase alphanumeric with hyphens or underscores")
     .optional()
     .or(z.literal("")),
-  attributeType: z.enum(["VARIANT", "CATALOG"], { required_error: "Attribute Type is required" }),
+  attributeType: z.enum(["VARIANT", "CATALOG"]),
   filterable: z.boolean().default(true),
   searchable: z.boolean().default(true),
   visibleOnPdp: z.boolean().default(true),
   comparable: z.boolean().default(true),
-  displayOrder: z.coerce.number({ invalid_type_error: "Display Order must be numeric" }).default(0),
+  displayOrder: z.coerce.number().default(0),
 });
 
 // GET /api/admin/attributes - List all attribute groups and values (Admin only)

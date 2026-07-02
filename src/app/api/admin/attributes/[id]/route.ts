@@ -18,7 +18,7 @@ const updateGroupSchema = z.object({
   searchable: z.boolean().optional(),
   visibleOnPdp: z.boolean().optional(),
   comparable: z.boolean().optional(),
-  displayOrder: z.coerce.number({ invalid_type_error: "Display Order must be numeric" }).optional(),
+  displayOrder: z.coerce.number().optional(),
 });
 
 // PUT /api/admin/attributes/[id] - Update attribute group details (Admin only)

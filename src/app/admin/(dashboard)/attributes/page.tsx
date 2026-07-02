@@ -29,6 +29,13 @@ interface AttributeGroup {
   id: string;
   name: string;
   code: string;
+  attributeType: "VARIANT" | "CATALOG";
+  variantAxis: boolean;
+  filterable: boolean;
+  searchable: boolean;
+  visibleOnPdp: boolean;
+  comparable: boolean;
+  displayOrder: number;
   values: AttributeValue[];
 }
 
@@ -40,11 +47,21 @@ export default function AdminAttributesPage() {
   const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
   const [groupName, setGroupName] = useState("");
   const [groupCode, setGroupCode] = useState("");
+  const [attributeType, setAttributeType] = useState<"VARIANT" | "CATALOG">("VARIANT");
+  const [filterable, setFilterable] = useState(true);
+  const [searchable, setSearchable] = useState(true);
+  const [visibleOnPdp, setVisibleOnPdp] = useState(true);
+  const [displayOrder, setDisplayOrder] = useState<number>(0);
 
   // Group Edit Modal State
   const [selectedGroup, setSelectedGroup] = useState<AttributeGroup | null>(null);
   const [editGroupName, setEditGroupName] = useState("");
   const [editGroupCode, setEditGroupCode] = useState("");
+  const [editAttributeType, setEditAttributeType] = useState<"VARIANT" | "CATALOG">("VARIANT");
+  const [editFilterable, setEditFilterable] = useState(true);
+  const [editSearchable, setEditSearchable] = useState(true);
+  const [editVisibleOnPdp, setEditVisibleOnPdp] = useState(true);
+  const [editDisplayOrder, setEditDisplayOrder] = useState<number>(0);
 
   // Label Edit Modal State
   const [selectedLabel, setSelectedLabel] = useState<AttributeValue | null>(null);
@@ -74,6 +91,24 @@ export default function AdminAttributesPage() {
     loadAttributes();
   }, []);
 
+  const handleOpenCreateModal = () => {
+    setGroupName("");
+    setGroupCode("");
+    setAttributeType("VARIANT");
+    setFilterable(true);
+    setSearchable(true);
+    setVisibleOnPdp(true);
+    setDisplayOrder(0);
+    setIsGroupModalOpen(true);
+  };
+
+  const handleAttributeTypeChange = (type: "VARIANT" | "CATALOG") => {
+    setAttributeType(type);
+    setFilterable(true);
+    setSearchable(true);
+    setVisibleOnPdp(true);
+  };
+
   // Handle Group Create
   const handleCreateGroup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,6 +122,12 @@ export default function AdminAttributesPage() {
         body: JSON.stringify({
           name: groupName.trim(),
           code: groupCode.trim() || undefined,
+          attributeType,
+          filterable,
+          searchable,
+          visibleOnPdp,
+          comparable: true,
+          displayOrder,
         }),
       });
 
@@ -119,6 +160,11 @@ export default function AdminAttributesPage() {
         body: JSON.stringify({
           name: editGroupName.trim(),
           code: editGroupCode.trim() || undefined,
+          attributeType: editAttributeType,
+          filterable: editFilterable,
+          searchable: editSearchable,
+          visibleOnPdp: editVisibleOnPdp,
+          displayOrder: editDisplayOrder,
         }),
       });
 
@@ -250,6 +296,11 @@ export default function AdminAttributesPage() {
     setSelectedGroup(group);
     setEditGroupName(group.name);
     setEditGroupCode(group.code);
+    setEditAttributeType(group.attributeType || "VARIANT");
+    setEditFilterable(group.filterable ?? true);
+    setEditSearchable(group.searchable ?? true);
+    setEditVisibleOnPdp(group.visibleOnPdp ?? true);
+    setEditDisplayOrder(group.displayOrder ?? 0);
   };
 
   const openLabelEditModal = (val: AttributeValue) => {
@@ -275,7 +326,7 @@ export default function AdminAttributesPage() {
         </div>
         <div className="relative z-10">
           <button
-            onClick={() => setIsGroupModalOpen(true)}
+            onClick={handleOpenCreateModal}
             className="inline-flex items-center gap-1.5 px-4.5 py-2.5 bg-primary text-primary-foreground hover:bg-primary/95 hover:scale-[1.01] active:scale-[0.99] rounded-xl text-xs font-semibold uppercase tracking-wider transition-all shadow-sm shadow-primary/5 cursor-pointer"
           >
             <Plus className="w-4 h-4" />
@@ -334,17 +385,33 @@ export default function AdminAttributesPage() {
             >
               {/* Header */}
               <div className="flex items-start justify-between gap-3">
-                <div className="space-y-1 min-w-0">
-                  <h3 className="text-xs font-bold text-foreground truncate flex items-center gap-1.5">
+                <div className="space-y-1 min-w-0 flex-1">
+                  <h3 className="text-xs font-bold text-foreground flex items-center gap-1.5 flex-wrap">
                     <Layers className="w-3.5 h-3.5 text-primary shrink-0" />
-                    {group.name}
+                    <span className="truncate">{group.name}</span>
+                    {group.attributeType === "VARIANT" ? (
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 select-none">
+                        Variant Attribute
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 select-none">
+                        Catalog Attribute
+                      </span>
+                    )}
                   </h3>
-                  <span className="inline-block text-[8px] font-mono bg-secondary px-1.5 py-0.5 border border-border rounded text-muted-foreground">
-                    code: {group.code}
-                  </span>
+                  <div className="flex items-center gap-2 flex-wrap pt-0.5">
+                    <span className="inline-block text-[8px] font-mono bg-secondary px-1.5 py-0.5 border border-border rounded text-muted-foreground">
+                      code: {group.code}
+                    </span>
+                    {group.displayOrder !== 0 && (
+                      <span className="inline-block text-[8px] font-mono bg-secondary px-1.5 py-0.5 border border-border rounded text-muted-foreground">
+                        order: {group.displayOrder}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 shrink-0">
                   <button
                     onClick={() => openGroupEditModal(group)}
                     className="p-1.5 bg-secondary hover:bg-muted text-muted-foreground hover:text-foreground rounded-lg transition-all border border-border/40 cursor-pointer"
@@ -451,7 +518,7 @@ export default function AdminAttributesPage() {
             </div>
 
             <form onSubmit={handleCreateGroup}>
-              <div className="p-6 space-y-4">
+              <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Group Name *</label>
                   <input
@@ -465,12 +532,108 @@ export default function AdminAttributesPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Code Slug (Optional)</label>
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Code Slug</label>
                   <input
                     type="text"
                     placeholder="e.g. length (auto-generated if blank)"
                     value={groupCode}
                     onChange={(e) => setGroupCode(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-secondary/20 border border-border/70 focus:border-primary focus:outline-none rounded-xl text-xs font-light text-foreground"
+                  />
+                </div>
+
+                <div className="space-y-2 border-t border-border/20 pt-3">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">Attribute Type *</label>
+                  <div className="grid grid-cols-1 gap-3">
+                    <label className={`flex items-start gap-3 p-3 rounded-2xl border transition-all cursor-pointer ${attributeType === "VARIANT" ? "border-primary bg-primary/5" : "border-border/60 hover:bg-secondary/15"}`}>
+                      <input
+                        type="radio"
+                        name="attributeType"
+                        value="VARIANT"
+                        checked={attributeType === "VARIANT"}
+                        onChange={() => handleAttributeTypeChange("VARIANT")}
+                        className="w-4 h-4 text-primary focus:ring-primary border-border cursor-pointer mt-0.5"
+                      />
+                      <div className="space-y-0.5">
+                        <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                          Variant Attribute
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400">Variant</span>
+                        </span>
+                        <p className="text-[10px] text-muted-foreground font-light leading-relaxed">
+                          Used to create purchasable product variants. Examples: Length, Shape, Size
+                        </p>
+                      </div>
+                    </label>
+
+                    <label className={`flex items-start gap-3 p-3 rounded-2xl border transition-all cursor-pointer ${attributeType === "CATALOG" ? "border-primary bg-primary/5" : "border-border/60 hover:bg-secondary/15"}`}>
+                      <input
+                        type="radio"
+                        name="attributeType"
+                        value="CATALOG"
+                        checked={attributeType === "CATALOG"}
+                        onChange={() => handleAttributeTypeChange("CATALOG")}
+                        className="w-4 h-4 text-primary focus:ring-primary border-border cursor-pointer mt-0.5"
+                      />
+                      <div className="space-y-0.5">
+                        <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                          Catalog Attribute
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">Catalog</span>
+                        </span>
+                        <p className="text-[10px] text-muted-foreground font-light leading-relaxed">
+                          Used for search, filters and product information. Examples: Style, Occasion, Finish
+                        </p>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                <div className="space-y-2 border-t border-border/20 pt-3">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">Configurations</label>
+                  <div className="grid grid-cols-1 gap-2.5">
+                    <label className="flex items-center gap-3 p-3 bg-secondary/10 hover:bg-secondary/20 rounded-2xl border border-border/30 transition-all cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={filterable}
+                        onChange={(e) => setFilterable(e.target.checked)}
+                        className="w-4 h-4 rounded text-primary focus:ring-primary border-border cursor-pointer"
+                      />
+                      <div className="space-y-0.5">
+                        <span className="text-xs font-medium text-foreground">Show in Filters</span>
+                      </div>
+                    </label>
+
+                    <label className="flex items-center gap-3 p-3 bg-secondary/10 hover:bg-secondary/20 rounded-2xl border border-border/30 transition-all cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={searchable}
+                        onChange={(e) => setSearchable(e.target.checked)}
+                        className="w-4 h-4 rounded text-primary focus:ring-primary border-border cursor-pointer"
+                      />
+                      <div className="space-y-0.5">
+                        <span className="text-xs font-medium text-foreground">Include in Search</span>
+                      </div>
+                    </label>
+
+                    <label className="flex items-center gap-3 p-3 bg-secondary/10 hover:bg-secondary/20 rounded-2xl border border-border/30 transition-all cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={visibleOnPdp}
+                        onChange={(e) => setVisibleOnPdp(e.target.checked)}
+                        className="w-4 h-4 rounded text-primary focus:ring-primary border-border cursor-pointer"
+                      />
+                      <div className="space-y-0.5">
+                        <span className="text-xs font-medium text-foreground">Show on Product Page</span>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5 border-t border-border/20 pt-3">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Display Order</label>
+                  <input
+                    type="number"
+                    value={displayOrder}
+                    onChange={(e) => setDisplayOrder(parseInt(e.target.value, 10) || 0)}
                     className="w-full px-3.5 py-2.5 bg-secondary/20 border border-border/70 focus:border-primary focus:outline-none rounded-xl text-xs font-light text-foreground"
                   />
                 </div>
@@ -502,7 +665,18 @@ export default function AdminAttributesPage() {
         <div className="fixed inset-0 z-50 overflow-y-auto bg-background/80 backdrop-blur-sm p-4 flex items-center justify-center">
           <div className="w-full max-w-md bg-card border border-border rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 my-auto">
             <div className="flex items-center justify-between p-6 border-b border-border/40">
-              <h3 className="font-serif text-lg font-normal text-foreground">Edit Attribute Group</h3>
+              <h3 className="font-serif text-lg font-normal text-foreground flex items-center gap-2">
+                Edit Attribute Group
+                {editAttributeType === "VARIANT" ? (
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                    Variant
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                    Catalog
+                  </span>
+                )}
+              </h3>
               <button
                 onClick={() => setSelectedGroup(null)}
                 className="p-1.5 rounded-full bg-secondary hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
@@ -512,7 +686,7 @@ export default function AdminAttributesPage() {
             </div>
 
             <form onSubmit={handleEditGroup}>
-              <div className="p-6 space-y-4">
+              <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Group Name *</label>
                   <input
@@ -533,6 +707,102 @@ export default function AdminAttributesPage() {
                     placeholder="e.g. length"
                     value={editGroupCode}
                     onChange={(e) => setEditGroupCode(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-secondary/20 border border-border/70 focus:border-primary focus:outline-none rounded-xl text-xs font-light text-foreground"
+                  />
+                </div>
+
+                <div className="space-y-2 border-t border-border/20 pt-3">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">Attribute Type *</label>
+                  <div className="grid grid-cols-1 gap-3">
+                    <label className={`flex items-start gap-3 p-3 rounded-2xl border transition-all cursor-pointer ${editAttributeType === "VARIANT" ? "border-primary bg-primary/5" : "border-border/60 hover:bg-secondary/15"}`}>
+                      <input
+                        type="radio"
+                        name="editAttributeType"
+                        value="VARIANT"
+                        checked={editAttributeType === "VARIANT"}
+                        onChange={() => setEditAttributeType("VARIANT")}
+                        className="w-4 h-4 text-primary focus:ring-primary border-border cursor-pointer mt-0.5"
+                      />
+                      <div className="space-y-0.5">
+                        <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                          Variant Attribute
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400">Variant</span>
+                        </span>
+                        <p className="text-[10px] text-muted-foreground font-light leading-relaxed">
+                          Used to create purchasable product variants. Examples: Length, Shape, Size
+                        </p>
+                      </div>
+                    </label>
+
+                    <label className={`flex items-start gap-3 p-3 rounded-2xl border transition-all cursor-pointer ${editAttributeType === "CATALOG" ? "border-primary bg-primary/5" : "border-border/60 hover:bg-secondary/15"}`}>
+                      <input
+                        type="radio"
+                        name="editAttributeType"
+                        value="CATALOG"
+                        checked={editAttributeType === "CATALOG"}
+                        onChange={() => setEditAttributeType("CATALOG")}
+                        className="w-4 h-4 text-primary focus:ring-primary border-border cursor-pointer mt-0.5"
+                      />
+                      <div className="space-y-0.5">
+                        <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                          Catalog Attribute
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">Catalog</span>
+                        </span>
+                        <p className="text-[10px] text-muted-foreground font-light leading-relaxed">
+                          Used for search, filters and product information. Examples: Style, Occasion, Finish
+                        </p>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                <div className="space-y-2 border-t border-border/20 pt-3">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">Configurations</label>
+                  <div className="grid grid-cols-1 gap-2.5">
+                    <label className="flex items-center gap-3 p-3 bg-secondary/10 hover:bg-secondary/20 rounded-2xl border border-border/30 transition-all cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={editFilterable}
+                        onChange={(e) => setEditFilterable(e.target.checked)}
+                        className="w-4 h-4 rounded text-primary focus:ring-primary border-border cursor-pointer"
+                      />
+                      <div className="space-y-0.5">
+                        <span className="text-xs font-medium text-foreground">Show in Filters</span>
+                      </div>
+                    </label>
+
+                    <label className="flex items-center gap-3 p-3 bg-secondary/10 hover:bg-secondary/20 rounded-2xl border border-border/30 transition-all cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={editSearchable}
+                        onChange={(e) => setEditSearchable(e.target.checked)}
+                        className="w-4 h-4 rounded text-primary focus:ring-primary border-border cursor-pointer"
+                      />
+                      <div className="space-y-0.5">
+                        <span className="text-xs font-medium text-foreground">Include in Search</span>
+                      </div>
+                    </label>
+
+                    <label className="flex items-center gap-3 p-3 bg-secondary/10 hover:bg-secondary/20 rounded-2xl border border-border/30 transition-all cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={editVisibleOnPdp}
+                        onChange={(e) => setEditVisibleOnPdp(e.target.checked)}
+                        className="w-4 h-4 rounded text-primary focus:ring-primary border-border cursor-pointer"
+                      />
+                      <div className="space-y-0.5">
+                        <span className="text-xs font-medium text-foreground">Show on Product Page</span>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5 border-t border-border/20 pt-3">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Display Order</label>
+                  <input
+                    type="number"
+                    value={editDisplayOrder}
+                    onChange={(e) => setEditDisplayOrder(parseInt(e.target.value, 10) || 0)}
                     className="w-full px-3.5 py-2.5 bg-secondary/20 border border-border/70 focus:border-primary focus:outline-none rounded-xl text-xs font-light text-foreground"
                   />
                 </div>
