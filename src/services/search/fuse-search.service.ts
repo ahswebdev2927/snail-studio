@@ -21,6 +21,8 @@ export interface ProductSearchItem {
     groupName: string;
     value: string;
     valueCode: string;
+    searchable?: boolean;
+    filterable?: boolean;
   }[];
   images: {
     url: string;
@@ -45,8 +47,16 @@ export function searchWithFuse(products: ProductSearchItem[], query: string): Pr
     return products;
   }
 
-  const fuse = createFuse(products);
-  const results = fuse.search(trimmedQuery);
+  // Only index attributes where searchable is true (searchable !== false)
+  const productsWithFilteredSearchKeys = products.map((p) => ({
+    ...p,
+    attributes: p.attributes.filter((attr) => attr.searchable !== false),
+  }));
 
-  return results.map((result) => result.item);
+  const fuse = createFuse(productsWithFilteredSearchKeys);
+
+  return fuse.search(trimmedQuery).map((res) => {
+    // Return original product object to maintain full attribute payload downstream
+    return products.find((p) => p.id === res.item.id)!;
+  });
 }

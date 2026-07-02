@@ -53,9 +53,12 @@ export async function GET(request: NextRequest) {
       })
       .from(attributeValues)
       .innerJoin(attributeGroups, eq(attributeValues.groupId, attributeGroups.id))
-      .where(or(
-        like(attributeValues.value, searchTerm),
-        like(attributeValues.code, searchTerm)
+      .where(and(
+        eq(attributeGroups.searchable, true),
+        or(
+          like(attributeValues.value, searchTerm),
+          like(attributeValues.code, searchTerm)
+        )
       ))
       .limit(5);
 

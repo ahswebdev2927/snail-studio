@@ -131,6 +131,8 @@ function calculateFacets(products: ProductSearchItem[]): SearchFacets {
 
     // Attributes (Shape, Length, Color, Texture, Style, etc.)
     for (const attr of p.attributes) {
+      if (attr.filterable === false) continue;
+
       let group = attributesMap.get(attr.groupCode);
       if (!group) {
         group = { groupName: attr.groupName, values: new Map() };

@@ -254,6 +254,8 @@ export async function getFilteredProducts(params: FilterParams): Promise<Product
         groupName: val.group.name,
         value: val.value,
         valueCode: val.code,
+        searchable: val.group.searchable,
+        filterable: val.group.filterable,
       };
     });
 

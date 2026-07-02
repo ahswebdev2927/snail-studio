@@ -62,9 +62,16 @@ export async function generateMissingVariants(
     return { success: true, createdCount: 0, variants: [] };
   }
 
+  // Filter selected attribute values to only keep variant-generating attributes
+  const variantValues = selectedValues.filter((val: any) => val.group?.attributeType === "VARIANT");
+
+  if (variantValues.length === 0) {
+    return { success: true, createdCount: 0, variants: [] };
+  }
+
   // Group attribute values by groupId
   const groupedAttributes: Record<string, any[]> = {};
-  selectedValues.forEach((val: any) => {
+  variantValues.forEach((val: any) => {
     if (!groupedAttributes[val.groupId]) {
       groupedAttributes[val.groupId] = [];
     }
