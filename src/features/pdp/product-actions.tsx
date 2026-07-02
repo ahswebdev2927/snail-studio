@@ -39,6 +39,7 @@ export interface VariantAttribute {
   valueCode: string;   // e.g. "short"
   valueName: string;   // e.g. "Short"
   valueId: string;
+  visibleOnPdp?: boolean;
 }
 
 export interface ProductVariantFull {
@@ -180,6 +181,8 @@ export function ProductActions({
 
     for (const v of variants) {
       for (const attr of v.attributes) {
+        if (attr.visibleOnPdp === false) continue;
+
         if (!groupMap.has(attr.groupCode)) {
           groupMap.set(attr.groupCode, {
             code: attr.groupCode,

@@ -15,11 +15,16 @@ import { cn } from "@/lib/utils";
 
 interface ProductTabsProps {
   description?: string | null;
+  specifications?: {
+    code: string;
+    name: string;
+    values: string[];
+  }[];
 }
 
 type TabType = "description" | "apply" | "shipping" | "faq";
 
-export function ProductTabs({ description }: ProductTabsProps) {
+export function ProductTabs({ description, specifications }: ProductTabsProps) {
   const [activeTab, setActiveTab] = useState<TabType>("description");
   const [applyMethod, setApplyMethod] = useState<"tabs" | "glue">("tabs");
   const [openFaq, setOpenFaq] = useState<number | null>(null);
@@ -98,6 +103,30 @@ export function ProductTabs({ description }: ProductTabsProps) {
                 )}
               </div>
             </div>
+
+            {/* Product Specifications (Catalog Attributes) */}
+            {specifications && specifications.length > 0 && (
+              <div className="border-t border-border/20 pt-8 space-y-4">
+                <h4 className="font-serif text-lg font-normal text-foreground">
+                  Product Details
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                  {specifications.map((spec) => (
+                    <div
+                      key={spec.code}
+                      className="p-4 rounded-2xl bg-secondary/20 border border-border/25 flex flex-col gap-1"
+                    >
+                      <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
+                        {spec.name}
+                      </span>
+                      <p className="text-xs font-semibold text-foreground leading-relaxed">
+                        {spec.values.join(", ")}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="border-t border-border/20 pt-8">
               <h4 className="font-serif text-lg font-normal text-foreground mb-6">

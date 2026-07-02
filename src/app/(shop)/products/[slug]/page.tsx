@@ -91,6 +91,15 @@ export default async function ProductPage({
     with: {
       brand:    true,
       category: true,
+      attributeValues: {
+        with: {
+          attributeValue: {
+            with: {
+              group: true
+            }
+          }
+        }
+      },
       variants: {
         with: {
           inventory: true,
@@ -299,8 +308,42 @@ export default async function ProductPage({
         valueCode: a.attributeValue.code,
         valueName: a.attributeValue.value,
         valueId:   a.attributeValue.id,
+        visibleOnPdp: a.attributeValue.group.visibleOnPdp,
       })),
     }));
+
+  /* ----- 4.5 Extract catalog attributes for PDP display ----- */
+  const catalogAttributesMap = (product.attributeValues || [])
+    .map((pav) => pav.attributeValue)
+    .filter((val) => val && val.group && val.group.attributeType === "CATALOG" && val.group.visibleOnPdp === true)
+    .reduce<Record<string, { name: string; displayOrder: number; values: string[] }>>((acc, val) => {
+      const groupCode = val.group.code;
+      if (!acc[groupCode]) {
+        acc[groupCode] = {
+          name: val.group.name,
+          displayOrder: val.group.displayOrder ?? 0,
+          values: [],
+        };
+      }
+      if (!acc[groupCode].values.includes(val.value)) {
+        acc[groupCode].values.push(val.value);
+      }
+      return acc;
+    }, {});
+
+  const sortedCatalogAttributes = Object.entries(catalogAttributesMap)
+    .map(([code, data]) => ({
+      code,
+      name: data.name,
+      displayOrder: data.displayOrder,
+      values: data.values,
+    }))
+    .sort((a, b) => {
+      if (a.displayOrder !== b.displayOrder) {
+        return a.displayOrder - b.displayOrder;
+      }
+      return a.name.localeCompare(b.name);
+    });
 
   /* ----- 5. Breadcrumb items ----- */
   const breadcrumbs: BreadcrumbItem[] = [
@@ -524,7 +567,7 @@ export default async function ProductPage({
         </section>
 
         {/* ---- Product Tabs Section (Description, Wear Guide, Shipping, FAQs) ---- */}
-        <ProductTabs description={product.description} />
+        <ProductTabs description={product.description} specifications={sortedCatalogAttributes} />
 
         {/* ---- Frequently Bought Together Section ---- */}
         <FrequentlyBoughtTogether
