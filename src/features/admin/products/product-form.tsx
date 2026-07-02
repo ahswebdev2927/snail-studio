@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -90,6 +90,12 @@ interface AttributeGroup {
   id: string;
   name: string;
   code: string;
+  attributeType: "VARIANT" | "CATALOG";
+  variantAxis: boolean;
+  filterable: boolean;
+  searchable: boolean;
+  visibleOnPdp: boolean;
+  displayOrder: number;
   values: AttributeValue[];
 }
 
@@ -109,6 +115,15 @@ export default function ProductForm({ mode, productId, initialData }: ProductFor
   const [brands, setBrands] = useState<Brand[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [attributes, setAttributes] = useState<AttributeGroup[]>([]);
+
+  const variantAttributes = useMemo(() => {
+    return attributes.filter((g) => g.attributeType === "VARIANT");
+  }, [attributes]);
+
+  const catalogAttributes = useMemo(() => {
+    return attributes.filter((g) => g.attributeType === "CATALOG");
+  }, [attributes]);
+
   const [loadingLookups, setLoadingLookups] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [globalError, setGlobalError] = useState<string | null>(null);
@@ -354,7 +369,7 @@ export default function ProductForm({ mode, productId, initialData }: ProductFor
     const attributesSelectedMap: Record<string, any[]> = {};
     let activeGroupsCount = 0;
 
-    attributes.forEach(group => {
+    variantAttributes.forEach(group => {
       const selectedValueIds = selectedVariantAttrs[group.id] || [];
       if (selectedValueIds.length > 0) {
         activeGroupsCount++;
@@ -742,42 +757,110 @@ export default function ProductForm({ mode, productId, initialData }: ProductFor
           </div>
 
           {/* Card 3: Attribute Checkboxes */}
-          <div className="bg-card border border-border/40 rounded-3xl p-6 space-y-4 hover:border-primary/10 transition-all">
+          <div className="bg-card border border-border/40 rounded-3xl p-6 space-y-6 hover:border-primary/10 transition-all">
             <div>
               <h3 className="text-sm font-semibold tracking-wide">Product Attributes Selection</h3>
               <p className="text-[10px] text-muted-foreground font-light mt-0.5">
-                Select options associated with this design.
+                Select options associated with this product design.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-2">
-              {attributes.map((group) => (
-                <div key={group.id} className="space-y-2.5 p-4 bg-secondary/20 dark:bg-secondary/5 rounded-2xl border border-border/30">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-primary">
-                    {group.name}
-                  </span>
-                  <div className="flex flex-wrap gap-2">
-                    {group.values.map((v) => {
-                      const isChecked = (watch("attributeValueIds") || []).includes(v.id);
-                      return (
-                        <button
-                          key={v.id}
-                          type="button"
-                          onClick={() => handleAttributeToggle(group.id, v.id)}
-                          className={`px-3 py-1.5 rounded-xl text-xs font-light tracking-wide border transition-all flex items-center gap-1 cursor-pointer ${
-                            isChecked
-                              ? "bg-primary/10 text-primary border-primary"
-                              : "bg-card border-border hover:bg-secondary/40 text-muted-foreground hover:text-foreground"
-                          }`}
-                        >
-                          {isChecked && <Check className="w-3.5 h-3.5" />}
-                          {v.value}
-                        </button>
-                      );
-                    })}
-                  </div>
+            {/* Variant Attributes Section */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-1.5 border-b border-border/40 pb-2">
+                <span className="inline-flex h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
+                <h4 className="text-xs font-bold uppercase tracking-wider text-foreground">
+                  Variant Attributes
+                </h4>
+                <span className="text-[9px] text-muted-foreground font-light italic">
+                  (generates product variations & pricing options)
+                </span>
+              </div>
+              
+              {variantAttributes.length === 0 ? (
+                <p className="text-[10px] text-muted-foreground font-light italic pl-3.5">
+                  No variant attributes defined.
+                </p>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  {variantAttributes.map((group) => (
+                    <div key={group.id} className="space-y-2.5 p-4 bg-secondary/20 dark:bg-secondary/5 rounded-2xl border border-border/30">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-primary">
+                        {group.name}
+                      </span>
+                      <div className="flex flex-wrap gap-2">
+                        {group.values.map((v) => {
+                          const isChecked = (watch("attributeValueIds") || []).includes(v.id);
+                          return (
+                            <button
+                              key={v.id}
+                              type="button"
+                              onClick={() => handleAttributeToggle(group.id, v.id)}
+                              className={`px-3 py-1.5 rounded-xl text-xs font-light tracking-wide border transition-all flex items-center gap-1 cursor-pointer ${
+                                isChecked
+                                  ? "bg-primary/10 text-primary border-primary"
+                                  : "bg-card border-border hover:bg-secondary/40 text-muted-foreground hover:text-foreground"
+                              }`}
+                            >
+                              {isChecked && <Check className="w-3.5 h-3.5" />}
+                              {v.value}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              )}
+            </div>
+
+            {/* Catalog Attributes Section */}
+            <div className="space-y-3 pt-2">
+              <div className="flex items-center gap-1.5 border-b border-border/40 pb-2">
+                <span className="inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+                <h4 className="text-xs font-bold uppercase tracking-wider text-foreground">
+                  Catalog Attributes
+                </h4>
+                <span className="text-[9px] text-muted-foreground font-light italic">
+                  (informational details used for search, filtering, and specifications)
+                </span>
+              </div>
+              
+              {catalogAttributes.length === 0 ? (
+                <p className="text-[10px] text-muted-foreground font-light italic pl-3.5">
+                  No catalog attributes defined.
+                </p>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  {catalogAttributes.map((group) => (
+                    <div key={group.id} className="space-y-2.5 p-4 bg-secondary/20 dark:bg-secondary/5 rounded-2xl border border-border/30">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-primary">
+                        {group.name}
+                      </span>
+                      <div className="flex flex-wrap gap-2">
+                        {group.values.map((v) => {
+                          const isChecked = (watch("attributeValueIds") || []).includes(v.id);
+                          return (
+                            <button
+                              key={v.id}
+                              type="button"
+                              onClick={() => handleAttributeToggle(group.id, v.id)}
+                              className={`px-3 py-1.5 rounded-xl text-xs font-light tracking-wide border transition-all flex items-center gap-1 cursor-pointer ${
+                                isChecked
+                                  ? "bg-primary/10 text-primary border-primary"
+                                  : "bg-card border-border hover:bg-secondary/40 text-muted-foreground hover:text-foreground"
+                              }`}
+                            >
+                              {isChecked && <Check className="w-3.5 h-3.5" />}
+                              {v.value}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
@@ -798,7 +881,7 @@ export default function ProductForm({ mode, productId, initialData }: ProductFor
 
               <div className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {attributes.slice(0, 4).map((group) => (
+                  {variantAttributes.map((group) => (
                     <div key={group.id} className="space-y-2">
                       <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                         Select {group.name}s
@@ -1052,7 +1135,7 @@ export default function ProductForm({ mode, productId, initialData }: ProductFor
 
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {attributes.slice(0, 4).map((group) => (
+                    {variantAttributes.map((group) => (
                       <div key={group.id} className="space-y-2">
                         <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                           {group.name}s
