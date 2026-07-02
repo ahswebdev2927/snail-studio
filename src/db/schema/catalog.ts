@@ -58,7 +58,14 @@ export const products = sqliteTable('products', {
 export const attributeGroups = sqliteTable('attribute_groups', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
-  code: text('code').notNull().unique() // e.g. "length", "shape"
+  code: text('code').notNull().unique(), // e.g. "length", "shape"
+  attributeType: text('attributeType', { enum: ['VARIANT', 'CATALOG'] }).notNull().default('VARIANT'),
+  variantAxis: integer('variantAxis', { mode: 'boolean' }).notNull().default(true),
+  filterable: integer('filterable', { mode: 'boolean' }).notNull().default(true),
+  searchable: integer('searchable', { mode: 'boolean' }).notNull().default(true),
+  visibleOnPdp: integer('visibleOnPdp', { mode: 'boolean' }).notNull().default(true),
+  comparable: integer('comparable', { mode: 'boolean' }).notNull().default(true),
+  displayOrder: integer('displayOrder').notNull().default(0)
 });
 
 export const attributeValues = sqliteTable('attribute_values', {
