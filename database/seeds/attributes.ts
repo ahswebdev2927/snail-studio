@@ -28,7 +28,6 @@ export async function seedAttributes() {
         filterable: true,
         searchable: true,
         visibleOnPdp: true,
-        comparable: true,
         displayOrder: 0
       }).onConflictDoNothing();
 

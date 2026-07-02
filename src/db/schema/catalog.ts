@@ -64,7 +64,6 @@ export const attributeGroups = sqliteTable('attribute_groups', {
   filterable: integer('filterable', { mode: 'boolean' }).notNull().default(true),
   searchable: integer('searchable', { mode: 'boolean' }).notNull().default(true),
   visibleOnPdp: integer('visibleOnPdp', { mode: 'boolean' }).notNull().default(true),
-  comparable: integer('comparable', { mode: 'boolean' }).notNull().default(true),
   displayOrder: integer('displayOrder').notNull().default(0)
 });
 

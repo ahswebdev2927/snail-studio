@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { 
   FolderHeart, 
   Plus, 
@@ -18,6 +18,25 @@ import {
   HelpCircle
 } from "lucide-react";
 
+interface TooltipProps {
+  content: string;
+  children: React.ReactNode;
+}
+
+export function Tooltip({ content, children }: TooltipProps) {
+  return (
+    <div className="group relative inline-block">
+      {children}
+      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2.5 hidden group-hover:flex flex-col items-center z-30 w-52 transition-all duration-200 pointer-events-none">
+        <div className="bg-neutral-900 text-neutral-100 text-[10px] font-normal leading-relaxed p-2.5 rounded-xl shadow-xl border border-neutral-800 text-center">
+          {content}
+        </div>
+        <div className="w-2 h-2 bg-neutral-900 rotate-45 -mt-1 border-r border-b border-neutral-800" />
+      </div>
+    </div>
+  );
+}
+
 interface AttributeValue {
   id: string;
   groupId: string;
@@ -34,7 +53,6 @@ interface AttributeGroup {
   filterable: boolean;
   searchable: boolean;
   visibleOnPdp: boolean;
-  comparable: boolean;
   displayOrder: number;
   values: AttributeValue[];
 }
@@ -42,6 +60,14 @@ interface AttributeGroup {
 export default function AdminAttributesPage() {
   const [groups, setGroups] = useState<AttributeGroup[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Tabs filter state
+  const [activeFilterTab, setActiveFilterTab] = useState<"ALL" | "VARIANT" | "CATALOG">("ALL");
+
+  const filteredGroups = useMemo(() => {
+    if (activeFilterTab === "ALL") return groups;
+    return groups.filter((g) => g.attributeType === activeFilterTab);
+  }, [groups, activeFilterTab]);
 
   // Group Create Modal State
   const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
@@ -126,7 +152,6 @@ export default function AdminAttributesPage() {
           filterable,
           searchable,
           visibleOnPdp,
-          comparable: true,
           displayOrder,
         }),
       });
@@ -358,27 +383,76 @@ export default function AdminAttributesPage() {
         </div>
       </div>
 
+      {/* Tabs Filter */}
+      <div className="flex items-center gap-1 bg-secondary/35 border border-border/30 p-1 rounded-2xl w-fit relative z-20">
+        <button
+          type="button"
+          onClick={() => setActiveFilterTab("ALL")}
+          className={`px-4 py-2 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer ${
+            activeFilterTab === "ALL"
+              ? "bg-primary text-primary-foreground shadow-sm scale-[1.01]"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          All
+        </button>
+        
+        <button
+          type="button"
+          onClick={() => setActiveFilterTab("VARIANT")}
+          className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer relative ${
+            activeFilterTab === "VARIANT"
+              ? "bg-primary text-primary-foreground shadow-sm scale-[1.01]"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <span>Variant Attributes</span>
+          <Tooltip content="Used to generate unique, purchasable product variants/SKUs (e.g. Length, Shape, Size) with separate stock and pricing.">
+            <HelpCircle className="w-3.5 h-3.5 opacity-60 hover:opacity-100 transition-opacity mt-px" />
+          </Tooltip>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveFilterTab("CATALOG")}
+          className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer relative ${
+            activeFilterTab === "CATALOG"
+              ? "bg-primary text-primary-foreground shadow-sm scale-[1.01]"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <span>Catalog Attributes</span>
+          <Tooltip content="Descriptive product details used for search index suggestions, catalog navigation filters, and PDP specs lists.">
+            <HelpCircle className="w-3.5 h-3.5 opacity-60 hover:opacity-100 transition-opacity mt-px" />
+          </Tooltip>
+        </button>
+      </div>
+
       {/* Grid of groups */}
       {isLoading ? (
         <div className="py-24 text-center bg-card border border-border/40 rounded-3xl flex flex-col items-center justify-center gap-3 text-muted-foreground">
           <Loader2 className="w-7 h-7 animate-spin text-primary" />
           <p className="text-xs font-light">Retrieving attributes catalog...</p>
         </div>
-      ) : groups.length === 0 ? (
+      ) : filteredGroups.length === 0 ? (
         <div className="py-24 text-center bg-card border border-border/40 rounded-3xl flex flex-col items-center justify-center space-y-4">
           <div className="p-4 bg-primary/10 text-primary rounded-full">
             <Layers className="w-8 h-8" />
           </div>
           <div className="space-y-1 max-w-xs">
-            <h3 className="text-sm font-semibold tracking-wide">No Attributes Yet</h3>
+            <h3 className="text-sm font-semibold tracking-wide">
+              {groups.length === 0 ? "No Attributes Yet" : "No Attributes Found"}
+            </h3>
             <p className="text-xs text-muted-foreground font-light leading-relaxed">
-              Define catalog variant options. Add parameters like Length or Texture to generate pricing variations.
+              {groups.length === 0
+                ? "Define catalog variant options. Add parameters like Length or Texture to generate pricing variations."
+                : "No attribute groups match the selected type filter."}
             </p>
           </div>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {groups.map((group) => (
+          {filteredGroups.map((group) => (
             <div 
               key={group.id} 
               className="bg-card border border-border/40 rounded-3xl p-5 shadow-sm flex flex-col justify-between gap-5 hover:border-primary/20 transition-all group"

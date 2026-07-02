@@ -1,0 +1,1 @@
+ALTER TABLE `attribute_groups` DROP COLUMN `comparable`;

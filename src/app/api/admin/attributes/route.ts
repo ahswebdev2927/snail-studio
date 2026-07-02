@@ -19,7 +19,6 @@ const createGroupSchema = z.object({
   filterable: z.boolean().default(true),
   searchable: z.boolean().default(true),
   visibleOnPdp: z.boolean().default(true),
-  comparable: z.boolean().default(true),
   displayOrder: z.coerce.number().default(0),
 });
 
@@ -73,7 +72,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { name, attributeType, filterable, searchable, visibleOnPdp, comparable, displayOrder } = result.data;
+    const { name, attributeType, filterable, searchable, visibleOnPdp, displayOrder } = result.data;
     let code = result.data.code;
 
     if (!code) {
@@ -111,7 +110,6 @@ export async function POST(req: NextRequest) {
         filterable,
         searchable,
         visibleOnPdp,
-        comparable,
         displayOrder,
       })
       .returning();
