@@ -7,6 +7,7 @@ import { nanoid } from "nanoid";
 import { cookies } from "next/headers";
 import { getSessionUser } from "@/lib/auth/session";
 import { processCheckout } from "@/services/checkout/checkout.service";
+import { reserveStockForCart } from "@/services/checkout/reservation.service";
 
 /**
  * Helper to get the current authenticated session user from cookies
@@ -169,5 +170,33 @@ export async function createCheckoutOrder(params: {
   } catch (error: any) {
     console.error("Error in createCheckoutOrder server action:", error);
     return { success: false, error: error.message || "Failed to initiate checkout order." };
+  }
+}
+
+/**
+ * Validates, synchronizes local cart items to the database, and attempts early stock reservation.
+ */
+export async function reserveCartStockOnCheckout(items: { variantId: string; quantity: number }[]) {
+  try {
+    const user = await getAuthUser();
+    if (!user) {
+      return { success: false, error: "Session expired. Please log in again." };
+    }
+
+    // 1. Sync cart to database first
+    const syncRes = await syncCartToDb(items);
+    if (!syncRes.success || !syncRes.cartId) {
+      return { success: false, error: syncRes.error || "Failed to sync cart with database." };
+    }
+
+    const cartId = syncRes.cartId;
+
+    // 2. Claim early reservations
+    await reserveStockForCart(cartId, items);
+
+    return { success: true, cartId };
+  } catch (error: any) {
+    console.error("Error in reserveCartStockOnCheckout server action:", error);
+    return { success: false, error: error.message || "Failed to reserve inventory stock." };
   }
 }

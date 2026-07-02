@@ -31,7 +31,8 @@ import {
   getCheckoutCustomer, 
   syncCartToDb, 
   getShippingRules, 
-  createCheckoutOrder 
+  createCheckoutOrder,
+  reserveCartStockOnCheckout
 } from "./actions";
 
 type CheckoutStep = "address" | "shipping" | "payment" | "review";
@@ -43,6 +44,7 @@ export default function CheckoutClient() {
   const [processingOrder, setProcessingOrder] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [user, setUser] = useState<any>(null);
+  const [isStockOut, setIsStockOut] = useState(false);
   
 
 
@@ -169,6 +171,21 @@ export default function CheckoutClient() {
           freeThreshold: rulesRes.freeThreshold,
           expressFee: rulesRes.expressFee
         });
+      }
+
+      // 4. Reserve cart stock early on mount
+      if (cart && cart.length > 0) {
+        const variantItems = cart.map((item) => ({
+          variantId: item.id,
+          quantity: item.quantity,
+        }));
+        const reserveRes = await reserveCartStockOnCheckout(variantItems);
+        if (!reserveRes.success) {
+          setErrorMsg(reserveRes.error || "Some items in your cart are no longer available in the requested quantities.");
+          setIsStockOut(true);
+          setLoading(false);
+          return;
+        }
       }
     } catch (err: any) {
       console.error(err);
@@ -544,11 +561,30 @@ export default function CheckoutClient() {
         </div>
       )}
 
-      {/* Main Grid: Forms on left, Order Summary on right */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      {isStockOut ? (
+        <div className="py-20 text-center bg-card border border-border/40 rounded-3xl flex flex-col items-center justify-center space-y-5 max-w-xl mx-auto p-8 shadow-sm animate-in fade-in duration-300">
+          <div className="p-4.5 bg-destructive/10 text-destructive rounded-full">
+            <AlertCircle className="w-10 h-10" />
+          </div>
+          <div className="space-y-2">
+            <h3 className="font-serif text-xl font-semibold tracking-wide text-foreground">Stock Availability Issue</h3>
+            <p className="text-xs text-muted-foreground font-light leading-relaxed">
+              {errorMsg || "Some items in your cart are no longer available in the requested quantities. They may have sold out while you were shopping."}
+            </p>
+          </div>
+          <Button
+            onClick={() => router.push("/cart")}
+            className="px-6 py-2.5 bg-primary text-primary-foreground hover:bg-primary/95 hover:scale-[1.01] active:scale-[0.99] rounded-xl text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer"
+          >
+            Return to Cart
+          </Button>
+        </div>
+      ) : (
+        /* Main Grid: Forms on left, Order Summary on right */
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         
-        {/* Left Side: Wizard Forms */}
-        <div className="lg:col-span-7 bg-card border border-border/40 rounded-3xl p-6 md:p-8 space-y-6">
+          {/* Left Side: Wizard Forms */}
+          <div className="lg:col-span-7 bg-card border border-border/40 rounded-3xl p-6 md:p-8 space-y-6">
           
           {/* STEP 1: ADDRESS */}
           {currentStep === "address" && (
@@ -1242,11 +1278,12 @@ export default function CheckoutClient() {
           </div>
 
           <div className="text-[10px] text-muted-foreground font-light text-center leading-normal pt-1.5 flex items-center justify-center gap-1">
-            <Lock className="w-3 h-3 text-muted-foreground/60" /> SSL SECURE 256-BIT CHECKOUT
+            <Lock className="w-3.5 h-3.5 text-muted-foreground/60" /> SSL SECURE 256-BIT CHECKOUT
           </div>
         </div>
 
       </div>
+      )}
     </div>
   );
 }

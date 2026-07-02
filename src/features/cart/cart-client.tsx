@@ -21,7 +21,7 @@ import { useCartStore } from "@/lib/hooks/use-cart-store";
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/storefront/product-card";
 import { formatPrice, cn } from "@/lib/utils";
-import { getCartCrossSellProducts } from "@/features/cart/actions";
+import { getCartCrossSellProducts, validateCartStock } from "@/features/cart/actions";
 import { calculateBundleDiscount } from "@/lib/bundles";
 import CloudinaryImage from "@/components/media/cloudinary-image";
 import { getWishlistProducts } from "@/features/wishlist/actions";
@@ -34,6 +34,8 @@ export default function CartClient() {
   const [couponError, setCouponError] = useState("");
   const [couponSuccess, setCouponSuccess] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
+  const [stockError, setStockError] = useState<string | null>(null);
+  const [isCheckingStock, setIsCheckingStock] = useState(false);
 
   // Cross-sell & Save for later states
   const [crossSells, setCrossSells] = useState<any[]>([]);
@@ -334,6 +336,35 @@ export default function CartClient() {
       })}
     </div>
   );
+
+  const handleProceedToCheckout = async () => {
+    setStockError(null);
+    setIsCheckingStock(true);
+    try {
+      const items = cart.map((c) => ({ variantId: c.id, quantity: c.quantity }));
+      const checkRes = await validateCartStock(items);
+      if (!checkRes.success) {
+        setStockError(checkRes.error || "Failed to validate stock. Please try again.");
+        return;
+      }
+      if (!checkRes.isAllAvailable) {
+        const failedItems = (checkRes.validation || [])
+          .filter((v) => !v.hasSufficientStock)
+          .map((v) => {
+            const cartItem = cart.find((c) => c.id === v.variantId);
+            return `"${cartItem?.name || "Item"}" (Available: ${v.availableStock})`;
+          })
+          .join(", ");
+        setStockError(`Insufficient stock for: ${failedItems}. Please update your quantities.`);
+        return;
+      }
+      router.push("/checkout");
+    } catch (err: any) {
+      setStockError("An error occurred. Please try again.");
+    } finally {
+      setIsCheckingStock(false);
+    }
+  };
 
   return (
     <div className="flex-1 bg-background text-foreground max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-16">
@@ -800,13 +831,35 @@ export default function CartClient() {
                   </div>
                 </div>
 
+                {stockError && (
+                  <div className="p-4 rounded-2xl bg-destructive/10 border border-destructive/20 flex gap-2.5 items-start">
+                    <Info className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
+                    <div className="space-y-1">
+                      <p className="text-xs font-bold text-foreground">Stock Out Alert</p>
+                      <p className="text-[10px] text-muted-foreground font-light leading-relaxed">
+                        {stockError}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 {/* Checkout Action */}
                 <Button
-                  onClick={() => router.push("/checkout")}
-                  className="w-full py-6 text-xs uppercase tracking-widest font-semibold flex items-center justify-center gap-2 group"
+                  disabled={isCheckingStock}
+                  onClick={handleProceedToCheckout}
+                  className="w-full py-6 text-xs uppercase tracking-widest font-semibold flex items-center justify-center gap-2 group cursor-pointer"
                 >
-                  Proceed to Checkout
-                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  {isCheckingStock ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Checking Stock...
+                    </>
+                  ) : (
+                    <>
+                      Proceed to Checkout
+                      <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                    </>
+                  )}
                 </Button>
 
                 {/* Trust Badges */}

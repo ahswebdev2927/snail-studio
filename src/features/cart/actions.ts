@@ -3,6 +3,7 @@
 import { db } from "@/db";
 import { products, reviews, productVariants, orderItems, wishlistItems } from "@/db/schema";
 import { eq, notInArray, and, sql, inArray } from "drizzle-orm";
+import { getAvailableStockBulk } from "@/services/inventory/inventory.service";
 
 /**
  * Fetches products that are not currently in the user's cart to suggest as cross-sells.
@@ -133,5 +134,35 @@ export async function getCartCrossSellProducts(cartVariantIds: string[] = []) {
   } catch (error: any) {
     console.error("Error in getCartCrossSellProducts:", error);
     return { success: false, error: error.message || "Failed to fetch cross-sell products" };
+  }
+}
+
+/**
+ * Validates available stock for a list of variant items.
+ * Computes availability status by checking: requestedQuantity <= availableStock.
+ */
+export async function validateCartStock(items: { variantId: string; quantity: number }[]) {
+  try {
+    if (items.length === 0) return { success: true, isAllAvailable: true, validation: [] };
+
+    const variantIds = items.map((item) => item.variantId);
+    const availableStockMap = await getAvailableStockBulk(variantIds);
+
+    const validation = items.map((item) => {
+      const available = availableStockMap[item.variantId] ?? 0;
+      return {
+        variantId: item.variantId,
+        requestedQuantity: item.quantity,
+        availableStock: available,
+        hasSufficientStock: item.quantity <= available,
+      };
+    });
+
+    const isAllAvailable = validation.every((v) => v.hasSufficientStock);
+
+    return { success: true, isAllAvailable, validation };
+  } catch (error: any) {
+    console.error("Error in validateCartStock server action:", error);
+    return { success: false, error: error.message || "Failed to validate stock levels." };
   }
 }
