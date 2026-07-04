@@ -169,8 +169,35 @@ export async function createCheckoutOrder(params: {
     return { success: true, result };
   } catch (error: any) {
     console.error("Error in createCheckoutOrder server action:", error);
-    return { success: false, error: error.message || "Failed to initiate checkout order." };
+    const friendlyError = await formatStockOutError(error.message || "Failed to initiate checkout order.");
+    return { success: false, error: friendlyError };
   }
+}
+
+/**
+ * Helper function to translate technical variant IDs in stockout errors to user-friendly product and variant names.
+ */
+async function formatStockOutError(errorMessage: string): Promise<string> {
+  if (errorMessage && errorMessage.includes("Insufficient stock for variant ID:")) {
+    const match = errorMessage.match(/variant ID: ([^\s\.]+)/);
+    if (match && match[1]) {
+      const failedVarId = match[1];
+      try {
+        const variant = await db.query.productVariants.findFirst({
+          where: eq(productVariants.id, failedVarId),
+          with: {
+            product: true
+          }
+        });
+        if (variant) {
+          return `"${variant.product.name} - ${variant.name}" has run out of stock or does not have enough items available.`;
+        }
+      } catch (dbErr) {
+        console.error("Failed to query variant name for stockout error:", dbErr);
+      }
+    }
+  }
+  return errorMessage;
 }
 
 /**
@@ -197,6 +224,7 @@ export async function reserveCartStockOnCheckout(items: { variantId: string; qua
     return { success: true, cartId };
   } catch (error: any) {
     console.error("Error in reserveCartStockOnCheckout server action:", error);
-    return { success: false, error: error.message || "Failed to reserve inventory stock." };
+    const friendlyError = await formatStockOutError(error.message || "Failed to reserve inventory stock.");
+    return { success: false, error: friendlyError };
   }
 }
