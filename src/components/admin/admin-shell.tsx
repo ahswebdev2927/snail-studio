@@ -15,7 +15,6 @@ export default function AdminShell({ user, children }: AdminShellProps) {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">("light");
 
-  // Load theme on mount
   useEffect(() => {
     const savedTheme = localStorage.getItem("admin-theme");
     if (savedTheme === "dark" || savedTheme === "light") {
@@ -26,14 +25,8 @@ export default function AdminShell({ user, children }: AdminShellProps) {
         document.documentElement.classList.remove("dark");
       }
     } else {
-      // Check system preference
-      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-      setTheme(prefersDark ? "dark" : "light");
-      if (prefersDark) {
-        document.documentElement.classList.add("dark");
-      } else {
-        document.documentElement.classList.remove("dark");
-      }
+      setTheme("light");
+      document.documentElement.classList.remove("dark");
     }
   }, []);
 

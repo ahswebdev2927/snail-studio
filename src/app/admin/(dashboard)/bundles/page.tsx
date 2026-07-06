@@ -33,6 +33,8 @@ interface Bundle {
   description: string | null;
   discountType: "percentage" | "fixed";
   discountValue: number;
+  startDate: string | null;
+  endDate: string | null;
   isActive: boolean;
   createdAt: string;
   items: BundleItem[];
@@ -60,6 +62,8 @@ export default function AdminBundlesPage() {
   const [discountType, setDiscountType] = useState<"percentage" | "fixed">("percentage");
   const [discountValue, setDiscountValue] = useState<number | "">("");
   const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [isActive, setIsActive] = useState(true);
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -90,6 +94,25 @@ export default function AdminBundlesPage() {
     fetchData();
   }, []);
 
+  const formatToDatetimeLocal = (dateStr: string | null | undefined): string => {
+    if (!dateStr) return "";
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return "";
+    
+    const pad = (num: number) => String(num).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+
+  const formatDateLabel = (dateStr: string | null) => {
+    if (!dateStr) return "N/A";
+    return new Date(dateStr).toLocaleString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
   const openCreateModal = () => {
     setModalMode("create");
     setSelectedBundleId(null);
@@ -98,6 +121,8 @@ export default function AdminBundlesPage() {
     setDiscountType("percentage");
     setDiscountValue("");
     setSelectedProductIds([]);
+    setStartDate("");
+    setEndDate("");
     setIsActive(true);
     setFormError(null);
     setIsOpenModal(true);
@@ -113,6 +138,8 @@ export default function AdminBundlesPage() {
       bundle.discountType === "fixed" ? bundle.discountValue / 100 : bundle.discountValue
     );
     setSelectedProductIds(bundle.items.map((i) => i.productId));
+    setStartDate(bundle.startDate ? formatToDatetimeLocal(bundle.startDate) : "");
+    setEndDate(bundle.endDate ? formatToDatetimeLocal(bundle.endDate) : "");
     setIsActive(bundle.isActive);
     setFormError(null);
     setIsOpenModal(true);
@@ -212,6 +239,8 @@ export default function AdminBundlesPage() {
           description: description.trim() || null,
           discountType,
           discountValue: finalValue,
+          startDate: startDate || null,
+          endDate: endDate || null,
           isActive,
           productIds: selectedProductIds
         })
@@ -353,6 +382,23 @@ export default function AdminBundlesPage() {
                   <p className="text-xs text-muted-foreground mt-3 font-light leading-relaxed line-clamp-2">
                     {bundle.description}
                   </p>
+                )}
+
+                {/* Schedule info if set */}
+                {(bundle.startDate || bundle.endDate) && (
+                  <div className="mt-3 text-[11px] space-y-0.5 text-muted-foreground font-light bg-secondary/15 p-2.5 rounded-xl border border-border/20">
+                    <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-bold block mb-1">Scheduling</span>
+                    {bundle.startDate && (
+                      <div>
+                        <span className="font-semibold text-foreground text-[10px]">Starts:</span> {formatDateLabel(bundle.startDate)}
+                      </div>
+                    )}
+                    {bundle.endDate && (
+                      <div>
+                        <span className="font-semibold text-foreground text-[10px]">Ends:</span> {formatDateLabel(bundle.endDate)}
+                      </div>
+                    )}
+                  </div>
                 )}
 
                 {/* Bundle items list */}
@@ -547,6 +593,33 @@ export default function AdminBundlesPage() {
                       </div>
                     );
                   })}
+                </div>
+              </div>
+
+              {/* Scheduled dates */}
+              <div className="space-y-1.5 pt-1">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                  Scheduling Options (Optional)
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <span className="text-[9px] text-muted-foreground block font-light">Start Display Date</span>
+                    <input
+                      type="datetime-local"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      className="w-full px-4 py-2 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none text-foreground cursor-pointer"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-[9px] text-muted-foreground block font-light">End Display Date</span>
+                    <input
+                      type="datetime-local"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      className="w-full px-4 py-2 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none text-foreground cursor-pointer"
+                    />
+                  </div>
                 </div>
               </div>
 

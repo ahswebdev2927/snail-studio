@@ -78,6 +78,8 @@ export const productBundles = sqliteTable('product_bundles', {
   description: text('description'),
   discountType: text('discount_type', { enum: ['percentage', 'fixed'] }).notNull().default('percentage'),
   discountValue: integer('discount_value').notNull(), // percentage point (e.g. 15 for 15%) or paise
+  startDate: integer('start_date', { mode: 'timestamp' }),
+  endDate: integer('end_date', { mode: 'timestamp' }),
   isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)

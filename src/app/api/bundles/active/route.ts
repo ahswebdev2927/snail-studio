@@ -6,7 +6,7 @@ import { eq } from "drizzle-orm";
 // GET /api/bundles/active - Fetch active bundles for storefront use
 export async function GET(req: NextRequest) {
   try {
-    const activeBundles = await db.query.productBundles.findMany({
+    const allActive = await db.query.productBundles.findMany({
       where: eq(productBundles.isActive, true),
       with: {
         items: {
@@ -21,6 +21,14 @@ export async function GET(req: NextRequest) {
           }
         }
       }
+    });
+
+    // Filter scheduled bundles
+    const now = new Date();
+    const activeBundles = allActive.filter((bundle) => {
+      const startValid = !bundle.startDate || new Date(bundle.startDate) <= now;
+      const endValid = !bundle.endDate || new Date(bundle.endDate) >= now;
+      return startValid && endValid;
     });
 
     return NextResponse.json(activeBundles, { status: 200 });

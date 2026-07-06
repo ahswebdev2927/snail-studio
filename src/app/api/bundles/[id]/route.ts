@@ -10,9 +10,22 @@ const updateBundleSchema = z.object({
   description: z.string().optional().nullable(),
   discountType: z.enum(["percentage", "fixed"]).optional(),
   discountValue: z.number().int().min(1, "Discount value must be at least 1").optional(),
+  startDate: z.preprocess((val) => (val === "" ? null : val), z.string().transform((v) => new Date(v)).nullable().optional()),
+  endDate: z.preprocess((val) => (val === "" ? null : val), z.string().transform((v) => new Date(v)).nullable().optional()),
   isActive: z.boolean().optional(),
   productIds: z.array(z.string()).min(2, "A bundle must contain at least 2 products").optional(),
-});
+}).refine(
+  (data) => {
+    if (data.startDate && data.endDate) {
+      return data.startDate <= data.endDate;
+    }
+    return true;
+  },
+  {
+    message: "Start date must be before or equal to end date",
+    path: ["endDate"],
+  }
+);
 
 // PATCH /api/bundles/[id] - Update a bundle (Admin only)
 export async function PATCH(
@@ -54,11 +67,11 @@ export async function PATCH(
       return NextResponse.json({ error: "Bundle not found" }, { status: 404 });
     }
 
-    const { name, description, discountType, discountValue, isActive, productIds } = result.data;
+    const { name, description, discountType, discountValue, startDate, endDate, isActive, productIds } = result.data;
 
     const updatedRecord = await db.transaction(async (tx) => {
       // 1. Update bundle details if provided
-      if (name !== undefined || description !== undefined || discountType !== undefined || discountValue !== undefined || isActive !== undefined) {
+      if (name !== undefined || description !== undefined || discountType !== undefined || discountValue !== undefined || startDate !== undefined || endDate !== undefined || isActive !== undefined) {
         await tx
           .update(productBundles)
           .set({
@@ -66,6 +79,8 @@ export async function PATCH(
             description: description !== undefined ? description : undefined,
             discountType: discountType !== undefined ? discountType : undefined,
             discountValue: discountValue !== undefined ? discountValue : undefined,
+            startDate: startDate !== undefined ? startDate : undefined,
+            endDate: endDate !== undefined ? endDate : undefined,
             isActive: isActive !== undefined ? isActive : undefined,
             updatedAt: new Date(),
           })

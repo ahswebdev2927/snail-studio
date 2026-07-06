@@ -11,9 +11,22 @@ const createBundleSchema = z.object({
   description: z.string().optional().nullable(),
   discountType: z.enum(["percentage", "fixed"]),
   discountValue: z.number().int().min(1, "Discount value must be at least 1"),
+  startDate: z.preprocess((val) => (val === "" ? null : val), z.string().transform((v) => new Date(v)).nullable().optional()),
+  endDate: z.preprocess((val) => (val === "" ? null : val), z.string().transform((v) => new Date(v)).nullable().optional()),
   isActive: z.boolean().default(true),
   productIds: z.array(z.string()).min(2, "A bundle must contain at least 2 products"),
-});
+}).refine(
+  (data) => {
+    if (data.startDate && data.endDate) {
+      return data.startDate <= data.endDate;
+    }
+    return true;
+  },
+  {
+    message: "Start date must be before or equal to end date",
+    path: ["endDate"],
+  }
+);
 
 // GET /api/bundles - List all bundles (Admin only)
 export async function GET(req: NextRequest) {
@@ -67,7 +80,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { name, description, discountType, discountValue, isActive, productIds } = result.data;
+    const { name, description, discountType, discountValue, startDate, endDate, isActive, productIds } = result.data;
     const bundleId = `bun_${nanoid(10)}`;
 
     const bundleRecord = await db.transaction(async (tx) => {
@@ -78,6 +91,8 @@ export async function POST(req: NextRequest) {
         description,
         discountType,
         discountValue,
+        startDate,
+        endDate,
         isActive,
       });
 
