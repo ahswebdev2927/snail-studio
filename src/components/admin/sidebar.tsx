@@ -17,7 +17,8 @@ import {
   ChevronDown,
   Sparkles,
   ChevronRight,
-  Bell
+  Bell,
+  Tag
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SessionUser } from "@/lib/auth/session";
@@ -46,6 +47,10 @@ export default function Sidebar({ isCollapsed, isMobileOpen, closeMobileSidebar,
     pathname.startsWith("/admin/attributes")
   );
   const [settingsOpen, setSettingsOpen] = useState(pathname.startsWith("/admin/settings"));
+  const [offersOpen, setOffersOpen] = useState(
+    pathname.startsWith("/admin/coupons") || 
+    pathname.startsWith("/admin/bundles")
+  );
 
   const menuItems: MenuItem[] = [
     {
@@ -95,24 +100,20 @@ export default function Sidebar({ isCollapsed, isMobileOpen, closeMobileSidebar,
       icon: Star
     },
     {
-      name: "Coupons",
-      href: "/admin/coupons",
-      icon: Ticket
-    },
-    {
-      name: "Bundles",
-      href: "/admin/bundles",
-      icon: Layers
+      name: "Offers",
+      icon: Tag,
+      subItems: [
+        { name: "Coupons", href: "/admin/coupons" },
+        { name: "Bundles", href: "/admin/bundles" }
+      ]
     },
     {
       name: "Settings",
       icon: Settings,
       subItems: [
         { name: "General", href: "/admin/settings/general" },
+        { name: "Storefront", href: "/admin/settings/storefront" },
         { name: "Shipping", href: "/admin/settings/shipping" },
-        { name: "Hero Banners", href: "/admin/settings/hero-banners" },
-        { name: "Announcements", href: "/admin/settings/announcements" },
-        { name: "Size Profiles", href: "/admin/settings/size-profiles" },
         { name: "SMTP Mailer", href: "/admin/settings/smtp" },
         { name: "Payments", href: "/admin/settings/payments" },
         { name: "Search Sync", href: "/admin/settings/search" }
@@ -128,13 +129,17 @@ export default function Sidebar({ isCollapsed, isMobileOpen, closeMobileSidebar,
     const isActive = item.href ? pathname === item.href : isSubActive;
     
     const hasSubItems = !!item.subItems;
-    const isExpanded = item.name === "Catalog" ? catalogOpen : settingsOpen;
+    const isExpanded = 
+      item.name === "Catalog" ? catalogOpen : 
+      item.name === "Offers" ? offersOpen : 
+      settingsOpen;
 
     const handleToggleMenu = () => {
       if (item.name === "Catalog") {
         if (!catalogOpen) {
           setCatalogOpen(true);
           setSettingsOpen(false);
+          setOffersOpen(false);
         } else {
           setCatalogOpen(false);
         }
@@ -142,8 +147,17 @@ export default function Sidebar({ isCollapsed, isMobileOpen, closeMobileSidebar,
         if (!settingsOpen) {
           setSettingsOpen(true);
           setCatalogOpen(false);
+          setOffersOpen(false);
         } else {
           setSettingsOpen(false);
+        }
+      } else if (item.name === "Offers") {
+        if (!offersOpen) {
+          setOffersOpen(true);
+          setCatalogOpen(false);
+          setSettingsOpen(false);
+        } else {
+          setOffersOpen(false);
         }
       }
     };
