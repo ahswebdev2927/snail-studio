@@ -264,7 +264,8 @@ export const ordersRelations = relations(schema.orders, ({ one, many }) => ({
   payments: many(schema.payments),
   shipments: many(schema.shipments),
   statusHistory: many(schema.orderStatusHistory),
-  couponUsages: many(schema.couponUsage)
+  couponUsages: many(schema.couponUsage),
+  addressHistory: many(schema.orderAddressHistory)
 }));
 
 export const orderItemsRelations = relations(schema.orderItems, ({ one }) => ({
@@ -410,5 +411,12 @@ export const productBundleItemsRelations = relations(schema.productBundleItems, 
   product: one(schema.products, {
     fields: [schema.productBundleItems.productId],
     references: [schema.products.id]
+  })
+}));
+
+export const orderAddressHistoryRelations = relations(schema.orderAddressHistory, ({ one }) => ({
+  order: one(schema.orders, {
+    fields: [schema.orderAddressHistory.orderId],
+    references: [schema.orders.id]
   })
 }));

@@ -7,7 +7,7 @@ export const orders = sqliteTable('orders', {
   id: text('id').primaryKey(),
   userId: text('user_id').references(() => users.id, { onDelete: 'set null' }), // Nullable for guest purchases
   status: text('status', {
-    enum: ['pending', 'paid', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded']
+    enum: ['pending', 'paid', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded']
   }).notNull().default('pending'),
   totalAmount: integer('total_amount').notNull(), // stored in paise / INR subunit
   taxAmount: integer('tax_amount').notNull().default(0),
@@ -16,7 +16,19 @@ export const orders = sqliteTable('orders', {
   couponCode: text('coupon_code'),
   notes: text('notes'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
-  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
+
+  // Shipping policy enhancement fields
+  shippingChargePaid: integer('shipping_charge_paid').notNull().default(0),
+  currentShippingCharge: integer('current_shipping_charge').notNull().default(0),
+  shippingDifference: integer('shipping_difference').notNull().default(0),
+  shippingDifferencePaid: integer('shipping_difference_paid').notNull().default(0),
+  shippingDifferenceStatus: text('shipping_difference_status').notNull().default('none'),
+  shippingCalculatedAt: integer('shipping_calculated_at', { mode: 'timestamp' }),
+  shippingVerified: integer('shipping_verified', { mode: 'boolean' }).notNull().default(false),
+  addressLockedAt: integer('address_locked_at', { mode: 'timestamp' }),
+  addressVersion: integer('address_version').notNull().default(1),
+  addressVerified: integer('address_verified', { mode: 'boolean' }).notNull().default(false)
 }, (table) => [
   index('orders_user_id_status_idx').on(table.userId, table.status)
 ]);
@@ -91,5 +103,19 @@ export const orderStatusHistory = sqliteTable('order_status_history', {
   orderId: text('order_id').notNull().references(() => orders.id, { onDelete: 'cascade' }),
   status: text('status').notNull(),
   notes: text('notes'),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)
+});
+
+export const orderAddressHistory = sqliteTable('order_address_history', {
+  id: text('id').primaryKey(),
+  orderId: text('order_id').notNull().references(() => orders.id, { onDelete: 'cascade' }),
+  version: integer('version').notNull(),
+  editedBy: text('edited_by').notNull(),
+  oldAddress: text('old_address').notNull(), // JSON string
+  newAddress: text('new_address').notNull(), // JSON string
+  shippingBefore: integer('shipping_before').notNull(),
+  shippingAfter: integer('shipping_after').notNull(),
+  difference: integer('difference').notNull(),
+  reason: text('reason'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)
 });
