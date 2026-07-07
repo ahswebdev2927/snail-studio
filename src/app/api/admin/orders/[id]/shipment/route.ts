@@ -8,6 +8,7 @@ import { z } from "zod";
 import { updateOrderStatus } from "@/services/checkout/order.service";
 import { sendMail } from "@/services/email/email.service";
 import { getOrderStatusUpdateTemplate } from "@/services/email/templates/order-status-update.template";
+import { validatePreShipment } from "@/services/shipping/shipping-policy.service";
 
 const createShipmentSchema = z.object({
   carrier: z.string().min(2).max(100),
@@ -114,46 +115,59 @@ export async function POST(
       );
     }
 
+    // Pre-Shipment Validation check
+    const validation = await validatePreShipment(orderId);
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: "Pre-shipment validation failed", reasons: validation.errors },
+        { status: 400 }
+      );
+    }
+
     const { carrier, trackingNumber, estimatedDeliveryAt } = result.data;
     const shipmentId = `ship_${nanoid(10)}`;
     const now = new Date();
     const estDeliveryDate = estimatedDeliveryAt ? new Date(estimatedDeliveryAt) : null;
 
-    // 1. Create the shipment record
-    await db.insert(shipments).values({
-      id: shipmentId,
-      orderId,
-      carrier,
-      trackingNumber,
-      status: "ready_to_ship",
-      shippedAt: null,
-      estimatedDeliveryAt: estDeliveryDate,
-    });
+    // Run updates atomically in transaction
+    await db.transaction(async (tx) => {
+      // 1. Create the shipment record
+      await tx.insert(shipments).values({
+        id: shipmentId,
+        orderId,
+        carrier,
+        trackingNumber,
+        status: "ready_to_ship",
+        shippedAt: null,
+        estimatedDeliveryAt: estDeliveryDate,
+      });
 
-    // 2. Insert initial tracking event
-    await db.insert(trackingEvents).values({
-      id: `evt_${nanoid(10)}`,
-      shipmentId,
-      status: "ready_to_ship",
-      location: "Warehouse",
-      description: `Waybill generated for courier ${carrier}. Tracking #: ${trackingNumber}.`,
-      timestamp: now,
-    });
+      // 2. Insert initial tracking event
+      await tx.insert(trackingEvents).values({
+        id: `evt_${nanoid(10)}`,
+        shipmentId,
+        status: "ready_to_ship",
+        location: "Warehouse",
+        description: `Waybill generated for courier ${carrier}. Tracking #: ${trackingNumber}.`,
+        timestamp: now,
+      });
 
-    // 3. Log "ready_to_ship" in orderStatusHistory
-    await db.insert(orderStatusHistory).values({
-      id: `osh_${nanoid(10)}`,
-      orderId,
-      status: "ready_to_ship",
-      notes: `Shipment created with ${carrier} (Tracking #: ${trackingNumber}). Ready to ship.`,
-      createdAt: now,
-    });
+      // 3. Log "ready_to_ship" in orderStatusHistory
+      await tx.insert(orderStatusHistory).values({
+        id: `osh_${nanoid(10)}`,
+        orderId,
+        status: "ready_to_ship",
+        notes: `Shipment created with ${carrier} (Tracking #: ${trackingNumber}). Ready to ship.`,
+        createdAt: now,
+      });
 
-    // 4. Update the order status record to processing (re-saves updatedAt)
-    await db.update(orders).set({
-      status: "processing",
-      updatedAt: now,
-    }).where(eq(orders.id, orderId));
+      // 4. Update the order status record to processing and lock the address
+      await tx.update(orders).set({
+        status: "processing",
+        addressLockedAt: now, // Address is locked after AWB generation
+        updatedAt: now,
+      }).where(eq(orders.id, orderId));
+    });
 
     // 5. Send "Ready To Ship" / "Shipment Created" Email Notification
     await sendShipmentEmail(
