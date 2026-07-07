@@ -252,60 +252,6 @@ export default function AdminGeneralSettingsPage() {
               />
             </div>
           </div>
-
-          <hr className="border-border/40 my-6" />
-
-          <div className="space-y-1 pb-2">
-            <h3 className="font-serif text-sm font-normal text-foreground">Shipping Configuration</h3>
-            <p className="text-[10px] text-muted-foreground font-light">
-              Configure flat shipping rates and free delivery thresholds in Rupees (₹).
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                Standard Shipping Fee (₹)
-              </label>
-              <input
-                type="number"
-                required
-                min="0"
-                value={shippingStandardFee}
-                onChange={(e) => setShippingStandardFee(e.target.value)}
-                placeholder="99"
-                className="w-full px-4 py-2.5 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none transition-all text-foreground"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                Free Shipping Threshold (₹)
-              </label>
-              <input
-                type="number"
-                required
-                min="0"
-                value={shippingFreeThreshold}
-                onChange={(e) => setShippingFreeThreshold(e.target.value)}
-                placeholder="1500"
-                className="w-full px-4 py-2.5 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none transition-all text-foreground"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                Express Shipping Fee (₹)
-              </label>
-              <input
-                type="number"
-                required
-                min="0"
-                value={shippingExpressFee}
-                onChange={(e) => setShippingExpressFee(e.target.value)}
-                placeholder="250"
-                className="w-full px-4 py-2.5 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none transition-all text-foreground"
-              />
-            </div>
-          </div>
         </form>
       </div>
 

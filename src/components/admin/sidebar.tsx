@@ -109,6 +109,7 @@ export default function Sidebar({ isCollapsed, isMobileOpen, closeMobileSidebar,
       icon: Settings,
       subItems: [
         { name: "General", href: "/admin/settings/general" },
+        { name: "Shipping", href: "/admin/settings/shipping" },
         { name: "Hero Banners", href: "/admin/settings/hero-banners" },
         { name: "Announcements", href: "/admin/settings/announcements" },
         { name: "Size Profiles", href: "/admin/settings/size-profiles" },
