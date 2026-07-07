@@ -22,6 +22,7 @@ import { orders } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { getSessionUser } from "@/lib/auth/session";
 import { formatPrice } from "@/lib/utils";
+import CustomerOrderActions from "@/components/orders/customer-order-actions";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -378,6 +379,28 @@ export default async function OrderDetailsPage({ params }: PageProps) {
               <p className="text-xs text-muted-foreground font-light">No address attached to this order record.</p>
             )}
           </div>
+
+          {/* Customer Order Adjustment & Editing Actions */}
+          <CustomerOrderActions
+            orderId={orderRecord.id}
+            shippingAddress={shippingAddress ? {
+              id: shippingAddress.id,
+              name: shippingAddress.name,
+              phone: shippingAddress.phone,
+              addressLine1: shippingAddress.addressLine1,
+              addressLine2: shippingAddress.addressLine2,
+              city: shippingAddress.city,
+              state: shippingAddress.state,
+              postalCode: shippingAddress.postalCode,
+              country: shippingAddress.country
+            } : null}
+            shippingAmountPaid={orderRecord.shippingChargePaid > 0 ? orderRecord.shippingChargePaid : orderRecord.shippingAmount}
+            currentShippingCharge={orderRecord.currentShippingCharge || orderRecord.shippingAmount}
+            shippingDifference={orderRecord.shippingDifference}
+            shippingDifferenceStatus={orderRecord.shippingDifferenceStatus}
+            orderStatus={orderRecord.status}
+            hasActiveShipment={orderRecord.shipments.some(s => s.status !== "cancelled")}
+          />
 
           {/* Shipment & Tracker Card */}
           <div className="bg-card border border-border/30 rounded-2xl p-5 space-y-3.5">

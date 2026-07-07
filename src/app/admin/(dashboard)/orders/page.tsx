@@ -21,7 +21,8 @@ import {
   Package,
   CheckCircle2,
   XCircle,
-  HelpCircle
+  HelpCircle,
+  Sliders
 } from "lucide-react";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 
@@ -50,6 +51,16 @@ interface OrderDetail {
   notes: string | null;
   createdAt: string;
   updatedAt: string;
+  shippingChargePaid: number;
+  currentShippingCharge: number;
+  shippingDifference: number;
+  shippingDifferencePaid: number;
+  shippingDifferenceStatus: string;
+  shippingCalculatedAt: string | null;
+  shippingVerified: boolean;
+  addressLockedAt: string | null;
+  addressVersion: number;
+  addressVerified: boolean;
   items: {
     id: string;
     variantId: string | null;
@@ -105,6 +116,18 @@ interface OrderDetail {
       timestamp: string;
     }[];
   }[];
+  addressHistory?: {
+    id: string;
+    version: number;
+    editedBy: string;
+    oldAddress: string;
+    newAddress: string;
+    shippingBefore: number;
+    shippingAfter: number;
+    difference: number;
+    reason: string | null;
+    createdAt: string;
+  }[];
 }
 
 export default function AdminOrdersPage() {
@@ -139,6 +162,28 @@ export default function AdminOrdersPage() {
   const [showPrintInvoice, setShowPrintInvoice] = useState(false);
   const [showCreateShipmentModal, setShowCreateShipmentModal] = useState(false);
 
+  // Shipping adjustment policy additions
+  const [settings, setSettings] = useState<any>(null);
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [showEditAddressModal, setShowEditAddressModal] = useState(false);
+
+  // Edit address form state
+  const [editName, setEditName] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [editAddressLine1, setEditAddressLine1] = useState("");
+  const [editAddressLine2, setEditAddressLine2] = useState("");
+  const [editCity, setEditCity] = useState("");
+  const [editState, setEditState] = useState("");
+  const [editPostalCode, setEditPostalCode] = useState("");
+  const [editCountry, setEditCountry] = useState("");
+  const [editReason, setEditReason] = useState("");
+  const [isSavingAddress, setIsSavingAddress] = useState(false);
+
+  // Action loaders
+  const [isWaivingDifference, setIsWaivingDifference] = useState(false);
+  const [isRefundingDifference, setIsRefundingDifference] = useState(false);
+  const [isRegeneratingAwb, setIsRegeneratingAwb] = useState(false);
+
   // Load orders
   const loadOrders = async () => {
     setIsLoading(true);
@@ -163,6 +208,22 @@ export default function AdminOrdersPage() {
     loadOrders();
   }, [statusFilter, debouncedSearchQuery]);
 
+  // Load settings on mount
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const res = await fetch("/api/admin/settings");
+        if (res.ok) {
+          const data = await res.json();
+          setSettings(data);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    loadSettings();
+  }, []);
+
   // Load specific order details
   const loadOrderDetail = async (id: string) => {
     setIsDetailLoading(true);
@@ -173,6 +234,13 @@ export default function AdminOrdersPage() {
         setOrderDetail(data);
         setUpdateStatus(data.status);
         setUpdateNotes("");
+        
+        // Fetch pre-shipment validations
+        const valRes = await fetch(`/api/admin/orders/${id}/validate-preshipment`);
+        if (valRes.ok) {
+          const valData = await valRes.json();
+          setValidationErrors(valData.errors || []);
+        }
       }
     } catch (error) {
       console.error("Error fetching order details:", error);
@@ -219,6 +287,111 @@ export default function AdminOrdersPage() {
       alert("An unexpected error occurred.");
     } finally {
       setIsUpdatingStatus(false);
+    }
+  };
+
+  const handleSaveAddress = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedOrderId) return;
+    setIsSavingAddress(true);
+    try {
+      const res = await fetch(`/api/orders/${selectedOrderId}/address`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: editName,
+          phone: editPhone,
+          addressLine1: editAddressLine1,
+          addressLine2: editAddressLine2 || null,
+          city: editCity,
+          state: editState,
+          postalCode: editPostalCode,
+          country: editCountry,
+          reason: editReason || null,
+        }),
+      });
+      if (res.ok) {
+        setShowEditAddressModal(false);
+        setEditReason("");
+        await loadOrderDetail(selectedOrderId);
+        await loadOrders();
+      } else {
+        const err = await res.json();
+        alert(`Failed to save address: ${err.error || "Server error"}`);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("An unexpected error occurred while saving address.");
+    } finally {
+      setIsSavingAddress(false);
+    }
+  };
+
+  const handleWaiveDifference = async () => {
+    if (!selectedOrderId) return;
+    if (!confirm("Are you sure you want to waive this shipping difference payment?")) return;
+    setIsWaivingDifference(true);
+    try {
+      const res = await fetch(`/api/admin/orders/${selectedOrderId}/waive-difference`, {
+        method: "POST",
+      });
+      if (res.ok) {
+        await loadOrderDetail(selectedOrderId);
+        await loadOrders();
+      } else {
+        const err = await res.json();
+        alert(`Failed to waive difference: ${err.error || "Server error"}`);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsWaivingDifference(false);
+    }
+  };
+
+  const handleRefundDifference = async () => {
+    if (!selectedOrderId) return;
+    if (!confirm("Are you sure you want to refund this shipping charge difference?")) return;
+    setIsRefundingDifference(true);
+    try {
+      const res = await fetch(`/api/admin/orders/${selectedOrderId}/refund-difference`, {
+        method: "POST",
+      });
+      if (res.ok) {
+        await loadOrderDetail(selectedOrderId);
+        await loadOrders();
+      } else {
+        const err = await res.json();
+        alert(`Failed to process refund: ${err.error || "Server error"}`);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsRefundingDifference(false);
+    }
+  };
+
+  const handleRegenerateAwb = async () => {
+    if (!selectedOrderId) return;
+    if (!confirm("Are you sure you want to cancel the active shipment and regenerate the AWB?")) return;
+    setIsRegeneratingAwb(true);
+    try {
+      const res = await fetch(`/api/admin/orders/${selectedOrderId}/regenerate-awb`, {
+        method: "POST",
+      });
+      if (res.ok) {
+        const data = await res.json();
+        alert(`New AWB generated successfully: ${data.trackingNumber}`);
+        await loadOrderDetail(selectedOrderId);
+        await loadOrders();
+      } else {
+        const err = await res.json();
+        alert(`Failed to regenerate AWB: ${err.error || "Server error"}`);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsRegeneratingAwb(false);
     }
   };
 
@@ -657,10 +830,39 @@ export default function AdminOrdersPage() {
 
                     {/* Addresses */}
                     <div className="space-y-3 bg-secondary/15 rounded-2xl p-4.5 border border-border/20">
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                        <MapPin className="w-3.5 h-3.5" />
-                        Shipping Destination
-                      </h4>
+                      <div className="flex justify-between items-center pb-2 border-b border-border/10">
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                          <MapPin className="w-3.5 h-3.5" />
+                          Shipping Destination
+                        </h4>
+                        {orderDetail.addresses.filter(a => a.type === "shipping").map((addr) => {
+                          const hasActiveShipment = orderDetail.shipments.some(s => s.status !== "cancelled");
+                          const isEditAllowed = !hasActiveShipment || (settings && (settings.adminCanEditAfterAwb === "true" || settings.adminCanEditAfterAwb === true));
+                          return (
+                            isEditAllowed && (
+                              <button
+                                key={`edit-${addr.id}`}
+                                type="button"
+                                onClick={() => {
+                                  setEditName(addr.name);
+                                  setEditPhone(addr.phone);
+                                  setEditAddressLine1(addr.addressLine1);
+                                  setEditAddressLine2(addr.addressLine2 || "");
+                                  setEditCity(addr.city);
+                                  setEditState(addr.state);
+                                  setEditPostalCode(addr.postalCode);
+                                  setEditCountry(addr.country);
+                                  setEditReason("");
+                                  setShowEditAddressModal(true);
+                                }}
+                                className="px-2.5 py-1 text-[9px] font-bold uppercase bg-primary text-primary-foreground rounded-lg hover:bg-primary/95 transition-all cursor-pointer"
+                              >
+                                Edit Address
+                              </button>
+                            )
+                          );
+                        })}
+                      </div>
                       {orderDetail.addresses.filter(a => a.type === "shipping").map((addr) => (
                         <div key={addr.id} className="text-xs font-light space-y-1 text-foreground leading-relaxed">
                           <p className="font-semibold text-foreground">{addr.name}</p>
@@ -674,6 +876,83 @@ export default function AdminOrdersPage() {
                           </p>
                         </div>
                       ))}
+                    </div>
+
+                    {/* Shipping Adjustment Summary */}
+                    <div className="space-y-3 bg-secondary/15 rounded-2xl p-4.5 border border-border/20">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                        <Sliders className="w-3.5 h-3.5" />
+                        Shipping Adjustment Policy
+                      </h4>
+                      <div className="text-xs space-y-1.5 font-light text-foreground">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Original Shipping paid:</span>
+                          <span className="font-medium">{formatPrice(orderDetail.shippingChargePaid > 0 ? orderDetail.shippingChargePaid : orderDetail.shippingAmount)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Current Shipping rate:</span>
+                          <span className="font-medium">{formatPrice(orderDetail.currentShippingCharge || orderDetail.shippingAmount)}</span>
+                        </div>
+                        <div className="flex justify-between border-t border-border/20 pt-1.5">
+                          <span className="text-muted-foreground">Recalculated Difference:</span>
+                          <span className={`font-semibold ${orderDetail.shippingDifference > 0 ? "text-amber-500" : orderDetail.shippingDifference < 0 ? "text-emerald-500" : "text-foreground"}`}>
+                            {orderDetail.shippingDifference > 0 ? "+" : ""}{formatPrice(orderDetail.shippingDifference)}
+                          </span>
+                        </div>
+                        
+                        {orderDetail.shippingDifference !== 0 && (
+                          <div className="bg-background/50 border border-border/30 rounded-xl p-2.5 mt-2 space-y-1.5">
+                            <div className="flex justify-between text-[10px]">
+                              <span className="text-muted-foreground uppercase tracking-wider font-bold">Policy Status:</span>
+                              <span className="uppercase font-mono font-bold text-primary">{orderDetail.shippingDifferenceStatus}</span>
+                            </div>
+                            
+                            <p className="text-[10px] text-muted-foreground leading-normal">
+                              {orderDetail.shippingDifferenceStatus === "pending" && "Waiting for customer to pay the remaining balance."}
+                              {orderDetail.shippingDifferenceStatus === "waived" && "Difference was within ignore threshold or waived by admin."}
+                              {orderDetail.shippingDifferenceStatus === "paid" && "Shipping adjustment paid by customer."}
+                              {orderDetail.shippingDifferenceStatus === "refunded" && "Price difference credited back to original source."}
+                            </p>
+
+                            <div className="flex flex-wrap gap-2 pt-1 border-t border-border/20">
+                              {orderDetail.shippingDifferenceStatus === "pending" && (
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const mockLink = `${window.location.origin}/account/orders/${orderDetail.id}`;
+                                      navigator.clipboard.writeText(mockLink);
+                                      alert(`Payment notification link copied to clipboard: ${mockLink}`);
+                                    }}
+                                    className="px-2 py-0.5 bg-primary text-primary-foreground hover:bg-primary/95 rounded text-[8px] font-bold uppercase transition-all cursor-pointer"
+                                  >
+                                    Send Payment Link
+                                  </button>
+                                  <button
+                                    type="button"
+                                    disabled={isWaivingDifference}
+                                    onClick={handleWaiveDifference}
+                                    className="px-2 py-0.5 bg-secondary hover:bg-muted text-foreground border border-border rounded text-[8px] font-bold uppercase transition-all cursor-pointer"
+                                  >
+                                    {isWaivingDifference ? "Waiving..." : "Waive"}
+                                  </button>
+                                </>
+                              )}
+
+                              {orderDetail.shippingDifference < 0 && orderDetail.shippingDifferenceStatus !== "refunded" && (
+                                <button
+                                  type="button"
+                                  disabled={isRefundingDifference}
+                                  onClick={handleRefundDifference}
+                                  className="px-2 py-0.5 bg-emerald-500 text-white hover:bg-emerald-600 rounded text-[8px] font-bold uppercase transition-all cursor-pointer"
+                                >
+                                  {isRefundingDifference ? "Refunding..." : "Refund Difference"}
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     {/* Payments */}
@@ -712,10 +991,26 @@ export default function AdminOrdersPage() {
                       {orderDetail.shipments.length === 0 ? (
                         <div className="border border-border/25 rounded-2xl p-4.5 space-y-3 text-center">
                           <p className="text-xs text-muted-foreground font-light italic">No active parcel waybill generated.</p>
+                          
+                          {validationErrors.length > 0 && (
+                            <div className="bg-rose-500/10 border border-rose-500/20 text-rose-600 text-left rounded-xl p-3 space-y-1.5 text-[10px] leading-relaxed">
+                              <p className="font-bold flex items-center gap-1 uppercase tracking-wider text-[8px]">
+                                <AlertCircle className="w-3.5 h-3.5" />
+                                Pre-Shipment Warnings
+                              </p>
+                              <ul className="list-disc pl-3.5 space-y-0.5">
+                                {validationErrors.map((err, i) => (
+                                  <li key={i}>{err}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+
                           <button
                             type="button"
+                            disabled={validationErrors.length > 0}
                             onClick={() => setShowCreateShipmentModal(true)}
-                            className="w-full py-2 bg-primary text-primary-foreground hover:bg-primary/95 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1.5 mt-1"
+                            className="w-full py-2 bg-primary text-primary-foreground hover:bg-primary/95 disabled:bg-muted disabled:text-muted-foreground rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1.5 mt-1"
                           >
                             + Create Shipment
                           </button>
@@ -755,6 +1050,16 @@ export default function AdminOrdersPage() {
                                 >
                                   Print Invoice
                                 </button>
+                                {(!settings || settings.adminCanEditAfterAwb === "true" || settings.adminCanEditAfterAwb === true) && (
+                                  <button
+                                    type="button"
+                                    disabled={isRegeneratingAwb}
+                                    onClick={handleRegenerateAwb}
+                                    className="flex-1 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 text-[9px] font-bold uppercase tracking-wider rounded-lg border border-amber-500/20 transition-all cursor-pointer text-center"
+                                  >
+                                    {isRegeneratingAwb ? "Regenerating..." : "Regenerate AWB"}
+                                  </button>
+                                )}
                               </div>
 
                               {/* Events List */}
@@ -886,6 +1191,59 @@ export default function AdminOrdersPage() {
                         ))}
                       </div>
                     </div>
+
+                    {/* Address Edit History Audit Log */}
+                    {orderDetail.addressHistory && orderDetail.addressHistory.length > 0 && (
+                      <div className="md:col-span-2 space-y-3">
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5" />
+                          Address Modification Audit Trail
+                        </h4>
+                        <div className="space-y-4 relative pl-4 border-l border-border/40 ml-2">
+                          {orderDetail.addressHistory.map((ah: any) => {
+                            let oldAddr: any = {};
+                            let newAddr: any = {};
+                            try {
+                              oldAddr = JSON.parse(ah.oldAddress);
+                              newAddr = JSON.parse(ah.newAddress);
+                            } catch (e) {
+                              console.error(e);
+                            }
+                            return (
+                              <div key={ah.id} className="space-y-1 relative text-xs">
+                                <div className="absolute -left-[20.5px] top-1 w-2.5 h-2.5 rounded-full bg-amber-500 border border-card" />
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[10px] font-bold uppercase text-amber-600 bg-amber-500/10 px-1.5 py-0.5 border border-amber-500/20 rounded">
+                                    Version {ah.version}
+                                  </span>
+                                  <span className="text-[10px] font-medium text-foreground">Edited by: {ah.editedBy}</span>
+                                  <span className="text-[9px] text-muted-foreground font-light">{formatDate(ah.createdAt)}</span>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-[10px] font-light bg-background/50 border border-border/30 rounded-xl p-2.5">
+                                  <div>
+                                    <span className="text-[8px] font-bold uppercase tracking-wider text-muted-foreground block">Old Address:</span>
+                                    <p className="font-semibold text-foreground">{oldAddr.name} ({oldAddr.phone})</p>
+                                    <p className="text-muted-foreground">{oldAddr.addressLine1}, {oldAddr.city}, {oldAddr.state} - {oldAddr.postalCode}</p>
+                                    <p className="text-muted-foreground font-semibold">Shipping: {formatPrice(ah.shippingBefore)}</p>
+                                  </div>
+                                  <div>
+                                    <span className="text-[8px] font-bold uppercase tracking-wider text-muted-foreground block">New Address:</span>
+                                    <p className="font-semibold text-foreground">{newAddr.name} ({newAddr.phone})</p>
+                                    <p className="text-muted-foreground">{newAddr.addressLine1}, {newAddr.city}, {newAddr.state} - {newAddr.postalCode}</p>
+                                    <p className="text-muted-foreground font-semibold">Shipping: {formatPrice(ah.shippingAfter)}</p>
+                                  </div>
+                                </div>
+                                {ah.reason && (
+                                  <p className="text-[10px] text-muted-foreground pl-1 leading-normal italic">
+                                    Reason: {ah.reason}
+                                  </p>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </>
               )}
@@ -1233,6 +1591,144 @@ export default function AdminOrdersPage() {
                 <button
                   type="button"
                   onClick={() => setShowCreateShipmentModal(false)}
+                  className="flex-1 py-2.5 bg-secondary hover:bg-muted text-muted-foreground hover:text-foreground rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer text-center border border-border"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Address Modal Overlay */}
+      {showEditAddressModal && orderDetail && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background/80 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="bg-card border border-border shadow-2xl p-6 rounded-3xl w-full max-w-md text-foreground space-y-4 max-h-[90vh] overflow-y-auto my-auto">
+            <div className="flex justify-between items-center pb-3 border-b border-border/40">
+              <h3 className="font-serif text-base font-normal text-foreground">Edit Shipping Address</h3>
+              <button
+                type="button"
+                onClick={() => setShowEditAddressModal(false)}
+                className="p-1 rounded-full bg-secondary hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveAddress} className="space-y-3.5">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Recipient Name</label>
+                <input
+                  type="text"
+                  required
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="w-full px-3 py-2 bg-background border border-border rounded-xl text-xs font-light text-foreground focus:outline-none focus:border-primary"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Contact Phone</label>
+                <input
+                  type="text"
+                  required
+                  value={editPhone}
+                  onChange={(e) => setEditPhone(e.target.value)}
+                  className="w-full px-3 py-2 bg-background border border-border rounded-xl text-xs font-light text-foreground focus:outline-none focus:border-primary"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Address Line 1</label>
+                <input
+                  type="text"
+                  required
+                  value={editAddressLine1}
+                  onChange={(e) => setEditAddressLine1(e.target.value)}
+                  className="w-full px-3 py-2 bg-background border border-border rounded-xl text-xs font-light text-foreground focus:outline-none focus:border-primary"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Address Line 2 (Optional)</label>
+                <input
+                  type="text"
+                  value={editAddressLine2}
+                  onChange={(e) => setEditAddressLine2(e.target.value)}
+                  className="w-full px-3 py-2 bg-background border border-border rounded-xl text-xs font-light text-foreground focus:outline-none focus:border-primary"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">City</label>
+                  <input
+                    type="text"
+                    required
+                    value={editCity}
+                    onChange={(e) => setEditCity(e.target.value)}
+                    className="w-full px-3 py-2 bg-background border border-border rounded-xl text-xs font-light text-foreground focus:outline-none focus:border-primary"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">State</label>
+                  <input
+                    type="text"
+                    required
+                    value={editState}
+                    onChange={(e) => setEditState(e.target.value)}
+                    className="w-full px-3 py-2 bg-background border border-border rounded-xl text-xs font-light text-foreground focus:outline-none focus:border-primary"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Pincode / Postal Code</label>
+                  <input
+                    type="text"
+                    required
+                    value={editPostalCode}
+                    onChange={(e) => setEditPostalCode(e.target.value)}
+                    className="w-full px-3 py-2 bg-background border border-border rounded-xl text-xs font-light text-foreground focus:outline-none focus:border-primary"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Country</label>
+                  <input
+                    type="text"
+                    required
+                    value={editCountry}
+                    onChange={(e) => setEditCountry(e.target.value)}
+                    className="w-full px-3 py-2 bg-background border border-border rounded-xl text-xs font-light text-foreground focus:outline-none focus:border-primary"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Reason for Edit</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Customer requested pincode fix"
+                  value={editReason}
+                  onChange={(e) => setEditReason(e.target.value)}
+                  className="w-full px-3 py-2 bg-background border border-border rounded-xl text-xs font-light text-foreground focus:outline-none focus:border-primary"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="submit"
+                  disabled={isSavingAddress}
+                  className="flex-1 py-2.5 bg-primary text-primary-foreground hover:bg-primary/95 disabled:bg-muted disabled:text-muted-foreground rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer text-center"
+                >
+                  {isSavingAddress ? "Saving..." : "Save Address"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowEditAddressModal(false)}
                   className="flex-1 py-2.5 bg-secondary hover:bg-muted text-muted-foreground hover:text-foreground rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer text-center border border-border"
                 >
                   Cancel

@@ -48,10 +48,17 @@ export async function GET(
       },
     });
 
+    // Fetch address change history
+    const addressHistory = await db.query.orderAddressHistory.findMany({
+      where: (ah, { eq }) => eq(ah.orderId, orderId),
+      orderBy: (ah, { desc }) => [desc(ah.createdAt)],
+    });
+
     return NextResponse.json({
       ...order,
       payments,
       shipments,
+      addressHistory,
     }, { status: 200 });
 
   } catch (error: any) {
