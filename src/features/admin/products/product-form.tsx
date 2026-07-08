@@ -199,7 +199,13 @@ export default function ProductForm({ mode, productId, initialData }: ProductFor
           fetch("/api/attributes"),
         ]);
 
-        if (brandsRes.ok) setBrands(await brandsRes.json());
+        if (brandsRes.ok) {
+          const loadedBrands = await brandsRes.json();
+          setBrands(loadedBrands);
+          if (mode === "create" && loadedBrands.length > 0) {
+            setValue("brandId", loadedBrands[0].id);
+          }
+        }
         if (catsRes.ok) setCategories(await catsRes.json());
         if (attrsRes.ok) setAttributes(await attrsRes.json());
       } catch (err) {
