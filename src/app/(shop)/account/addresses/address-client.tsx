@@ -380,7 +380,7 @@ export function AddressClient({ initialAddresses }: AddressClientProps) {
 
       {/* Address Form Modal */}
       {modalOpen && mounted && createPortal(
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/50 backdrop-blur-md flex items-center justify-center p-4 md:p-6 animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-background/60 backdrop-blur-md flex items-center justify-center p-4 md:p-6 animate-in fade-in duration-200">
           <div className="bg-card border border-border/60 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden relative my-auto">
             {/* Top gold line */}
             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary/30 via-accent to-primary/30" />
@@ -393,7 +393,7 @@ export function AddressClient({ initialAddresses }: AddressClientProps) {
               </h3>
               <button
                 onClick={() => setModalOpen(false)}
-                className="p-1 rounded-lg text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-all cursor-pointer"
+                className="p-1 rounded-lg text-muted-foreground hover:bg-secondary-surface hover:text-text-heading transition-all cursor-pointer"
               >
                 <X className="w-4.5 h-4.5" />
               </button>

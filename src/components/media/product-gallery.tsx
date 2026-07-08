@@ -28,7 +28,7 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({
 
   if (!mediaList || mediaList.length === 0) {
     return (
-      <div className="flex items-center justify-center w-full aspect-square rounded-xl bg-primary/5 border border-primary/20 dark:bg-neutral-900/10 dark:border-neutral-800">
+      <div className="flex items-center justify-center w-full aspect-square rounded-xl bg-primary/5 border border-primary/20">
         <span className="text-neutral-400 text-sm">No media available</span>
       </div>
     );
@@ -53,7 +53,7 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({
 
   return (
     <div className={`flex flex-col gap-4 w-full ${className}`}>
-      <div className="relative aspect-square w-full bg-neutral-50 dark:bg-neutral-950 rounded-2xl overflow-hidden border border-neutral-100 dark:border-neutral-900 shadow-sm group">
+      <div className="relative aspect-square w-full bg-secondary-surface/40 rounded-2xl overflow-hidden border border-border/40 shadow-sm group">
         {activeMedia.resourceType === "image" ? (
           <div
             className="w-full h-full overflow-hidden cursor-zoom-in"
@@ -89,14 +89,14 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({
           <>
             <button
               onClick={handlePrev}
-              className="absolute left-4 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-white/80 dark:bg-neutral-900/80 backdrop-blur-md border border-neutral-200 dark:border-neutral-800 text-neutral-800 dark:text-white shadow-md hover:bg-primary/10 dark:hover:bg-neutral-800 opacity-0 group-hover:opacity-100 transition-all duration-300"
+              className="absolute left-4 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-card/90 backdrop-blur-md border border-border text-foreground shadow-md hover:bg-primary/10 opacity-0 group-hover:opacity-100 transition-all duration-300 cursor-pointer"
               aria-label="Previous slide"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
             <button
               onClick={handleNext}
-              className="absolute right-4 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-white/80 dark:bg-neutral-900/80 backdrop-blur-md border border-neutral-200 dark:border-neutral-800 text-neutral-800 dark:text-white shadow-md hover:bg-primary/10 dark:hover:bg-neutral-800 opacity-0 group-hover:opacity-100 transition-all duration-300"
+              className="absolute right-4 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-card/90 backdrop-blur-md border border-border text-foreground shadow-md hover:bg-primary/10 opacity-0 group-hover:opacity-100 transition-all duration-300 cursor-pointer"
               aria-label="Next slide"
             >
               <ChevronRight className="w-5 h-5" />
@@ -114,7 +114,7 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({
               className={`relative w-20 h-20 flex-shrink-0 rounded-xl overflow-hidden border transition-all duration-200 ${
                 activeIndex === index
                   ? "border-primary ring-2 ring-primary/40"
-                  : "border-neutral-200 dark:border-neutral-800 hover:border-primary/50"
+                  : "border-border hover:border-primary/50"
               }`}
             >
               {media.resourceType === "image" ? (

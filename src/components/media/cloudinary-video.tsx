@@ -92,7 +92,7 @@ export const CloudinaryVideo: React.FC<CloudinaryVideoProps> = ({
   };
 
   return (
-    <div className={`relative overflow-hidden bg-black rounded-lg group ${className}`}>
+    <div className={`relative overflow-hidden bg-[#181311] rounded-lg group ${className}`}>
       <video
         ref={videoRef}
         src={shouldLoad ? optimizedVideoUrl : undefined}
@@ -111,7 +111,7 @@ export const CloudinaryVideo: React.FC<CloudinaryVideoProps> = ({
 
       {showPlayOverlay && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/40 pointer-events-none transition-all duration-300">
-          <div className="p-4 rounded-full bg-white/20 backdrop-blur-md border border-white/30 text-white animate-ping">
+          <div className="p-4 rounded-full bg-primary/25 backdrop-blur-md border border-primary-soft/30 text-primary-soft animate-ping">
             {isPlaying ? <Play className="w-8 h-8 fill-current" /> : <Pause className="w-8 h-8 fill-current" />}
           </div>
         </div>

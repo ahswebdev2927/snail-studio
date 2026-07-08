@@ -39,10 +39,10 @@ export function getOrderConfirmationTemplate(params: OrderConfirmationParams): s
   };
 
   const itemsListHtml = params.items.map(item => `
-    <tr style="border-bottom: 1px solid #f2eded;">
+    <tr style="border-bottom: 1px solid #ebdcd5;">
       <td style="padding: 15px 0; font-size: 13px; color: #1e1b1b; line-height: 1.5;">
         <span style="font-weight: 600; display: block;">${item.productName}</span>
-        <span style="font-size: 11px; color: #be185d; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 500;">${item.variantName}</span>
+        <span style="font-size: 11px; color: #A85328; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 500;">${item.variantName}</span>
       </td>
       <td style="padding: 15px 0; text-align: center; font-size: 13px; color: #555555;">x ${item.quantity}</td>
       <td style="padding: 15px 0; text-align: right; font-size: 13px; font-weight: 600; color: #1e1b1b;">${formatPrice(item.price * item.quantity)}</td>
@@ -63,14 +63,14 @@ export function getOrderConfirmationTemplate(params: OrderConfirmationParams): s
     body {
       margin: 0;
       padding: 0;
-      background-color: #faf6f6;
+      background-color: #FFF3EA;
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       color: #333333;
     }
     .wrapper {
       width: 100%;
       table-layout: fixed;
-      background-color: #faf6f6;
+      background-color: #FFF3EA;
       padding-bottom: 40px;
       padding-top: 40px;
     }
@@ -82,12 +82,12 @@ export function getOrderConfirmationTemplate(params: OrderConfirmationParams): s
       border-spacing: 0;
       border-radius: 24px;
       overflow: hidden;
-      box-shadow: 0 10px 30px rgba(188, 142, 142, 0.08);
-      border: 1px solid rgba(226, 203, 203, 0.3);
+      box-shadow: 0 10px 30px rgba(168, 83, 40, 0.08);
+      border: 1px solid rgba(212, 125, 106, 0.3);
     }
     .header-band {
       height: 6px;
-      background: linear-gradient(90deg, #ec4899, #db2777, #be185d);
+      background: linear-gradient(90deg, #D47D6A, #A85328);
     }
     .header {
       padding: 40px 30px 20px 30px;
@@ -98,14 +98,14 @@ export function getOrderConfirmationTemplate(params: OrderConfirmationParams): s
       width: 48px;
       height: 48px;
       line-height: 48px;
-      background: linear-gradient(135deg, #ec4899, #be185d);
+      background: linear-gradient(135deg, #D47D6A, #A85328);
       border-radius: 14px;
       color: #ffffff;
       font-family: 'Playfair Display', Georgia, serif;
       font-size: 24px;
       font-weight: bold;
       text-align: center;
-      box-shadow: 0 4px 10px rgba(236, 72, 153, 0.2);
+      box-shadow: 0 4px 10px rgba(168, 83, 40, 0.2);
     }
     .brand-name {
       font-family: 'Playfair Display', Georgia, serif;
@@ -120,7 +120,7 @@ export function getOrderConfirmationTemplate(params: OrderConfirmationParams): s
       font-size: 11px;
       text-transform: uppercase;
       letter-spacing: 0.15em;
-      color: #be185d;
+      color: #A85328;
       font-weight: 600;
       margin: 0;
     }
@@ -145,8 +145,8 @@ export function getOrderConfirmationTemplate(params: OrderConfirmationParams): s
       text-align: center;
     }
     .order-meta-box {
-      background-color: #fdf8f8;
-      border: 1px solid rgba(244, 114, 182, 0.2);
+      background-color: #FFF8F4;
+      border: 1px solid rgba(168, 83, 40, 0.2);
       border-radius: 16px;
       padding: 15px 20px;
       margin-bottom: 30px;
@@ -170,7 +170,7 @@ export function getOrderConfirmationTemplate(params: OrderConfirmationParams): s
       color: #1e1b1b;
       margin-bottom: 15px;
       margin-top: 0;
-      border-bottom: 1px solid #f5ebeb;
+      border-bottom: 1px solid #ebdcd5;
       padding-bottom: 8px;
     }
     .items-table {
@@ -182,9 +182,9 @@ export function getOrderConfirmationTemplate(params: OrderConfirmationParams): s
       font-size: 11px;
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      color: #be185d;
+      color: #A85328;
       padding-bottom: 10px;
-      border-bottom: 2px solid #f5ebeb;
+      border-bottom: 2px solid #ebdcd5;
       font-weight: 700;
     }
     .pricing-table {
@@ -198,11 +198,11 @@ export function getOrderConfirmationTemplate(params: OrderConfirmationParams): s
       color: #555555;
     }
     .pricing-table .total-row td {
-      border-top: 2px solid #f5ebeb;
+      border-top: 2px solid #ebdcd5;
       padding-top: 15px;
       font-size: 16px;
       font-weight: bold;
-      color: #be185d;
+      color: #A85328;
     }
     .grid-table {
       width: 100%;
@@ -215,8 +215,8 @@ export function getOrderConfirmationTemplate(params: OrderConfirmationParams): s
       padding-right: 15px;
     }
     .address-card {
-      background-color: #faf6f6;
-      border: 1px solid #f2eded;
+      background-color: #FFF8F4;
+      border: 1px solid #ebdcd5;
       border-radius: 16px;
       padding: 18px;
       min-height: 120px;
@@ -228,7 +228,7 @@ export function getOrderConfirmationTemplate(params: OrderConfirmationParams): s
     .btn {
       display: inline-block;
       padding: 14px 30px;
-      background: linear-gradient(135deg, #ec4899, #be185d);
+      background: linear-gradient(135deg, #D47D6A, #A85328);
       color: #ffffff !important;
       text-decoration: none;
       border-radius: 14px;
@@ -236,12 +236,12 @@ export function getOrderConfirmationTemplate(params: OrderConfirmationParams): s
       font-weight: bold;
       text-transform: uppercase;
       letter-spacing: 0.1em;
-      box-shadow: 0 5px 15px rgba(236, 72, 153, 0.2);
+      box-shadow: 0 5px 15px rgba(168, 83, 40, 0.2);
     }
     .footer {
       padding: 30px;
-      background-color: #fdfbfb;
-      border-top: 1px solid #f5ebeb;
+      background-color: #FFF8F4;
+      border-top: 1px solid #ebdcd5;
       text-align: center;
     }
     .footer-text {
@@ -314,12 +314,12 @@ export function getOrderConfirmationTemplate(params: OrderConfirmationParams): s
             </tr>` : `
             <tr>
               <td>Shipping</td>
-              <td style="text-align: right; color: #10b981; font-weight: 500;">FREE</td>
+              <td style="text-align: right; color: #9EE493; font-weight: 500;">FREE</td>
             </tr>`}
             ${params.discount > 0 ? `
             <tr>
-              <td style="color: #ec4899;">Discount</td>
-              <td style="text-align: right; color: #ec4899; font-weight: 500;">-${formatPrice(params.discount)}</td>
+              <td style="color: #A85328;">Discount</td>
+              <td style="text-align: right; color: #A85328; font-weight: 500;">-${formatPrice(params.discount)}</td>
             </tr>` : ''}
             <tr class="total-row">
               <td>Grand Total</td>
@@ -332,7 +332,7 @@ export function getOrderConfirmationTemplate(params: OrderConfirmationParams): s
             <tr>
               <td class="grid-col">
                 <div class="address-card">
-                  <div style="font-size: 11px; font-weight: bold; text-transform: uppercase; color: #be185d; margin-bottom: 8px;">Shipping Address</div>
+                  <div style="font-size: 11px; font-weight: bold; text-transform: uppercase; color: #A85328; margin-bottom: 8px;">Shipping Address</div>
                   <div style="font-size: 13px; font-weight: 600; color: #1e1b1b; margin-bottom: 4px;">${params.shippingAddress.name}</div>
                   <div style="font-size: 13px; color: #555555; margin-bottom: 3px;">${params.shippingAddress.addressLine1}</div>
                   ${addressLine2Html}
@@ -343,7 +343,7 @@ export function getOrderConfirmationTemplate(params: OrderConfirmationParams): s
               </td>
               <td class="grid-col" style="padding-right: 0;">
                 <div class="address-card">
-                  <div style="font-size: 11px; font-weight: bold; text-transform: uppercase; color: #be185d; margin-bottom: 8px;">What's Next?</div>
+                  <div style="font-size: 11px; font-weight: bold; text-transform: uppercase; color: #A85328; margin-bottom: 8px;">What's Next?</div>
                   <p style="font-size: 12px; line-height: 1.5; color: #555555; margin: 0 0 10px 0;">Our artists are handcrafting your nails. Orders usually take 2-3 business days to prepare before shipping.</p>
                   <p style="font-size: 12px; line-height: 1.5; color: #555555; margin: 0;">You can check your order tracking status anytime via the button below.</p>
                 </div>

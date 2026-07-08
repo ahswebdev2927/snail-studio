@@ -351,12 +351,12 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
 
             <div className="flex-1 overflow-y-auto min-h-0">
               {isLoading ? (
-                <div className="flex flex-col items-center justify-center h-48 text-neutral-400">
+                <div className="flex flex-col items-center justify-center h-48 text-text-muted">
                   <Loader2 className="w-8 h-8 animate-spin text-primary mb-2" />
                   <span>Loading registered media items...</span>
                 </div>
               ) : filteredItems.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-48 border border-dashed border-neutral-200 dark:border-neutral-800 rounded-xl text-neutral-400">
+                <div className="flex flex-col items-center justify-center h-48 border border-dashed border-border/40 rounded-xl text-text-muted">
                   <span>No media items found matching filters</span>
                 </div>
               ) : (
@@ -371,7 +371,7 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
                         className={`relative aspect-square w-full rounded-xl border overflow-hidden transition-all duration-200 ${
                           isSelected
                             ? "border-primary ring-2 ring-primary/40"
-                            : "border-neutral-200 dark:border-neutral-800 hover:border-primary/50"
+                            : "border-border/40 hover:border-primary/50"
                         }`}
                       >
                         {item.resourceType === "image" ? (
@@ -385,7 +385,7 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
                           <div className="relative w-full h-full flex items-center justify-center bg-primary/5 dark:bg-primary/10">
                             <Film className="w-8 h-8 text-primary" />
                             {item.duration && (
-                              <span className="absolute bottom-1 right-1 px-1 bg-black/75 text-[9px] text-white rounded font-mono">
+                              <span className="absolute bottom-1 right-1 px-1 bg-[#181311]/85 text-[9px] text-primary-soft rounded font-mono">
                                 {`${item.duration.toFixed(0)}s`}
                               </span>
                             )}
@@ -406,7 +406,7 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
           </div>
         ) : (
           <form onSubmit={handleUpload} className="flex flex-col gap-5 max-w-lg mx-auto">
-            <div className="flex flex-col items-center justify-center border-2 border-dashed border-neutral-300 dark:border-neutral-800 rounded-2xl p-6 bg-neutral-50/50 dark:bg-neutral-950/30 hover:border-primary/60 transition-all duration-200 relative cursor-pointer group">
+            <div className="flex flex-col items-center justify-center border-2 border-dashed border-border/40 rounded-2xl p-6 bg-secondary-surface/40 hover:border-primary/60 transition-all duration-200 relative cursor-pointer group">
               <input
                 type="file"
                 accept="image/*,video/*"
@@ -414,22 +414,22 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
                 disabled={isUploading}
                 className="absolute inset-0 opacity-0 cursor-pointer disabled:cursor-not-allowed"
               />
-              <Upload className="w-10 h-10 text-neutral-400 group-hover:text-primary transition-colors duration-200 mb-2" />
+              <Upload className="w-10 h-10 text-text-muted group-hover:text-primary transition-colors duration-200 mb-2" />
               {uploadFile ? (
                 <div className="text-center">
-                  <p className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 truncate max-w-xs">
+                  <p className="text-sm font-semibold text-text-body truncate max-w-xs">
                     {uploadFile.name}
                   </p>
-                  <p className="text-xs text-neutral-500 mt-1">
+                  <p className="text-xs text-text-muted mt-1">
                     {(uploadFile.size / (1024 * 1024)).toFixed(2)} MB
                   </p>
                 </div>
               ) : (
                 <div className="text-center">
-                  <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                  <p className="text-sm font-medium text-text-body">
                     Click to select file or drag & drop here
                   </p>
-                  <p className="text-xs text-neutral-400 mt-1">
+                  <p className="text-xs text-text-muted mt-1">
                     JPEG, PNG, WebP (Max 10MB) or MP4, WebM (Max 50MB)
                   </p>
                 </div>
@@ -492,7 +492,7 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
             <button
               type="submit"
               disabled={isUploading || !uploadFile}
-              className="w-full py-2.5 px-4 bg-primary text-primary-foreground font-medium rounded-xl hover:bg-primary/95 disabled:bg-neutral-300 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2"
+              className="w-full py-2.5 px-4 bg-primary text-primary-foreground font-medium rounded-xl hover:bg-primary/95 disabled:bg-muted disabled:text-text-disabled disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2"
             >
               {isUploading ? (
                 <>
@@ -528,7 +528,7 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
           <button
             onClick={handleConfirm}
             disabled={selectedItems.length === 0}
-            className="px-5 py-2 bg-primary hover:bg-primary/95 disabled:bg-neutral-200 disabled:text-neutral-400 disabled:cursor-not-allowed text-primary-foreground text-sm font-medium rounded-xl transition-colors duration-200"
+            className="px-5 py-2 bg-primary hover:bg-primary/95 disabled:bg-muted disabled:text-text-disabled disabled:cursor-not-allowed text-primary-foreground text-sm font-medium rounded-xl transition-colors duration-200"
           >
             Confirm Selection
           </button>

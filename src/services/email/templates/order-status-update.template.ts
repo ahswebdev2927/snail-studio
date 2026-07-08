@@ -29,13 +29,13 @@ export function getOrderStatusUpdateTemplate(params: OrderStatusUpdateParams): s
     const active = targetStatuses.includes(params.newStatus.toLowerCase());
     return {
       circle: active 
-        ? "background: linear-gradient(135deg, #ec4899, #be185d); color: #ffffff;" 
+        ? "background: linear-gradient(135deg, #D47D6A, #A85328); color: #ffffff;" 
         : "background-color: #e5e7eb; color: #9ca3af;",
       line: active
-        ? "background: linear-gradient(90deg, #ec4899, #be185d);"
+        ? "background: linear-gradient(90deg, #D47D6A, #A85328);"
         : "background-color: #e5e7eb;",
       text: active
-        ? "color: #be185d; font-weight: 600;"
+        ? "color: #A85328; font-weight: 600;"
         : "color: #9ca3af; font-weight: normal;"
     };
   };
@@ -62,7 +62,7 @@ export function getOrderStatusUpdateTemplate(params: OrderStatusUpdateParams): s
     `;
   } else {
     timelineHtml = `
-      <div style="margin-bottom: 35px; padding: 20px 10px; background-color: #fdf8f8; border: 1px solid rgba(244, 114, 182, 0.1); border-radius: 20px;">
+      <div style="margin-bottom: 35px; padding: 20px 10px; background-color: #FFF8F4; border: 1px solid rgba(168, 83, 40, 0.15); border-radius: 20px;">
         <table style="width: 100%; border-collapse: collapse;">
           <tr>
             <!-- Paid Circle -->
@@ -111,8 +111,8 @@ export function getOrderStatusUpdateTemplate(params: OrderStatusUpdateParams): s
 
   const notesHtml = params.statusNotes 
     ? `
-      <div style="background-color: #faf6f6; border-left: 4px solid #be185d; border-radius: 4px 16px 16px 4px; padding: 20px; margin-bottom: 30px;">
-        <span style="font-size: 11px; font-weight: bold; text-transform: uppercase; color: #be185d; display: block; margin-bottom: 6px; letter-spacing: 0.05em;">Status Note / Comments</span>
+      <div style="background-color: #FFF8F4; border-left: 4px solid #A85328; border-radius: 4px 16px 16px 4px; padding: 20px; margin-bottom: 30px;">
+        <span style="font-size: 11px; font-weight: bold; text-transform: uppercase; color: #A85328; display: block; margin-bottom: 6px; letter-spacing: 0.05em;">Status Note / Comments</span>
         <p style="font-size: 13px; line-height: 1.6; color: #555555; margin: 0; white-space: pre-wrap;">${params.statusNotes}</p>
       </div>
     `
@@ -128,14 +128,14 @@ export function getOrderStatusUpdateTemplate(params: OrderStatusUpdateParams): s
     body {
       margin: 0;
       padding: 0;
-      background-color: #faf6f6;
+      background-color: #FFF3EA;
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       color: #333333;
     }
     .wrapper {
       width: 100%;
       table-layout: fixed;
-      background-color: #faf6f6;
+      background-color: #FFF3EA;
       padding-bottom: 40px;
       padding-top: 40px;
     }
@@ -147,12 +147,12 @@ export function getOrderStatusUpdateTemplate(params: OrderStatusUpdateParams): s
       border-spacing: 0;
       border-radius: 24px;
       overflow: hidden;
-      box-shadow: 0 10px 30px rgba(188, 142, 142, 0.08);
-      border: 1px solid rgba(226, 203, 203, 0.3);
+      box-shadow: 0 10px 30px rgba(168, 83, 40, 0.08);
+      border: 1px solid rgba(212, 125, 106, 0.3);
     }
     .header-band {
       height: 6px;
-      background: linear-gradient(90deg, #ec4899, #db2777, #be185d);
+      background: linear-gradient(90deg, #D47D6A, #A85328);
     }
     .header {
       padding: 40px 30px 20px 30px;
@@ -163,14 +163,14 @@ export function getOrderStatusUpdateTemplate(params: OrderStatusUpdateParams): s
       width: 48px;
       height: 48px;
       line-height: 48px;
-      background: linear-gradient(135deg, #ec4899, #be185d);
+      background: linear-gradient(135deg, #D47D6A, #A85328);
       border-radius: 14px;
       color: #ffffff;
       font-family: 'Playfair Display', Georgia, serif;
       font-size: 24px;
       font-weight: bold;
       text-align: center;
-      box-shadow: 0 4px 10px rgba(236, 72, 153, 0.2);
+      box-shadow: 0 4px 10px rgba(168, 83, 40, 0.2);
     }
     .brand-name {
       font-family: 'Playfair Display', Georgia, serif;
@@ -185,7 +185,7 @@ export function getOrderStatusUpdateTemplate(params: OrderStatusUpdateParams): s
       font-size: 11px;
       text-transform: uppercase;
       letter-spacing: 0.15em;
-      color: #be185d;
+      color: #A85328;
       font-weight: 600;
       margin: 0;
     }
@@ -210,8 +210,8 @@ export function getOrderStatusUpdateTemplate(params: OrderStatusUpdateParams): s
       text-align: center;
     }
     .meta-card {
-      background-color: #fdf8f8;
-      border: 1px dashed rgba(244, 114, 182, 0.3);
+      background-color: #FFF8F4;
+      border: 1px dashed rgba(168, 83, 40, 0.3);
       border-radius: 16px;
       padding: 20px;
       margin-bottom: 30px;
@@ -232,7 +232,7 @@ export function getOrderStatusUpdateTemplate(params: OrderStatusUpdateParams): s
     .btn {
       display: inline-block;
       padding: 14px 30px;
-      background: linear-gradient(135deg, #ec4899, #be185d);
+      background: linear-gradient(135deg, #D47D6A, #A85328);
       color: #ffffff !important;
       text-decoration: none;
       border-radius: 14px;
@@ -240,12 +240,12 @@ export function getOrderStatusUpdateTemplate(params: OrderStatusUpdateParams): s
       font-weight: bold;
       text-transform: uppercase;
       letter-spacing: 0.1em;
-      box-shadow: 0 5px 15px rgba(236, 72, 153, 0.2);
+      box-shadow: 0 5px 15px rgba(168, 83, 40, 0.2);
     }
     .footer {
       padding: 30px;
-      background-color: #fdfbfb;
-      border-top: 1px solid #f5ebeb;
+      background-color: #FFF8F4;
+      border-top: 1px solid #ebdcd5;
       text-align: center;
     }
     .footer-text {

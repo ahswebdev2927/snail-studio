@@ -491,7 +491,7 @@ export default function AdminCollectionsPage() {
                       <img 
                         src={brd.logoUrl} 
                         alt={brd.name} 
-                        className="w-12 h-12 rounded-xl object-contain border border-border bg-white p-1 shrink-0" 
+                        className="w-12 h-12 rounded-xl object-contain border border-border bg-card p-1 shrink-0" 
                       />
                     ) : (
                       <div className="w-12 h-12 rounded-xl bg-secondary border border-border flex items-center justify-center text-muted-foreground shrink-0">

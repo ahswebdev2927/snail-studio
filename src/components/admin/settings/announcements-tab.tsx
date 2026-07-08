@@ -86,12 +86,12 @@ const iconOptions = [
 ];
 
 const colorPresets = [
-  { name: "Classic Dark", bg: "#0b0f19", text: "#ffffff" },
-  { name: "Rosewood Theme", bg: "#8b6e60", text: "#ffffff" },
-  { name: "Liquid Gold", bg: "#e5c158", text: "#120e0d" },
-  { name: "Emerald Mint", bg: "#e6f4ea", text: "#137333" },
-  { name: "Crimson Sale", bg: "#fdeded", text: "#c5221f" },
-  { name: "Warm Cream", bg: "#fdf5f2", text: "#8b6e60" },
+  { name: "Brand Primary", bg: "#A85328", text: "#ffffff" },
+  { name: "Soft Rosewood", bg: "#D47D6A", text: "#ffffff" },
+  { name: "Delicate Cream", bg: "#FFF3EA", text: "#A85328" },
+  { name: "Warm Cocoa", bg: "#8A5E4A", text: "#ffffff" },
+  { name: "Cosmetic Gold", bg: "#F7C66F", text: "#3A2E2A" },
+  { name: "Brand Dark", bg: "#3A2E2A", text: "#ffffff" },
 ];
 
 export default function AnnouncementsTab() {

@@ -484,7 +484,7 @@ export function ProfileClient({ user }: ProfileClientProps) {
           <button
             type="submit"
             disabled={loading}
-            className="px-8 py-3 bg-primary text-primary-foreground hover:bg-primary/95 text-xs font-bold uppercase tracking-wider rounded-xl shadow-lg shadow-primary/10 transition-all cursor-pointer disabled:bg-neutral-300 disabled:text-neutral-400 disabled:cursor-not-allowed disabled:shadow-none flex items-center gap-2"
+            className="px-8 py-3 bg-primary text-primary-foreground hover:bg-primary/95 text-xs font-bold uppercase tracking-wider rounded-xl shadow-lg shadow-primary/10 transition-all cursor-pointer disabled:bg-muted disabled:text-text-disabled disabled:cursor-not-allowed disabled:shadow-none flex items-center gap-2"
           >
             {loading ? (
               <>

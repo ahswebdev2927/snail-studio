@@ -12,7 +12,7 @@ const createAnnouncementSchema = z.object({
   ctaText: z.string().max(50, "CTA text is too long").nullable().optional(),
   ctaLink: z.string().max(200, "CTA link is too long").nullable().optional(),
   textColor: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Invalid text color hex code").default("#ffffff"),
-  backgroundColor: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Invalid background color hex code").default("#0b0f19"),
+  backgroundColor: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Invalid background color hex code").default("#A85328"),
   startDate: z.preprocess((val) => (val === "" ? null : val), z.string().transform((v) => new Date(v)).nullable().optional()),
   endDate: z.preprocess((val) => (val === "" ? null : val), z.string().transform((v) => new Date(v)).nullable().optional()),
   isActive: z.boolean().default(true),

@@ -87,7 +87,7 @@ export const CloudinaryImage: React.FC<CloudinaryImageProps> = ({
     objectFit === "scale-down" ? "object-scale-down" : "object-none";
 
   return (
-    <div className={`relative overflow-hidden bg-rose-50/50 dark:bg-neutral-900/40 rounded-lg ${className}`}>
+    <div className={`relative overflow-hidden bg-secondary-surface/50 rounded-lg ${className}`}>
       <Image
         src={srcWithParams}
         alt={alt}

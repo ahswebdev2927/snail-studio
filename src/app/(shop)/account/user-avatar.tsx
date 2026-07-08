@@ -54,15 +54,15 @@ export function UserAvatar({
 
     // Apply specific preset styles
     if (preset.includes("cream-rose")) {
-      gradientClass = "from-[#faf0ec] to-[#e8c8bd] border-[#dcaba0]/40 text-[#854d3d]";
+      gradientClass = "from-background to-primary-soft border-primary-light/40 text-primary";
     } else if (preset.includes("champagne-gold")) {
-      gradientClass = "from-[#f7f3e8] to-[#dfcfab] border-[#cfbb8c]/40 text-[#826127]";
+      gradientClass = "from-secondary-surface to-warning border-warning/40 text-secondary";
     } else if (preset.includes("velvet-plum")) {
-      gradientClass = "from-[#f8eff2] to-[#e4becf] border-[#d8a3be]/40 text-[#823055]";
+      gradientClass = "from-secondary-surface to-primary-light border-primary-light/40 text-text-heading";
     } else if (preset.includes("soft-sage")) {
-      gradientClass = "from-[#edf2ed] to-[#c6d7c6] border-[#afc2af]/40 text-[#4c5f2b]";
+      gradientClass = "from-background to-success border-success/40 text-text-body";
     } else if (preset.includes("midnight-pearl")) {
-      gradientClass = "from-[#eef3f7] to-[#c1d3df] border-[#a9c0d1]/40 text-[#2c435a]";
+      gradientClass = "from-background to-info border-info/40 text-text-heading";
     }
 
     // Determine content: icon vs initials

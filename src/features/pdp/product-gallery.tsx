@@ -100,7 +100,7 @@ function Lightbox({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/92 backdrop-blur-sm animate-in fade-in duration-200"
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#181311]/95 backdrop-blur-md animate-in fade-in duration-200"
       role="dialog"
       aria-modal="true"
       aria-label={`${productName} image gallery lightbox`}
@@ -110,14 +110,14 @@ function Lightbox({
       <button
         type="button"
         onClick={onClose}
-        className="absolute top-5 right-5 z-10 p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
+        className="absolute top-5 right-5 z-10 p-2.5 rounded-full bg-primary/20 hover:bg-primary/30 text-primary-soft transition-colors cursor-pointer"
         aria-label="Close lightbox"
       >
         <X className="w-5 h-5" />
       </button>
 
       {/* Counter */}
-      <div className="absolute top-5 left-1/2 -translate-x-1/2 text-white/60 text-xs font-medium tracking-widest uppercase">
+      <div className="absolute top-5 left-1/2 -translate-x-1/2 text-primary-soft/60 text-xs font-medium tracking-widest uppercase">
         {current + 1} / {items.length}
       </div>
 
@@ -128,7 +128,7 @@ function Lightbox({
           e.stopPropagation();
           setZoomed((z) => !z);
         }}
-        className="absolute top-5 right-16 z-10 p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
+        className="absolute top-5 right-16 z-10 p-2.5 rounded-full bg-primary/20 hover:bg-primary/30 text-primary-soft transition-colors cursor-pointer"
         aria-label={zoomed ? "Zoom out" : "Zoom in"}
       >
         {zoomed ? (
@@ -147,7 +147,7 @@ function Lightbox({
               e.stopPropagation();
               prev();
             }}
-            className="absolute left-4 top-1/2 -translate-y-1/2 z-10 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all hover:scale-105 cursor-pointer"
+            className="absolute left-4 top-1/2 -translate-y-1/2 z-10 p-3 rounded-full bg-primary/20 hover:bg-primary/30 text-primary-soft transition-all hover:scale-105 cursor-pointer"
             aria-label="Previous image"
           >
             <ChevronLeft className="w-5 h-5" />
@@ -158,7 +158,7 @@ function Lightbox({
               e.stopPropagation();
               next();
             }}
-            className="absolute right-4 top-1/2 -translate-y-1/2 z-10 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all hover:scale-105 cursor-pointer"
+            className="absolute right-4 top-1/2 -translate-y-1/2 z-10 p-3 rounded-full bg-primary/20 hover:bg-primary/30 text-primary-soft transition-all hover:scale-105 cursor-pointer"
             aria-label="Next image"
           >
             <ChevronRight className="w-5 h-5" />
@@ -214,14 +214,14 @@ function Lightbox({
               className={cn(
                 "relative w-12 h-12 rounded-lg overflow-hidden border-2 shrink-0 cursor-pointer transition-all",
                 i === current
-                  ? "border-white scale-110"
-                  : "border-white/20 hover:border-white/50"
+                  ? "border-primary scale-110"
+                  : "border-primary-soft/20 hover:border-primary-soft/55"
               )}
               aria-label={`View image ${i + 1}`}
             >
               {isVideo(m) ? (
-                <div className="w-full h-full bg-black/50 flex items-center justify-center">
-                  <Play className="w-4 h-4 text-white" />
+                <div className="w-full h-full bg-[#181311]/50 flex items-center justify-center">
+                  <Play className="w-4 h-4 text-primary-soft fill-current" />
                 </div>
               ) : (
                 <Image
@@ -335,7 +335,7 @@ export function ProductGallery({ media, productName }: ProductGalleryProps) {
         )}
 
         {/* Expand hint overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#181311]/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
         <div className="absolute bottom-4 right-4 p-2 rounded-full bg-background/80 backdrop-blur-sm border border-border/30 shadow-sm opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-1 group-hover:translate-y-0">
           <Expand className="w-4 h-4 text-foreground/70" />
         </div>
@@ -344,7 +344,7 @@ export function ProductGallery({ media, productName }: ProductGalleryProps) {
         {isVideo(activeItem) && !isHovering && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div className="p-4 rounded-full bg-background/70 backdrop-blur-sm border border-border/30">
-              <Play className="w-8 h-8 text-foreground fill-current" />
+              <Play className="w-8 h-8 text-primary fill-current" />
             </div>
           </div>
         )}
@@ -376,7 +376,7 @@ export function ProductGallery({ media, productName }: ProductGalleryProps) {
             >
               {isVideo(item) ? (
                 <div className="w-full h-full bg-secondary flex items-center justify-center">
-                  <Play className="w-5 h-5 text-muted-foreground fill-current" />
+                  <Play className="w-5 h-5 text-primary fill-current" />
                 </div>
               ) : (
                 <Image

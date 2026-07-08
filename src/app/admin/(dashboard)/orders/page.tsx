@@ -1355,13 +1355,13 @@ export default function AdminOrdersPage() {
             <div className="flex gap-3 pt-2 print:hidden">
               <button
                 onClick={() => window.print()}
-                className="flex-1 py-2 bg-slate-900 text-white hover:bg-slate-800 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer text-center"
+                className="flex-1 py-2 bg-primary text-primary-foreground hover:bg-primary-hover rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer text-center"
               >
                 Print Label
               </button>
               <button
                 onClick={() => setShowPrintLabel(false)}
-                className="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer text-center"
+                className="flex-1 py-2 bg-secondary-surface text-secondary-btn-text hover:bg-muted rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer text-center border border-border"
               >
                 Close
               </button>
@@ -1486,13 +1486,13 @@ export default function AdminOrdersPage() {
             <div className="flex gap-3 pt-4 border-t border-slate-200 print:hidden">
               <button
                 onClick={() => window.print()}
-                className="flex-1 py-2 bg-slate-900 text-white hover:bg-slate-800 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer text-center"
+                className="flex-1 py-2 bg-primary text-primary-foreground hover:bg-primary-hover rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer text-center"
               >
                 Print Invoice
               </button>
               <button
                 onClick={() => setShowPrintInvoice(false)}
-                className="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer text-center"
+                className="flex-1 py-2 bg-secondary-surface text-secondary-btn-text hover:bg-muted rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer text-center border border-border"
               >
                 Close
               </button>

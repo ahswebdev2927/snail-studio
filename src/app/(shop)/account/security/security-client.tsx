@@ -381,7 +381,7 @@ export function SecurityClient({ initialSessions }: SecurityClientProps) {
 
       {/* Confirmation Modal Overlay */}
       {confirmModal.open && mounted && createPortal(
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/50 backdrop-blur-md flex items-center justify-center p-4 md:p-6 animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-background/60 backdrop-blur-md flex items-center justify-center p-4 md:p-6 animate-in fade-in duration-300">
           <div 
             className="bg-card border border-border/40 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-6 animate-in zoom-in-95 duration-200 my-auto relative"
             onClick={(e) => e.stopPropagation()}
@@ -402,7 +402,7 @@ export function SecurityClient({ initialSessions }: SecurityClientProps) {
               <button
                 type="button"
                 onClick={() => setConfirmModal({ open: false, type: "single" })}
-                className="px-4 py-2 border border-border rounded-xl hover:bg-secondary/40 text-foreground text-xs font-semibold transition-colors cursor-pointer"
+                className="px-4 py-2 border border-border rounded-xl hover:bg-secondary-surface text-foreground text-xs font-semibold transition-colors cursor-pointer"
               >
                 Cancel
               </button>

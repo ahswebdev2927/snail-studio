@@ -14,7 +14,7 @@ export function getTestEmailTemplate(senderEmail: string): string {
     body {
       margin: 0;
       padding: 0;
-      background-color: #faf6f6;
+      background-color: #FFF3EA;
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
       color: #333333;
       -webkit-font-smoothing: antialiased;
@@ -22,7 +22,7 @@ export function getTestEmailTemplate(senderEmail: string): string {
     .wrapper {
       width: 100%;
       table-layout: fixed;
-      background-color: #faf6f6;
+      background-color: #FFF3EA;
       padding-bottom: 40px;
       padding-top: 40px;
     }
@@ -34,12 +34,12 @@ export function getTestEmailTemplate(senderEmail: string): string {
       border-spacing: 0;
       border-radius: 24px;
       overflow: hidden;
-      box-shadow: 0 10px 30px rgba(188, 142, 142, 0.08);
-      border: 1px solid rgba(226, 203, 203, 0.3);
+      box-shadow: 0 10px 30px rgba(168, 83, 40, 0.08);
+      border: 1px solid rgba(212, 125, 106, 0.3);
     }
     .header-band {
       height: 6px;
-      background: linear-gradient(90deg, #ec4899, #db2777, #be185d);
+      background: linear-gradient(90deg, #D47D6A, #A85328);
     }
     .header {
       padding: 40px 30px 20px 30px;
@@ -50,14 +50,14 @@ export function getTestEmailTemplate(senderEmail: string): string {
       width: 48px;
       height: 48px;
       line-height: 48px;
-      background: linear-gradient(135deg, #ec4899, #be185d);
+      background: linear-gradient(135deg, #D47D6A, #A85328);
       border-radius: 14px;
       color: #ffffff;
       font-family: 'Playfair Display', Georgia, serif;
       font-size: 24px;
       font-weight: bold;
       text-align: center;
-      box-shadow: 0 4px 10px rgba(236, 72, 153, 0.2);
+      box-shadow: 0 4px 10px rgba(168, 83, 40, 0.2);
     }
     .brand-name {
       font-family: 'Playfair Display', Georgia, serif;
@@ -72,7 +72,7 @@ export function getTestEmailTemplate(senderEmail: string): string {
       font-size: 11px;
       text-transform: uppercase;
       letter-spacing: 0.15em;
-      color: #be185d;
+      color: #A85328;
       font-weight: 600;
       margin: 0;
     }
@@ -96,8 +96,8 @@ export function getTestEmailTemplate(senderEmail: string): string {
       margin-bottom: 25px;
     }
     .card {
-      background-color: #fdf8f8;
-      border: 1px dashed #f472b6;
+      background-color: #FFF8F4;
+      border: 1px dashed #D47D6A;
       border-radius: 16px;
       padding: 24px;
       margin-bottom: 30px;
@@ -108,7 +108,7 @@ export function getTestEmailTemplate(senderEmail: string): string {
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.08em;
-      color: #be185d;
+      color: #A85328;
       margin-bottom: 12px;
       display: block;
     }
@@ -124,8 +124,8 @@ export function getTestEmailTemplate(senderEmail: string): string {
     .badge {
       display: inline-block;
       padding: 6px 14px;
-      background-color: #fbcfe8;
-      color: #be185d;
+      background-color: #F6C8BB;
+      color: #A85328;
       border-radius: 50px;
       font-size: 11px;
       font-weight: 700;
@@ -135,8 +135,8 @@ export function getTestEmailTemplate(senderEmail: string): string {
     }
     .footer {
       padding: 30px;
-      background-color: #fdfbfb;
-      border-top: 1px solid #f5ebeb;
+      background-color: #FFF8F4;
+      border-top: 1px solid #ebdcd5;
       text-align: center;
     }
     .footer-text {

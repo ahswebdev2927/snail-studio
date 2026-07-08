@@ -109,14 +109,14 @@ export async function triggerAdminNotification(params: TriggerNotificationParams
           to: adminUser.email,
           subject: `[Snail Studio Admin] ${title}`,
           html: `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
-              <h2 style="color: #1a1a1a; border-bottom: 2px solid #eaeaea; padding-bottom: 10px; font-weight: 500;">Snail Studio Notification</h2>
-              <div style="padding: 15px 0; color: #333333; line-height: 1.6;">
-                <p style="font-size: 16px; font-weight: bold; margin-bottom: 5px;">${title}</p>
-                <p style="font-size: 14px; margin-top: 0;">${message}</p>
+            <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 25px; border: 1px solid rgba(212, 125, 106, 0.3); border-radius: 16px; background-color: #ffffff; box-shadow: 0 4px 12px rgba(168, 83, 40, 0.03);">
+              <h2 style="color: #A85328; border-bottom: 2px solid #ebdcd5; padding-bottom: 10px; font-weight: 600; font-size: 18px; margin-top: 0; letter-spacing: 0.02em;">Snail Studio Admin Notification</h2>
+              <div style="padding: 15px 0; color: #5e514b; line-height: 1.6;">
+                <p style="font-size: 15px; font-weight: bold; color: #3a2e2a; margin-bottom: 8px;">${title}</p>
+                <p style="font-size: 14px; margin-top: 0; color: #5e514b;">${message}</p>
               </div>
-              <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #eaeaea; color: #888888; font-size: 11px;">
-                <p>This is an automated operational notification sent to administrators. You can configure notification channels in your Admin Panel settings.</p>
+              <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #ebdcd5; color: #8c8585; font-size: 11px; line-height: 1.5;">
+                <p style="margin: 0;">This is an automated operational notification sent to administrators. You can configure notification channels in your Admin Panel settings.</p>
               </div>
             </div>
           `,

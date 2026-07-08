@@ -445,7 +445,7 @@ export default function CheckoutClient() {
             email: user?.email || ""
           },
           theme: {
-            color: "#8b6e60"
+            color: "#A85328"
           },
           modal: {
             ondismiss: function () {
@@ -1023,7 +1023,7 @@ export default function CheckoutClient() {
                     />
                     <div className="space-y-0.5">
                       <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                        Razorpay Gateway <span className="text-[8.5px] bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 px-1.5 py-0.5 rounded font-bold uppercase">Secure</span>
+                        Razorpay Gateway <span className="text-[8.5px] bg-success/15 text-success border border-success/30 px-1.5 py-0.5 rounded font-bold uppercase">Secure</span>
                       </p>
                       <p className="text-[10px] text-muted-foreground font-light">Pay instantly via UPI, Cards, NetBanking, or Wallet.</p>
                     </div>

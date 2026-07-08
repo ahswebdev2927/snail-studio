@@ -63,7 +63,7 @@ export const announcements = sqliteTable('announcements', {
   ctaText: text('cta_text'),
   ctaLink: text('cta_link'),
   textColor: text('text_color').notNull().default('#ffffff'),
-  backgroundColor: text('background_color').notNull().default('#0b0f19'),
+  backgroundColor: text('background_color').notNull().default('#A85328'),
   startDate: integer('start_date', { mode: 'timestamp' }),
   endDate: integer('end_date', { mode: 'timestamp' }),
   isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),

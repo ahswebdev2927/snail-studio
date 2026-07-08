@@ -782,14 +782,14 @@ export function ProductReviews({
 
       {/* 4. Lightbox Modal Overlay */}
       {lightboxIndex !== null && lightboxImages.length > 0 && (
-        <div className="fixed inset-0 z-150 bg-black/90 backdrop-blur-md flex items-center justify-center animate-in fade-in duration-205">
+        <div className="fixed inset-0 z-150 bg-[#181311]/95 backdrop-blur-md flex items-center justify-center animate-in fade-in duration-205">
           {/* Close Area / Click backdrop to close */}
           <div className="absolute inset-0 cursor-zoom-out" onClick={() => setLightboxIndex(null)} />
 
           {/* Close Button */}
           <button
             onClick={() => setLightboxIndex(null)}
-            className="absolute top-4 right-4 p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all cursor-pointer z-10"
+            className="absolute top-4 right-4 p-2.5 rounded-full bg-primary/20 hover:bg-primary/30 text-primary-soft transition-all cursor-pointer z-10"
             aria-label="Close Lightbox"
           >
             <X className="w-5 h-5" />
@@ -806,7 +806,7 @@ export function ProductReviews({
             />
 
             {/* Slide Navigation Counters */}
-            <span className="absolute bottom-[-32px] left-1/2 -translate-x-1/2 text-xs font-semibold text-white/70 tracking-widest uppercase">
+            <span className="absolute bottom-[-32px] left-1/2 -translate-x-1/2 text-xs font-semibold text-primary-soft/85 tracking-widest uppercase">
               {lightboxIndex + 1} / {lightboxImages.length}
             </span>
 
@@ -814,7 +814,7 @@ export function ProductReviews({
             {lightboxImages.length > 1 && (
               <button
                 onClick={() => setLightboxIndex((prev) => (prev !== null ? (prev - 1 + lightboxImages.length) % lightboxImages.length : null))}
-                className="absolute left-2 sm:left-4 p-2 sm:p-3 rounded-full bg-white/10 hover:bg-white/25 text-white transition-all cursor-pointer"
+                className="absolute left-2 sm:left-4 p-2 sm:p-3 rounded-full bg-primary/20 hover:bg-primary/35 text-primary-soft transition-all cursor-pointer"
                 aria-label="Previous slide"
               >
                 <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
@@ -825,7 +825,7 @@ export function ProductReviews({
             {lightboxImages.length > 1 && (
               <button
                 onClick={() => setLightboxIndex((prev) => (prev !== null ? (prev + 1) % lightboxImages.length : null))}
-                className="absolute right-2 sm:right-4 p-2 sm:p-3 rounded-full bg-white/10 hover:bg-white/25 text-white transition-all cursor-pointer"
+                className="absolute right-2 sm:right-4 p-2 sm:p-3 rounded-full bg-primary/20 hover:bg-primary/35 text-primary-soft transition-all cursor-pointer"
                 aria-label="Next slide"
               >
                 <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />

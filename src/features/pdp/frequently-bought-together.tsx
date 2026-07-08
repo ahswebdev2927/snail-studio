@@ -337,7 +337,7 @@ export function FrequentlyBoughtTogether({
                       )}
                     </div>
                     {prices.originalSubtotal > prices.discountedTotal && (
-                      <span className="text-[9px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 inline-block">
+                      <span className="text-[9px] font-bold uppercase tracking-wider text-sale bg-sale/15 px-2 py-0.5 rounded border border-sale/30 inline-block">
                         Save {bundle.discountType === "percentage" ? `${bundle.discountValue}%` : formatPrice(bundle.discountValue)} Bundle Discount
                       </span>
                     )}
@@ -349,7 +349,7 @@ export function FrequentlyBoughtTogether({
                     className={cn(
                       "w-full py-3.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer",
                       justAdded[bundle.id]
-                        ? "bg-emerald-500 text-white cursor-default"
+                        ? "bg-success text-foreground cursor-default font-semibold"
                         : prices.checkedItemsCount >= 2
                         ? "bg-primary text-primary-foreground hover:bg-primary/95 active:scale-[0.98] shadow-md shadow-primary/10"
                         : "bg-muted text-muted-foreground cursor-not-allowed"

@@ -86,7 +86,7 @@ export function Drawer({
         {/* Header Close Button */}
         <button
           onClick={onClose}
-          className="absolute right-5 top-5 p-1.5 rounded-full text-muted-foreground hover:bg-secondary hover:text-foreground transition-all duration-200 cursor-pointer z-10"
+          className="absolute right-5 top-5 p-1.5 rounded-full text-muted-foreground hover:bg-secondary-surface hover:text-text-heading transition-all duration-200 cursor-pointer z-10"
           aria-label="Close panel"
         >
           <X className="w-4 h-4" />
@@ -160,7 +160,7 @@ export function DrawerFooter({
   return (
     <div
       className={cn(
-        "p-6 border-t border-border/10 bg-secondary/10 flex flex-col gap-2 mt-auto",
+        "p-6 border-t border-border/20 bg-secondary-surface/50 flex flex-col gap-2 mt-auto",
         className
       )}
       {...props}

@@ -197,13 +197,13 @@ export function InstagramGallery() {
       {/* Lightbox / Modal Viewer */}
       {selectedIdx !== null && (
         <div 
-          className="fixed inset-0 z-50 overflow-y-auto bg-black/95 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 md:p-10 animate-fade-in"
+          className="fixed inset-0 z-50 overflow-y-auto bg-[#181311]/95 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 md:p-10 animate-fade-in"
           onClick={handleClose}
         >
           {/* Close Button */}
           <button
             onClick={handleClose}
-            className="absolute top-4 right-4 z-50 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all cursor-pointer"
+            className="absolute top-4 right-4 z-50 p-3 rounded-full bg-primary/20 hover:bg-primary/30 text-primary-soft transition-all cursor-pointer"
             aria-label="Close Lightbox"
           >
             <X className="w-6 h-6" />
@@ -215,7 +215,7 @@ export function InstagramGallery() {
               e.stopPropagation();
               handlePrev();
             }}
-            className="absolute left-4 top-1/2 -translate-y-1/2 z-50 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all cursor-pointer"
+            className="absolute left-4 top-1/2 -translate-y-1/2 z-50 p-3 rounded-full bg-primary/20 hover:bg-primary/30 text-primary-soft transition-all cursor-pointer"
             aria-label="Previous Image"
           >
             <ChevronLeft className="w-6 h-6" />
@@ -226,7 +226,7 @@ export function InstagramGallery() {
               e.stopPropagation();
               handleNext();
             }}
-            className="absolute right-4 top-1/2 -translate-y-1/2 z-50 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all cursor-pointer"
+            className="absolute right-4 top-1/2 -translate-y-1/2 z-50 p-3 rounded-full bg-primary/20 hover:bg-primary/30 text-primary-soft transition-all cursor-pointer"
             aria-label="Next Image"
           >
             <ChevronRight className="w-6 h-6" />
@@ -234,11 +234,11 @@ export function InstagramGallery() {
 
           {/* Image & Detail Container */}
           <div 
-            className="relative max-w-4xl w-full bg-neutral-900 border border-neutral-800 rounded-3xl overflow-hidden shadow-2xl flex flex-col md:flex-row aspect-video max-h-[85vh] md:max-h-[80vh] my-auto"
+            className="relative max-w-4xl w-full bg-[#221B19] border border-border/40 rounded-3xl overflow-hidden shadow-2xl flex flex-col md:flex-row aspect-video max-h-[85vh] md:max-h-[80vh] my-auto"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Left Side: Image */}
-            <div className="relative flex-1 bg-black aspect-square md:aspect-auto">
+            <div className="relative flex-1 bg-[#181311] aspect-square md:aspect-auto">
               <Image
                 src={INSTAGRAM_POSTS[selectedIdx].imageUrl}
                 alt={INSTAGRAM_POSTS[selectedIdx].caption}
@@ -250,32 +250,32 @@ export function InstagramGallery() {
             </div>
 
             {/* Right Side: Info and Details */}
-            <div className="w-full md:w-80 bg-neutral-900 flex flex-col p-6 text-white justify-between border-t md:border-t-0 md:border-l border-neutral-800 flex-shrink-0">
+            <div className="w-full md:w-80 bg-[#221B19] flex flex-col p-6 text-primary-soft justify-between border-t md:border-t-0 md:border-l border-border/40 flex-shrink-0">
               {/* Header Info */}
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-accent via-primary to-rose-400 p-[2px]">
-                    <div className="w-full h-full rounded-full bg-neutral-900 flex items-center justify-center">
+                    <div className="w-full h-full rounded-full bg-[#221B19] flex items-center justify-center">
                       <span className="font-serif text-xs font-bold text-accent">SS</span>
                     </div>
                   </div>
                   <div>
-                    <h4 className="text-sm font-semibold tracking-wide text-white">snailstudio</h4>
+                    <h4 className="text-sm font-semibold tracking-wide text-foreground">snailstudio</h4>
                     <span className="text-[10px] text-accent font-medium">Verified Handcrafted</span>
                   </div>
                 </div>
 
-                <hr className="border-neutral-800" />
+                <hr className="border-border/40" />
 
                 {/* Caption */}
-                <p className="text-xs text-neutral-300 font-light leading-relaxed">
+                <p className="text-xs text-primary-soft/90 font-light leading-relaxed">
                   {INSTAGRAM_POSTS[selectedIdx].caption}
                 </p>
               </div>
 
               {/* Engagement & Actions */}
               <div className="space-y-4 pt-4 md:pt-0">
-                <hr className="border-neutral-800" />
+                <hr className="border-border/40" />
 
                 <div className="flex justify-between items-center text-xs">
                   <div className="flex gap-4">
@@ -283,7 +283,7 @@ export function InstagramGallery() {
                       <Heart className="w-4 h-4 text-rose-500 fill-rose-500" />
                       {INSTAGRAM_POSTS[selectedIdx].likes} likes
                     </span>
-                    <span className="flex items-center gap-1 text-neutral-400">
+                    <span className="flex items-center gap-1 text-primary-soft/60">
                       <MessageCircle className="w-4 h-4" />
                       {INSTAGRAM_POSTS[selectedIdx].comments} comments
                     </span>

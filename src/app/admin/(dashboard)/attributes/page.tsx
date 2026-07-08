@@ -28,10 +28,10 @@ export function Tooltip({ content, children }: TooltipProps) {
     <div className="group relative inline-block">
       {children}
       <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2.5 hidden group-hover:flex flex-col items-center z-30 w-52 transition-all duration-200 pointer-events-none">
-        <div className="bg-neutral-900 text-neutral-100 text-[10px] font-normal leading-relaxed p-2.5 rounded-xl shadow-xl border border-neutral-800 text-center">
+        <div className="bg-footer-bg text-text-inverse text-[10px] font-normal leading-relaxed p-2.5 rounded-xl shadow-xl border border-border-strong text-center">
           {content}
         </div>
-        <div className="w-2 h-2 bg-neutral-900 rotate-45 -mt-1 border-r border-b border-neutral-800" />
+        <div className="w-2 h-2 bg-footer-bg rotate-45 -mt-1 border-r border-b border-border-strong" />
       </div>
     </div>
   );

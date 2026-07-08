@@ -79,7 +79,7 @@ export default function CustomerOrderActions({
             <button
               type="button"
               onClick={() => setShowSupportModal(true)}
-              className="p-1.5 rounded-lg hover:bg-secondary/40 text-rose-500 hover:text-rose-600 transition-all cursor-pointer"
+              className="p-1.5 rounded-lg hover:bg-secondary-surface text-primary hover:text-primary-hover transition-all cursor-pointer"
               title="Edit Address"
             >
               <Pencil className="w-4 h-4" />
@@ -173,7 +173,7 @@ export default function CustomerOrderActions({
 
       {/* 3. Contact Support Alert Modal */}
       {showSupportModal && mounted && createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-background/60 backdrop-blur-sm p-4 overflow-y-auto">
           <div className="bg-card border border-border shadow-2xl p-6 rounded-3xl w-full max-w-sm text-foreground space-y-5 my-auto relative">
             <div className="flex justify-between items-center pb-3 border-b border-border/40">
               <h3 className="font-serif text-base font-normal text-foreground">Edit Shipping Address</h3>

@@ -38,7 +38,7 @@ export function FilterDrawer({ isOpen, onClose, facets, filters, onChange, onCle
     <div className="fixed inset-0 z-50 lg:hidden">
       {/* Dark Glass Backdrop Overlay */}
       <div
-        className="fixed inset-0 bg-neutral-950/40 backdrop-blur-xs transition-opacity duration-300"
+        className="fixed inset-0 bg-background/60 backdrop-blur-sm transition-opacity duration-300"
         onClick={onClose}
       />
 
@@ -49,7 +49,7 @@ export function FilterDrawer({ isOpen, onClose, facets, filters, onChange, onCle
           <span className="font-serif text-lg font-medium text-foreground">Filters</span>
           <button
             onClick={onClose}
-            className="p-1 rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary/40 transition-all cursor-pointer"
+            className="p-1 rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary-surface transition-all cursor-pointer"
             aria-label="Close filters"
           >
             <X className="w-5 h-5" />
@@ -70,7 +70,7 @@ export function FilterDrawer({ isOpen, onClose, facets, filters, onChange, onCle
         <div className="px-6 py-4 border-t border-border/40 bg-secondary/10 flex gap-3">
           <button
             onClick={onClear}
-            className="flex-1 py-3 text-xs font-semibold uppercase tracking-wider rounded-full border border-border hover:bg-secondary/40 transition-colors cursor-pointer"
+            className="flex-1 py-3 text-xs font-semibold uppercase tracking-wider rounded-full border border-border hover:bg-secondary-surface transition-colors cursor-pointer"
           >
             Clear All
           </button>

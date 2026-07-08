@@ -101,7 +101,7 @@ function AvailabilityBadge({
     );
   }
   return (
-    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold bg-success/15 text-success border border-success/30">
       <CheckCircle2 className="w-3.5 h-3.5" />
       In Stock
     </span>
@@ -478,7 +478,7 @@ export function ProductActions({
             </span>
           )}
           {discountPct && (
-            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
+            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-sale/15 text-sale border border-sale/30">
               {discountPct}% Off
             </span>
           )}
@@ -697,7 +697,7 @@ export function ProductActions({
           className={cn(
             "w-full py-4 rounded-full text-sm font-semibold uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2",
             justAdded
-              ? "bg-emerald-500 text-white cursor-default"
+              ? "bg-success text-foreground cursor-default font-semibold"
               : canAddToCart
               ? "bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-lg hover:shadow-primary/20 active:scale-[0.98] cursor-pointer"
               : "bg-muted text-muted-foreground cursor-not-allowed border border-border"
@@ -752,8 +752,8 @@ export function ProductActions({
             aria-label={favorite ? "Remove from wishlist" : "Add to wishlist"}
             className={cn(
               "flex-1 py-3 rounded-full text-sm font-semibold uppercase tracking-wider border transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer",
-              favorite
-                ? "bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400 border-rose-300/50"
+            favorite
+                ? "bg-sale/15 text-sale border border-sale/30"
                 : "bg-transparent text-foreground border-border hover:border-primary/50 hover:text-primary"
             )}
           >
@@ -927,7 +927,7 @@ function DeliveryEstimator() {
       {result && !isChecking && (
         <div className="space-y-3 pt-1 animate-in fade-in slide-in-from-top-1 duration-200">
           <div className="flex items-start gap-2.5">
-            <Truck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+            <Truck className="w-4 h-4 text-success shrink-0 mt-0.5" />
             <div>
               <p className="text-xs font-semibold text-foreground">
                 Estimated Delivery by {result.dateStr}
@@ -939,7 +939,7 @@ function DeliveryEstimator() {
           </div>
 
           <div className="flex items-start gap-2.5">
-            <div className="w-4 h-4 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 text-[10px] font-bold">
+            <div className="w-4 h-4 rounded-full bg-success/15 text-success flex items-center justify-center shrink-0 text-[10px] font-bold">
               ₹
             </div>
             <div>
