@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { 
   MapPin, 
@@ -42,7 +43,13 @@ interface AddressClientProps {
 
 export function AddressClient({ initialAddresses }: AddressClientProps) {
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const [modalMode, setModalMode] = useState<"add" | "edit">("add");
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
 
@@ -372,8 +379,8 @@ export function AddressClient({ initialAddresses }: AddressClientProps) {
       )}
 
       {/* Address Form Modal */}
-      {modalOpen && (
-        <div className="fixed inset-0 z-[100] overflow-y-auto bg-background/80 backdrop-blur-md flex items-center justify-center p-4 md:p-6 animate-in fade-in duration-200">
+      {modalOpen && mounted && createPortal(
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/50 backdrop-blur-md flex items-center justify-center p-4 md:p-6 animate-in fade-in duration-200">
           <div className="bg-card border border-border/60 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden relative my-auto">
             {/* Top gold line */}
             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary/30 via-accent to-primary/30" />
@@ -600,7 +607,8 @@ export function AddressClient({ initialAddresses }: AddressClientProps) {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

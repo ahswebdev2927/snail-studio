@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { 
   Shield, 
@@ -63,7 +64,12 @@ function parseUserAgent(ua: string | null): { os: string; browser: string; isMob
 
 export function SecurityClient({ initialSessions }: SecurityClientProps) {
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
   const [sessions, setSessions] = useState<Session[]>(initialSessions);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   
   // UX states
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
@@ -374,10 +380,10 @@ export function SecurityClient({ initialSessions }: SecurityClientProps) {
       )}
 
       {/* Confirmation Modal Overlay */}
-      {confirmModal.open && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-background/80 backdrop-blur-md flex items-center justify-center p-4 md:p-6 animate-in fade-in duration-300">
+      {confirmModal.open && mounted && createPortal(
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/50 backdrop-blur-md flex items-center justify-center p-4 md:p-6 animate-in fade-in duration-300">
           <div 
-            className="bg-card border border-border/40 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-6 animate-in zoom-in-95 duration-200 my-auto"
+            className="bg-card border border-border/40 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-6 animate-in zoom-in-95 duration-200 my-auto relative"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="space-y-2">
@@ -409,7 +415,8 @@ export function SecurityClient({ initialSessions }: SecurityClientProps) {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
     </div>

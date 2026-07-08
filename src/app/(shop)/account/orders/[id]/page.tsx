@@ -18,7 +18,7 @@ import {
   ExternalLink
 } from "lucide-react";
 import { db } from "@/db";
-import { orders } from "@/db/schema";
+import { orders, systemSettings } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { getSessionUser } from "@/lib/auth/session";
 import { formatPrice } from "@/lib/utils";
@@ -84,6 +84,14 @@ export default async function OrderDetailsPage({ params }: PageProps) {
       },
     },
   });
+
+  // Fetch settings from database
+  const settingsRows = await db.select().from(systemSettings);
+  const settingsObj = settingsRows.reduce((acc, row) => {
+    acc[row.key] = row.value;
+    return acc;
+  }, {} as Record<string, string>);
+  const storePhone = settingsObj.store_phone || "+91 99999 99999";
 
   // 1. Order Not Found Check
   if (!orderRecord) {
@@ -359,28 +367,7 @@ export default async function OrderDetailsPage({ params }: PageProps) {
 
         {/* Right Column: Address, Shipment log, status log (4 cols) */}
         <div className="lg:col-span-4 space-y-6">
-          {/* Shipping Address Detailed Card */}
-          <div className="bg-card border border-border/30 rounded-2xl p-5 space-y-3.5">
-            <h3 className="font-serif text-sm font-semibold text-foreground flex items-center gap-1.5 pb-2 border-b border-border/20">
-              <MapPin className="w-4 h-4 text-primary shrink-0" />
-              Delivery Address
-            </h3>
-            
-            {shippingAddress ? (
-              <div className="text-xs font-light leading-relaxed space-y-1">
-                <p className="font-semibold text-foreground">{shippingAddress.name}</p>
-                <p className="text-muted-foreground">{shippingAddress.addressLine1}</p>
-                {shippingAddress.addressLine2 && <p className="text-muted-foreground">{shippingAddress.addressLine2}</p>}
-                <p className="text-muted-foreground">{shippingAddress.city}, {shippingAddress.state} - {shippingAddress.postalCode}</p>
-                <p className="text-muted-foreground">{shippingAddress.country}</p>
-                <p className="text-[10px] text-muted-foreground pt-1 font-medium">Contact: {shippingAddress.phone}</p>
-              </div>
-            ) : (
-              <p className="text-xs text-muted-foreground font-light">No address attached to this order record.</p>
-            )}
-          </div>
-
-          {/* Customer Order Adjustment & Editing Actions */}
+          {/* Customer Order Address & Editing Actions */}
           <CustomerOrderActions
             orderId={orderRecord.id}
             shippingAddress={shippingAddress ? {
@@ -400,6 +387,7 @@ export default async function OrderDetailsPage({ params }: PageProps) {
             shippingDifferenceStatus={orderRecord.shippingDifferenceStatus}
             orderStatus={orderRecord.status}
             hasActiveShipment={orderRecord.shipments.some(s => s.status !== "cancelled")}
+            storePhone={storePhone}
           />
 
           {/* Shipment & Tracker Card */}

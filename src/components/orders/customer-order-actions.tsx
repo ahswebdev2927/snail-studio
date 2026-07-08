@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { MapPin, CreditCard, Sliders, AlertCircle, X, RefreshCw, CheckCircle2 } from "lucide-react";
+import { createPortal } from "react-dom";
+import { MapPin, CreditCard, Sliders, AlertCircle, X, RefreshCw, CheckCircle2, Pencil, Phone } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 
 interface CustomerOrderActionsProps {
@@ -23,6 +24,7 @@ interface CustomerOrderActionsProps {
   shippingDifferenceStatus: string;
   orderStatus: string;
   hasActiveShipment: boolean;
+  storePhone: string;
 }
 
 export default function CustomerOrderActions({
@@ -34,117 +36,16 @@ export default function CustomerOrderActions({
   shippingDifferenceStatus,
   orderStatus,
   hasActiveShipment,
+  storePhone,
 }: CustomerOrderActionsProps) {
-  // Settings & validation state
-  const [settings, setSettings] = useState<any>(null);
-  const [isEditable, setIsEditable] = useState(false);
-
-  // Address edit modal state
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [name, setName] = useState(shippingAddress?.name || "");
-  const [phone, setPhone] = useState(shippingAddress?.phone || "");
-  const [addressLine1, setAddressLine1] = useState(shippingAddress?.addressLine1 || "");
-  const [addressLine2, setAddressLine2] = useState(shippingAddress?.addressLine2 || "");
-  const [city, setCity] = useState(shippingAddress?.city || "");
-  const [state, setState] = useState(shippingAddress?.state || "");
-  const [postalCode, setPostalCode] = useState(shippingAddress?.postalCode || "");
-  const [country, setCountry] = useState(shippingAddress?.country || "");
-  const [reason, setReason] = useState("");
-  const [isSaving, setIsSaving] = useState(false);
-
-  // Payment states
+  // Modal states
+  const [mounted, setMounted] = useState(false);
+  const [showSupportModal, setShowSupportModal] = useState(false);
   const [isPaying, setIsPaying] = useState(false);
 
-  // Fetch policy settings
   useEffect(() => {
-    const fetchSettings = async () => {
-      try {
-        const res = await fetch("/api/admin/settings");
-        if (res.ok) {
-          const data = await res.json();
-          setSettings(data);
-        }
-      } catch (err) {
-        console.error("Error loading settings:", err);
-      }
-    };
-    fetchSettings();
+    setMounted(true);
   }, []);
-
-  // Determine if editing is allowed based on cutoff status policy and active shipment
-  useEffect(() => {
-    if (hasActiveShipment) {
-      setIsEditable(false);
-      return;
-    }
-
-    if (!settings) {
-      setIsEditable(false);
-      return;
-    }
-
-    const cutoff = settings.customerAddressEditUntil || "processing";
-    if (cutoff === "never") {
-      setIsEditable(false);
-      return;
-    }
-
-    const statusHierarchy: Record<string, number> = {
-      pending: 0,
-      paid: 1,
-      confirmed: 2,
-      processing: 3,
-      shipped: 4,
-      delivered: 5,
-      cancelled: 6,
-    };
-
-    const currentIdx = statusHierarchy[orderStatus.toLowerCase()] ?? 99;
-    const cutoffIdx = statusHierarchy[cutoff.toLowerCase()] ?? 3;
-
-    // Allowed if current status is less than or equal to cutoff status hierarchy
-    setIsEditable(currentIdx <= cutoffIdx);
-
-  }, [settings, orderStatus, hasActiveShipment]);
-
-  const handleEditSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!shippingAddress) return;
-    setIsSaving(true);
-
-    try {
-      const res = await fetch(`/api/orders/${orderId}/address`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name,
-          phone,
-          addressLine1,
-          addressLine2: addressLine2 || null,
-          city,
-          state,
-          postalCode,
-          country,
-          reason: reason || null,
-        }),
-      });
-
-      if (res.ok) {
-        setShowEditModal(false);
-        setReason("");
-        // Reload page to display new address & calculated shipping fees
-        window.location.reload();
-      } else {
-        const err = await res.json();
-        alert(`Failed to save address: ${err.error || "Server error"}`);
-      }
-    } catch (err) {
-      console.error(err);
-      alert("An unexpected error occurred.");
-    } finally {
-      setIsSaving(false);
-    }
-  };
 
   const handlePayDifference = async () => {
     setIsPaying(true);
@@ -153,7 +54,6 @@ export default function CustomerOrderActions({
       const data = await res.json();
 
       if (res.ok && data.gatewaySessionUrl) {
-        // Redirect to Razorpay payment session
         window.location.href = data.gatewaySessionUrl;
       } else {
         alert(data.error || "Failed to initialize payment gateway session.");
@@ -167,8 +67,41 @@ export default function CustomerOrderActions({
   };
 
   return (
-    <div className="space-y-4">
-      {/* Recalculation details for lower/higher shipping */}
+    <div className="space-y-6">
+      {/* 1. Delivery Address Card (with Edit Support trigger) */}
+      <div className="bg-card border border-border/30 rounded-2xl p-5 space-y-3.5">
+        <div className="flex items-center justify-between pb-2 border-b border-border/20">
+          <h3 className="font-serif text-sm font-semibold text-foreground flex items-center gap-1.5">
+            <MapPin className="w-4 h-4 text-primary shrink-0" />
+            Delivery Address
+          </h3>
+          {shippingAddress && (
+            <button
+              type="button"
+              onClick={() => setShowSupportModal(true)}
+              className="p-1.5 rounded-lg hover:bg-secondary/40 text-rose-500 hover:text-rose-600 transition-all cursor-pointer"
+              title="Edit Address"
+            >
+              <Pencil className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+        
+        {shippingAddress ? (
+          <div className="text-xs font-light leading-relaxed space-y-1">
+            <p className="font-semibold text-foreground">{shippingAddress.name}</p>
+            <p className="text-muted-foreground">{shippingAddress.addressLine1}</p>
+            {shippingAddress.addressLine2 && <p className="text-muted-foreground">{shippingAddress.addressLine2}</p>}
+            <p className="text-muted-foreground">{shippingAddress.city}, {shippingAddress.state} - {shippingAddress.postalCode}</p>
+            <p className="text-muted-foreground">{shippingAddress.country}</p>
+            <p className="text-[10px] text-muted-foreground pt-1 font-medium">Contact: {shippingAddress.phone}</p>
+          </div>
+        ) : (
+          <p className="text-xs text-muted-foreground font-light">No address attached to this order record.</p>
+        )}
+      </div>
+
+      {/* 2. Recalculation details for lower/higher shipping */}
       {shippingDifference !== 0 && (
         <div className="bg-card border border-border/30 rounded-2xl p-5 space-y-3">
           <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
@@ -238,153 +171,64 @@ export default function CustomerOrderActions({
         </div>
       )}
 
-      {/* Edit Address trigger button */}
-      {isEditable && shippingAddress && (
-        <button
-          type="button"
-          onClick={() => setShowEditModal(true)}
-          className="w-full py-2.5 bg-secondary text-secondary-foreground hover:bg-muted border border-border/50 text-xs font-semibold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5"
-        >
-          <MapPin className="w-4 h-4 text-primary" />
-          Edit Shipping Address
-        </button>
-      )}
-
-      {/* Edit Address Modal */}
-      {showEditModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background/80 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="bg-card border border-border shadow-2xl p-6 rounded-3xl w-full max-w-md text-foreground space-y-4 max-h-[90vh] overflow-y-auto my-auto">
+      {/* 3. Contact Support Alert Modal */}
+      {showSupportModal && mounted && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 overflow-y-auto">
+          <div className="bg-card border border-border shadow-2xl p-6 rounded-3xl w-full max-w-sm text-foreground space-y-5 my-auto relative">
             <div className="flex justify-between items-center pb-3 border-b border-border/40">
               <h3 className="font-serif text-base font-normal text-foreground">Edit Shipping Address</h3>
               <button
                 type="button"
-                onClick={() => setShowEditModal(false)}
+                onClick={() => setShowSupportModal(false)}
                 className="p-1 rounded-full bg-secondary hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleEditSubmit} className="space-y-3">
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Recipient Name</label>
-                <input
-                  type="text"
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full px-3 py-2 bg-background border border-border rounded-xl text-xs font-light text-foreground focus:outline-none focus:border-primary"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Contact Phone</label>
-                <input
-                  type="text"
-                  required
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  className="w-full px-3 py-2 bg-background border border-border rounded-xl text-xs font-light text-foreground focus:outline-none focus:border-primary"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Address Line 1</label>
-                <input
-                  type="text"
-                  required
-                  value={addressLine1}
-                  onChange={(e) => setAddressLine1(e.target.value)}
-                  className="w-full px-3 py-2 bg-background border border-border rounded-xl text-xs font-light text-foreground focus:outline-none focus:border-primary"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Address Line 2 (Optional)</label>
-                <input
-                  type="text"
-                  value={addressLine2}
-                  onChange={(e) => setAddressLine2(e.target.value)}
-                  className="w-full px-3 py-2 bg-background border border-border rounded-xl text-xs font-light text-foreground focus:outline-none focus:border-primary"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">City</label>
-                  <input
-                    type="text"
-                    required
-                    value={city}
-                    onChange={(e) => setCity(e.target.value)}
-                    className="w-full px-3 py-2 bg-background border border-border rounded-xl text-xs font-light text-foreground focus:outline-none focus:border-primary"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">State</label>
-                  <input
-                    type="text"
-                    required
-                    value={state}
-                    onChange={(e) => setState(e.target.value)}
-                    className="w-full px-3 py-2 bg-background border border-border rounded-xl text-xs font-light text-foreground focus:outline-none focus:border-primary"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Pincode</label>
-                  <input
-                    type="text"
-                    required
-                    value={postalCode}
-                    onChange={(e) => setPostalCode(e.target.value)}
-                    className="w-full px-3 py-2 bg-background border border-border rounded-xl text-xs font-light text-foreground focus:outline-none focus:border-primary"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Country</label>
-                  <input
-                    type="text"
-                    required
-                    value={country}
-                    onChange={(e) => setCountry(e.target.value)}
-                    className="w-full px-3 py-2 bg-background border border-border rounded-xl text-xs font-light text-foreground focus:outline-none focus:border-primary"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Reason for Edit (Optional)</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Changed flat number"
-                  value={reason}
-                  onChange={(e) => setReason(e.target.value)}
-                  className="w-full px-3 py-2 bg-background border border-border rounded-xl text-xs font-light text-foreground focus:outline-none focus:border-primary"
-                />
-              </div>
-
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="submit"
-                  disabled={isSaving}
-                  className="flex-1 py-2 bg-primary text-primary-foreground hover:bg-primary/95 disabled:bg-muted disabled:text-muted-foreground rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer text-center"
+            <div className="space-y-4 text-xs font-light leading-relaxed">
+              <p className="text-foreground">
+                To request any corrections or modifications to your shipping details, please contact our support team.
+              </p>
+              
+              <div className="bg-secondary/15 border border-border/20 rounded-2xl p-4 text-center space-y-1">
+                <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground block">Customer Support</span>
+                <a 
+                  href={`tel:${storePhone}`}
+                  className="text-base font-serif font-normal text-primary hover:underline block flex items-center justify-center gap-1.5"
                 >
-                  {isSaving ? "Saving..." : "Save Address"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowEditModal(false)}
-                  className="flex-1 py-2 bg-secondary hover:bg-muted text-muted-foreground hover:text-foreground rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer text-center border border-border"
-                >
-                  Cancel
-                </button>
+                  <Phone className="w-4 h-4 text-primary shrink-0" />
+                  {storePhone}
+                </a>
               </div>
-            </form>
+
+              <div className="p-3 bg-amber-500/10 border border-amber-500/20 text-amber-600 rounded-xl flex items-start gap-2.5">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                <p className="text-[10px] leading-normal font-light">
+                  Please request changes as soon as possible before the order is shipped to avoid courier routing errors, delivery delays, or return shipments.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-2 border-t border-border/40">
+              <a
+                href={`tel:${storePhone}`}
+                className="flex-1 py-2 bg-primary text-primary-foreground hover:bg-primary/95 rounded-xl text-xs font-semibold text-center transition-all cursor-pointer flex items-center justify-center gap-1"
+              >
+                <Phone className="w-3.5 h-3.5 shrink-0" />
+                Call Support
+              </a>
+              <button
+                type="button"
+                onClick={() => setShowSupportModal(false)}
+                className="flex-1 py-2 bg-secondary hover:bg-muted text-muted-foreground hover:text-foreground rounded-xl text-xs font-semibold text-center border border-border transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
