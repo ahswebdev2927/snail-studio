@@ -464,21 +464,21 @@ export default function AdminAttributesPage() {
                     <Layers className="w-3.5 h-3.5 text-primary shrink-0" />
                     <span className="truncate">{group.name}</span>
                     {group.attributeType === "VARIANT" ? (
-                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 select-none">
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-semibold bg-info/10 text-info border border-info/20 select-none">
                         Variant Attribute
                       </span>
                     ) : (
-                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 select-none">
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-semibold bg-success/15 text-success border border-success/30 select-none">
                         Catalog Attribute
                       </span>
                     )}
                   </h3>
                   <div className="flex items-center gap-2 flex-wrap pt-0.5">
-                    <span className="inline-block text-[8px] font-mono bg-secondary px-1.5 py-0.5 border border-border rounded text-muted-foreground">
+                    <span className="inline-block text-[8px] font-mono bg-secondary/10 text-secondary px-1.5 py-0.5 border border-secondary/20 rounded font-medium">
                       code: {group.code}
                     </span>
                     {group.displayOrder !== 0 && (
-                      <span className="inline-block text-[8px] font-mono bg-secondary px-1.5 py-0.5 border border-border rounded text-muted-foreground">
+                      <span className="inline-block text-[8px] font-mono bg-secondary/10 text-secondary px-1.5 py-0.5 border border-secondary/20 rounded font-medium">
                         order: {group.displayOrder}
                       </span>
                     )}

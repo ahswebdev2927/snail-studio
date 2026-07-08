@@ -227,26 +227,26 @@ export default function NotificationsInboxPage() {
   const getCategoryDetails = (category: NotificationCategory) => {
     switch (category) {
       case "orders":
-        return { label: "Orders", icon: ShoppingBag, color: "text-blue-500 bg-blue-500/10 border-blue-500/20" };
+        return { label: "Orders", icon: ShoppingBag, color: "text-info bg-info/10 border-info/20" };
       case "inventory":
-        return { label: "Inventory", icon: AlertTriangle, color: "text-amber-500 bg-amber-500/10 border-amber-500/20" };
+        return { label: "Inventory", icon: AlertTriangle, color: "text-warning bg-warning/15 border-warning/30" };
       case "reviews":
-        return { label: "Reviews", icon: MessageSquare, color: "text-purple-500 bg-purple-500/10 border-purple-500/20" };
+        return { label: "Reviews", icon: MessageSquare, color: "text-primary bg-primary/10 border-primary/20" };
       default:
-        return { label: "System", icon: Server, color: "text-slate-500 bg-slate-500/10 border-slate-500/20" };
+        return { label: "System", icon: Server, color: "text-muted-foreground bg-secondary border-border" };
     }
   };
 
   const getPriorityBadge = (priority: string) => {
     switch (priority) {
       case "critical":
-        return "text-rose-600 bg-rose-100 dark:bg-rose-950/40 dark:text-rose-400 border-rose-200 dark:border-rose-900/40";
+        return "text-destructive bg-destructive/15 border border-destructive/30";
       case "high":
-        return "text-orange-600 bg-orange-100 dark:bg-orange-950/40 dark:text-orange-400 border-orange-200 dark:border-orange-900/40";
+        return "text-warning bg-warning/15 border border-warning/30";
       case "medium":
-        return "text-amber-600 bg-amber-100 dark:bg-amber-950/40 dark:text-amber-400 border-amber-200 dark:border-amber-900/40";
+        return "text-warning/85 bg-warning/10 border border-warning/20";
       default:
-        return "text-emerald-600 bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900/40";
+        return "text-success bg-success/15 border border-success/30";
     }
   };
 

@@ -8,7 +8,8 @@ export default function AdminGeneralSettingsPage() {
   // Form State
   const [storeName, setStoreName] = useState("Snail Studio");
   const [storeLogo, setStoreLogo] = useState("");
-  const [showMediaPicker, setShowMediaPicker] = useState(false);
+  const [storeLogoCollapsed, setStoreLogoCollapsed] = useState("");
+  const [activePicker, setActivePicker] = useState<"logo" | "logo_collapsed" | null>(null);
   const [storeSlug, setStoreSlug] = useState("snail-studio");
   const [storeEmail, setStoreEmail] = useState("hello@snailstudio.com");
   const [storePhone, setStorePhone] = useState("+91 99999 99999");
@@ -23,10 +24,12 @@ export default function AdminGeneralSettingsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [statusMessage, setStatusMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  // Load configuration on mount
-  useEffect(() => {
-    fetchSettings();
-  }, []);
+  const showStatus = (type: "success" | "error", text: string) => {
+    setStatusMessage({ type, text });
+    setTimeout(() => {
+      setStatusMessage(null);
+    }, 5000);
+  };
 
   const fetchSettings = async () => {
     setIsLoading(true);
@@ -37,6 +40,7 @@ export default function AdminGeneralSettingsPage() {
         if (data.store_name) setStoreName(data.store_name);
         if (data.store_slug) setStoreSlug(data.store_slug);
         if (data.store_logo) setStoreLogo(data.store_logo);
+        if (data.store_logo_collapsed) setStoreLogoCollapsed(data.store_logo_collapsed);
         if (data.store_email) setStoreEmail(data.store_email);
         if (data.store_phone) setStorePhone(data.store_phone);
         if (data.shipping_standard_fee) setShippingStandardFee(data.shipping_standard_fee);
@@ -53,12 +57,11 @@ export default function AdminGeneralSettingsPage() {
     }
   };
 
-  const showStatus = (type: "success" | "error", text: string) => {
-    setStatusMessage({ type, text });
-    setTimeout(() => {
-      setStatusMessage(null);
-    }, 5000);
-  };
+  // Load configuration on mount
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchSettings();
+  }, []);
 
   const handleSave = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -75,6 +78,7 @@ export default function AdminGeneralSettingsPage() {
           store_email: storeEmail,
           store_phone: storePhone,
           store_logo: storeLogo,
+          store_logo_collapsed: storeLogoCollapsed,
           shipping_standard_fee: shippingStandardFee,
           shipping_free_threshold: shippingFreeThreshold,
           shipping_express_fee: shippingExpressFee,
@@ -95,11 +99,15 @@ export default function AdminGeneralSettingsPage() {
     }
   };
 
-  const handleMediaSelect = (selected: any[]) => {
+  const handleMediaSelect = (selected: { url: string }[]) => {
     if (selected.length > 0) {
-      setStoreLogo(selected[0].url);
+      if (activePicker === "logo") {
+        setStoreLogo(selected[0].url);
+      } else if (activePicker === "logo_collapsed") {
+        setStoreLogoCollapsed(selected[0].url);
+      }
     }
-    setShowMediaPicker(false);
+    setActivePicker(null);
   };
 
   if (isLoading) {
@@ -155,45 +163,91 @@ export default function AdminGeneralSettingsPage() {
       {/* Main Form container */}
       <div className="bg-card border border-border/40 rounded-3xl p-6 space-y-6 max-w-3xl">
         <form onSubmit={handleSave} className="space-y-4">
-          {/* Logo Upload Section */}
-          <div className="space-y-2 pb-4 border-b border-border/40">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
-              Store Logo
-            </label>
-            <div className="flex items-center gap-4.5">
-              <div className="relative h-16 w-32 rounded-2xl bg-secondary/30 border border-border flex items-center justify-center overflow-hidden">
-                {storeLogo ? (
-                  <img
-                    src={storeLogo}
-                    alt="Store Logo Preview"
-                    className="h-full w-full object-contain p-2 animate-fade-in"
-                  />
-                ) : (
-                  <span className="text-[10px] text-muted-foreground font-light">No Logo</span>
-                )}
-              </div>
-              <div className="flex flex-col gap-2">
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowMediaPicker(true)}
-                    className="px-3.5 py-2 bg-secondary hover:bg-muted text-foreground rounded-xl text-xs font-medium border border-border transition-colors cursor-pointer"
-                  >
-                    {storeLogo ? "Change Logo" : "Upload Logo"}
-                  </button>
-                  {storeLogo && (
-                    <button
-                      type="button"
-                      onClick={() => setStoreLogo("")}
-                      className="px-3.5 py-2 bg-destructive/10 hover:bg-destructive/20 text-destructive rounded-xl text-xs font-medium border border-destructive/20 transition-colors cursor-pointer"
-                    >
-                      Remove
-                    </button>
+          {/* Logos Section */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-6 border-b border-border/40">
+            {/* Store Logo */}
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+                Store Logo (Full Sidebar & Storefront)
+              </label>
+              <div className="flex items-center gap-4.5">
+                <div className="relative h-16 w-32 rounded-2xl bg-secondary/30 border border-border flex items-center justify-center overflow-hidden">
+                  {storeLogo ? (
+                    <img
+                      src={storeLogo}
+                      alt="Store Logo Preview"
+                      className="h-full w-full object-contain p-2 animate-fade-in"
+                    />
+                  ) : (
+                    <span className="text-[10px] text-muted-foreground font-light">No Logo</span>
                   )}
                 </div>
-                <p className="text-[10px] text-muted-foreground font-light leading-relaxed">
-                  Recommended size: 300x80px or wider aspect ratio. WebP, PNG, or SVG. Max 2MB.
-                </p>
+                <div className="flex flex-col gap-2">
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setActivePicker("logo")}
+                      className="px-3.5 py-2 bg-secondary hover:bg-muted text-foreground rounded-xl text-xs font-medium border border-border transition-colors cursor-pointer"
+                    >
+                      {storeLogo ? "Change Logo" : "Upload Logo"}
+                    </button>
+                    {storeLogo && (
+                      <button
+                        type="button"
+                        onClick={() => setStoreLogo("")}
+                        className="px-3.5 py-2 bg-destructive/10 hover:bg-destructive/20 text-destructive rounded-xl text-xs font-medium border border-destructive/20 transition-colors cursor-pointer"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-[10px] text-muted-foreground font-light leading-relaxed">
+                    Recommended: 300x80px or wider aspect ratio.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Collapsed Sidebar Logo */}
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+                Collapsed Sidebar Logo (Admin Sidebar)
+              </label>
+              <div className="flex items-center gap-4.5">
+                <div className="relative h-16 w-16 rounded-2xl bg-secondary/30 border border-border flex items-center justify-center overflow-hidden">
+                  {storeLogoCollapsed ? (
+                    <img
+                      src={storeLogoCollapsed}
+                      alt="Collapsed Logo Preview"
+                      className="h-full w-full object-contain p-2 animate-fade-in"
+                    />
+                  ) : (
+                    <span className="text-[10px] text-muted-foreground font-light">No Logo</span>
+                  )}
+                </div>
+                <div className="flex flex-col gap-2">
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setActivePicker("logo_collapsed")}
+                      className="px-3.5 py-2 bg-secondary hover:bg-muted text-foreground rounded-xl text-xs font-medium border border-border transition-colors cursor-pointer"
+                    >
+                      {storeLogoCollapsed ? "Change Logo" : "Upload Logo"}
+                    </button>
+                    {storeLogoCollapsed && (
+                      <button
+                        type="button"
+                        onClick={() => setStoreLogoCollapsed("")}
+                        className="px-3.5 py-2 bg-destructive/10 hover:bg-destructive/20 text-destructive rounded-xl text-xs font-medium border border-destructive/20 transition-colors cursor-pointer"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-[10px] text-muted-foreground font-light leading-relaxed">
+                    Recommended: 1:1 square ratio (e.g. 80x80px).
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -256,14 +310,14 @@ export default function AdminGeneralSettingsPage() {
       </div>
 
       {/* Cloudinary Media Picker Modal */}
-      {showMediaPicker && (
+      {activePicker !== null && (
         <div className="fixed inset-0 z-60 bg-foreground/20 backdrop-blur-xs overflow-y-auto flex items-center justify-center p-4">
           <div className="bg-card border border-border/40 rounded-3xl w-full max-w-4xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto relative my-auto">
             <MediaPicker
               onSelect={handleMediaSelect}
-              onClose={() => setShowMediaPicker(false)}
+              onClose={() => setActivePicker(null)}
               maxSelection={1}
-              title="Select Store Logo"
+              title={activePicker === "logo" ? "Select Store Logo" : "Select Collapsed Sidebar Logo"}
             />
           </div>
         </div>

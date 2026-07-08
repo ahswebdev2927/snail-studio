@@ -516,13 +516,13 @@ export default function AdminOrdersPage() {
 
   // Get status color badges for orders
   const getStatusBadge = (status: string) => {
-    switch (status) {
+    switch (status ? status.toLowerCase() : "") {
       case "paid":
-        return "bg-emerald-500/10 text-emerald-500 border-emerald-500/20";
+        return "bg-success/15 text-success border-success/30";
       case "processing":
         return "bg-primary/10 text-primary border-primary/20";
       case "shipped":
-        return "bg-blue-500/10 text-blue-500 border-blue-500/20";
+        return "bg-info/10 text-info border-info/20";
       case "delivered":
         return "bg-secondary text-secondary-foreground border-border";
       case "cancelled":
@@ -530,7 +530,7 @@ export default function AdminOrdersPage() {
       case "refunded":
         return "bg-purple-500/10 text-purple-500 border-purple-500/20";
       default:
-        return "bg-amber-500/10 text-amber-500 border-amber-500/20";
+        return "bg-warning/15 text-warning border-warning/30";
     }
   };
 
@@ -562,7 +562,7 @@ export default function AdminOrdersPage() {
             <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Volume Revenue</span>
             <p className="font-serif text-xl font-semibold text-foreground">{formatPrice(totalRevenue)}</p>
           </div>
-          <div className="p-3 rounded-2xl bg-emerald-500/10 text-emerald-500">
+          <div className="p-3 rounded-2xl bg-success/15 text-success">
             <TrendingUp className="w-5 h-5" />
           </div>
         </div>
@@ -572,7 +572,7 @@ export default function AdminOrdersPage() {
             <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Awaiting Payment</span>
             <p className="font-serif text-xl font-semibold text-foreground">{pendingCount} orders</p>
           </div>
-          <div className="p-3 rounded-2xl bg-amber-500/10 text-amber-500">
+          <div className="p-3 rounded-2xl bg-warning/15 text-warning">
             <Clock className="w-5 h-5" />
           </div>
         </div>
@@ -722,7 +722,7 @@ export default function AdminOrdersPage() {
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
                   <h3 className="font-serif text-lg font-normal text-foreground">Order Details</h3>
-                  <span className="text-[10px] font-mono bg-secondary px-2 py-0.5 border border-border rounded text-muted-foreground">
+                  <span className="text-[10px] font-mono bg-secondary/10 text-secondary px-2 py-0.5 border border-secondary/20 rounded font-semibold">
                     {selectedOrderId}
                   </span>
                 </div>
@@ -920,7 +920,7 @@ export default function AdminOrdersPage() {
                         </div>
                         <div className="flex justify-between border-t border-border/20 pt-1.5">
                           <span className="text-muted-foreground">Recalculated Difference:</span>
-                          <span className={`font-semibold ${orderDetail.shippingDifference > 0 ? "text-amber-500" : orderDetail.shippingDifference < 0 ? "text-emerald-500" : "text-foreground"}`}>
+                          <span className={`font-semibold ${orderDetail.shippingDifference > 0 ? "text-warning" : orderDetail.shippingDifference < 0 ? "text-success" : "text-foreground"}`}>
                             {orderDetail.shippingDifference > 0 ? "+" : ""}{formatPrice(orderDetail.shippingDifference)}
                           </span>
                         </div>
@@ -969,7 +969,7 @@ export default function AdminOrdersPage() {
                                   type="button"
                                   disabled={isRefundingDifference}
                                   onClick={handleRefundDifference}
-                                  className="px-2 py-0.5 bg-emerald-500 text-white hover:bg-emerald-600 rounded text-[8px] font-bold uppercase transition-all cursor-pointer"
+                                  className="px-2 py-0.5 bg-success text-foreground hover:bg-success/90 rounded text-[8px] font-bold uppercase transition-all cursor-pointer"
                                 >
                                   {isRefundingDifference ? "Refunding..." : "Refund Difference"}
                                 </button>
@@ -994,7 +994,7 @@ export default function AdminOrdersPage() {
                             <div key={pmt.id} className="text-xs font-light space-y-1">
                               <div className="flex justify-between font-semibold">
                                 <span className="text-foreground uppercase tracking-wide">{pmt.gateway} transaction</span>
-                                <span className={pmt.status === "succeeded" ? "text-emerald-500" : "text-amber-500"}>
+                                <span className={pmt.status === "succeeded" ? "text-success" : "text-warning"}>
                                   {pmt.status}
                                 </span>
                               </div>
@@ -1080,7 +1080,7 @@ export default function AdminOrdersPage() {
                                     type="button"
                                     disabled={isRegeneratingAwb}
                                     onClick={handleRegenerateAwb}
-                                    className="flex-1 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 text-[9px] font-bold uppercase tracking-wider rounded-lg border border-amber-500/20 transition-all cursor-pointer text-center"
+                                    className="flex-1 py-1.5 bg-warning/15 hover:bg-warning/25 text-warning text-[9px] font-bold uppercase tracking-wider rounded-lg border border-warning/30 transition-all cursor-pointer text-center"
                                   >
                                     {isRegeneratingAwb ? "Regenerating..." : "Regenerate AWB"}
                                   </button>
@@ -1183,8 +1183,8 @@ export default function AdminOrdersPage() {
 
                     {/* Notes by User */}
                     {orderDetail.notes && (
-                      <div className="md:col-span-2 space-y-1 bg-amber-500/5 border border-amber-500/10 rounded-2xl p-4">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-amber-500 flex items-center gap-1">
+                      <div className="md:col-span-2 space-y-1 bg-warning/5 border border-warning/20 rounded-2xl p-4">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-warning flex items-center gap-1">
                           <AlertCircle className="w-3.5 h-3.5" />
                           Shopper Notes
                         </span>
@@ -1204,7 +1204,7 @@ export default function AdminOrdersPage() {
                             {/* Dot indicator */}
                             <div className="absolute -left-[20.5px] top-1 w-2.5 h-2.5 rounded-full bg-border border border-card" />
                             <div className="flex items-center gap-2">
-                              <span className="text-[10px] font-bold uppercase text-foreground bg-secondary px-1.5 py-0.5 border border-border rounded">
+                              <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 border rounded ${getStatusBadge(log.status)}`}>
                                 {log.status}
                               </span>
                               <span className="text-[9px] text-muted-foreground font-light">{formatDate(log.createdAt)}</span>
@@ -1743,9 +1743,9 @@ export default function AdminOrdersPage() {
                 }
                 return (
                   <div key={ah.id} className="space-y-1 relative text-xs">
-                    <div className="absolute -left-[20.5px] top-1 w-2.5 h-2.5 rounded-full bg-amber-500 border border-card" />
+                    <div className="absolute -left-[20.5px] top-1 w-2.5 h-2.5 rounded-full bg-warning border border-card" />
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-bold uppercase text-amber-600 bg-amber-500/10 px-1.5 py-0.5 border border-amber-500/20 rounded">
+                      <span className="text-[10px] font-bold uppercase text-warning bg-warning/15 px-1.5 py-0.5 border border-warning/30 rounded">
                         Version {ah.version}
                       </span>
                       <span className="text-[10px] font-medium text-foreground">Edited by: {ah.editedBy}</span>

@@ -257,8 +257,8 @@ export function ProfileClient({ user }: ProfileClientProps) {
 
       {/* Main Alert Banners */}
       {successMessage && (
-        <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400 p-4 rounded-2xl flex items-start gap-3 text-xs animate-in slide-in-from-top duration-300">
-          <CheckCircle2 className="w-5 h-5 shrink-0 text-emerald-500 mt-0.5" />
+        <div className="bg-success/15 border border-success/30 text-success p-4 rounded-2xl flex items-start gap-3 text-xs animate-in slide-in-from-top duration-300">
+          <CheckCircle2 className="w-5 h-5 shrink-0 text-success mt-0.5" />
           <div>
             <p className="font-semibold">Update Successful</p>
             <p className="font-light mt-0.5">{successMessage}</p>
@@ -388,7 +388,7 @@ export function ProfileClient({ user }: ProfileClientProps) {
               <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                 Mobile Number
               </label>
-              <span className="text-[9px] uppercase font-semibold text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20 flex items-center gap-1 select-none">
+              <span className="text-[9px] uppercase font-semibold text-success bg-success/15 px-2 py-0.5 rounded-full border border-success/30 flex items-center gap-1 select-none">
                 <Lock className="w-2.5 h-2.5" /> Verified
               </span>
             </div>

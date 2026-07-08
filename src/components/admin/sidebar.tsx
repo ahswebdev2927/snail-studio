@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { 
@@ -33,12 +33,35 @@ interface SidebarProps {
 interface MenuItem {
   name: string;
   href?: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   icon: React.ComponentType<any>;
   subItems?: { name: string; href: string }[];
 }
 
 export default function Sidebar({ isCollapsed, isMobileOpen, closeMobileSidebar, user }: SidebarProps) {
   const pathname = usePathname();
+
+  // Settings State
+  const [storeLogo, setStoreLogo] = useState("");
+  const [storeLogoCollapsed, setStoreLogoCollapsed] = useState("");
+  const [storeName, setStoreName] = useState("");
+
+  useEffect(() => {
+    async function fetchSettings() {
+      try {
+        const res = await fetch("/api/admin/settings");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.store_logo) setStoreLogo(data.store_logo);
+          if (data.store_logo_collapsed) setStoreLogoCollapsed(data.store_logo_collapsed);
+          if (data.store_name) setStoreName(data.store_name);
+        }
+      } catch (err) {
+        console.error("Failed to load settings in sidebar:", err);
+      }
+    };
+    fetchSettings();
+  }, []);
 
   // Collapsible sub-menu states
   const [catalogOpen, setCatalogOpen] = useState(
@@ -255,14 +278,38 @@ export default function Sidebar({ isCollapsed, isMobileOpen, closeMobileSidebar,
         "h-20 flex items-center border-b border-border/40 shrink-0 px-6",
         isCollapsed ? "justify-center" : "justify-between"
       )}>
-        <Link href="/admin/dashboard" className="flex items-center gap-2.5 group">
-          <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-primary to-accent flex items-center justify-center text-primary-foreground font-serif font-bold text-lg shadow-sm group-hover:scale-105 transition-transform duration-300">
-            S
-          </div>
-          {!isCollapsed && (
-            <span className="font-serif text-lg font-semibold tracking-wide bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent opacity-95 group-hover:opacity-100 transition-opacity">
-              Snail Studio
-            </span>
+        <Link href="/admin/dashboard" className="flex items-center gap-2.5 group w-full justify-center">
+          {isCollapsed ? (
+            storeLogoCollapsed ? (
+              <img
+                src={storeLogoCollapsed}
+                alt={storeName || "Store Icon"}
+                className="h-9 w-9 object-contain rounded-xl group-hover:scale-105 transition-transform duration-300"
+              />
+            ) : (
+              <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-primary to-accent flex items-center justify-center text-primary-foreground font-serif font-bold text-lg shadow-sm group-hover:scale-105 transition-transform duration-300">
+                {storeName ? storeName.charAt(0) : "S"}
+              </div>
+            )
+          ) : (
+            storeLogo ? (
+              <div className="h-9 w-full flex items-center justify-center overflow-hidden">
+                <img
+                  src={storeLogo}
+                  alt={storeName || "Store Logo"}
+                  className="h-9 w-auto max-w-[180px] object-contain group-hover:scale-[1.02] transition-transform duration-300"
+                />
+              </div>
+            ) : (
+              <>
+                <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-primary to-accent flex items-center justify-center text-primary-foreground font-serif font-bold text-lg shadow-sm group-hover:scale-105 transition-transform duration-300">
+                  {storeName ? storeName.charAt(0) : "S"}
+                </div>
+                <span className="font-serif text-lg font-semibold tracking-wide bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent opacity-95 group-hover:opacity-100 transition-opacity">
+                  {storeName || "Snail Studio"}
+                </span>
+              </>
+            )
           )}
         </Link>
       </div>

@@ -280,7 +280,7 @@ export default function AdminReviewsPage() {
                 <div className="space-y-3 flex-1">
                   <div className="flex flex-wrap items-center gap-3">
                     {renderStars(review.rating)}
-                    <span className="text-[10px] font-bold text-foreground bg-secondary px-2 py-0.5 rounded border border-border">
+                    <span className="text-[10px] font-bold text-secondary bg-secondary/10 px-2 py-0.5 rounded border border-secondary/20">
                       {review.rating} / 5
                     </span>
                     <span className="text-[10px] text-muted-foreground font-light">

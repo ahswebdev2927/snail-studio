@@ -221,8 +221,8 @@ export function SecurityClient({ initialSessions }: SecurityClientProps) {
 
       {/* Notifications */}
       {successMessage && (
-        <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400 p-4 rounded-2xl flex items-start gap-3 text-xs animate-in slide-in-from-top duration-300">
-          <CheckCircle2 className="w-5 h-5 shrink-0 text-emerald-500 mt-0.5" />
+        <div className="bg-success/15 border border-success/30 text-success p-4 rounded-2xl flex items-start gap-3 text-xs animate-in slide-in-from-top duration-300">
+          <CheckCircle2 className="w-5 h-5 shrink-0 text-success mt-0.5" />
           <div>
             <p className="font-semibold">Security Updated</p>
             <p className="font-light mt-0.5">{successMessage}</p>
@@ -282,7 +282,7 @@ export function SecurityClient({ initialSessions }: SecurityClientProps) {
                           Current Device
                         </span>
                       ) : (
-                        <span className="text-[8px] tracking-wider uppercase font-bold text-muted-foreground/75 bg-secondary px-2 py-0.5 rounded-full select-none border border-border/20">
+                        <span className="text-[8px] tracking-wider uppercase font-bold text-secondary bg-secondary/10 px-2 py-0.5 rounded-full select-none border border-secondary/20">
                           Active
                         </span>
                       )}

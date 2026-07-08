@@ -29,7 +29,7 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({
   if (!mediaList || mediaList.length === 0) {
     return (
       <div className="flex items-center justify-center w-full aspect-square rounded-xl bg-primary/5 border border-primary/20">
-        <span className="text-neutral-400 text-sm">No media available</span>
+        <span className="text-muted-foreground text-sm">No media available</span>
       </div>
     );
   }
@@ -126,7 +126,7 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({
                 />
               ) : (
                 <div className="relative w-full h-full flex items-center justify-center bg-primary/5 dark:bg-primary/10">
-                  <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-white shadow-sm">
+                  <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-primary-foreground shadow-sm">
                     <Play className="w-3 h-3 fill-current ml-0.5" />
                   </div>
                 </div>

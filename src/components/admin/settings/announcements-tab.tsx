@@ -178,7 +178,7 @@ export default function AnnouncementsTab() {
       icon: "none",
       ctaText: "",
       ctaLink: "",
-      backgroundColor: "#0b0f19",
+      backgroundColor: "#A85328",
       textColor: "#ffffff",
       startDate: "",
       endDate: "",
@@ -572,7 +572,7 @@ export default function AnnouncementsTab() {
                       <span className="font-medium text-foreground">Status:</span>{" "}
                       <span
                         className={`inline-flex px-2 py-0.5 rounded-full text-[9px] font-semibold uppercase tracking-wider ${
-                          ann.isActive ? "bg-emerald-500/10 text-emerald-500" : "bg-muted text-muted-foreground"
+                          ann.isActive ? "bg-success/15 text-success border border-success/30" : "bg-muted text-muted-foreground"
                         }`}
                       >
                         {ann.isActive ? "Active" : "Inactive"}
@@ -581,7 +581,7 @@ export default function AnnouncementsTab() {
                     {ann.ctaLink && (
                       <div className="truncate max-w-[200px]">
                         <span className="font-medium text-foreground">Legacy Link:</span>{" "}
-                        <code className="text-[10px] bg-secondary px-1.5 py-0.5 rounded-md">
+                        <code className="text-[10px] bg-secondary/10 text-secondary px-1.5 py-0.5 rounded-md border border-secondary/20 font-mono">
                           {ann.ctaLink}
                         </code>
                       </div>
@@ -798,13 +798,13 @@ export default function AnnouncementsTab() {
                     <div className="flex gap-2 items-center">
                       <input
                         type="color"
-                        value={currentAnn.backgroundColor || "#0b0f19"}
+                        value={currentAnn.backgroundColor || "#A85328"}
                         onChange={(e) => setCurrentAnn({ ...currentAnn, backgroundColor: e.target.value })}
                         className="w-8 h-8 rounded-lg cursor-pointer border border-border shrink-0 bg-transparent"
                       />
                       <input
                         type="text"
-                        value={currentAnn.backgroundColor || "#0b0f19"}
+                        value={currentAnn.backgroundColor || "#A85328"}
                         onChange={(e) => setCurrentAnn({ ...currentAnn, backgroundColor: e.target.value })}
                         className="w-full px-3 py-1.5 bg-background border border-border rounded-xl text-xs font-mono text-foreground focus:outline-none"
                       />

@@ -419,9 +419,9 @@ export function InteractiveSizing({ sizeProfiles: dbSizeProfiles }: InteractiveS
                 <p className="text-xs text-muted-foreground font-light leading-relaxed">
                   Place a piece of adhesive tape horizontally across the widest part of your natural nail bed. Mark the edges of your nail walls with a pen, peel the tape off, and place it flat next to a metric ruler. Measure the distance in millimeters (mm).
                 </p>
-                <div className="pt-2 font-mono text-[10px] text-primary flex gap-2">
-                  <span className="bg-secondary px-2.5 py-1 rounded-md border border-border/20">Widest Part Only</span>
-                  <span className="bg-secondary px-2.5 py-1 rounded-md border border-border/20">Measure flat (mm)</span>
+                <div className="pt-2 font-mono text-[10px] flex gap-2">
+                  <span className="bg-secondary/10 text-secondary px-2.5 py-1 rounded-md border border-secondary/20">Widest Part Only</span>
+                  <span className="bg-secondary/10 text-secondary px-2.5 py-1 rounded-md border border-secondary/20">Measure flat (mm)</span>
                 </div>
               </div>
 

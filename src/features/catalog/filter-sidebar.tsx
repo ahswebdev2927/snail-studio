@@ -162,7 +162,7 @@ export function FilterSidebar({ facets, filters, onChange, onClear }: FilterSide
                     }`}
                   >
                     <span>{cat.name}</span>
-                    <span className="text-[10px] bg-secondary px-1.5 py-0.5 rounded text-muted-foreground">{cat.count}</span>
+                    <span className="text-[10px] bg-secondary/15 px-1.5 py-0.5 rounded text-secondary border border-secondary/20 font-medium">{cat.count}</span>
                   </button>
                 </li>
               ))}

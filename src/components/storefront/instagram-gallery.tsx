@@ -170,17 +170,16 @@ export function InstagramGallery() {
                 className="object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
               />
 
-              {/* Dark Gold Translucent Overlay */}
-              <div className="absolute inset-0 bg-primary/70 backdrop-blur-xs opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center text-white p-4">
+              <div className="absolute inset-0 bg-primary/70 backdrop-blur-xs opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center text-primary-foreground p-4">
                 <Instagram className="w-7 h-7 mb-3 text-accent animate-pulse" />
                 
                 <div className="flex gap-4 text-xs font-semibold tracking-wide">
                   <span className="flex items-center gap-1">
-                    <Heart className="w-3.5 h-3.5 fill-white" />
+                    <Heart className="w-3.5 h-3.5 fill-primary-foreground" />
                     {post.likes}
                   </span>
                   <span className="flex items-center gap-1">
-                    <MessageCircle className="w-3.5 h-3.5 fill-white" />
+                    <MessageCircle className="w-3.5 h-3.5 fill-primary-foreground" />
                     {post.comments}
                   </span>
                 </div>

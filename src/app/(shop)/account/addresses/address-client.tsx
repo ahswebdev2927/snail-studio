@@ -320,7 +320,7 @@ export function AddressClient({ initialAddresses }: AddressClientProps) {
                         {cardLabel}
                       </span>
                     )}
-                    <span className="text-[9px] uppercase tracking-wider font-bold text-muted-foreground bg-secondary px-1.5 py-0.5 rounded border border-border/30">
+                    <span className="text-[9px] uppercase tracking-wider font-bold text-secondary bg-secondary/10 px-1.5 py-0.5 rounded border border-secondary/20">
                       {addr.type}
                     </span>
                   </div>

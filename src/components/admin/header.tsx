@@ -170,25 +170,25 @@ export default function Header({
         return {
           label: "Orders",
           icon: ShoppingBag,
-          color: "bg-emerald-500/10 border-emerald-500/20 text-emerald-500",
+          color: "bg-success/15 border-success/30 text-success",
         };
       case "inventory":
         return {
           label: "Inventory",
           icon: AlertTriangle,
-          color: "bg-amber-500/10 border-amber-500/20 text-amber-500",
+          color: "bg-warning/15 border-warning/30 text-warning",
         };
       case "reviews":
         return {
           label: "Reviews",
           icon: MessageSquare,
-          color: "bg-blue-500/10 border-blue-500/20 text-blue-500",
+          color: "bg-info/10 border-info/20 text-info",
         };
       case "system":
         return {
           label: "System",
           icon: Server,
-          color: "bg-rose-500/10 border-rose-500/20 text-rose-500",
+          color: "bg-destructive/10 border-destructive/20 text-destructive",
         };
       default:
         return {

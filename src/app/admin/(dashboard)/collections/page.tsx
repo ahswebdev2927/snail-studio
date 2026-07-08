@@ -292,13 +292,13 @@ export default function AdminCollectionsPage() {
           style={{ marginLeft: `${depth * 24}px` }}
         >
           <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-xl ${depth === 0 ? "bg-primary/10 text-primary" : "bg-secondary text-muted-foreground"}`}>
+            <div className={`p-2 rounded-xl ${depth === 0 ? "bg-primary/10 text-primary" : "bg-secondary/15 text-secondary border border-secondary/20"}`}>
               <Folder className="w-4 h-4" />
             </div>
             <div className="space-y-0.5">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-semibold text-foreground">{cat.name}</span>
-                <span className="text-[8px] font-mono bg-secondary px-1.5 py-0.5 border border-border rounded text-muted-foreground">
+                <span className="text-[8px] font-mono bg-secondary/10 text-secondary px-1.5 py-0.5 border border-secondary/20 rounded font-medium">
                   slug: {cat.slug}
                 </span>
               </div>
@@ -476,7 +476,7 @@ export default function AdminCollectionsPage() {
                     <div className="space-y-1.5 flex-1">
                       <div className="flex items-center gap-2">
                         <h4 className="text-xs font-bold text-foreground truncate max-w-[150px]">{brd.name}</h4>
-                        <span className="text-[8px] font-mono bg-secondary px-1.5 py-0.5 border border-border rounded text-muted-foreground">
+                        <span className="text-[8px] font-mono bg-secondary/10 text-secondary px-1.5 py-0.5 border border-secondary/20 rounded font-medium">
                           {brd.slug}
                         </span>
                       </div>

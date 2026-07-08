@@ -103,7 +103,7 @@ export default async function OrderSuccessPage({ searchParams }: SuccessPageProp
         
         {/* Animated celebration icon */}
         <div className="space-y-3">
-          <div className="inline-flex p-4.5 bg-emerald-500/10 rounded-full text-emerald-500 relative">
+          <div className="inline-flex p-4.5 bg-success/15 rounded-full text-success relative">
             <CheckCircle2 className="w-10 h-10 animate-pulse" />
             <Sparkles className="w-5 h-5 text-accent absolute -top-1 -right-1 animate-spin" style={{ animationDuration: '6s' }} />
           </div>
@@ -249,7 +249,7 @@ export default async function OrderSuccessPage({ searchParams }: SuccessPageProp
           </div>
 
           {discountCost > 0 && (
-            <div className="flex justify-between text-emerald-500">
+            <div className="flex justify-between text-success">
               <span>Coupon Discount</span>
               <span className="font-mono">-{formatPrice(discountCost)}</span>
             </div>

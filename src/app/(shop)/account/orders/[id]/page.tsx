@@ -164,11 +164,11 @@ export default async function OrderDetailsPage({ params }: PageProps) {
   const getStatusBadgeStyle = (status: string) => {
     switch (status.toLowerCase()) {
       case "delivered":
-        return "bg-emerald-500/10 text-emerald-700 border border-emerald-500/20 dark:text-emerald-400";
+        return "bg-success/15 text-success border border-success/30";
       case "processing":
       case "paid":
       case "pending":
-        return "bg-amber-500/10 text-amber-700 border border-amber-500/20 dark:text-amber-400";
+        return "bg-warning/15 text-warning border border-warning/30";
       case "cancelled":
       case "refunded":
         return "bg-rose-500/10 text-rose-700 border border-rose-500/20 dark:text-rose-400";
@@ -339,7 +339,7 @@ export default async function OrderDetailsPage({ params }: PageProps) {
               </div>
               
               {orderRecord.discountAmount > 0 && (
-                <div className="flex justify-between text-emerald-600 dark:text-emerald-400">
+                <div className="flex justify-between text-success">
                   <span>Coupon Discount {orderRecord.couponCode ? `(${orderRecord.couponCode})` : ""}</span>
                   <span>- {formatPrice(orderRecord.discountAmount)}</span>
                 </div>

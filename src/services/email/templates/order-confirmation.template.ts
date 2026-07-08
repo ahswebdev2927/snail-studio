@@ -219,7 +219,6 @@ export function getOrderConfirmationTemplate(params: OrderConfirmationParams): s
       border: 1px solid #ebdcd5;
       border-radius: 16px;
       padding: 18px;
-      min-height: 120px;
     }
     .btn-container {
       text-align: center;
@@ -328,9 +327,9 @@ export function getOrderConfirmationTemplate(params: OrderConfirmationParams): s
           </table>
 
           <h3 class="section-title">Delivery Details</h3>
-          <table class="grid-table">
+          <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
             <tr>
-              <td class="grid-col">
+              <td style="padding-bottom: 16px;">
                 <div class="address-card">
                   <div style="font-size: 11px; font-weight: bold; text-transform: uppercase; color: #A85328; margin-bottom: 8px;">Shipping Address</div>
                   <div style="font-size: 13px; font-weight: 600; color: #1e1b1b; margin-bottom: 4px;">${params.shippingAddress.name}</div>
@@ -341,7 +340,9 @@ export function getOrderConfirmationTemplate(params: OrderConfirmationParams): s
                   <div style="font-size: 12px; color: #8c8585;">Phone: ${params.shippingAddress.phone}</div>
                 </div>
               </td>
-              <td class="grid-col" style="padding-right: 0;">
+            </tr>
+            <tr>
+              <td>
                 <div class="address-card">
                   <div style="font-size: 11px; font-weight: bold; text-transform: uppercase; color: #A85328; margin-bottom: 8px;">What's Next?</div>
                   <p style="font-size: 12px; line-height: 1.5; color: #555555; margin: 0 0 10px 0;">Our artists are handcrafting your nails. Orders usually take 2-3 business days to prepare before shipping.</p>

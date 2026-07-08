@@ -440,8 +440,8 @@ function TrackingSearchContent() {
                     <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider">Order Timeline</span>
                     <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${
                       result.order.status === "delivered" 
-                        ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
-                        : "bg-amber-500/10 text-amber-500 border border-amber-500/20"
+                        ? "bg-success/15 text-success border border-success/30"
+                        : "bg-warning/15 text-warning border border-warning/30"
                     }`}>
                       {result.order.status}
                     </span>
@@ -689,7 +689,7 @@ function TrackingSearchContent() {
                   </span>
                 </div>
                 {result.order.discountAmount > 0 && (
-                  <div className="flex justify-between text-emerald-500">
+                  <div className="flex justify-between text-success">
                     <span>Discount {result.order.couponCode ? `(${result.order.couponCode})` : ""}</span>
                     <span>-{formatPrice(result.order.discountAmount)}</span>
                   </div>
