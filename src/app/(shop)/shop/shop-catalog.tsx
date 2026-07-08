@@ -180,7 +180,11 @@ export default function ShopCatalog() {
       }
 
       try {
-        const qString = buildQueryString(filters, searchQuery, page, sort);
+        let qString = buildQueryString(filters, searchQuery, page, sort);
+        const limit = navMode === "infinite_scroll" ? gridCols * 2 : gridCols * 8;
+        const params = new URLSearchParams(qString);
+        params.set("limit", limit.toString());
+        qString = params.toString();
         const res = await fetch(`/api/search?${qString}`);
         if (res.ok) {
           const json = await res.json();
@@ -226,7 +230,7 @@ export default function ShopCatalog() {
     return () => {
       isMounted = false;
     };
-  }, [filters, searchQuery, page, sort, navMode]);
+  }, [filters, searchQuery, page, sort, navMode, gridCols]);
 
   // 4. Sync State to Browser URL
   useEffect(() => {
@@ -290,6 +294,16 @@ export default function ShopCatalog() {
     setNavMode(mode);
     setPage(1);
     setProductsList([]);
+  };
+
+  const handleGridColsChange = (cols: 2 | 3 | 4) => {
+    if (gridCols === cols) return;
+    setGridCols(cols);
+    setIsLoading(true);
+    setPage(1);
+    if (navMode === "infinite_scroll") {
+      setProductsList([]);
+    }
   };
 
   const handleQueryChange = (val: string) => {
@@ -544,7 +558,7 @@ export default function ShopCatalog() {
                   {[2, 3, 4].map((cols) => (
                     <button
                       key={cols}
-                      onClick={() => setGridCols(cols as 2 | 3 | 4)}
+                      onClick={() => handleGridColsChange(cols as 2 | 3 | 4)}
                       className={`p-1.5 rounded-full transition-all duration-300 cursor-pointer ${
                         gridCols === cols
                           ? "bg-primary/20 text-primary"
