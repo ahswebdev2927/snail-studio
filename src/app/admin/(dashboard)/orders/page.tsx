@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { 
   ClipboardList, 
   Filter, 
@@ -22,7 +23,9 @@ import {
   CheckCircle2,
   XCircle,
   HelpCircle,
-  Sliders
+  Sliders,
+  Pencil,
+  History
 } from "lucide-react";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 
@@ -166,6 +169,12 @@ export default function AdminOrdersPage() {
   const [settings, setSettings] = useState<any>(null);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [showEditAddressModal, setShowEditAddressModal] = useState(false);
+  const [showAddressHistoryModal, setShowAddressHistoryModal] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Edit address form state
   const [editName, setEditName] = useState("");
@@ -835,33 +844,49 @@ export default function AdminOrdersPage() {
                           <MapPin className="w-3.5 h-3.5" />
                           Shipping Destination
                         </h4>
-                        {orderDetail.addresses.filter(a => a.type === "shipping").map((addr) => {
-                          const hasActiveShipment = orderDetail.shipments.some(s => s.status !== "cancelled");
-                          const isEditAllowed = !hasActiveShipment || (settings && (settings.adminCanEditAfterAwb === "true" || settings.adminCanEditAfterAwb === true));
-                          return (
-                            isEditAllowed && (
-                              <button
-                                key={`edit-${addr.id}`}
-                                type="button"
-                                onClick={() => {
-                                  setEditName(addr.name);
-                                  setEditPhone(addr.phone);
-                                  setEditAddressLine1(addr.addressLine1);
-                                  setEditAddressLine2(addr.addressLine2 || "");
-                                  setEditCity(addr.city);
-                                  setEditState(addr.state);
-                                  setEditPostalCode(addr.postalCode);
-                                  setEditCountry(addr.country);
-                                  setEditReason("");
-                                  setShowEditAddressModal(true);
-                                }}
-                                className="px-2.5 py-1 text-[9px] font-bold uppercase bg-primary text-primary-foreground rounded-lg hover:bg-primary/95 transition-all cursor-pointer"
-                              >
-                                Edit Address
-                              </button>
-                            )
-                          );
-                        })}
+                        
+                        <div className="flex items-center gap-2">
+                          {/* History Icon Button */}
+                          <button
+                            type="button"
+                            disabled={!orderDetail.addressHistory || orderDetail.addressHistory.length === 0}
+                            onClick={() => setShowAddressHistoryModal(true)}
+                            className="p-1.5 bg-secondary hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed text-muted-foreground hover:text-foreground rounded-lg transition-all cursor-pointer border border-border/30 flex items-center justify-center"
+                            title="View Address Modification Audit Trail"
+                          >
+                            <History className="w-3.5 h-3.5" />
+                          </button>
+
+                          {/* Edit Address Button */}
+                          {orderDetail.addresses.filter(a => a.type === "shipping").map((addr) => {
+                            const hasActiveShipment = orderDetail.shipments.some(s => s.status !== "cancelled");
+                            const isEditAllowed = !hasActiveShipment || (settings && (settings.adminCanEditAfterAwb === "true" || settings.adminCanEditAfterAwb === true));
+                            return (
+                              isEditAllowed && (
+                                <button
+                                  key={`edit-${addr.id}`}
+                                  type="button"
+                                  onClick={() => {
+                                    setEditName(addr.name);
+                                    setEditPhone(addr.phone);
+                                    setEditAddressLine1(addr.addressLine1);
+                                    setEditAddressLine2(addr.addressLine2 || "");
+                                    setEditCity(addr.city);
+                                    setEditState(addr.state);
+                                    setEditPostalCode(addr.postalCode);
+                                    setEditCountry(addr.country);
+                                    setEditReason("");
+                                    setShowEditAddressModal(true);
+                                  }}
+                                  className="p-1.5 bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg transition-all cursor-pointer flex items-center justify-center"
+                                  title="Edit Shipping Address"
+                                >
+                                  <Pencil className="w-3.5 h-3.5" />
+                                </button>
+                              )
+                            );
+                          })}
+                        </div>
                       </div>
                       {orderDetail.addresses.filter(a => a.type === "shipping").map((addr) => (
                         <div key={addr.id} className="text-xs font-light space-y-1 text-foreground leading-relaxed">
@@ -1192,58 +1217,7 @@ export default function AdminOrdersPage() {
                       </div>
                     </div>
 
-                    {/* Address Edit History Audit Log */}
-                    {orderDetail.addressHistory && orderDetail.addressHistory.length > 0 && (
-                      <div className="md:col-span-2 space-y-3">
-                        <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                          <Clock className="w-3.5 h-3.5" />
-                          Address Modification Audit Trail
-                        </h4>
-                        <div className="space-y-4 relative pl-4 border-l border-border/40 ml-2">
-                          {orderDetail.addressHistory.map((ah: any) => {
-                            let oldAddr: any = {};
-                            let newAddr: any = {};
-                            try {
-                              oldAddr = JSON.parse(ah.oldAddress);
-                              newAddr = JSON.parse(ah.newAddress);
-                            } catch (e) {
-                              console.error(e);
-                            }
-                            return (
-                              <div key={ah.id} className="space-y-1 relative text-xs">
-                                <div className="absolute -left-[20.5px] top-1 w-2.5 h-2.5 rounded-full bg-amber-500 border border-card" />
-                                <div className="flex items-center gap-2">
-                                  <span className="text-[10px] font-bold uppercase text-amber-600 bg-amber-500/10 px-1.5 py-0.5 border border-amber-500/20 rounded">
-                                    Version {ah.version}
-                                  </span>
-                                  <span className="text-[10px] font-medium text-foreground">Edited by: {ah.editedBy}</span>
-                                  <span className="text-[9px] text-muted-foreground font-light">{formatDate(ah.createdAt)}</span>
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-[10px] font-light bg-background/50 border border-border/30 rounded-xl p-2.5">
-                                  <div>
-                                    <span className="text-[8px] font-bold uppercase tracking-wider text-muted-foreground block">Old Address:</span>
-                                    <p className="font-semibold text-foreground">{oldAddr.name} ({oldAddr.phone})</p>
-                                    <p className="text-muted-foreground">{oldAddr.addressLine1}, {oldAddr.city}, {oldAddr.state} - {oldAddr.postalCode}</p>
-                                    <p className="text-muted-foreground font-semibold">Shipping: {formatPrice(ah.shippingBefore)}</p>
-                                  </div>
-                                  <div>
-                                    <span className="text-[8px] font-bold uppercase tracking-wider text-muted-foreground block">New Address:</span>
-                                    <p className="font-semibold text-foreground">{newAddr.name} ({newAddr.phone})</p>
-                                    <p className="text-muted-foreground">{newAddr.addressLine1}, {newAddr.city}, {newAddr.state} - {newAddr.postalCode}</p>
-                                    <p className="text-muted-foreground font-semibold">Shipping: {formatPrice(ah.shippingAfter)}</p>
-                                  </div>
-                                </div>
-                                {ah.reason && (
-                                  <p className="text-[10px] text-muted-foreground pl-1 leading-normal italic">
-                                    Reason: {ah.reason}
-                                  </p>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
+
                   </div>
                 </>
               )}
@@ -1737,6 +1711,82 @@ export default function AdminOrdersPage() {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Address History Modal Overlay */}
+      {showAddressHistoryModal && orderDetail && mounted && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 overflow-y-auto">
+          <div className="bg-card border border-border shadow-2xl p-6 rounded-3xl w-full max-w-2xl text-foreground space-y-5 my-auto relative max-h-[85vh] overflow-y-auto">
+            <div className="flex justify-between items-center pb-3 border-b border-border/40">
+              <h3 className="font-serif text-base font-semibold text-foreground flex items-center gap-2">
+                <Clock className="w-5 h-5 text-primary" />
+                Address Modification Audit Trail
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowAddressHistoryModal(false)}
+                className="p-1 rounded-full bg-secondary hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-4 relative pl-4 border-l border-border/40 ml-2">
+              {orderDetail.addressHistory && orderDetail.addressHistory.map((ah: any) => {
+                let oldAddr: any = {};
+                let newAddr: any = {};
+                try {
+                  oldAddr = JSON.parse(ah.oldAddress);
+                  newAddr = JSON.parse(ah.newAddress);
+                } catch (e) {
+                  console.error(e);
+                }
+                return (
+                  <div key={ah.id} className="space-y-1 relative text-xs">
+                    <div className="absolute -left-[20.5px] top-1 w-2.5 h-2.5 rounded-full bg-amber-500 border border-card" />
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-bold uppercase text-amber-600 bg-amber-500/10 px-1.5 py-0.5 border border-amber-500/20 rounded">
+                        Version {ah.version}
+                      </span>
+                      <span className="text-[10px] font-medium text-foreground">Edited by: {ah.editedBy}</span>
+                      <span className="text-[9px] text-muted-foreground font-light">{formatDate(ah.createdAt)}</span>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-[10px] font-light bg-background/50 border border-border/30 rounded-xl p-2.5">
+                      <div>
+                        <span className="text-[8px] font-bold uppercase tracking-wider text-muted-foreground block">Old Address:</span>
+                        <p className="font-semibold text-foreground">{oldAddr.name} ({oldAddr.phone})</p>
+                        <p className="text-muted-foreground">{oldAddr.addressLine1}, {oldAddr.city}, {oldAddr.state} - {oldAddr.postalCode}</p>
+                        <p className="text-muted-foreground font-semibold">Shipping: {formatPrice(ah.shippingBefore)}</p>
+                      </div>
+                      <div>
+                        <span className="text-[8px] font-bold uppercase tracking-wider text-muted-foreground block">New Address:</span>
+                        <p className="font-semibold text-foreground">{newAddr.name} ({newAddr.phone})</p>
+                        <p className="text-muted-foreground">{newAddr.addressLine1}, {newAddr.city}, {newAddr.state} - {newAddr.postalCode}</p>
+                        <p className="text-muted-foreground font-semibold">Shipping: {formatPrice(ah.shippingAfter)}</p>
+                      </div>
+                    </div>
+                    {ah.reason && (
+                      <p className="text-[10px] text-muted-foreground pl-1 leading-normal italic">
+                        Reason: {ah.reason}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="flex justify-end pt-2 border-t border-border/40">
+              <button
+                type="button"
+                onClick={() => setShowAddressHistoryModal(false)}
+                className="px-5 py-2 bg-secondary hover:bg-muted text-foreground text-xs font-semibold rounded-xl border border-border transition-colors cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
     </div>
   );
