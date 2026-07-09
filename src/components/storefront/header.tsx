@@ -270,7 +270,7 @@ export function Header({ navigationData, storeLogo = "", storeName = "Snail Stud
           </div>
 
           {/* Center: Desktop Mega Menu */}
-          <nav className="hidden lg:flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-foreground/80">
+          <nav className="hidden lg:flex items-center gap-1.5 text-xs font-medium uppercase tracking-widest text-foreground/80 font-inter">
             {/* Home */}
             <Link
               href="/"
@@ -619,7 +619,7 @@ export function Header({ navigationData, storeLogo = "", storeName = "Snail Stud
           <div className="px-6 py-4 flex flex-col space-y-4">
             <button
               onClick={() => handleMobileNav("/")}
-              className="w-full text-left font-serif text-base text-foreground hover:text-primary transition-colors py-2 border-b border-border/10 cursor-pointer"
+              className="w-full text-left font-inter text-sm font-medium text-foreground hover:text-primary transition-colors py-2 border-b border-border/10 cursor-pointer"
             >
               Home
             </button>
@@ -627,7 +627,7 @@ export function Header({ navigationData, storeLogo = "", storeName = "Snail Stud
             <Accordion type="single" className="w-full border-none">
               {/* Dynamic Shop Press-Ons Menu */}
               <AccordionItem value="shop-menu" className="border-b border-border/10">
-                <AccordionTrigger className="py-2.5 font-serif text-base hover:no-underline hover:text-primary">
+                <AccordionTrigger className="py-2.5 font-inter text-sm font-medium hover:no-underline hover:text-primary">
                   Shop Press-Ons
                 </AccordionTrigger>
                 <AccordionContent className="pl-4 space-y-3 pt-2">
@@ -700,7 +700,7 @@ export function Header({ navigationData, storeLogo = "", storeName = "Snail Stud
                 if (cat.children && cat.children.length > 0) {
                   return (
                     <AccordionItem key={cat.id} value={cat.slug} className="border-b border-border/10">
-                      <AccordionTrigger className="py-2.5 font-serif text-base hover:no-underline hover:text-primary">
+                      <AccordionTrigger className="py-2.5 font-inter text-sm font-medium hover:no-underline hover:text-primary">
                         {cat.name}
                       </AccordionTrigger>
                       <AccordionContent className="pl-4 space-y-2 pt-2 text-xs font-light">
@@ -731,7 +731,7 @@ export function Header({ navigationData, storeLogo = "", storeName = "Snail Stud
                 <button
                   key={cat.id}
                   onClick={() => handleMobileNav(`/shop?category=${cat.slug}`)}
-                  className="w-full text-left font-serif text-base text-foreground hover:text-primary transition-colors py-2 border-b border-border/10 cursor-pointer"
+                  className="w-full text-left font-inter text-sm font-medium text-foreground hover:text-primary transition-colors py-2 border-b border-border/10 cursor-pointer"
                 >
                   {cat.name}
                 </button>
@@ -740,14 +740,14 @@ export function Header({ navigationData, storeLogo = "", storeName = "Snail Stud
 
             <button
               onClick={() => handleMobileNav("/shop")}
-              className="w-full text-left font-serif text-base text-foreground hover:text-primary transition-colors py-2 border-b border-border/10 cursor-pointer"
+              className="w-full text-left font-inter text-sm font-medium text-foreground hover:text-primary transition-colors py-2 border-b border-border/10 cursor-pointer"
             >
               All Collections
             </button>
 
             <button
               onClick={() => handleMobileNav("/sizing-guide")}
-              className="w-full text-left font-serif text-base text-foreground hover:text-primary transition-colors py-2 border-b border-border/10 cursor-pointer"
+              className="w-full text-left font-inter text-sm font-medium text-foreground hover:text-primary transition-colors py-2 border-b border-border/10 cursor-pointer"
             >
               Find Your Size
             </button>
@@ -757,14 +757,14 @@ export function Header({ navigationData, storeLogo = "", storeName = "Snail Stud
                 {currentUser.role === "admin" && (
                   <button
                     onClick={() => handleMobileNav("/admin/dashboard")}
-                    className="w-full text-left font-serif text-base text-foreground hover:text-primary transition-colors py-2 border-b border-border/10 cursor-pointer"
+                    className="w-full text-left font-inter text-sm font-medium text-foreground hover:text-primary transition-colors py-2 border-b border-border/10 cursor-pointer"
                   >
                     Admin Dashboard
                   </button>
                 )}
                 <button
                   onClick={() => handleMobileNav("/account")}
-                  className="w-full text-left font-serif text-base text-foreground hover:text-primary transition-colors py-2 border-b border-border/10 cursor-pointer"
+                  className="w-full text-left font-inter text-sm font-medium text-foreground hover:text-primary transition-colors py-2 border-b border-border/10 cursor-pointer"
                 >
                   My Account
                 </button>
@@ -773,7 +773,7 @@ export function Header({ navigationData, storeLogo = "", storeName = "Snail Stud
                     handleLogout();
                     setMobileMenuOpen(false);
                   }}
-                  className="w-full text-left font-serif text-base text-rose-500 hover:text-rose-600 transition-colors py-2 border-b border-border/10 cursor-pointer"
+                  className="w-full text-left font-inter text-sm font-medium text-rose-500 hover:text-rose-600 transition-colors py-2 border-b border-border/10 cursor-pointer"
                 >
                   Sign Out
                 </button>
@@ -781,7 +781,7 @@ export function Header({ navigationData, storeLogo = "", storeName = "Snail Stud
             ) : (
               <button
                 onClick={() => handleMobileNav("/account")}
-                className="w-full text-left font-serif text-base text-foreground hover:text-primary transition-colors py-2 border-b border-border/10 cursor-pointer"
+                className="w-full text-left font-inter text-sm font-medium text-foreground hover:text-primary transition-colors py-2 border-b border-border/10 cursor-pointer"
               >
                 Sign In / Register
               </button>
