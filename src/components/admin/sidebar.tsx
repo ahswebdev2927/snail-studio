@@ -66,6 +66,8 @@ export default function Sidebar({ isCollapsed, isMobileOpen, closeMobileSidebar,
   // Collapsible sub-menu states
   const [catalogOpen, setCatalogOpen] = useState(
     pathname.startsWith("/admin/products") || 
+    pathname.startsWith("/admin/categories") || 
+    pathname.startsWith("/admin/brands") || 
     pathname.startsWith("/admin/collections") ||
     pathname.startsWith("/admin/attributes")
   );
@@ -97,6 +99,8 @@ export default function Sidebar({ isCollapsed, isMobileOpen, closeMobileSidebar,
       subItems: [
         { name: "Products", href: "/admin/products" },
         { name: "Add Product", href: "/admin/products/new" },
+        { name: "Categories", href: "/admin/categories" },
+        { name: "Brands", href: "/admin/brands" },
         { name: "Collections", href: "/admin/collections" },
         { name: "Attributes", href: "/admin/attributes" },
         { name: "Audit Logs", href: "/admin/products/audit-logs" }

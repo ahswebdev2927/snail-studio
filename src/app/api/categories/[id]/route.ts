@@ -16,6 +16,8 @@ const updateCategorySchema = z.object({
   parentId: z.string().max(100).optional().nullable(),
   description: z.string().max(1000, "Description is too long").optional().nullable(),
   image: z.string().url("Invalid image URL").optional().nullable().or(z.literal("")),
+  showOnHomepage: z.boolean().optional(),
+  sortOrder: z.number().int().optional(),
 });
 
 // Helper function to check if setting parentId will create a circular loop
@@ -110,7 +112,7 @@ export async function PUT(
       );
     }
 
-    const { name, parentId, description, image } = result.data;
+    const { name, parentId, description, image, showOnHomepage, sortOrder } = result.data;
     let slug = result.data.slug;
 
     // 4. Handle slug changes
@@ -169,6 +171,8 @@ export async function PUT(
         ...(parentId !== undefined && { parentId: parentId || null }),
         ...(description !== undefined && { description }),
         ...(image !== undefined && { image: image || null }),
+        ...(showOnHomepage !== undefined && { showOnHomepage }),
+        ...(sortOrder !== undefined && { sortOrder }),
         updatedAt: new Date(),
       })
       .where(eq(categories.id, id))

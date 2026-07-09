@@ -18,6 +18,8 @@ const createCategorySchema = z.object({
   parentId: z.string().max(100).optional().nullable(),
   description: z.string().max(1000, "Description is too long").optional().nullable(),
   image: z.string().url("Invalid image URL").optional().nullable().or(z.literal("")),
+  showOnHomepage: z.boolean().optional(),
+  sortOrder: z.number().int().optional(),
 });
 
 interface CategoryItem {
@@ -27,6 +29,8 @@ interface CategoryItem {
   slug: string;
   description: string | null;
   image: string | null;
+  showOnHomepage: boolean;
+  sortOrder: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -55,9 +59,13 @@ function buildCategoryTree(flatList: CategoryItem[]): CategoryTreeNode[] {
     }
   });
 
-  // Recursive sort function to sort tree levels alphabetically
+  // Recursive sort function to sort tree levels by sortOrder, then alphabetically
   const sortTreeNodes = (nodes: CategoryTreeNode[]) => {
-    nodes.sort((a, b) => a.name.localeCompare(b.name));
+    nodes.sort((a, b) => {
+      const diff = (a.sortOrder || 0) - (b.sortOrder || 0);
+      if (diff !== 0) return diff;
+      return a.name.localeCompare(b.name);
+    });
     nodes.forEach((node) => {
       if (node.children.length > 0) {
         sortTreeNodes(node.children);
@@ -76,7 +84,7 @@ export async function GET(req: NextRequest) {
     const tree = searchParams.get("tree") === "true";
 
     const allCategories = await db.query.categories.findMany({
-      orderBy: (c, { asc }) => [asc(c.name)],
+      orderBy: (c, { asc }) => [asc(c.sortOrder), asc(c.name)],
     });
 
     if (tree) {
@@ -120,7 +128,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { name, parentId, description, image } = result.data;
+    const { name, parentId, description, image, showOnHomepage, sortOrder } = result.data;
     let slug = result.data.slug;
 
     // 3. Generate slug if not provided
@@ -173,6 +181,8 @@ export async function POST(req: NextRequest) {
         slug,
         description: description || null,
         image: image || null,
+        showOnHomepage: showOnHomepage ?? false,
+        sortOrder: sortOrder ?? 0,
         createdAt: now,
         updatedAt: now,
       })

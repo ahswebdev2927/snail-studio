@@ -7,341 +7,232 @@ import {
   Trash2, 
   Loader2, 
   Folder, 
-  Tag, 
   X, 
-  ChevronRight, 
-  Image as ImageIcon, 
-  Compass, 
   Check, 
   AlertCircle,
-  Pencil
+  Pencil,
+  PlusCircle,
+  HelpCircle,
+  Eye
 } from "lucide-react";
-import MediaPicker from "@/components/media/media-picker";
 
-interface Category {
+interface Rule {
+  id?: string;
+  column: string;
+  relation: string;
+  value: string;
+}
+
+interface Collection {
   id: string;
-  parentId: string | null;
   name: string;
   slug: string;
   description: string | null;
-  image: string | null;
+  type: "manual" | "dynamic";
+  isActive: boolean;
+  showOnHomepage: boolean;
+  sortOrder: number;
   createdAt: string;
-  children?: Category[];
+  rules?: Rule[];
+  products?: { productId: string }[];
+}
+
+interface Product {
+  id: string;
+  name: string;
+  slug: string;
+  priceMin: number;
+}
+
+interface Category {
+  id: string;
+  name: string;
 }
 
 interface Brand {
   id: string;
   name: string;
-  slug: string;
-  description: string | null;
-  logoUrl: string | null;
-  createdAt: string;
 }
 
 export default function AdminCollectionsPage() {
-  const [activeTab, setActiveTab] = useState<"categories" | "brands">("categories");
-  
-  // Data lists
-  const [categoriesFlat, setCategoriesFlat] = useState<Category[]>([]);
-  const [categoriesTree, setCategoriesTree] = useState<Category[]>([]);
+  const [collectionsList, setCollectionsList] = useState<Collection[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
-  
-  // Loaders
-  const [isCatLoading, setIsCatLoading] = useState(true);
-  const [isBrdLoading, setIsBrdLoading] = useState(true);
 
-  // Overlay / Modal forms state
-  const [isCatModalOpen, setIsCatModalOpen] = useState(false);
-  const [isBrdModalOpen, setIsBrdModalOpen] = useState(false);
+  // Loaders
+  const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Category Form State
-  const [catName, setCatName] = useState("");
-  const [catSlug, setCatSlug] = useState("");
-  const [catParentId, setCatParentId] = useState("");
-  const [catDescription, setCatDescription] = useState("");
-  const [catImage, setCatImage] = useState("");
-  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
-  const [editingBrand, setEditingBrand] = useState<Brand | null>(null);
+  // Modal forms state
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Media Picker states
-  const [showCatMediaPicker, setShowCatMediaPicker] = useState(false);
-  const [showBrdMediaPicker, setShowBrdMediaPicker] = useState(false);
+  // Form Fields State
+  const [name, setName] = useState("");
+  const [slug, setSlug] = useState("");
+  const [description, setDescription] = useState("");
+  const [type, setType] = useState<"manual" | "dynamic">("manual");
+  const [isActive, setIsActive] = useState(true);
+  const [showOnHomepage, setShowOnHomepage] = useState(false);
+  const [sortOrder, setSortOrder] = useState(0);
+  const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
+  const [rules, setRules] = useState<Rule[]>([]);
 
-  // Brand Form State
-  const [brdName, setBrdName] = useState("");
-  const [brdSlug, setBrdSlug] = useState("");
-  const [brdDescription, setBrdDescription] = useState("");
-  const [brdLogoUrl, setBrdLogoUrl] = useState("");
+  const [editingCollection, setEditingCollection] = useState<Collection | null>(null);
 
-  const handleCatMediaSelect = (selected: any[]) => {
-    if (selected.length > 0) {
-      setCatImage(selected[0].url);
-    }
-    setShowCatMediaPicker(false);
-  };
-
-  const handleBrdMediaSelect = (selected: any[]) => {
-    if (selected.length > 0) {
-      setBrdLogoUrl(selected[0].url);
-    }
-    setShowBrdMediaPicker(false);
-  };
-
-  // Load Categories Flat and Tree
-  const loadCategories = async () => {
-    setIsCatLoading(true);
+  const loadData = async () => {
+    setIsLoading(true);
     try {
-      const [flatRes, treeRes] = await Promise.all([
+      const [colRes, prodRes, catRes, brandRes] = await Promise.all([
+        fetch("/api/admin/collections"),
+        fetch("/api/products"),
         fetch("/api/categories"),
-        fetch("/api/categories?tree=true")
+        fetch("/api/brands")
       ]);
-      
-      if (flatRes.ok) setCategoriesFlat(await flatRes.json());
-      if (treeRes.ok) setCategoriesTree(await treeRes.json());
-    } catch (error) {
-      console.error("Error loading categories:", error);
-    } finally {
-      setIsCatLoading(false);
-    }
-  };
 
-  // Load Brands
-  const loadBrands = async () => {
-    setIsBrdLoading(true);
-    try {
-      const res = await fetch("/api/brands");
-      if (res.ok) {
-        setBrands(await res.json());
+      if (colRes.ok) setCollectionsList(await colRes.json());
+      if (prodRes.ok) {
+        const prodData = await prodRes.json();
+        // Extract products list from search response style if needed
+        setProducts(prodData.products || prodData || []);
       }
+      if (catRes.ok) setCategories(await catRes.json());
+      if (brandRes.ok) setBrands(await brandRes.json());
     } catch (error) {
-      console.error("Error loading brands:", error);
+      console.error("Error loading admin collections data:", error);
     } finally {
-      setIsBrdLoading(false);
+      setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    loadCategories();
-    loadBrands();
+    loadData();
   }, []);
 
-  // Category Start Edit
-  const handleStartEditCategory = (cat: Category) => {
-    setEditingCategory(cat);
-    setCatName(cat.name);
-    setCatSlug(cat.slug);
-    setCatParentId(cat.parentId || "");
-    setCatDescription(cat.description || "");
-    setCatImage(cat.image || "");
-    setIsCatModalOpen(true);
+  const handleStartCreate = () => {
+    setEditingCollection(null);
+    setName("");
+    setSlug("");
+    setDescription("");
+    setType("manual");
+    setIsActive(true);
+    setShowOnHomepage(false);
+    setSortOrder(0);
+    setSelectedProductIds([]);
+    setRules([]);
+    setIsModalOpen(true);
   };
 
-  // Category Submit (Create or Update)
-  const handleSaveCategory = async (e: React.FormEvent) => {
+  const handleStartEdit = (col: Collection) => {
+    setEditingCollection(col);
+    setName(col.name);
+    setSlug(col.slug);
+    setDescription(col.description || "");
+    setType(col.type);
+    setIsActive(col.isActive);
+    setShowOnHomepage(col.showOnHomepage);
+    setSortOrder(col.sortOrder);
+    setSelectedProductIds((col.products || []).map(p => p.productId));
+    setRules(col.rules || []);
+    setIsModalOpen(true);
+  };
+
+  const handleSaveCollection = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!catName.trim()) return;
+    if (!name.trim()) return;
 
     setIsSubmitting(true);
     try {
-      const url = editingCategory 
-        ? `/api/categories/${editingCategory.id}`
-        : "/api/categories";
-      const method = editingCategory ? "PUT" : "POST";
+      const url = editingCollection 
+        ? `/api/admin/collections/${editingCollection.id}`
+        : "/api/admin/collections";
+      const method = editingCollection ? "PUT" : "POST";
 
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: catName.trim(),
-          slug: catSlug.trim() || undefined,
-          parentId: catParentId || null,
-          description: catDescription.trim() || null,
-          image: catImage.trim() || null,
+          name: name.trim(),
+          slug: slug.trim() || undefined,
+          description: description.trim() || null,
+          type,
+          isActive,
+          showOnHomepage,
+          sortOrder: Number(sortOrder),
+          productIds: type === "manual" ? selectedProductIds : [],
+          rules: type === "dynamic" ? rules.map(({ column, relation, value }) => ({ column, relation, value })) : [],
         }),
       });
 
       if (res.ok) {
-        setIsCatModalOpen(false);
-        setEditingCategory(null);
-        // Reset form
-        setCatName("");
-        setCatSlug("");
-        setCatParentId("");
-        setCatDescription("");
-        setCatImage("");
-        // Reload list
-        await loadCategories();
+        setIsModalOpen(false);
+        await loadData();
       } else {
         const data = await res.json();
-        alert(`Failed to save category: ${data.error || "Server error"}`);
+        alert(`Failed to save collection: ${data.error || "Server error"}`);
       }
     } catch (error) {
-      console.error("Error saving category:", error);
+      console.error("Error saving collection:", error);
       alert("An unexpected error occurred.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Brand Start Edit
-  const handleStartEditBrand = (brand: Brand) => {
-    setEditingBrand(brand);
-    setBrdName(brand.name);
-    setBrdSlug(brand.slug);
-    setBrdDescription(brand.description || "");
-    setBrdLogoUrl(brand.logoUrl || "");
-    setIsBrdModalOpen(true);
-  };
-
-  // Brand Submit (Create or Update)
-  const handleSaveBrand = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!brdName.trim()) return;
-
-    setIsSubmitting(true);
-    try {
-      const url = editingBrand 
-        ? `/api/brands/${editingBrand.id}`
-        : "/api/brands";
-      const method = editingBrand ? "PUT" : "POST";
-
-      const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: brdName.trim(),
-          slug: brdSlug.trim() || undefined,
-          description: brdDescription.trim() || null,
-          logoUrl: brdLogoUrl.trim() || null,
-        }),
-      });
-
-      if (res.ok) {
-        setIsBrdModalOpen(false);
-        setEditingBrand(null);
-        // Reset form
-        setBrdName("");
-        setBrdSlug("");
-        setBrdDescription("");
-        setBrdLogoUrl("");
-        // Reload list
-        await loadBrands();
-      } else {
-        const data = await res.json();
-        alert(`Failed to save brand: ${data.error || "Server error"}`);
-      }
-    } catch (error) {
-      console.error("Error saving brand:", error);
-      alert("An unexpected error occurred.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  // Delete Category
-  const handleDeleteCategory = async (id: string, name: string) => {
-    if (!confirm(`Are you sure you want to permanently delete the category "${name}"? Product links will remain but their category will be unassigned.`)) {
+  const handleDeleteCollection = async (id: string, colName: string) => {
+    if (!confirm(`Are you sure you want to permanently delete the collection "${colName}"?`)) {
       return;
     }
 
     try {
-      const res = await fetch(`/api/categories/${id}`, {
+      const res = await fetch(`/api/admin/collections/${id}`, {
         method: "DELETE",
       });
 
       if (res.ok) {
-        await loadCategories();
+        await loadData();
       } else {
         const data = await res.json();
-        alert(`Failed to delete category: ${data.error || "Server error"}`);
+        alert(`Failed to delete collection: ${data.error || "Server error"}`);
       }
     } catch (error) {
-      console.error("Error deleting category:", error);
+      console.error("Error deleting collection:", error);
     }
   };
 
-  // Delete Brand
-  const handleDeleteBrand = async (id: string, name: string) => {
-    if (!confirm(`Are you sure you want to permanently delete the brand "${name}"?`)) {
-      return;
-    }
-
-    try {
-      const res = await fetch(`/api/brands/${id}`, {
-        method: "DELETE",
-      });
-
-      if (res.ok) {
-        await loadBrands();
-      } else {
-        const data = await res.json();
-        alert(`Failed to delete brand: ${data.error || "Server error"}`);
-      }
-    } catch (error) {
-      console.error("Error deleting brand:", error);
-    }
+  // Rule Builders actions
+  const addRule = () => {
+    setRules([...rules, { column: "name", relation: "contains", value: "" }]);
   };
 
-  // Tree Renderer Helper
-  const renderCategoryNode = (cat: Category, depth = 0) => {
-    return (
-      <div key={cat.id} className="space-y-1.5">
-        <div 
-          className="flex items-center justify-between p-3.5 bg-card hover:bg-secondary/10 border border-border/40 hover:border-primary/20 rounded-2xl transition-all shadow-sm"
-          style={{ marginLeft: `${depth * 24}px` }}
-        >
-          <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-xl ${depth === 0 ? "bg-primary/10 text-primary" : "bg-secondary/15 text-secondary border border-secondary/20"}`}>
-              <Folder className="w-4 h-4" />
-            </div>
-            <div className="space-y-0.5">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold text-foreground">{cat.name}</span>
-                <span className="text-[8px] font-mono bg-secondary/10 text-secondary px-1.5 py-0.5 border border-secondary/20 rounded font-medium">
-                  slug: {cat.slug}
-                </span>
-              </div>
-              {cat.description && (
-                <p className="text-[10px] text-muted-foreground font-light max-w-md truncate">
-                  {cat.description}
-                </p>
-              )}
-            </div>
-          </div>
+  const removeRule = (idx: number) => {
+    setRules(rules.filter((_, i) => i !== idx));
+  };
 
-          <div className="flex items-center gap-3">
-            {cat.image && (
-              <img 
-                src={cat.image} 
-                alt={cat.name} 
-                className="w-8 h-8 rounded-lg object-cover border border-border" 
-              />
-            )}
-            <button
-              onClick={() => handleStartEditCategory(cat)}
-              className="p-2 bg-primary/10 hover:bg-primary/25 border border-primary/20 text-primary rounded-xl transition-all cursor-pointer"
-              title="Edit Category"
-            >
-              <Pencil className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={() => handleDeleteCategory(cat.id, cat.name)}
-              className="p-2 bg-rose-500/10 hover:bg-rose-500/25 border border-rose-500/20 text-rose-500 rounded-xl transition-all cursor-pointer"
-              title="Delete Category"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </div>
+  const updateRule = (idx: number, field: keyof Rule, val: string) => {
+    const updated = [...rules];
+    updated[idx] = { ...updated[idx], [field]: val };
+    
+    // Auto-update relation logic if column type changes to price or IDs
+    if (field === "column") {
+      if (val === "price") {
+        updated[idx].relation = "less_than_or_equal";
+      } else if (val === "categoryId" || val === "brandId") {
+        updated[idx].relation = "equals";
+      } else {
+        updated[idx].relation = "contains";
+      }
+      updated[idx].value = "";
+    }
+    setRules(updated);
+  };
 
-        {cat.children && cat.children.length > 0 && (
-          <div className="space-y-1.5 border-l border-border/20 ml-[21px] pl-[15px] pt-1">
-            {cat.children.map(child => renderCategoryNode(child, depth + 1))}
-          </div>
-        )}
-      </div>
-    );
+  const toggleProductSelect = (pId: string) => {
+    if (selectedProductIds.includes(pId)) {
+      setSelectedProductIds(selectedProductIds.filter(id => id !== pId));
+    } else {
+      setSelectedProductIds([...selectedProductIds, pId]);
+    }
   };
 
   return (
@@ -350,298 +241,412 @@ export default function AdminCollectionsPage() {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-6 bg-card border border-border/40 rounded-3xl relative overflow-hidden transition-all duration-300">
         <div className="absolute right-0 top-0 w-64 h-full bg-gradient-to-l from-primary/5 to-transparent pointer-events-none rounded-r-3xl" />
         <div className="space-y-1 relative z-10">
-          <h1 className="font-serif text-2xl font-normal text-foreground">Taxonomy Compiler</h1>
+          <h1 className="font-serif text-2xl font-normal text-foreground">Product Collections</h1>
           <p className="text-xs text-muted-foreground font-light">
-            Organize catalog structures by category sub-nodes, nesting children hierarchies and brand metadata labels.
+            Group products into collections manually or write dynamic logic matching attribute tags and pricing boundaries.
           </p>
         </div>
         <div className="relative z-10 flex gap-2">
-          {activeTab === "categories" ? (
-            <button
-              onClick={() => {
-                setEditingCategory(null);
-                setCatName("");
-                setCatSlug("");
-                setCatParentId("");
-                setCatDescription("");
-                setCatImage("");
-                setIsCatModalOpen(true);
-              }}
-              className="inline-flex items-center gap-1.5 px-4.5 py-2.5 bg-primary text-primary-foreground hover:bg-primary/95 hover:scale-[1.01] active:scale-[0.99] rounded-xl text-xs font-semibold uppercase tracking-wider transition-all shadow-sm shadow-primary/5 cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              Add Category
-            </button>
-          ) : (
-            <button
-              onClick={() => {
-                setEditingBrand(null);
-                setBrdName("");
-                setBrdSlug("");
-                setBrdDescription("");
-                setBrdLogoUrl("");
-                setIsBrdModalOpen(true);
-              }}
-              className="inline-flex items-center gap-1.5 px-4.5 py-2.5 bg-primary text-primary-foreground hover:bg-primary/95 hover:scale-[1.01] active:scale-[0.99] rounded-xl text-xs font-semibold uppercase tracking-wider transition-all shadow-sm shadow-primary/5 cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              Add Brand
-            </button>
-          )}
+          <button
+            onClick={handleStartCreate}
+            className="inline-flex items-center gap-1.5 px-4.5 py-2.5 bg-primary text-primary-foreground hover:bg-primary/95 hover:scale-[1.01] active:scale-[0.99] rounded-xl text-xs font-semibold uppercase tracking-wider transition-all shadow-sm shadow-primary/5 cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            Create Collection
+          </button>
         </div>
       </div>
 
-      {/* Tabs selectors */}
-      <div className="flex gap-1.5 bg-card border border-border/30 rounded-2xl p-4 shadow-sm">
-        <button
-          onClick={() => setActiveTab("categories")}
-          className={`px-4.5 py-2.5 rounded-xl text-[10px] font-semibold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-2 ${
-            activeTab === "categories"
-              ? "bg-primary text-primary-foreground shadow-sm shadow-primary/5"
-              : "bg-secondary/40 hover:bg-secondary/70 text-muted-foreground border border-border/35"
-          }`}
-        >
-          <Folder className="w-4 h-4" />
-          Categories list
-        </button>
-        <button
-          onClick={() => setActiveTab("brands")}
-          className={`px-4.5 py-2.5 rounded-xl text-[10px] font-semibold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-2 ${
-            activeTab === "brands"
-              ? "bg-primary text-primary-foreground shadow-sm shadow-primary/5"
-              : "bg-secondary/40 hover:bg-secondary/70 text-muted-foreground border border-border/35"
-          }`}
-        >
-          <Tag className="w-4 h-4" />
-          Brands compiler
-        </button>
-      </div>
-
-      {/* Categories View */}
-      {activeTab === "categories" && (
-        <div className="space-y-4">
-          {isCatLoading ? (
-            <div className="py-24 text-center bg-card border border-border/40 rounded-3xl flex flex-col items-center justify-center gap-3 text-muted-foreground">
-              <Loader2 className="w-7 h-7 animate-spin text-primary" />
-              <p className="text-xs font-light">Retrieving taxonomy nodes tree...</p>
+      {/* Collections Table / List */}
+      <div className="space-y-4">
+        {isLoading ? (
+          <div className="py-24 text-center bg-card border border-border/40 rounded-3xl flex flex-col items-center justify-center gap-3 text-muted-foreground">
+            <Loader2 className="w-7 h-7 animate-spin text-primary" />
+            <p className="text-xs font-light">Retrieving collections mapping list...</p>
+          </div>
+        ) : collectionsList.length === 0 ? (
+          <div className="py-24 text-center bg-card border border-border/40 rounded-3xl flex flex-col items-center justify-center space-y-4">
+            <div className="p-4 bg-primary/10 text-primary rounded-full">
+              <FolderHeart className="w-8 h-8" />
             </div>
-          ) : categoriesTree.length === 0 ? (
-            <div className="py-24 text-center bg-card border border-border/40 rounded-3xl flex flex-col items-center justify-center space-y-4">
-              <div className="p-4 bg-primary/10 text-primary rounded-full">
-                <FolderHeart className="w-8 h-8" />
-              </div>
-              <div className="space-y-1 max-w-xs">
-                <h3 className="text-sm font-semibold tracking-wide">No Categories Created</h3>
-                <p className="text-xs text-muted-foreground font-light leading-relaxed">
-                  Start mapping catalog layout nodes. Add parent categories to compile product feeds.
-                </p>
-              </div>
+            <div className="space-y-1 max-w-xs">
+              <h3 className="text-sm font-semibold tracking-wide">No Collections Created</h3>
+              <p className="text-xs text-muted-foreground font-light leading-relaxed">
+                Group catalog designs. Create manual or dynamic collections to display in storefront grids.
+              </p>
             </div>
-          ) : (
-            <div className="space-y-3">
-              {categoriesTree.map(cat => renderCategoryNode(cat))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Brands View */}
-      {activeTab === "brands" && (
-        <div className="space-y-4">
-          {isBrdLoading ? (
-            <div className="py-24 text-center bg-card border border-border/40 rounded-3xl flex flex-col items-center justify-center gap-3 text-muted-foreground">
-              <Loader2 className="w-7 h-7 animate-spin text-primary" />
-              <p className="text-xs font-light">Retrieving brand list...</p>
-            </div>
-          ) : brands.length === 0 ? (
-            <div className="py-24 text-center bg-card border border-border/40 rounded-3xl flex flex-col items-center justify-center space-y-4">
-              <div className="p-4 bg-primary/10 text-primary rounded-full">
-                <Tag className="w-8 h-8" />
-              </div>
-              <div className="space-y-1 max-w-xs">
-                <h3 className="text-sm font-semibold tracking-wide">No Brands Added</h3>
-                <p className="text-xs text-muted-foreground font-light leading-relaxed">
-                  Register designer names or private labels to sort client product listings.
-                </p>
-              </div>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {brands.map((brd) => (
-                <div 
-                  key={brd.id} 
-                  className="bg-card border border-border/40 rounded-3xl p-5 shadow-sm hover:border-primary/20 transition-all flex flex-col justify-between gap-4 group"
-                >
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {collectionsList.map((col) => (
+              <div 
+                key={col.id} 
+                className="bg-card border border-border/40 rounded-3xl p-6 shadow-sm hover:border-primary/20 transition-all flex flex-col justify-between gap-4 group relative"
+              >
+                <div className="space-y-3">
                   <div className="flex items-start justify-between gap-4">
-                    <div className="space-y-1.5 flex-1">
-                      <div className="flex items-center gap-2">
-                        <h4 className="text-xs font-bold text-foreground truncate max-w-[150px]">{brd.name}</h4>
-                        <span className="text-[8px] font-mono bg-secondary/10 text-secondary px-1.5 py-0.5 border border-secondary/20 rounded font-medium">
-                          {brd.slug}
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h4 className="font-serif text-lg font-normal text-foreground leading-tight">{col.name}</h4>
+                        <span className="text-[9px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full border border-border bg-secondary/15 text-secondary">
+                          {col.type}
                         </span>
+                        {!col.isActive && (
+                          <span className="text-[9px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full border border-rose-500/20 bg-rose-500/10 text-rose-500">
+                            Inactive
+                          </span>
+                        )}
+                        {col.showOnHomepage && (
+                          <span className="text-[9px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 text-emerald-500">
+                            Home Grid (Order: {col.sortOrder})
+                          </span>
+                        )}
                       </div>
-                      {brd.description && (
-                        <p className="text-[10px] text-muted-foreground font-light leading-relaxed line-clamp-3">
-                          {brd.description}
-                        </p>
-                      )}
+                      <p className="text-[10px] text-muted-foreground font-mono">slug: {col.slug}</p>
+                    </div>
+                  </div>
+
+                  {col.description && (
+                    <p className="text-xs text-muted-foreground font-light leading-relaxed line-clamp-2">
+                      {col.description}
+                    </p>
+                  )}
+
+                  {/* Rules or product counts preview */}
+                  <div className="p-3.5 bg-secondary/10 border border-border/20 rounded-2xl space-y-1.5">
+                    <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                      <span>{col.type === "dynamic" ? "Compilation Rules" : "Manual Selection"}</span>
+                      <span>{col.products?.length || 0} Products</span>
                     </div>
 
-                    {brd.logoUrl ? (
-                      <img 
-                        src={brd.logoUrl} 
-                        alt={brd.name} 
-                        className="w-12 h-12 rounded-xl object-contain border border-border bg-card p-1 shrink-0" 
-                      />
+                    {col.type === "dynamic" ? (
+                      <div className="space-y-1 mt-1">
+                        {col.rules && col.rules.length > 0 ? (
+                          col.rules.map((r, i) => (
+                            <div key={i} className="text-[10px] text-foreground font-mono flex gap-1.5 items-center bg-card/40 px-2 py-1 rounded border border-border/10">
+                              <span className="text-primary font-semibold">{r.column}</span>
+                              <span className="text-muted-foreground">{r.relation}</span>
+                              <span className="text-secondary font-medium">"{r.value}"</span>
+                            </div>
+                          ))
+                        ) : (
+                          <p className="text-[10px] text-rose-500 font-light italic">No compile rules configured.</p>
+                        )}
+                      </div>
                     ) : (
-                      <div className="w-12 h-12 rounded-xl bg-secondary border border-border flex items-center justify-center text-muted-foreground shrink-0">
-                        <ImageIcon className="w-5 h-5 opacity-40" />
+                      <p className="text-[10px] text-muted-foreground font-light italic mt-1">
+                        Selected designs are bound manually to this feed.
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-4 border-t border-border/20 mt-2">
+                  <span className="text-[9px] text-muted-foreground font-mono">
+                    Created: {new Date(col.createdAt).toLocaleDateString()}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleStartEdit(col)}
+                      className="p-2.5 bg-primary/10 hover:bg-primary/25 border border-primary/20 text-primary rounded-xl transition-all cursor-pointer"
+                      title="Edit Collection"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteCollection(col.id, col.name)}
+                      className="p-2.5 bg-rose-500/10 hover:bg-rose-500/25 border border-rose-500/20 text-rose-500 rounded-xl transition-all cursor-pointer"
+                      title="Delete Collection"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Collection Editor Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-background/80 backdrop-blur-sm transition-opacity p-4 flex items-center justify-center">
+          <div className="w-full max-w-2xl bg-card border border-border rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 my-auto max-h-[90vh] flex flex-col">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-border/40 shrink-0">
+              <h3 className="font-serif text-lg font-normal text-foreground">
+                {editingCollection ? "Edit Product Collection" : "Create Product Collection"}
+              </h3>
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="p-1.5 rounded-full bg-secondary hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Modal Form Content */}
+            <form onSubmit={handleSaveCollection} className="flex-1 overflow-y-auto flex flex-col">
+              <div className="p-6 space-y-5 flex-1">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Collection Name *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Bridal Selection"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className="w-full px-3.5 py-2.5 bg-secondary/20 border border-border/70 focus:border-primary focus:outline-none rounded-xl text-xs font-light text-foreground"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">URL Slug (Optional)</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. bridal-selection"
+                      value={slug}
+                      onChange={(e) => setSlug(e.target.value)}
+                      className="w-full px-3.5 py-2.5 bg-secondary/20 border border-border/70 focus:border-primary focus:outline-none rounded-xl text-xs font-light text-foreground"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Description</label>
+                  <textarea
+                    rows={2}
+                    placeholder="Short summary for this collection..."
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-secondary/20 border border-border/70 focus:border-primary focus:outline-none rounded-xl text-xs font-light text-foreground resize-none"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-6 bg-secondary/10 p-4.5 rounded-2xl border border-border/30">
+                  <div className="space-y-2">
+                    <h4 className="text-[10px] font-bold uppercase tracking-wider text-foreground">Status & Settings</h4>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input 
+                        type="checkbox"
+                        checked={isActive}
+                        onChange={(e) => setIsActive(e.target.checked)}
+                        className="w-4 h-4 rounded text-primary focus:ring-primary border-border"
+                      />
+                      <span className="text-xs text-foreground">Collection Active</span>
+                    </label>
+                  </div>
+
+                  <div className="space-y-3">
+                    <h4 className="text-[10px] font-bold uppercase tracking-wider text-foreground">Homepage Settings</h4>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input 
+                        type="checkbox"
+                        checked={showOnHomepage}
+                        onChange={(e) => setShowOnHomepage(e.target.checked)}
+                        className="w-4 h-4 rounded text-primary focus:ring-primary border-border"
+                      />
+                      <span className="text-xs text-foreground">Show on Homepage</span>
+                    </label>
+
+                    {showOnHomepage && (
+                      <div className="space-y-1.5 animate-in fade-in slide-in-from-top-1 duration-150">
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Sort Order</label>
+                        <input
+                          type="number"
+                          min={0}
+                          value={sortOrder}
+                          onChange={(e) => setSortOrder(parseInt(e.target.value, 10) || 0)}
+                          className="w-full px-3.5 py-2 bg-card border border-border focus:border-primary focus:outline-none rounded-xl text-xs font-light text-foreground"
+                        />
                       </div>
                     )}
                   </div>
+                </div>
 
-                  <div className="flex items-center justify-between pt-3 border-t border-border/20 mt-1">
-                    <span className="text-[9px] text-muted-foreground font-mono">
-                      Registered: {new Date(brd.createdAt).toLocaleDateString()}
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleStartEditBrand(brd)}
-                        className="p-2 bg-primary/10 hover:bg-primary/25 border border-primary/20 text-primary rounded-xl transition-all cursor-pointer"
-                        title="Edit Brand"
-                      >
-                        <Pencil className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteBrand(brd.id, brd.name)}
-                        className="p-2 bg-rose-500/10 hover:bg-rose-500/25 border border-rose-500/20 text-rose-500 rounded-xl transition-all cursor-pointer"
-                        title="Delete Brand"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                {/* Collection Type Selector */}
+                <div className="space-y-2.5">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">Collection Membership Type</label>
+                  <div className="grid grid-cols-2 gap-4">
+                    <label 
+                      className={`flex flex-col p-4 border rounded-2xl cursor-pointer hover:border-primary/40 transition-all ${
+                        type === "manual" ? "border-primary bg-primary/5" : "border-border bg-card"
+                      }`}
+                    >
+                      <input 
+                        type="radio" 
+                        name="type" 
+                        value="manual" 
+                        checked={type === "manual"}
+                        onChange={() => setType("manual")}
+                        className="sr-only"
+                      />
+                      <span className="text-xs font-bold text-foreground">Manual Assignment</span>
+                      <span className="text-[10px] text-muted-foreground mt-1 leading-normal font-light">
+                        Select specific products to hand-curate inside this collection list.
+                      </span>
+                    </label>
+
+                    <label 
+                      className={`flex flex-col p-4 border rounded-2xl cursor-pointer hover:border-primary/40 transition-all ${
+                        type === "dynamic" ? "border-primary bg-primary/5" : "border-border bg-card"
+                      }`}
+                    >
+                      <input 
+                        type="radio" 
+                        name="type" 
+                        value="dynamic" 
+                        checked={type === "dynamic"}
+                        onChange={() => setType("dynamic")}
+                        className="sr-only"
+                      />
+                      <span className="text-xs font-bold text-foreground">Dynamic Rule-Builder</span>
+                      <span className="text-[10px] text-muted-foreground mt-1 leading-normal font-light">
+                        Write database conditional rules to automatically compile matching products.
+                      </span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Conditional Sub-panels depending on type */}
+                {type === "manual" ? (
+                  <div className="space-y-3 pt-3 border-t border-border/20">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Select Products ({selectedProductIds.length} Selected)</label>
+                    </div>
+
+                    <div className="border border-border/60 rounded-2xl divide-y divide-border/30 max-h-56 overflow-y-auto bg-secondary/5">
+                      {products.map((p) => {
+                        const isSelected = selectedProductIds.includes(p.id);
+                        return (
+                          <div 
+                            key={p.id}
+                            onClick={() => toggleProductSelect(p.id)}
+                            className="flex items-center justify-between p-3.5 hover:bg-secondary/15 cursor-pointer transition-colors"
+                          >
+                            <span className="text-xs text-foreground font-medium">{p.name}</span>
+                            <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${
+                              isSelected ? "bg-primary border-primary text-primary-foreground" : "border-border bg-card"
+                            }`}>
+                              {isSelected && <Check className="w-3.5 h-3.5 stroke-[2.5]" />}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+                ) : (
+                  <div className="space-y-4 pt-3 border-t border-border/20">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Dynamic Compiling Rules</label>
+                      <button
+                        type="button"
+                        onClick={addRule}
+                        className="inline-flex items-center gap-1 text-[10px] uppercase font-bold tracking-wider text-primary hover:underline cursor-pointer"
+                      >
+                        <PlusCircle className="w-3.5 h-3.5" />
+                        Add Rule
+                      </button>
+                    </div>
 
-      {/* Category Creation Overlay Modal */}
-      {isCatModalOpen && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-background/80 backdrop-blur-sm transition-opacity p-4 flex items-center justify-center">
-          <div className="w-full max-w-lg bg-card border border-border rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 my-auto">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between p-6 border-b border-border/40">
-              <h3 className="font-serif text-lg font-normal text-foreground">
-                {editingCategory ? "Edit Category" : "Create New Category"}
-              </h3>
-              <button
-                onClick={() => {
-                  setIsCatModalOpen(false);
-                  setEditingCategory(null);
-                  setCatName("");
-                  setCatSlug("");
-                  setCatParentId("");
-                  setCatDescription("");
-                  setCatImage("");
-                }}
-                className="p-1.5 rounded-full bg-secondary hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
+                    <div className="space-y-3.5">
+                      {rules.length === 0 ? (
+                        <div className="py-6 border border-dashed border-border/60 rounded-2xl text-center text-xs text-muted-foreground font-light italic">
+                          No rules defined yet. Add a rule to matches products.
+                        </div>
+                      ) : (
+                        rules.map((rule, idx) => (
+                          <div key={idx} className="flex gap-2 items-center bg-secondary/10 p-3 rounded-2xl border border-border/35">
+                            <select
+                              value={rule.column}
+                              onChange={(e) => updateRule(idx, "column", e.target.value)}
+                              className="px-2.5 py-1.5 bg-card border border-border rounded-xl text-xs text-foreground focus:outline-none"
+                            >
+                              <option value="name">Product Name</option>
+                              <option value="price">Min Price (Paise)</option>
+                              <option value="categoryId">Category ID</option>
+                              <option value="brandId">Brand ID</option>
+                              <option value="shape">Nail Shape</option>
+                              <option value="length">Nail Length</option>
+                              <option value="colour">Nail Color</option>
+                              <option value="texture">Nail Texture</option>
+                            </select>
 
-            {/* Modal Form */}
-            <form onSubmit={handleSaveCategory}>
-              <div className="p-6 space-y-4">
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Category Name *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Press-On Nails"
-                    value={catName}
-                    onChange={(e) => setCatName(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-secondary/20 border border-border/70 focus:border-primary focus:outline-none rounded-xl text-xs font-light text-foreground"
-                  />
-                </div>
+                            <select
+                              value={rule.relation}
+                              onChange={(e) => updateRule(idx, "relation", e.target.value)}
+                              className="px-2.5 py-1.5 bg-card border border-border rounded-xl text-xs text-foreground focus:outline-none"
+                            >
+                              {rule.column === "price" ? (
+                                <>
+                                  <option value="equals">Equals</option>
+                                  <option value="greater_than_or_equal">Greater Than / Equal</option>
+                                  <option value="less_than_or_equal">Less Than / Equal</option>
+                                </>
+                              ) : rule.column === "categoryId" || rule.column === "brandId" ? (
+                                <>
+                                  <option value="equals">Equals</option>
+                                  <option value="not_equals">Not Equals</option>
+                                </>
+                              ) : (
+                                <>
+                                  <option value="equals">Equals</option>
+                                  <option value="contains">Contains</option>
+                                  <option value="not_equals">Not Equals</option>
+                                </>
+                              )}
+                            </select>
 
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">URL Slug (Optional)</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. press-on-nails (auto-slugified if blank)"
-                    value={catSlug}
-                    onChange={(e) => setCatSlug(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-secondary/20 border border-border/70 focus:border-primary focus:outline-none rounded-xl text-xs font-light text-foreground"
-                  />
-                </div>
+                            {rule.column === "categoryId" ? (
+                              <select
+                                value={rule.value}
+                                onChange={(e) => updateRule(idx, "value", e.target.value)}
+                                className="flex-1 px-2.5 py-1.5 bg-card border border-border rounded-xl text-xs text-foreground focus:outline-none"
+                              >
+                                <option value="">Select Category...</option>
+                                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                              </select>
+                            ) : rule.column === "brandId" ? (
+                              <select
+                                value={rule.value}
+                                onChange={(e) => updateRule(idx, "value", e.target.value)}
+                                className="flex-1 px-2.5 py-1.5 bg-card border border-border rounded-xl text-xs text-foreground focus:outline-none"
+                              >
+                                <option value="">Select Brand...</option>
+                                {brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                              </select>
+                            ) : (
+                              <input
+                                type="text"
+                                placeholder="Value..."
+                                required
+                                value={rule.value}
+                                onChange={(e) => updateRule(idx, "value", e.target.value)}
+                                className="flex-1 px-3 py-1.5 bg-card border border-border focus:border-primary focus:outline-none rounded-xl text-xs font-light text-foreground"
+                              />
+                            )}
 
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Parent Node Category</label>
-                  <select
-                    value={catParentId}
-                    onChange={(e) => setCatParentId(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-card border border-border focus:border-primary focus:outline-none rounded-xl text-xs font-light text-foreground"
-                  >
-                    <option value="">No Parent (Root Node)</option>
-                    {categoriesFlat
-                      .filter((c) => !editingCategory || c.id !== editingCategory.id)
-                      .map((cat) => (
-                        <option key={cat.id} value={cat.id}>
-                          {cat.name} ({cat.slug})
-                        </option>
-                      ))}
-                  </select>
-                </div>
-
-                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Category Image URL</label>
-                  <div className="flex gap-2">
-                    <input
-                      type="url"
-                      placeholder="https://images.cloudinary.com/..."
-                      value={catImage}
-                      onChange={(e) => setCatImage(e.target.value)}
-                      className="flex-1 px-3.5 py-2.5 bg-secondary/20 border border-border/70 focus:border-primary focus:outline-none rounded-xl text-xs font-light text-foreground"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowCatMediaPicker(true)}
-                      className="px-4 py-2.5 bg-secondary hover:bg-secondary/80 border border-border rounded-xl text-xs font-semibold cursor-pointer shrink-0"
-                    >
-                      Select Media
-                    </button>
+                            <button
+                              type="button"
+                              onClick={() => removeRule(idx)}
+                              className="p-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 rounded-xl transition-all cursor-pointer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ))
+                      )}
+                    </div>
                   </div>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Description</label>
-                  <textarea
-                    rows={3}
-                    placeholder="Category overview explanation..."
-                    value={catDescription}
-                    onChange={(e) => setCatDescription(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-secondary/20 border border-border/70 focus:border-primary focus:outline-none rounded-xl text-xs font-light text-foreground resize-none"
-                  />
-                </div>
+                )}
               </div>
 
               {/* Modal Actions */}
-              <div className="p-6 border-t border-border/40 bg-secondary/10 flex justify-end gap-2.5">
+              <div className="p-6 border-t border-border/40 bg-secondary/10 flex justify-end gap-2.5 shrink-0">
                 <button
                   type="button"
-                  onClick={() => {
-                    setIsCatModalOpen(false);
-                    setEditingCategory(null);
-                    setCatName("");
-                    setCatSlug("");
-                    setCatParentId("");
-                    setCatDescription("");
-                    setCatImage("");
-                  }}
+                  onClick={() => setIsModalOpen(false)}
                   className="px-4 py-2 bg-secondary hover:bg-muted text-foreground border border-border rounded-xl text-xs font-semibold uppercase tracking-wider cursor-pointer"
                 >
                   Cancel
@@ -653,159 +658,14 @@ export default function AdminCollectionsPage() {
                 >
                   {isSubmitting ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : editingCategory ? (
+                  ) : editingCollection ? (
                     "Save Changes"
                   ) : (
-                    "Save Node"
+                    "Create Collection"
                   )}
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
-
-      {/* Brand Creation Overlay Modal */}
-      {isBrdModalOpen && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-background/80 backdrop-blur-sm transition-opacity p-4 flex items-center justify-center">
-          <div className="w-full max-w-lg bg-card border border-border rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 my-auto">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between p-6 border-b border-border/40">
-              <h3 className="font-serif text-lg font-normal text-foreground">
-                {editingBrand ? "Edit Brand Details" : "Register New Brand"}
-              </h3>
-              <button
-                onClick={() => {
-                  setIsBrdModalOpen(false);
-                  setEditingBrand(null);
-                  setBrdName("");
-                  setBrdSlug("");
-                  setBrdDescription("");
-                  setBrdLogoUrl("");
-                }}
-                className="p-1.5 rounded-full bg-secondary hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Modal Form */}
-            <form onSubmit={handleSaveBrand}>
-              <div className="p-6 space-y-4">
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Brand Name *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Snail Signature"
-                    value={brdName}
-                    onChange={(e) => setBrdName(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-secondary/20 border border-border/70 focus:border-primary focus:outline-none rounded-xl text-xs font-light text-foreground"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">URL Slug (Optional)</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. snail-signature (auto-slugified if blank)"
-                    value={brdSlug}
-                    onChange={(e) => setBrdSlug(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-secondary/20 border border-border/70 focus:border-primary focus:outline-none rounded-xl text-xs font-light text-foreground"
-                  />
-                </div>
-
-                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Logo URL</label>
-                  <div className="flex gap-2">
-                    <input
-                      type="url"
-                      placeholder="https://images.cloudinary.com/..."
-                      value={brdLogoUrl}
-                      onChange={(e) => setBrdLogoUrl(e.target.value)}
-                      className="flex-1 px-3.5 py-2.5 bg-secondary/20 border border-border/70 focus:border-primary focus:outline-none rounded-xl text-xs font-light text-foreground"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowBrdMediaPicker(true)}
-                      className="px-4 py-2.5 bg-secondary hover:bg-secondary/80 border border-border rounded-xl text-xs font-semibold cursor-pointer shrink-0"
-                    >
-                      Select Media
-                    </button>
-                  </div>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Description</label>
-                  <textarea
-                    rows={3}
-                    placeholder="Brand details or label bio..."
-                    value={brdDescription}
-                    onChange={(e) => setBrdDescription(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-secondary/20 border border-border/70 focus:border-primary focus:outline-none rounded-xl text-xs font-light text-foreground resize-none"
-                  />
-                </div>
-              </div>
-
-              {/* Modal Actions */}
-              <div className="p-6 border-t border-border/40 bg-secondary/10 flex justify-end gap-2.5">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsBrdModalOpen(false);
-                    setEditingBrand(null);
-                    setBrdName("");
-                    setBrdSlug("");
-                    setBrdDescription("");
-                    setBrdLogoUrl("");
-                  }}
-                  className="px-4 py-2 bg-secondary hover:bg-muted text-foreground border border-border rounded-xl text-xs font-semibold uppercase tracking-wider cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="px-5 py-2 bg-primary text-primary-foreground hover:bg-primary/95 disabled:bg-muted disabled:text-muted-foreground rounded-xl text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5"
-                >
-                  {isSubmitting ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : editingBrand ? (
-                    "Save Changes"
-                  ) : (
-                    "Save Brand"
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Category Media Picker Modal */}
-      {showCatMediaPicker && (
-        <div className="fixed inset-0 z-60 bg-foreground/20 backdrop-blur-xs overflow-y-auto flex items-center justify-center p-4">
-          <div className="bg-card border border-border/40 rounded-3xl w-full max-w-4xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto relative my-auto">
-            <MediaPicker
-              onSelect={handleCatMediaSelect}
-              onClose={() => setShowCatMediaPicker(false)}
-              maxSelection={1}
-              title="Select Category Image"
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Brand Media Picker Modal */}
-      {showBrdMediaPicker && (
-        <div className="fixed inset-0 z-60 bg-foreground/20 backdrop-blur-xs overflow-y-auto flex items-center justify-center p-4">
-          <div className="bg-card border border-border/40 rounded-3xl w-full max-w-4xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto relative my-auto">
-            <MediaPicker
-              onSelect={handleBrdMediaSelect}
-              onClose={() => setShowBrdMediaPicker(false)}
-              maxSelection={1}
-              title="Select Brand Logo"
-            />
           </div>
         </div>
       )}
