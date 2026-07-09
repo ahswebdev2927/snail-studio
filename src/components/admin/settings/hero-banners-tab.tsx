@@ -25,9 +25,44 @@ interface Banner {
   subtitle: string | null;
   ctaText: string | null;
   ctaLink: string | null;
+  textColor: string;
+  contentAlignment: "left" | "center" | "right";
+  lineSpacing: "tight" | "normal" | "comfortable" | "loose";
   sortOrder: number;
   isActive: boolean;
 }
+
+// Helper to determine if hex color is light or dark for preview contrast
+const isLightColor = (colorHex: string) => {
+  try {
+    const hex = colorHex.replace("#", "");
+    if (hex.length === 3) {
+      const r = parseInt(hex[0] + hex[0], 16);
+      const g = parseInt(hex[1] + hex[1], 16);
+      const b = parseInt(hex[2] + hex[2], 16);
+      return (r * 299 + g * 587 + b * 114) / 1000 > 150;
+    }
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    return (r * 299 + g * 587 + b * 114) / 1000 > 150;
+  } catch {
+    return true; // default light
+  }
+};
+
+const alignmentClasses: Record<string, string> = {
+  left: "text-left items-start justify-start",
+  center: "text-center items-center justify-center mx-auto",
+  right: "text-right items-end justify-end ml-auto",
+};
+
+const lineSpacingClasses: Record<string, string> = {
+  tight: "leading-tight space-y-2",
+  normal: "leading-normal space-y-3",
+  comfortable: "leading-relaxed space-y-4",
+  loose: "leading-loose space-y-5",
+};
 
 export default function HeroBannersTab() {
   const [banners, setBanners] = useState<Banner[]>([]);
@@ -80,6 +115,9 @@ export default function HeroBannersTab() {
       subtitle: "",
       ctaText: "",
       ctaLink: "",
+      textColor: "#ffffff",
+      contentAlignment: "center",
+      lineSpacing: "normal",
       sortOrder: banners.length,
       isActive: true,
     });
@@ -343,6 +381,20 @@ export default function HeroBannersTab() {
                   <div>
                     <span className="font-medium text-foreground">Order:</span> {banner.sortOrder}
                   </div>
+                  <div className="flex items-center gap-1">
+                    <span className="font-medium text-foreground">Color:</span>
+                    <span 
+                      className="inline-block w-3 h-3 rounded-full border border-border shrink-0"
+                      style={{ backgroundColor: banner.textColor || '#ffffff' }}
+                    />
+                    <span>{banner.textColor || '#ffffff'}</span>
+                  </div>
+                  <div className="capitalize">
+                    <span className="font-medium text-foreground">Align:</span> {banner.contentAlignment || 'center'}
+                  </div>
+                  <div className="capitalize">
+                    <span className="font-medium text-foreground">Spacing:</span> {banner.lineSpacing || 'normal'}
+                  </div>
                 </div>
               </div>
 
@@ -498,6 +550,129 @@ export default function HeroBannersTab() {
                   />
                 </div>
               </div>
+
+              {/* Custom Banner Styling */}
+              <div className="border-t border-border/20 pt-4 space-y-4">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-primary">
+                  Style & Layout Customization
+                </h3>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Text Color Selection */}
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                      Text Color
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={currentBanner.textColor || "#ffffff"}
+                        onChange={(e) => {
+                          let val = e.target.value;
+                          if (val && !val.startsWith("#")) val = "#" + val;
+                          setCurrentBanner({ ...currentBanner, textColor: val });
+                        }}
+                        placeholder="#ffffff"
+                        className="flex-1 px-4 py-2.5 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none transition-all text-foreground"
+                      />
+                      <div className="relative w-10 h-10 border border-border rounded-xl overflow-hidden shrink-0">
+                        <input
+                          type="color"
+                          value={currentBanner.textColor || "#ffffff"}
+                          onChange={(e) => setCurrentBanner({ ...currentBanner, textColor: e.target.value })}
+                          className="absolute inset-0 w-full h-full p-0 border-0 cursor-pointer scale-150"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Line Spacing Dropdown */}
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                      Line Spacing (Height)
+                    </label>
+                    <select
+                      value={currentBanner.lineSpacing || "normal"}
+                      onChange={(e) => setCurrentBanner({ ...currentBanner, lineSpacing: e.target.value as any })}
+                      className="w-full px-4 py-2.5 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none transition-all text-foreground cursor-pointer"
+                    >
+                      <option value="tight">Tight</option>
+                      <option value="normal">Normal</option>
+                      <option value="comfortable">Comfortable</option>
+                      <option value="loose">Loose</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Content Alignment Selector */}
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                    Content Alignment
+                  </label>
+                  <div className="flex bg-secondary/30 border border-border p-1 rounded-xl gap-1">
+                    {(["left", "center", "right"] as const).map((align) => (
+                      <button
+                        key={align}
+                        type="button"
+                        onClick={() => setCurrentBanner({ ...currentBanner, contentAlignment: align })}
+                        className={`flex-1 py-1.5 text-xs font-semibold rounded-lg capitalize transition-all cursor-pointer ${
+                          (currentBanner.contentAlignment || "center") === align
+                            ? "bg-primary text-primary-foreground shadow-sm"
+                            : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"
+                        }`}
+                      >
+                        {align}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Real-time Settings Preview inside Modal */}
+              {currentBanner.imageUrl && currentBanner.title && (
+                <div className="mt-4 p-3 rounded-2xl bg-secondary/20 border border-border/30">
+                  <span className="text-[8px] font-bold uppercase tracking-wider text-muted-foreground block mb-2">
+                    Live Visual Preview (Settings Only):
+                  </span>
+                  <div className="relative w-full aspect-[21/9] rounded-xl overflow-hidden bg-black flex items-center justify-center border border-black/10">
+                    <img
+                      src={currentBanner.imageUrl}
+                      alt="Preview background"
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
+                    <div className={`absolute inset-0 transition-colors duration-500 ${
+                      (!currentBanner.textColor || isLightColor(currentBanner.textColor)) ? "bg-black/35" : "bg-black/10"
+                    }`} />
+                    
+                    <div 
+                      className={`relative z-10 px-4 w-full flex flex-col ${alignmentClasses[currentBanner.contentAlignment || 'center']} ${lineSpacingClasses[currentBanner.lineSpacing || 'normal']}`}
+                      style={{ color: currentBanner.textColor || "#ffffff" }}
+                    >
+                      {currentBanner.subtitle && (
+                        <span className="text-[8px] uppercase tracking-widest opacity-95">
+                          {currentBanner.subtitle}
+                        </span>
+                      )}
+                      <h4 className="font-serif text-xs sm:text-sm font-normal">
+                        {currentBanner.title}
+                      </h4>
+                      {currentBanner.ctaText && (
+                        <div className="pt-0.5">
+                          <span 
+                            className="inline-block px-3 py-1 rounded-full text-[8px] font-semibold tracking-wider uppercase transition-all shadow-xs"
+                            style={{
+                              backgroundColor: currentBanner.textColor || "#ffffff",
+                              color: (!currentBanner.textColor || isLightColor(currentBanner.textColor)) ? "#1A1513" : "#ffffff"
+                            }}
+                          >
+                            {currentBanner.ctaText}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Settings: sortOrder & isActive */}
               <div className="grid grid-cols-2 gap-4 pt-2">
