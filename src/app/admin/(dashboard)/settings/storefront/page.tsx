@@ -2,12 +2,13 @@
 
 import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Image as ImageIcon, Megaphone, Ruler } from "lucide-react";
+import { Image as ImageIcon, Megaphone, Ruler, Scale } from "lucide-react";
 import HeroBannersTab from "@/components/admin/settings/hero-banners-tab";
 import AnnouncementsTab from "@/components/admin/settings/announcements-tab";
 import SizeProfilesTab from "@/components/admin/settings/size-profiles-tab";
+import LengthChartTab from "@/components/admin/settings/length-chart-tab";
 
-type TabName = "banners" | "announcements" | "sizing";
+type TabName = "banners" | "announcements" | "sizing" | "length-chart";
 
 function StorefrontSettingsContent() {
   const searchParams = useSearchParams();
@@ -15,7 +16,7 @@ function StorefrontSettingsContent() {
 
   // Determine starting tab based on URL query parameter
   const tabParam = searchParams.get("tab") as TabName;
-  const initialTab: TabName = ["banners", "announcements", "sizing"].includes(tabParam)
+  const initialTab: TabName = ["banners", "announcements", "sizing", "length-chart"].includes(tabParam)
     ? tabParam
     : "banners";
 
@@ -24,7 +25,7 @@ function StorefrontSettingsContent() {
   // Sync tab state if query parameter changes
   useEffect(() => {
     const currentTab = searchParams.get("tab") as TabName;
-    if (currentTab && ["banners", "announcements", "sizing"].includes(currentTab)) {
+    if (currentTab && ["banners", "announcements", "sizing", "length-chart"].includes(currentTab)) {
       setActiveTab(currentTab);
     }
   }, [searchParams]);
@@ -51,7 +52,7 @@ function StorefrontSettingsContent() {
         <div className="space-y-1">
           <h1 className="font-serif text-2xl font-normal text-foreground">Storefront Design & Content</h1>
           <p className="text-xs text-muted-foreground font-light">
-            Configure storefront carousel banners, homepage announcement ticks, and custom size profile guides.
+            Configure storefront carousel banners, homepage announcement ticks, size guides, and shape length charts.
           </p>
         </div>
       </div>
@@ -67,8 +68,12 @@ function StorefrontSettingsContent() {
           Announcements
         </button>
         <button type="button" onClick={() => handleTabChange("sizing")} className={tabClasses("sizing")}>
-          <Ruler className="w-4 h-4" />
+          <Scale className="w-4 h-4" />
           Sizing Profiles
+        </button>
+        <button type="button" onClick={() => handleTabChange("length-chart")} className={tabClasses("length-chart")}>
+          <Ruler className="w-4 h-4" />
+          Length Chart
         </button>
       </div>
 
@@ -77,6 +82,7 @@ function StorefrontSettingsContent() {
         {activeTab === "banners" && <HeroBannersTab />}
         {activeTab === "announcements" && <AnnouncementsTab />}
         {activeTab === "sizing" && <SizeProfilesTab />}
+        {activeTab === "length-chart" && <LengthChartTab />}
       </div>
     </div>
   );
