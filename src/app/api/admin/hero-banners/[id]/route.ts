@@ -11,6 +11,9 @@ const updateBannerSchema = z.object({
   subtitle: z.string().max(200, "Subtitle is too long").optional().nullable(),
   ctaText: z.string().max(50, "CTA Text is too long").optional().nullable(),
   ctaLink: z.string().max(200, "CTA Link is too long").optional().nullable(),
+  textColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Invalid hex color").optional(),
+  contentAlignment: z.enum(['left', 'center', 'right']).optional(),
+  lineSpacing: z.enum(['tight', 'normal', 'comfortable', 'loose']).optional(),
   sortOrder: z.number().int().optional(),
   isActive: z.boolean().optional(),
 });
