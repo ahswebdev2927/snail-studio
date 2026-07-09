@@ -9,13 +9,16 @@ import {
   categories,
   productVariants,
   inventoryItems,
-  reviews
+  reviews,
+  collections,
+  productCollections
 } from "@/db/schema";
 import { ProductSearchItem } from "./fuse-search.service";
 
 export interface FilterParams {
   q?: string;            // Text search query for database-first matching
   category?: string;     // Slug or ID
+  collection?: string;   // Slug or ID
   brands?: string[];     // Array of brand slugs or IDs
   shapes?: string[];     // Array of attribute value codes (e.g. ['almond', 'coffin'])
   lengths?: string[];    // Array of attribute value codes (e.g. ['short', 'medium'])
@@ -41,6 +44,7 @@ export async function getFilteredProducts(params: FilterParams): Promise<Product
   const {
     q,
     category,
+    collection,
     brands: brandFilters,
     shapes,
     lengths,
@@ -115,6 +119,31 @@ export async function getFilteredProducts(params: FilterParams): Promise<Product
       conditions.push(inArray(products.categoryId, categoryIds));
     } else {
       // If a category was supplied but not found, return empty results
+      return [];
+    }
+  }
+
+  // 3.5. Collection Filter (using many-to-many productCollections mapping)
+  if (collection) {
+    const targetCollection = await db.query.collections.findFirst({
+      where: or(eq(collections.id, collection), eq(collections.slug, collection))
+    });
+
+    if (targetCollection) {
+      conditions.push(
+        exists(
+          db.select()
+            .from(productCollections)
+            .where(
+              and(
+                eq(productCollections.productId, products.id),
+                eq(productCollections.collectionId, targetCollection.id)
+              )
+            )
+        )
+      );
+    } else {
+      // If a collection was supplied but not found, return empty results
       return [];
     }
   }

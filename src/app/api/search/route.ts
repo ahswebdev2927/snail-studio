@@ -27,6 +27,7 @@ export async function GET(request: NextRequest) {
 
     const q = searchParams.get("q") || undefined;
     const category = searchParams.get("category") || undefined;
+    const collection = searchParams.get("collection") || undefined;
     // Parse comma-separated filter criteria
     const parseCommaSeparated = (paramName: string) => {
       const val = searchParams.get(paramName);
@@ -76,6 +77,7 @@ export async function GET(request: NextRequest) {
     const result = await searchProducts({
       q,
       category,
+      collection,
       brands,
       shapes,
       lengths,
