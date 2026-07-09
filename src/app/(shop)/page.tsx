@@ -9,6 +9,7 @@ import { db } from "@/db";
 import { heroBanners, products, sizeProfiles } from "@/db/schema";
 import { eq, and, asc } from "drizzle-orm";
 import { HeroCarousel } from "@/components/storefront/hero-carousel";
+import { FeaturedCategories } from "@/components/storefront/featured-categories";
 import { FeaturedCollections } from "@/components/storefront/featured-collections";
 import { ProductCard } from "@/components/storefront/product-card";
 import { WhyChooseUs } from "@/components/storefront/why-choose-us";
@@ -54,6 +55,9 @@ export default async function Home() {
     <div className="flex-1 flex flex-col bg-background text-foreground transition-colors duration-300">
       {/* Hero Banner Carousel (Admin Managed) */}
       <HeroCarousel banners={activeBanners} />
+
+      {/* Featured Categories Grid */}
+      <FeaturedCategories />
 
       {/* Featured Collections Grid */}
       <FeaturedCollections />

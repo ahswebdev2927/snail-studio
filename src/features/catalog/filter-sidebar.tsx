@@ -6,6 +6,7 @@ import { useState } from "react";
 
 export interface FilterState {
   category?: string;
+  collection?: string;
   brand?: string[];
   shape?: string[];
   length?: string[];

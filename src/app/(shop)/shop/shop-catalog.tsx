@@ -17,6 +17,7 @@ function buildQueryString(filters: FilterState, q: string, page: number, sort: s
   const params = new URLSearchParams();
   if (q.trim()) params.set("q", q.trim());
   if (filters.category) params.set("category", filters.category);
+  if (filters.collection) params.set("collection", filters.collection);
   if (filters.availability) params.set("availability", filters.availability);
   if (filters.minPrice !== undefined) params.set("minPrice", filters.minPrice.toString());
   if (filters.maxPrice !== undefined) params.set("maxPrice", filters.maxPrice.toString());
@@ -41,7 +42,7 @@ function buildQueryString(filters: FilterState, q: string, page: number, sort: s
 }
 
 function areFiltersEqual(a: FilterState, b: FilterState) {
-  const keys = ["category", "minPrice", "maxPrice", "availability", "rating"] as const;
+  const keys = ["category", "collection", "minPrice", "maxPrice", "availability", "rating"] as const;
   for (const key of keys) {
     const valA = a[key] === null ? undefined : a[key];
     const valB = b[key] === null ? undefined : b[key];
@@ -75,6 +76,7 @@ export default function ShopCatalog() {
   // 1. Resolve initial parameters from URL
   const initialQ = searchParams.get("q") || "";
   const initialCategory = searchParams.get("category") || undefined;
+  const initialCollection = searchParams.get("collection") || undefined;
   const initialAvailability = searchParams.get("availability") === "in_stock" ? "in_stock" : undefined;
   const initialSort = (searchParams.get("sort") || "relevance") as "relevance" | "price_asc" | "price_desc" | "newest" | "best_selling" | "featured" | "alpha_asc" | "alpha_desc";
   const initialPage = parseInt(searchParams.get("page") || "1", 10);
@@ -95,6 +97,7 @@ export default function ShopCatalog() {
   const [page, setPage] = useState(initialPage);
   const [filters, setFilters] = useState<FilterState>({
     category: initialCategory,
+    collection: initialCollection,
     brand: parseArray("brand"),
     shape: parseArray("shape"),
     length: parseArray("length"),
@@ -150,6 +153,7 @@ export default function ShopCatalog() {
 
     const nextFilters: FilterState = {
       category: searchParams.get("category") || undefined,
+      collection: searchParams.get("collection") || undefined,
       brand: parseArray("brand"),
       shape: parseArray("shape"),
       length: parseArray("length"),
@@ -360,6 +364,14 @@ export default function ShopCatalog() {
       id: "category",
       label: `Category: ${filters.category}`,
       onRemove: () => handleFiltersChange({ ...filters, category: undefined }),
+    });
+  }
+
+  if (filters.collection) {
+    activeChips.push({
+      id: "collection",
+      label: `Collection: ${filters.collection}`,
+      onRemove: () => handleFiltersChange({ ...filters, collection: undefined }),
     });
   }
 
