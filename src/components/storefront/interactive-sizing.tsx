@@ -66,7 +66,7 @@ export function InteractiveSizing({ sizeProfiles: dbSizeProfiles }: InteractiveS
       }))
     : SIZE_PROFILES;
 
-  const [activeTab, setActiveTab] = useState<"calculator" | "chart" | "guide">("calculator");
+  const [activeTab, setActiveTab] = useState<"calculator" | "chart" | "guide">("chart");
   const [measurements, setMeasurements] = useState<number[]>(
     FINGERS.map((f) => f.defaultValue)
   );
@@ -172,17 +172,6 @@ export function InteractiveSizing({ sizeProfiles: dbSizeProfiles }: InteractiveS
         <div className="flex justify-center border-b border-border/30 max-w-md mx-auto">
           <div className="flex w-full justify-between">
             <button
-              onClick={() => setActiveTab("calculator")}
-              className={`pb-4 text-xs font-semibold uppercase tracking-widest transition-all relative w-1/3 flex items-center justify-center gap-1.5 cursor-pointer ${
-                activeTab === "calculator"
-                  ? "text-primary font-bold border-b-2 border-primary"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <Scale className="w-4 h-4" />
-              Calculator
-            </button>
-            <button
               onClick={() => setActiveTab("chart")}
               className={`pb-4 text-xs font-semibold uppercase tracking-widest transition-all relative w-1/3 flex items-center justify-center gap-1.5 cursor-pointer ${
                 activeTab === "chart"
@@ -203,6 +192,17 @@ export function InteractiveSizing({ sizeProfiles: dbSizeProfiles }: InteractiveS
             >
               <HelpCircle className="w-4 h-4" />
               How to Measure
+            </button>
+            <button
+              onClick={() => setActiveTab("calculator")}
+              className={`pb-4 text-xs font-semibold uppercase tracking-widest transition-all relative w-1/3 flex items-center justify-center gap-1.5 cursor-pointer ${
+                activeTab === "calculator"
+                  ? "text-primary font-bold border-b-2 border-primary"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Scale className="w-4 h-4" />
+              Calculator
             </button>
           </div>
         </div>
@@ -449,6 +449,17 @@ export function InteractiveSizing({ sizeProfiles: dbSizeProfiles }: InteractiveS
             </div>
           )}
 
+        </div>
+
+        {/* Full Size Guide Page Link */}
+        <div className="text-center pt-8">
+          <Link
+            href="/sizing-guide"
+            className="inline-flex items-center justify-center gap-2 px-8 py-3.5 border border-primary text-primary hover:bg-primary hover:text-primary-foreground text-xs font-semibold uppercase tracking-widest rounded-full transition-all duration-300 shadow-xs hover:shadow-sm cursor-pointer"
+          >
+            Explore Detailed Sizing & Shape Guide
+            <ArrowRight className="w-4 h-4" />
+          </Link>
         </div>
 
       </div>
