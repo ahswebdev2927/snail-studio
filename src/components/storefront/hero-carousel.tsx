@@ -12,11 +12,33 @@ interface Banner {
   subtitle: string | null;
   ctaText: string | null;
   ctaLink: string | null;
+  textColor?: string | null;
+  contentAlignment?: string | null;
+  lineSpacing?: string | null;
 }
 
 interface HeroCarouselProps {
   banners: Banner[];
 }
+
+// Helper to determine if hex color is light or dark for optimal contrast styling
+const isLightColor = (colorHex: string) => {
+  try {
+    const hex = colorHex.replace("#", "");
+    if (hex.length === 3) {
+      const r = parseInt(hex[0] + hex[0], 16);
+      const g = parseInt(hex[1] + hex[1], 16);
+      const b = parseInt(hex[2] + hex[2], 16);
+      return (r * 299 + g * 587 + b * 114) / 1000 > 150;
+    }
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    return (r * 299 + g * 587 + b * 114) / 1000 > 150;
+  } catch {
+    return true; // default light
+  }
+};
 
 export function HeroCarousel({ banners }: HeroCarouselProps) {
   const [activeIndex, setActiveIndex] = useState(0);
@@ -31,6 +53,9 @@ export function HeroCarousel({ banners }: HeroCarouselProps) {
       subtitle: "Indulge in couture, hand-designed press-on nails that look and feel like high-end gel manicures. Reusable, non-damaging, and applied in minutes.",
       ctaText: "Explore Collections",
       ctaLink: "/shop",
+      textColor: "#ffffff",
+      contentAlignment: "center",
+      lineSpacing: "normal"
     },
     {
       id: "default-2",
@@ -39,6 +64,9 @@ export function HeroCarousel({ banners }: HeroCarouselProps) {
       subtitle: "Experience high-end styling and convenience without harming your natural nails. Custom-designed sets tailored to fit your lifestyle.",
       ctaText: "Shop New Sets",
       ctaLink: "/shop?sort=newest",
+      textColor: "#ffffff",
+      contentAlignment: "center",
+      lineSpacing: "normal"
     }
   ];
 
@@ -63,9 +91,35 @@ export function HeroCarousel({ banners }: HeroCarouselProps) {
     return () => clearInterval(timer);
   }, [nextSlide, isPaused]);
 
+  // CSS mappings for alignment, justify, and line height/gaps
+  const alignmentClasses: Record<string, string> = {
+    left: "text-left items-start justify-start lg:text-left",
+    center: "text-center items-center justify-center mx-auto lg:text-center",
+    right: "text-right items-end justify-end ml-auto lg:text-right",
+  };
+
+  const justifyClasses: Record<string, string> = {
+    left: "justify-start",
+    center: "justify-center",
+    right: "justify-end",
+  };
+
+  const trustIndicatorAlign: Record<string, string> = {
+    left: "lg:mx-0 mr-auto",
+    center: "mx-auto",
+    right: "lg:ml-auto lg:mr-0 ml-auto",
+  };
+
+  const lineSpacingClasses: Record<string, string> = {
+    tight: "leading-tight space-y-4",
+    normal: "leading-normal space-y-6",
+    comfortable: "leading-relaxed space-y-8",
+    loose: "leading-loose space-y-10",
+  };
+
   return (
     <section 
-      className="relative overflow-hidden w-full bg-gradient-to-b from-secondary to-background min-h-[600px] lg:min-h-[700px] flex items-center"
+      className="relative overflow-hidden w-full bg-black min-h-[600px] lg:min-h-[700px] flex items-center"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >
@@ -73,6 +127,17 @@ export function HeroCarousel({ banners }: HeroCarouselProps) {
       <div className="w-full relative h-[600px] lg:h-[700px] flex items-center">
         {slides.map((slide, index) => {
           const isActive = index === activeIndex;
+          
+          // Fallbacks for customizable fields
+          const textColor = slide.textColor || "#ffffff";
+          const align = slide.contentAlignment || "center";
+          const spacing = slide.lineSpacing || "normal";
+          
+          const isTextLight = isLightColor(textColor);
+          const overlayClass = isTextLight ? "bg-black/35" : "bg-black/10";
+          const ctaBgColor = textColor;
+          const ctaTextColor = isTextLight ? "#1A1513" : "#ffffff";
+
           return (
             <div
               key={slide.id}
@@ -82,93 +147,94 @@ export function HeroCarousel({ banners }: HeroCarouselProps) {
                   : "opacity-0 translate-x-8 pointer-events-none"
               }`}
             >
-              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full h-full flex items-center">
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center w-full">
-                  {/* Hero Text */}
-                  <div className="lg:col-span-5 space-y-8 text-center lg:text-left">
-                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary border border-primary/20 text-xs font-medium tracking-wide animate-pulse">
+              {/* Full-bleed background image */}
+              <div className="absolute inset-0 w-full h-full">
+                <Image
+                  src={slide.imageUrl}
+                  alt={slide.title}
+                  fill
+                  sizes="100vw"
+                  className="object-cover"
+                  priority={index === 0}
+                />
+                <div className={`absolute inset-0 transition-colors duration-500 ${overlayClass}`} />
+              </div>
+
+              {/* Overlaid Content Grid */}
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full h-full flex items-center relative z-20">
+                <div 
+                  className={`w-full max-w-3xl flex flex-col ${alignmentClasses[align]} ${lineSpacingClasses[spacing]}`}
+                  style={{ color: textColor }}
+                >
+                  {/* Subtitle tag */}
+                  {slide.subtitle && (
+                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-semibold tracking-widest uppercase backdrop-blur-xs transition-colors"
+                      style={{ 
+                        borderColor: `${textColor}33`, 
+                        backgroundColor: `${textColor}10`,
+                        color: textColor
+                      }}
+                    >
                       <Sparkles className="w-3.5 h-3.5" />
-                      Salon Quality. At Home.
+                      {slide.subtitle}
                     </div>
-                    
-                    <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl font-normal leading-tight text-foreground">
-                      {slide.title.includes("at Your") ? (
-                        <>
-                          {slide.title.split("at Your")[0]}at Your <span className="font-serif italic font-light text-primary">Fingertips</span>
-                        </>
-                      ) : (
-                        slide.title
-                      )}
-                    </h1>
-
-                    {slide.subtitle && (
-                      <p className="text-base sm:text-lg text-muted-foreground max-w-xl mx-auto lg:mx-0 font-light leading-relaxed">
-                        {slide.subtitle}
-                      </p>
+                  )}
+                  
+                  {/* Title */}
+                  <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl font-normal leading-tight">
+                    {slide.title.includes("at Your") ? (
+                      <>
+                        {slide.title.split("at Your")[0]}at Your <span className="font-serif italic font-light opacity-95">Fingertips</span>
+                      </>
+                    ) : (
+                      slide.title
                     )}
+                  </h1>
 
-                    <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                      {slide.ctaText && slide.ctaLink && (
-                        <Link
-                          href={slide.ctaLink}
-                          className="inline-flex items-center justify-center px-8 py-4 rounded-full text-sm font-semibold tracking-wider uppercase bg-primary text-primary-foreground hover:bg-primary/95 shadow-md hover:shadow-lg transition-all group"
-                        >
-                          {slide.ctaText}
-                          <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                        </Link>
-                      )}
+                  {/* Buttons/CTA Links */}
+                  <div className={`flex flex-col sm:flex-row gap-4 w-full ${justifyClasses[align]}`}>
+                    {slide.ctaText && slide.ctaLink && (
                       <Link
-                        href="/sizing-guide"
-                        className="inline-flex items-center justify-center px-8 py-4 rounded-full text-sm font-semibold tracking-wider uppercase border border-border bg-background/50 backdrop-blur-xs hover:bg-background transition-all"
+                        href={slide.ctaLink}
+                        className="inline-flex items-center justify-center px-8 py-3.5 rounded-full text-xs font-semibold tracking-widest uppercase transition-all shadow-md hover:shadow-lg hover:scale-105 active:scale-95"
+                        style={{
+                          backgroundColor: ctaBgColor,
+                          color: ctaTextColor
+                        }}
                       >
-                        Find Your Size
+                        {slide.ctaText}
+                        <ArrowRight className="ml-2 w-3.5 h-3.5" />
                       </Link>
-                    </div>
-
-                    {/* Trust Indicators */}
-                    <div className="grid grid-cols-3 gap-4 pt-4 border-t border-border/40 max-w-md mx-auto lg:mx-0">
-                      <div>
-                        <div className="font-serif text-2xl font-semibold text-primary">100%</div>
-                        <div className="text-[10px] uppercase tracking-wider text-muted-foreground mt-1">Reusable</div>
-                      </div>
-                      <div>
-                        <div className="font-serif text-2xl font-semibold text-primary">15 Min</div>
-                        <div className="text-[10px] uppercase tracking-wider text-muted-foreground mt-1">Easy Application</div>
-                      </div>
-                      <div>
-                        <div className="font-serif text-2xl font-semibold text-primary">14+ Days</div>
-                        <div className="text-[10px] uppercase tracking-wider text-muted-foreground mt-1">Wear Time</div>
-                      </div>
-                    </div>
+                    )}
+                    <Link
+                      href="/sizing-guide"
+                      className="inline-flex items-center justify-center px-8 py-3.5 rounded-full text-xs font-semibold tracking-widest uppercase border transition-all hover:scale-105 active:scale-95 backdrop-blur-xs"
+                      style={{
+                        borderColor: `${textColor}4D`,
+                        color: textColor,
+                        backgroundColor: `${textColor}1A`
+                      }}
+                    >
+                      Find Your Size
+                    </Link>
                   </div>
 
-                  {/* Hero Image Display */}
-                  <div className="lg:col-span-7 flex justify-center">
-                    <div className="relative w-full max-w-lg aspect-square lg:max-w-xl rounded-2xl overflow-hidden shadow-2xl border-4 border-card/40 bg-card">
-                      <Image
-                        src={slide.imageUrl}
-                        alt={slide.title}
-                        fill
-                        sizes="(max-width: 1024px) 100vw, 50vw"
-                        className="object-cover hover:scale-105 transition-transform duration-700"
-                        priority={index === 0}
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
-                      {slide.ctaText && slide.ctaLink && (
-                        <div className="absolute bottom-6 left-6 right-6 p-6 rounded-xl bg-background/80 backdrop-blur-xs border border-border/40 shadow-lg flex items-center justify-between">
-                          <div>
-                            <span className="text-[10px] uppercase tracking-widest text-primary font-semibold">Featured Collection</span>
-                            <h3 className="font-serif text-base text-foreground mt-0.5">{slide.title}</h3>
-                          </div>
-                          <Link
-                            href={slide.ctaLink}
-                            className="p-2.5 rounded-full bg-primary text-primary-foreground hover:bg-primary/95 transition-all shadow-sm"
-                            aria-label={slide.ctaText}
-                          >
-                            <ArrowRight className="w-4 h-4" />
-                          </Link>
-                        </div>
-                      )}
+                  {/* Trust Indicators */}
+                  <div 
+                    className={`grid grid-cols-3 gap-6 pt-6 border-t max-w-md w-full ${trustIndicatorAlign[align]}`}
+                    style={{ borderColor: `${textColor}33` }}
+                  >
+                    <div>
+                      <div className="font-serif text-xl sm:text-2xl font-bold">100%</div>
+                      <div className="text-[9px] uppercase tracking-widest opacity-80 mt-1">Reusable</div>
+                    </div>
+                    <div>
+                      <div className="font-serif text-xl sm:text-2xl font-bold">15 Min</div>
+                      <div className="text-[9px] uppercase tracking-widest opacity-80 mt-1">Easy Application</div>
+                    </div>
+                    <div>
+                      <div className="font-serif text-xl sm:text-2xl font-bold">14+ Days</div>
+                      <div className="text-[9px] uppercase tracking-widest opacity-80 mt-1">Wear Time</div>
                     </div>
                   </div>
                 </div>
