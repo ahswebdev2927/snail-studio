@@ -20,6 +20,7 @@ export const categories = sqliteTable('categories', {
   description: text('description'),
   image: text('image'),
   showOnHomepage: integer('show_on_homepage', { mode: 'boolean' }).notNull().default(false),
+  showInDropdown: integer('show_in_dropdown', { mode: 'boolean' }).notNull().default(false),
   sortOrder: integer('sort_order').notNull().default(0),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)
@@ -66,6 +67,7 @@ export const attributeGroups = sqliteTable('attribute_groups', {
   filterable: integer('filterable', { mode: 'boolean' }).notNull().default(true),
   searchable: integer('searchable', { mode: 'boolean' }).notNull().default(true),
   visibleOnPdp: integer('visibleOnPdp', { mode: 'boolean' }).notNull().default(true),
+  showInDropdown: integer('show_in_dropdown', { mode: 'boolean' }).notNull().default(false),
   displayOrder: integer('displayOrder').notNull().default(0)
 });
 
@@ -113,6 +115,7 @@ export const collections = sqliteTable('collections', {
   type: text('type', { enum: ['manual', 'dynamic'] }).notNull().default('manual'),
   isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
   showOnHomepage: integer('show_on_homepage', { mode: 'boolean' }).notNull().default(false),
+  showInDropdown: integer('show_in_dropdown', { mode: 'boolean' }).notNull().default(false),
   sortOrder: integer('sort_order').notNull().default(0),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)
