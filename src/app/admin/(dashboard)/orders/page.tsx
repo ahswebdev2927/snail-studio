@@ -25,7 +25,9 @@ import {
   HelpCircle,
   Sliders,
   Pencil,
-  History
+  History,
+  Share2,
+  Check
 } from "lucide-react";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 
@@ -131,6 +133,12 @@ interface OrderDetail {
     reason: string | null;
     createdAt: string;
   }[];
+  user?: {
+    id: string;
+    phoneNumber: string;
+    email: string | null;
+    name: string | null;
+  } | null;
 }
 
 export default function AdminOrdersPage() {
@@ -147,6 +155,7 @@ export default function AdminOrdersPage() {
   const [updateStatus, setUpdateStatus] = useState<string>("");
   const [updateNotes, setUpdateNotes] = useState<string>("");
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [copiedShareLink, setCopiedShareLink] = useState(false);
 
   // Shipment Specific Form States
   const [shipCarrier, setShipCarrier] = useState("Delhivery");
@@ -725,6 +734,33 @@ export default function AdminOrdersPage() {
                   <span className="text-[10px] font-mono bg-secondary/10 text-secondary px-2 py-0.5 border border-secondary/20 rounded font-semibold">
                     {selectedOrderId}
                   </span>
+                  {orderDetail && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const phone = orderDetail.user?.phoneNumber || orderDetail.addresses.find(a => a.type === "shipping")?.phone || "";
+                        const cleanPhone = phone.trim();
+                        const shareLink = `${window.location.origin}/track?orderId=${orderDetail.id}&phone=${encodeURIComponent(cleanPhone)}`;
+                        navigator.clipboard.writeText(shareLink);
+                        setCopiedShareLink(true);
+                        setTimeout(() => setCopiedShareLink(false), 2000);
+                      }}
+                      title="Share Order Tracking Link"
+                      className="p-1 px-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground cursor-pointer transition-all flex items-center justify-center gap-1 border border-border/40"
+                    >
+                      {copiedShareLink ? (
+                        <>
+                          <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                          <span className="text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-wider text-[8px]">Copied!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Share2 className="w-3.5 h-3.5 text-primary" />
+                          <span className="text-primary font-bold uppercase tracking-wider text-[8px]">Share</span>
+                        </>
+                      )}
+                    </button>
+                  )}
                 </div>
                 {orderDetail && (
                   <p className="text-[10px] text-muted-foreground font-light">

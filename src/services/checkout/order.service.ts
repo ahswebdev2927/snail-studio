@@ -178,6 +178,7 @@ export async function getOrderById(orderId: string, tx?: any) {
       },
       addresses: true,
       statusHistory: true,
+      user: true,
     },
   });
 }
