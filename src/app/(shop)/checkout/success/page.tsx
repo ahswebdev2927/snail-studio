@@ -7,8 +7,6 @@ import {
   CheckCircle2, 
   ShoppingBag, 
   MapPin, 
-  Truck, 
-  CreditCard, 
   ArrowRight,
   Clock,
   Sparkles,
@@ -56,7 +54,7 @@ export default async function OrderSuccessPage({ searchParams }: SuccessPageProp
         <AlertCircle className="w-12 h-12 text-destructive" />
         <h2 className="font-serif text-2xl font-normal text-foreground">Order Not Found</h2>
         <p className="text-xs text-muted-foreground font-light max-w-xs leading-relaxed">
-          We couldn't retrieve the details for Order ID: "{orderId || 'unknown'}". If you paid successfully, please contact support.
+          We couldn&apos;t retrieve the details for Order ID: &quot;{orderId || 'unknown'}&quot;. If you paid successfully, please contact support.
         </p>
         <Link 
           href="/shop" 
@@ -70,7 +68,6 @@ export default async function OrderSuccessPage({ searchParams }: SuccessPageProp
   }
 
   const shippingAddress = orderRecord.addresses.find((addr) => addr.type === "shipping");
-  const billingAddress = orderRecord.addresses.find((addr) => addr.type === "billing") || shippingAddress;
 
   // Format order date
   const orderDate = new Date(orderRecord.createdAt).toLocaleDateString("en-IN", {
@@ -114,7 +111,7 @@ export default async function OrderSuccessPage({ searchParams }: SuccessPageProp
             Thank you for your order!
           </h1>
           <p className="text-xs text-muted-foreground font-light max-w-md mx-auto leading-relaxed">
-            Your payment was completed successfully. We have sent an order confirmation email to you, and we're preparing your luxury handcrafted nails.
+            Your payment was completed successfully. We have sent an order confirmation email to you, and we&apos;re preparing your luxury handcrafted nails.
           </p>
         </div>
 
@@ -211,7 +208,6 @@ export default async function OrderSuccessPage({ searchParams }: SuccessPageProp
           <div className="space-y-3.5">
             {orderRecord.items.map((item) => {
               const productName = item.variant?.product?.name || "Premium Handcrafted Nails";
-              const productMedia = item.variant?.product?.id; // can be used if we had media, otherwise default
               const variantName = item.variant?.name || "Default Style";
               const itemPrice = item.price;
 
@@ -273,10 +269,10 @@ export default async function OrderSuccessPage({ searchParams }: SuccessPageProp
             <ArrowRight className="w-4 h-4" />
           </Link>
           <Link 
-            href="/admin" // Redirect to user account or tracker if needed, for now back to portal
+            href={`/account/orders/${orderRecord.id}`}
             className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-6 py-3 bg-secondary text-secondary-foreground hover:bg-secondary/85 hover:scale-[1.01] active:scale-[0.99] rounded-xl text-xs font-semibold transition-all"
           >
-            <span>Track Order Status</span>
+            <span>View Order</span>
           </Link>
         </div>
 

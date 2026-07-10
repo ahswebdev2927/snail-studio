@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ShoppingBag, Trash2, Plus, Minus, ArrowRight } from "lucide-react";
+import { ShoppingBag, Trash2, Plus, Minus } from "lucide-react";
 import { useCartStore } from "@/lib/hooks/use-cart-store";
 import { Drawer, DrawerHeader, DrawerTitle, DrawerBody, DrawerFooter } from "../ui/drawer";
 import { Button } from "../ui/button";
@@ -89,11 +89,6 @@ export function CartDrawer() {
         variantName: "Accessory",
       });
     }
-  };
-
-  const handleCheckout = () => {
-    setCartOpen(false);
-    router.push("/checkout");
   };
 
   const handleShopNow = () => {
@@ -373,14 +368,6 @@ export function CartDrawer() {
       {/* Footer */}
       {cart.length > 0 && (
         <DrawerFooter className="space-y-4">
-          {/* Coupon Highlight */}
-          <div className="bg-primary/5 border border-primary/20 rounded-xl p-2.5 flex items-center gap-2">
-            <span className="text-xs shrink-0">💡</span>
-            <p className="text-[10px] text-foreground font-light leading-relaxed">
-              Use code <span className="font-semibold text-primary tracking-wider">SNAILGLAM</span> at checkout to get <span className="font-semibold text-primary">10% OFF</span>!
-            </p>
-          </div>
-
           <div className="space-y-2">
             <div className="flex justify-between items-center text-xs text-muted-foreground">
               <span>Estimated Shipping</span>
@@ -398,36 +385,16 @@ export function CartDrawer() {
             </div>
           </div>
           <div className="flex flex-col gap-2">
-            <Button onClick={handleCheckout} className="w-full py-6 text-xs uppercase tracking-widest font-semibold flex items-center justify-center gap-2 group">
-              Proceed to Checkout
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </Button>
             <Button
               onClick={() => {
                 setCartOpen(false);
                 router.push("/cart");
               }}
-              variant="outline"
-              className="w-full py-5 text-[10px] uppercase tracking-widest font-bold flex items-center justify-center gap-2 border-border/40 hover:bg-secondary/50"
+              variant="secondary"
+              className="w-full py-6 text-xs uppercase tracking-widest font-semibold flex items-center justify-center gap-2"
             >
               View Shopping Bag
             </Button>
-          </div>
-
-          {/* Trust Badges */}
-          <div className="grid grid-cols-3 gap-2 pt-3 text-center text-muted-foreground border-t border-border/10 mt-1">
-            <div className="flex flex-col items-center">
-              <span className="text-[13px]">💅</span>
-              <span className="text-[8px] font-semibold mt-1 uppercase tracking-wider text-muted-foreground/80 leading-none">Handcrafted</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <span className="text-[13px]">🔄</span>
-              <span className="text-[8px] font-semibold mt-1 uppercase tracking-wider text-muted-foreground/80 leading-none">Reusable</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <span className="text-[13px]">🛡️</span>
-              <span className="text-[8px] font-semibold mt-1 uppercase tracking-wider text-muted-foreground/80 leading-none">Secure Pay</span>
-            </div>
           </div>
         </DrawerFooter>
       )}
