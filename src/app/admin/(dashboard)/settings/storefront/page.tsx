@@ -2,13 +2,14 @@
 
 import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Image as ImageIcon, Megaphone, Ruler, Scale } from "lucide-react";
+import { Image as ImageIcon, Megaphone, Ruler, Scale, LayoutGrid } from "lucide-react";
 import HeroBannersTab from "@/components/admin/settings/hero-banners-tab";
 import AnnouncementsTab from "@/components/admin/settings/announcements-tab";
 import SizeProfilesTab from "@/components/admin/settings/size-profiles-tab";
 import LengthChartTab from "@/components/admin/settings/length-chart-tab";
+import ShopDropdownTab from "@/components/admin/settings/shop-dropdown-tab";
 
-type TabName = "banners" | "announcements" | "sizing" | "length-chart";
+type TabName = "banners" | "announcements" | "sizing" | "length-chart" | "shop-dropdown";
 
 function StorefrontSettingsContent() {
   const searchParams = useSearchParams();
@@ -16,7 +17,7 @@ function StorefrontSettingsContent() {
 
   // Determine starting tab based on URL query parameter
   const tabParam = searchParams.get("tab") as TabName;
-  const initialTab: TabName = ["banners", "announcements", "sizing", "length-chart"].includes(tabParam)
+  const initialTab: TabName = ["banners", "announcements", "sizing", "length-chart", "shop-dropdown"].includes(tabParam)
     ? tabParam
     : "banners";
 
@@ -25,7 +26,7 @@ function StorefrontSettingsContent() {
   // Sync tab state if query parameter changes
   useEffect(() => {
     const currentTab = searchParams.get("tab") as TabName;
-    if (currentTab && ["banners", "announcements", "sizing", "length-chart"].includes(currentTab)) {
+    if (currentTab && ["banners", "announcements", "sizing", "length-chart", "shop-dropdown"].includes(currentTab)) {
       setActiveTab(currentTab);
     }
   }, [searchParams]);
@@ -75,6 +76,10 @@ function StorefrontSettingsContent() {
           <Ruler className="w-4 h-4" />
           Length Chart
         </button>
+        <button type="button" onClick={() => handleTabChange("shop-dropdown")} className={tabClasses("shop-dropdown")}>
+          <LayoutGrid className="w-4 h-4" />
+          Shop Dropdown
+        </button>
       </div>
 
       {/* Active Tab Panel Widget */}
@@ -83,6 +88,7 @@ function StorefrontSettingsContent() {
         {activeTab === "announcements" && <AnnouncementsTab />}
         {activeTab === "sizing" && <SizeProfilesTab />}
         {activeTab === "length-chart" && <LengthChartTab />}
+        {activeTab === "shop-dropdown" && <ShopDropdownTab />}
       </div>
     </div>
   );
