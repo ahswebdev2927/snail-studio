@@ -7,12 +7,21 @@ import { nanoid } from "nanoid";
 import { z } from "zod";
 
 const createBannerSchema = z.object({
-  imageUrl: z.string().url("Invalid image URL"),
+  imageUrl: z.string().min(1, "Image URL is required").refine(
+    (val) => val.startsWith("/") || /^(https?:\/\/)/.test(val),
+    "Must be a relative path starting with '/' or an absolute HTTP(S) URL"
+  ),
   title: z.string().min(1, "Title is required").max(100, "Title is too long"),
   subtitle: z.string().max(200, "Subtitle is too long").optional().nullable(),
   ctaText: z.string().max(50, "CTA Text is too long").optional().nullable(),
   ctaLink: z.string().max(200, "CTA Link is too long").optional().nullable(),
-  textColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Invalid hex color").default("#ffffff"),
+  textColor: z.string().optional().nullable().transform((val) => {
+    if (!val || val.trim() === "") return "#ffffff";
+    return val;
+  }).refine(
+    (val) => /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(val),
+    "Invalid hex color"
+  ),
   contentAlignment: z.enum(['left', 'center', 'right']).default('center'),
   lineSpacing: z.enum(['tight', 'normal', 'comfortable', 'loose']).default('normal'),
   sortOrder: z.number().int().default(0),
@@ -64,6 +73,7 @@ export async function POST(req: NextRequest) {
 
     const result = createBannerSchema.safeParse(body);
     if (!result.success) {
+      console.error("POST /api/admin/hero-banners validation failed:", result.error.flatten());
       return NextResponse.json(
         { error: "Validation failed", details: result.error.flatten().fieldErrors },
         { status: 400 }

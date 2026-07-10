@@ -59,8 +59,6 @@ export default async function Home() {
       {/* Featured Categories Grid */}
       <FeaturedCategories />
 
-      {/* Featured Collections Grid */}
-      <FeaturedCollections />
 
       {/* Best Sellers Section */}
       {bestSellers.length > 0 && (
@@ -121,8 +119,9 @@ export default async function Home() {
         </section>
       )}
 
-      {/* Sizing Guide Interactive Preview */}
-      <InteractiveSizing sizeProfiles={activeSizes} />
+      {/* Featured Collections Grid */}
+      <FeaturedCollections />
+
 
       {/* Trending Section */}
       {trending.length > 0 && (
@@ -151,7 +150,8 @@ export default async function Home() {
           </div>
         </section>
       )}
-
+      {/* Sizing Guide Interactive Preview */}
+      <InteractiveSizing sizeProfiles={activeSizes} />
       {/* Recently Viewed Products Section */}
       <RecentlyViewed />
 
