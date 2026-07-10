@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { categories, attributeGroups, collections } from "@/db/schema";
+import { categories, attributeGroups, collections, systemSettings } from "@/db/schema";
 import { eq, and, asc } from "drizzle-orm";
 
 export interface NavigationItem {
@@ -27,10 +27,13 @@ export interface PromoBanner {
 
 export interface StorefrontNavigation {
   shop: {
-    shapes: NavigationItem[];
-    lengths: NavigationItem[];
-    occasions: NavigationItem[];
+    attributeGroups: {
+      name: string;
+      code: string;
+      values: NavigationItem[];
+    }[];
     collections: NavigationItem[];
+    categories: NavigationItem[];
   };
   categories: NavigationCategory[];
   promoBanner: PromoBanner | null;
@@ -75,24 +78,13 @@ function buildCategoryTree(flatList: any[]): NavigationCategory[] {
 
 export async function getStorefrontNavigation(): Promise<StorefrontNavigation> {
   try {
-    const [shapeGroup, lengthGroup, occasionGroup, activeCollectionsList, allCategoriesList] = await Promise.all([
-      db.query.attributeGroups.findFirst({
-        where: eq(attributeGroups.code, "shape"),
+    const [dropdownGroups, activeCollectionsList, allCategoriesList, promoRow] = await Promise.all([
+      db.query.attributeGroups.findMany({
+        where: eq(attributeGroups.showInDropdown, true),
         with: {
           values: true,
         },
-      }),
-      db.query.attributeGroups.findFirst({
-        where: eq(attributeGroups.code, "length"),
-        with: {
-          values: true,
-        },
-      }),
-      db.query.attributeGroups.findFirst({
-        where: eq(attributeGroups.code, "occasion"),
-        with: {
-          values: true,
-        },
+        orderBy: asc(attributeGroups.displayOrder),
       }),
       db.query.collections.findMany({
         where: eq(collections.isActive, true),
@@ -104,59 +96,86 @@ export async function getStorefrontNavigation(): Promise<StorefrontNavigation> {
             },
           },
         },
-        orderBy: asc(collections.name),
+        orderBy: asc(collections.sortOrder),
       }),
       db.query.categories.findMany({
-        orderBy: asc(categories.name),
+        orderBy: asc(categories.sortOrder),
+      }),
+      db.query.systemSettings.findFirst({
+        where: eq(systemSettings.key, "shop_dropdown_promo"),
       }),
     ]);
 
-    const shapes: NavigationItem[] = (shapeGroup?.values || []).map((val) => ({
-      name: val.value,
-      slug: val.code,
-      url: `/shop?shape=${encodeURIComponent(val.value)}`,
+    // Format dynamic attribute groups
+    const shopAttributeGroups = dropdownGroups.map((group) => ({
+      name: group.name,
+      code: group.code,
+      values: (group.values || []).map((val) => ({
+        name: val.value,
+        slug: val.code,
+        url: `/shop?${group.code}=${encodeURIComponent(val.code)}`,
+      })),
     }));
 
-    const lengths: NavigationItem[] = (lengthGroup?.values || []).map((val) => ({
-      name: val.value,
-      slug: val.code,
-      url: `/shop?length=${encodeURIComponent(val.value)}`,
-    }));
+    // Format dynamic collections in dropdown
+    const shopCollections = activeCollectionsList
+      .filter((col) => col.showInDropdown)
+      .map((col) => ({
+        name: col.name,
+        slug: col.slug,
+        url: `/shop?collection=${encodeURIComponent(col.slug)}`,
+      }));
 
-    const occasions: NavigationItem[] = (occasionGroup?.values || []).map((val) => ({
-      name: val.value,
-      slug: val.code,
-      url: `/shop?occasion=${encodeURIComponent(val.value)}`,
-    }));
+    // Format dynamic categories in dropdown
+    const shopCategories = allCategoriesList
+      .filter((cat) => cat.showInDropdown)
+      .map((cat) => ({
+        name: cat.name,
+        slug: cat.slug,
+        url: `/shop?category=${encodeURIComponent(cat.slug)}`,
+      }));
 
-    const collectionsList: NavigationItem[] = activeCollectionsList.map((col) => ({
-      name: col.name,
-      slug: col.slug,
-      url: `/shop?collection=${encodeURIComponent(col.slug)}`,
-    }));
-
-    // Find the first collection with a description/media to serve as the promo banner
+    // Resolve custom promo banner
     let promoBanner: PromoBanner | null = null;
-    const bannerCol = activeCollectionsList.find((col) => col.description);
-    if (bannerCol) {
-      const bannerMedia = bannerCol.media?.[0]?.media;
-      promoBanner = {
-        title: bannerCol.name,
-        subtitle: bannerCol.description || "",
-        ctaText: "Shop Now",
-        ctaLink: `/shop?collection=${encodeURIComponent(bannerCol.slug)}`,
-        imageUrl: bannerMedia?.url || null,
-      };
+    if (promoRow?.value) {
+      try {
+        const parsed = JSON.parse(promoRow.value);
+        if (parsed.enabled) {
+          promoBanner = {
+            title: parsed.title || "",
+            subtitle: parsed.subtitle || "",
+            ctaText: parsed.ctaText || "Shop Now",
+            ctaLink: parsed.ctaLink || "/shop",
+            imageUrl: parsed.imageUrl || null,
+          };
+        }
+      } catch (e) {
+        console.error("Failed to parse shop_dropdown_promo settings in navigation service:", e);
+      }
+    }
+
+    // Fallback if custom promo banner is not configured/enabled
+    if (!promoBanner) {
+      const bannerCol = activeCollectionsList.find((col) => col.description);
+      if (bannerCol) {
+        const bannerMedia = bannerCol.media?.[0]?.media;
+        promoBanner = {
+          title: bannerCol.name,
+          subtitle: bannerCol.description || "",
+          ctaText: "Shop Now",
+          ctaLink: `/shop?collection=${encodeURIComponent(bannerCol.slug)}`,
+          imageUrl: bannerMedia?.url || null,
+        };
+      }
     }
 
     const categoriesTree = buildCategoryTree(allCategoriesList);
 
     return {
       shop: {
-        shapes,
-        lengths,
-        occasions,
-        collections: collectionsList,
+        attributeGroups: shopAttributeGroups,
+        collections: shopCollections,
+        categories: shopCategories,
       },
       categories: categoriesTree,
       promoBanner,
@@ -166,10 +185,9 @@ export async function getStorefrontNavigation(): Promise<StorefrontNavigation> {
     // Safe fallbacks
     return {
       shop: {
-        shapes: [],
-        lengths: [],
-        occasions: [],
+        attributeGroups: [],
         collections: [],
+        categories: [],
       },
       categories: [],
       promoBanner: null,

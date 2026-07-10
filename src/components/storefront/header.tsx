@@ -195,30 +195,27 @@ export function Header({ navigationData, storeLogo = "", storeName = "Snail Stud
   };
 
   // Compile lists dynamically with static fallbacks for safety
-  const shapesList = nav?.shop?.shapes?.length
-    ? nav.shop.shapes
-    : [
-        { name: "Coffin", url: "/shop?shape=Coffin" },
-        { name: "Almond", url: "/shop?shape=Almond" },
-        { name: "Stiletto", url: "/shop?shape=Stiletto" },
-        { name: "Square", url: "/shop?shape=Square" },
-      ];
+  const shapeGroup = nav?.shop?.attributeGroups?.find((g) => g.code === "shape");
+  const shapesList = shapeGroup?.values || [
+    { name: "Coffin", url: "/shop?shape=coffin" },
+    { name: "Almond", url: "/shop?shape=almond" },
+    { name: "Stiletto", url: "/shop?shape=stiletto" },
+    { name: "Square", url: "/shop?shape=square" },
+  ];
 
-  const lengthsList = nav?.shop?.lengths?.length
-    ? nav.shop.lengths
-    : [
-        { name: "Short", url: "/shop?length=Short" },
-        { name: "Medium", url: "/shop?length=Medium" },
-        { name: "Long", url: "/shop?length=Long" },
-      ];
+  const lengthGroup = nav?.shop?.attributeGroups?.find((g) => g.code === "length");
+  const lengthsList = lengthGroup?.values || [
+    { name: "Short", url: "/shop?length=short" },
+    { name: "Medium", url: "/shop?length=medium" },
+    { name: "Long", url: "/shop?length=long" },
+  ];
 
-  const occasionsList = nav?.shop?.occasions?.length
-    ? nav.shop.occasions
-    : [
-        { name: "Casual", url: "/shop?occasion=Casual" },
-        { name: "Wedding", url: "/shop?occasion=Wedding" },
-        { name: "Party", url: "/shop?occasion=Party" },
-      ];
+  const occasionGroup = nav?.shop?.attributeGroups?.find((g) => g.code === "occasion");
+  const occasionsList = occasionGroup?.values || [
+    { name: "Casual", url: "/shop?occasion=casual" },
+    { name: "Wedding", url: "/shop?occasion=wedding" },
+    { name: "Party", url: "/shop?occasion=party" },
+  ];
 
   const collectionsList = nav?.shop?.collections?.length
     ? nav.shop.collections
@@ -227,13 +224,7 @@ export function Header({ navigationData, storeLogo = "", storeName = "Snail Stud
         { name: "New Arrivals", url: "/shop?sort=newest" },
       ];
 
-  const promo = nav?.promoBanner || {
-    title: "Blush Quartz Collection",
-    subtitle: "Our bestseller marble set designed for luxury vibes.",
-    ctaText: "Shop Now",
-    ctaLink: "/shop",
-    imageUrl: null,
-  };
+  const promo = nav?.promoBanner;
 
   return (
     <>
@@ -280,108 +271,102 @@ export function Header({ navigationData, storeLogo = "", storeName = "Snail Stud
             </Link>
 
             {/* Shop dropdown (Mega Menu) */}
-            <div className="group relative py-2.5">
+            <div className="group py-2.5">
               <button className="flex items-center gap-1.5 px-4 py-2.5 rounded-full hover:text-primary transition-all cursor-pointer">
                 Shop
                 <ChevronDown className="w-3.5 h-3.5 group-hover:rotate-180 transition-transform duration-200" />
               </button>
 
               {/* Full-width Mega Menu Dropdown */}
-              <div className="absolute top-full left-1/2 -translate-x-1/2 pt-4 w-[920px] pointer-events-none opacity-0 translate-y-2 group-hover:pointer-events-auto group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 z-100">
-                <div className="grid grid-cols-12 gap-8 bg-card border border-border/40 rounded-3xl p-8 shadow-2xl">
-                  {/* Shapes */}
-                  <div className="col-span-2 space-y-4">
-                    <h4 className="font-serif text-xs font-bold text-foreground border-b border-border/10 pb-2 normal-case tracking-wider">
-                      Shop by Shape
-                    </h4>
-                    <ul className="space-y-2 text-xs font-light text-muted-foreground normal-case tracking-normal">
-                      {shapesList.map((shape) => (
-                        <li key={shape.name}>
-                          <Link href={shape.url} className="hover:text-primary transition-colors">
-                            {shape.name} Shape
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+              <div className="absolute top-full left-0 right-0 bg-card border-b border-border/20 shadow-2xl pointer-events-none opacity-0 translate-y-2 group-hover:pointer-events-auto group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 z-100 before:content-[''] before:absolute before:bottom-full before:left-0 before:right-0 before:h-6 before:bg-transparent">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 grid grid-cols-12 gap-8">
+                  <div className={`${promo ? "col-span-9" : "col-span-12"} grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-8`}>
+                    {/* Attribute columns */}
+                    {nav?.shop?.attributeGroups?.map((group) => (
+                      <div key={group.code} className="space-y-4">
+                        <h4 className="font-serif text-xs font-bold text-foreground border-b border-border/10 pb-2 normal-case tracking-wider">
+                          Shop by {group.name}
+                        </h4>
+                        <ul className="space-y-2.5 text-xs font-light text-muted-foreground normal-case tracking-normal">
+                          {group.values.map((val) => (
+                            <li key={val.name}>
+                              <Link href={val.url} className="hover:text-primary transition-colors">
+                                {val.name} {group.code === "shape" ? "Shape" : group.code === "length" ? "Nails" : ""}
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
 
-                  {/* Lengths */}
-                  <div className="col-span-2 space-y-4">
-                    <h4 className="font-serif text-xs font-bold text-foreground border-b border-border/10 pb-2 normal-case tracking-wider">
-                      Shop by Length
-                    </h4>
-                    <ul className="space-y-2 text-xs font-light text-muted-foreground normal-case tracking-normal">
-                      {lengthsList.map((length) => (
-                        <li key={length.name}>
-                          <Link href={length.url} className="hover:text-primary transition-colors">
-                            {length.name} Nails
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+                    {/* Categories Column */}
+                    {nav?.shop?.categories && nav.shop.categories.length > 0 && (
+                      <div className="space-y-4">
+                        <h4 className="font-serif text-xs font-bold text-foreground border-b border-border/10 pb-2 normal-case tracking-wider">
+                          Shop by Category
+                        </h4>
+                        <ul className="space-y-2.5 text-xs font-light text-muted-foreground normal-case tracking-normal">
+                          {nav.shop.categories.map((cat) => (
+                            <li key={cat.name}>
+                              <Link href={cat.url} className="hover:text-primary transition-colors">
+                                {cat.name}
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
 
-                  {/* Occasions */}
-                  <div className="col-span-2 space-y-4">
-                    <h4 className="font-serif text-xs font-bold text-foreground border-b border-border/10 pb-2 normal-case tracking-wider">
-                      Shop by Occasion
-                    </h4>
-                    <ul className="space-y-2 text-xs font-light text-muted-foreground normal-case tracking-normal">
-                      {occasionsList.map((occasion) => (
-                        <li key={occasion.name}>
-                          <Link href={occasion.url} className="hover:text-primary transition-colors">
-                            {occasion.name} Wear
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  {/* Collections */}
-                  <div className="col-span-3 space-y-4">
-                    <h4 className="font-serif text-xs font-bold text-foreground border-b border-border/10 pb-2 normal-case tracking-wider">
-                      Collections
-                    </h4>
-                    <ul className="space-y-2 text-xs font-light text-muted-foreground normal-case tracking-normal">
-                      {collectionsList.map((col) => (
-                        <li key={col.name}>
-                          <Link href={col.url} className="hover:text-primary transition-colors">
-                            {col.name}
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
+                    {/* Collections Column */}
+                    {nav?.shop?.collections && nav.shop.collections.length > 0 && (
+                      <div className="space-y-4">
+                        <h4 className="font-serif text-xs font-bold text-foreground border-b border-border/10 pb-2 normal-case tracking-wider">
+                          Collections
+                        </h4>
+                        <ul className="space-y-2.5 text-xs font-light text-muted-foreground normal-case tracking-normal">
+                          {nav.shop.collections.map((col) => (
+                            <li key={col.name}>
+                              <Link href={col.url} className="hover:text-primary transition-colors">
+                                {col.name}
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                   </div>
 
                   {/* Promotion Banner */}
-                  <div className="col-span-3 bg-gradient-to-br from-secondary/50 to-primary/5 border border-border/40 rounded-2xl p-5 flex flex-col justify-between relative overflow-hidden">
-                    {promo.imageUrl && (
-                      <div
-                        className="absolute inset-0 opacity-10 bg-cover bg-center pointer-events-none"
-                        style={{ backgroundImage: `url(${promo.imageUrl})` }}
-                      />
-                    )}
-                    <div className="space-y-1.5 z-10">
-                      <span className="inline-flex items-center gap-1 text-[9px] uppercase font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
-                        <Sparkles className="w-2.5 h-2.5" />
-                        Featured
-                      </span>
-                      <h5 className="font-serif text-sm font-semibold text-foreground leading-tight">
-                        {promo.title}
-                      </h5>
-                      <p className="text-[10px] text-muted-foreground font-light leading-relaxed normal-case tracking-normal">
-                        {promo.subtitle}
-                      </p>
+                  {promo && (
+                    <div className="col-span-3 bg-gradient-to-br from-secondary/50 to-primary/5 border border-border/40 rounded-2xl p-5 flex flex-col justify-between relative overflow-hidden h-full min-h-[220px]">
+                      {promo.imageUrl && (
+                        <div
+                          className="absolute inset-0 opacity-15 bg-cover bg-center pointer-events-none"
+                          style={{ backgroundImage: `url(${promo.imageUrl})` }}
+                        />
+                      )}
+                      <div className="space-y-2 z-10">
+                        <span className="inline-flex items-center gap-1 text-[9px] uppercase font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
+                          <Sparkles className="w-2.5 h-2.5" />
+                          Featured
+                        </span>
+                        <h5 className="font-serif text-sm font-semibold text-foreground leading-tight tracking-wide">
+                          {promo.title}
+                        </h5>
+                        <p className="text-[10px] text-muted-foreground font-light leading-relaxed normal-case tracking-normal">
+                          {promo.subtitle}
+                        </p>
+                      </div>
+                      <Link
+                        href={promo.ctaLink}
+                        className="inline-flex items-center text-[10px] font-semibold text-primary uppercase tracking-widest hover:text-accent transition-colors pt-3 z-10 group mt-auto"
+                      >
+                        {promo.ctaText}
+                        <ArrowRight className="ml-1 w-3 h-3 group-hover:translate-x-1 transition-transform" />
+                      </Link>
+                      <div className="absolute right-[-20px] bottom-[-20px] w-20 h-20 rounded-full bg-accent/10 blur-xl pointer-events-none" />
                     </div>
-                    <Link
-                      href={promo.ctaLink}
-                      className="inline-flex items-center text-[10px] font-semibold text-primary uppercase tracking-widest hover:text-accent transition-colors pt-3 z-10 group"
-                    >
-                      {promo.ctaText}
-                      <ArrowRight className="ml-1 w-3 h-3 group-hover:translate-x-1 transition-transform" />
-                    </Link>
-                    <div className="absolute right-[-20px] bottom-[-20px] w-20 h-20 rounded-full bg-accent/10 blur-xl pointer-events-none" />
-                  </div>
+                  )}
                 </div>
               </div>
             </div>

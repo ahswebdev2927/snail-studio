@@ -119,27 +119,27 @@ export function Footer({ storeLogo = "", storeName = "Snail Studio" }: FooterPro
           <h4 className="font-serif text-sm font-semibold tracking-wider mb-6 text-background">Collections</h4>
           <ul className="space-y-3.5 text-xs text-background/70 font-light">
             <li>
-              <Link href="/shop?shape=Coffin" className="hover:text-primary transition-colors">
+              <Link href="/shop?shape=coffin" className="hover:text-primary transition-colors">
                 Coffin Shape Sets
               </Link>
             </li>
             <li>
-              <Link href="/shop?shape=Almond" className="hover:text-primary transition-colors">
+              <Link href="/shop?shape=almond" className="hover:text-primary transition-colors">
                 Almond Shape Sets
               </Link>
             </li>
             <li>
-              <Link href="/shop?length=Short" className="hover:text-primary transition-colors">
+              <Link href="/shop?length=short" className="hover:text-primary transition-colors">
                 Short Length Sets
               </Link>
             </li>
             <li>
-              <Link href="/shop?texture=Glossy" className="hover:text-primary transition-colors">
+              <Link href="/shop?texture=glossy" className="hover:text-primary transition-colors">
                 Glossy Finishes
               </Link>
             </li>
             <li>
-              <Link href="/shop?texture=Matte" className="hover:text-primary transition-colors">
+              <Link href="/shop?texture=matte" className="hover:text-primary transition-colors">
                 Matte Collections
               </Link>
             </li>
