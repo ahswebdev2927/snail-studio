@@ -31,6 +31,7 @@ interface Collection {
   type: "manual" | "dynamic";
   isActive: boolean;
   showOnHomepage: boolean;
+  showInDropdown: boolean;
   sortOrder: number;
   createdAt: string;
   rules?: Rule[];
@@ -74,6 +75,7 @@ export default function AdminCollectionsPage() {
   const [type, setType] = useState<"manual" | "dynamic">("manual");
   const [isActive, setIsActive] = useState(true);
   const [showOnHomepage, setShowOnHomepage] = useState(false);
+  const [showInDropdown, setShowInDropdown] = useState(false);
   const [sortOrder, setSortOrder] = useState(0);
   const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
   const [rules, setRules] = useState<Rule[]>([]);
@@ -117,6 +119,7 @@ export default function AdminCollectionsPage() {
     setType("manual");
     setIsActive(true);
     setShowOnHomepage(false);
+    setShowInDropdown(false);
     setSortOrder(0);
     setSelectedProductIds([]);
     setRules([]);
@@ -131,6 +134,7 @@ export default function AdminCollectionsPage() {
     setType(col.type);
     setIsActive(col.isActive);
     setShowOnHomepage(col.showOnHomepage);
+    setShowInDropdown(col.showInDropdown || false);
     setSortOrder(col.sortOrder);
     setSelectedProductIds((col.products || []).map(p => p.productId));
     setRules(col.rules || []);
@@ -158,6 +162,7 @@ export default function AdminCollectionsPage() {
           type,
           isActive,
           showOnHomepage,
+          showInDropdown,
           sortOrder: Number(sortOrder),
           productIds: type === "manual" ? selectedProductIds : [],
           rules: type === "dynamic" ? rules.map(({ column, relation, value }) => ({ column, relation, value })) : [],
@@ -425,9 +430,9 @@ export default function AdminCollectionsPage() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-6 bg-secondary/10 p-4.5 rounded-2xl border border-border/30">
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <h4 className="text-[10px] font-bold uppercase tracking-wider text-foreground">Status & Settings</h4>
-                    <label className="flex items-center gap-2 cursor-pointer">
+                    <label className="flex items-center gap-2 cursor-pointer select-none">
                       <input 
                         type="checkbox"
                         checked={isActive}
@@ -436,11 +441,21 @@ export default function AdminCollectionsPage() {
                       />
                       <span className="text-xs text-foreground">Collection Active</span>
                     </label>
+
+                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                      <input 
+                        type="checkbox"
+                        checked={showInDropdown}
+                        onChange={(e) => setShowInDropdown(e.target.checked)}
+                        className="w-4 h-4 rounded text-primary focus:ring-primary border-border"
+                      />
+                      <span className="text-xs text-foreground">Show in Shop Dropdown</span>
+                    </label>
                   </div>
 
                   <div className="space-y-3">
                     <h4 className="text-[10px] font-bold uppercase tracking-wider text-foreground">Homepage Settings</h4>
-                    <label className="flex items-center gap-2 cursor-pointer">
+                    <label className="flex items-center gap-2 cursor-pointer select-none">
                       <input 
                         type="checkbox"
                         checked={showOnHomepage}
@@ -450,7 +465,7 @@ export default function AdminCollectionsPage() {
                       <span className="text-xs text-foreground">Show on Homepage</span>
                     </label>
 
-                    {showOnHomepage && (
+                    {(showOnHomepage || showInDropdown) && (
                       <div className="space-y-1.5 animate-in fade-in slide-in-from-top-1 duration-150">
                         <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Sort Order</label>
                         <input

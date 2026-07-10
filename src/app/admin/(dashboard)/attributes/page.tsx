@@ -53,6 +53,7 @@ interface AttributeGroup {
   filterable: boolean;
   searchable: boolean;
   visibleOnPdp: boolean;
+  showInDropdown: boolean;
   displayOrder: number;
   values: AttributeValue[];
 }
@@ -77,6 +78,7 @@ export default function AdminAttributesPage() {
   const [filterable, setFilterable] = useState(true);
   const [searchable, setSearchable] = useState(true);
   const [visibleOnPdp, setVisibleOnPdp] = useState(true);
+  const [showInDropdown, setShowInDropdown] = useState(false);
   const [displayOrder, setDisplayOrder] = useState<number>(0);
 
   // Group Edit Modal State
@@ -87,6 +89,7 @@ export default function AdminAttributesPage() {
   const [editFilterable, setEditFilterable] = useState(true);
   const [editSearchable, setEditSearchable] = useState(true);
   const [editVisibleOnPdp, setEditVisibleOnPdp] = useState(true);
+  const [editShowInDropdown, setEditShowInDropdown] = useState(false);
   const [editDisplayOrder, setEditDisplayOrder] = useState<number>(0);
 
   // Label Edit Modal State
@@ -124,6 +127,7 @@ export default function AdminAttributesPage() {
     setFilterable(true);
     setSearchable(true);
     setVisibleOnPdp(true);
+    setShowInDropdown(false);
     setDisplayOrder(0);
     setIsGroupModalOpen(true);
   };
@@ -152,6 +156,7 @@ export default function AdminAttributesPage() {
           filterable,
           searchable,
           visibleOnPdp,
+          showInDropdown,
           displayOrder,
         }),
       });
@@ -189,6 +194,7 @@ export default function AdminAttributesPage() {
           filterable: editFilterable,
           searchable: editSearchable,
           visibleOnPdp: editVisibleOnPdp,
+          showInDropdown: editShowInDropdown,
           displayOrder: editDisplayOrder,
         }),
       });
@@ -325,6 +331,7 @@ export default function AdminAttributesPage() {
     setEditFilterable(group.filterable ?? true);
     setEditSearchable(group.searchable ?? true);
     setEditVisibleOnPdp(group.visibleOnPdp ?? true);
+    setEditShowInDropdown(group.showInDropdown ?? false);
     setEditDisplayOrder(group.displayOrder ?? 0);
   };
 
@@ -699,6 +706,18 @@ export default function AdminAttributesPage() {
                         <span className="text-xs font-medium text-foreground">Show on Product Page</span>
                       </div>
                     </label>
+
+                    <label className="flex items-center gap-3 p-3 bg-secondary/10 hover:bg-secondary/20 rounded-2xl border border-border/30 transition-all cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={showInDropdown}
+                        onChange={(e) => setShowInDropdown(e.target.checked)}
+                        className="w-4 h-4 rounded text-primary focus:ring-primary border-border cursor-pointer"
+                      />
+                      <div className="space-y-0.5">
+                        <span className="text-xs font-medium text-foreground">Show in Shop Dropdown</span>
+                      </div>
+                    </label>
                   </div>
                 </div>
 
@@ -866,6 +885,18 @@ export default function AdminAttributesPage() {
                       />
                       <div className="space-y-0.5">
                         <span className="text-xs font-medium text-foreground">Show on Product Page</span>
+                      </div>
+                    </label>
+
+                    <label className="flex items-center gap-3 p-3 bg-secondary/10 hover:bg-secondary/20 rounded-2xl border border-border/30 transition-all cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={editShowInDropdown}
+                        onChange={(e) => setEditShowInDropdown(e.target.checked)}
+                        className="w-4 h-4 rounded text-primary focus:ring-primary border-border cursor-pointer"
+                      />
+                      <div className="space-y-0.5">
+                        <span className="text-xs font-medium text-foreground">Show in Shop Dropdown</span>
                       </div>
                     </label>
                   </div>

@@ -22,6 +22,7 @@ interface Category {
   description: string | null;
   image: string | null;
   showOnHomepage: boolean;
+  showInDropdown: boolean;
   sortOrder: number;
   createdAt: string;
   children?: Category[];
@@ -46,6 +47,7 @@ export default function AdminCategoriesPage() {
   const [catDescription, setCatDescription] = useState("");
   const [catImage, setCatImage] = useState("");
   const [catShowOnHomepage, setCatShowOnHomepage] = useState(false);
+  const [catShowInDropdown, setCatShowInDropdown] = useState(false);
   const [catSortOrder, setCatSortOrder] = useState(0);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
 
@@ -90,6 +92,7 @@ export default function AdminCategoriesPage() {
     setCatDescription(cat.description || "");
     setCatImage(cat.image || "");
     setCatShowOnHomepage(cat.showOnHomepage || false);
+    setCatShowInDropdown(cat.showInDropdown || false);
     setCatSortOrder(cat.sortOrder || 0);
     setIsModalOpen(true);
   };
@@ -116,6 +119,7 @@ export default function AdminCategoriesPage() {
           description: catDescription.trim() || null,
           image: catImage.trim() || null,
           showOnHomepage: catShowOnHomepage,
+          showInDropdown: catShowInDropdown,
           sortOrder: Number(catSortOrder),
         }),
       });
@@ -130,6 +134,7 @@ export default function AdminCategoriesPage() {
         setCatDescription("");
         setCatImage("");
         setCatShowOnHomepage(false);
+        setCatShowInDropdown(false);
         setCatSortOrder(0);
         // Reload list
         await loadCategories();
@@ -394,7 +399,7 @@ export default function AdminCategoriesPage() {
                 </div>
 
                 <div className="p-4 bg-secondary/15 rounded-2xl border border-border/30 space-y-4">
-                  <h4 className="text-[10px] font-bold uppercase tracking-wider text-foreground">Homepage Settings</h4>
+                  <h4 className="text-[10px] font-bold uppercase tracking-wider text-foreground">Display Settings</h4>
                   
                   <label className="flex items-center gap-3 cursor-pointer select-none">
                     <input 
@@ -409,7 +414,20 @@ export default function AdminCategoriesPage() {
                     </div>
                   </label>
 
-                  {catShowOnHomepage && (
+                  <label className="flex items-center gap-3 cursor-pointer select-none">
+                    <input 
+                      type="checkbox"
+                      checked={catShowInDropdown}
+                      onChange={(e) => setCatShowInDropdown(e.target.checked)}
+                      className="w-4 h-4 rounded text-primary focus:ring-primary border-border"
+                    />
+                    <div className="space-y-0.5">
+                      <p className="text-xs font-medium text-foreground">Show in Shop Dropdown</p>
+                      <p className="text-[10px] text-muted-foreground">Display this category as a link in the Shop navigation dropdown.</p>
+                    </div>
+                  </label>
+
+                  {(catShowOnHomepage || catShowInDropdown) && (
                     <div className="space-y-1.5 animate-in fade-in slide-in-from-top-1 duration-200">
                       <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Sort Order</label>
                       <input
@@ -438,6 +456,7 @@ export default function AdminCategoriesPage() {
                     setCatDescription("");
                     setCatImage("");
                     setCatShowOnHomepage(false);
+                    setCatShowInDropdown(false);
                     setCatSortOrder(0);
                   }}
                   className="px-4 py-2 bg-secondary hover:bg-muted text-foreground border border-border rounded-xl text-xs font-semibold uppercase tracking-wider cursor-pointer"
