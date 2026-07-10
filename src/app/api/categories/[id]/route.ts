@@ -17,6 +17,7 @@ const updateCategorySchema = z.object({
   description: z.string().max(1000, "Description is too long").optional().nullable(),
   image: z.string().url("Invalid image URL").optional().nullable().or(z.literal("")),
   showOnHomepage: z.boolean().optional(),
+  showInDropdown: z.boolean().optional(),
   sortOrder: z.number().int().optional(),
 });
 
@@ -112,7 +113,7 @@ export async function PUT(
       );
     }
 
-    const { name, parentId, description, image, showOnHomepage, sortOrder } = result.data;
+    const { name, parentId, description, image, showOnHomepage, showInDropdown, sortOrder } = result.data;
     let slug = result.data.slug;
 
     // 4. Handle slug changes
@@ -172,6 +173,7 @@ export async function PUT(
         ...(description !== undefined && { description }),
         ...(image !== undefined && { image: image || null }),
         ...(showOnHomepage !== undefined && { showOnHomepage }),
+        ...(showInDropdown !== undefined && { showInDropdown }),
         ...(sortOrder !== undefined && { sortOrder }),
         updatedAt: new Date(),
       })

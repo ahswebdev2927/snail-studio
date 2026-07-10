@@ -19,6 +19,7 @@ const updateCollectionSchema = z.object({
   type: z.enum(["manual", "dynamic"]).optional(),
   isActive: z.boolean().optional(),
   showOnHomepage: z.boolean().optional(),
+  showInDropdown: z.boolean().optional(),
   sortOrder: z.number().int().optional(),
   productIds: z.array(z.string()).optional(), // for manual type
   rules: z
@@ -108,6 +109,7 @@ export async function PUT(
       type,
       isActive,
       showOnHomepage,
+      showInDropdown,
       sortOrder,
       productIds = [],
       rules = [],
@@ -145,6 +147,7 @@ export async function PUT(
           ...(type !== undefined && { type }),
           ...(isActive !== undefined && { isActive }),
           ...(showOnHomepage !== undefined && { showOnHomepage }),
+          ...(showInDropdown !== undefined && { showInDropdown }),
           ...(sortOrder !== undefined && { sortOrder }),
           updatedAt: new Date(),
         })

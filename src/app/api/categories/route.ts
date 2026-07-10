@@ -19,6 +19,7 @@ const createCategorySchema = z.object({
   description: z.string().max(1000, "Description is too long").optional().nullable(),
   image: z.string().url("Invalid image URL").optional().nullable().or(z.literal("")),
   showOnHomepage: z.boolean().optional(),
+  showInDropdown: z.boolean().optional(),
   sortOrder: z.number().int().optional(),
 });
 
@@ -128,7 +129,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { name, parentId, description, image, showOnHomepage, sortOrder } = result.data;
+    const { name, parentId, description, image, showOnHomepage, showInDropdown, sortOrder } = result.data;
     let slug = result.data.slug;
 
     // 3. Generate slug if not provided
@@ -182,6 +183,7 @@ export async function POST(req: NextRequest) {
         description: description || null,
         image: image || null,
         showOnHomepage: showOnHomepage ?? false,
+        showInDropdown: showInDropdown ?? false,
         sortOrder: sortOrder ?? 0,
         createdAt: now,
         updatedAt: now,

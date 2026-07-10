@@ -17,6 +17,7 @@ const updateGroupSchema = z.object({
   filterable: z.boolean().optional(),
   searchable: z.boolean().optional(),
   visibleOnPdp: z.boolean().optional(),
+  showInDropdown: z.boolean().optional(),
   displayOrder: z.coerce.number().optional(),
 });
 
@@ -51,7 +52,7 @@ export async function PUT(
       );
     }
 
-    const { name, code, attributeType, filterable, searchable, visibleOnPdp, displayOrder } = result.data;
+    const { name, code, attributeType, filterable, searchable, visibleOnPdp, showInDropdown, displayOrder } = result.data;
 
     // Check existence
     const existing = await db.query.attributeGroups.findFirst({
@@ -92,6 +93,7 @@ export async function PUT(
         ...(filterable !== undefined && { filterable }),
         ...(searchable !== undefined && { searchable }),
         ...(visibleOnPdp !== undefined && { visibleOnPdp }),
+        ...(showInDropdown !== undefined && { showInDropdown }),
         ...(displayOrder !== undefined && { displayOrder }),
       })
       .where(eq(attributeGroups.id, id))
