@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
@@ -42,7 +42,18 @@ const isLightColor = (colorHex: string) => {
 
 export function HeroCarousel({ banners }: HeroCarouselProps) {
   const [activeIndex, setActiveIndex] = useState(0);
-  const [isPaused, setIsPaused] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+  const sectionRef = useRef<HTMLDivElement>(null);
+
+  // Hover arrows state
+  const [showPrevBtn, setShowPrevBtn] = useState(false);
+  const [showNextBtn, setShowNextBtn] = useState(false);
+
+  // Touch swiping state
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+
+  const minSwipeDistance = 50;
 
   // Default fallback slides if none are present in the DB
   const defaultSlides = [
@@ -80,16 +91,58 @@ export function HeroCarousel({ banners }: HeroCarouselProps) {
     setActiveIndex((prev) => (prev === 0 ? slides.length - 1 : prev - 1));
   }, [slides.length]);
 
-  // Auto sliding logic
+  // Auto sliding logic: change slide every 3 seconds (3000ms), every 5 seconds (5000ms) on hover
   useEffect(() => {
-    if (isPaused) return;
+    const intervalTime = isHovered ? 5000 : 3000;
 
     const timer = setInterval(() => {
       nextSlide();
-    }, 6000);
+    }, intervalTime);
 
     return () => clearInterval(timer);
-  }, [nextSlide, isPaused]);
+  }, [nextSlide, isHovered]);
+
+  // Mouse move handler to show buttons when cursor is close to the edges
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!sectionRef.current) return;
+    const rect = sectionRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const width = rect.width;
+
+    // Show button if cursor is within 15% of the edge (max 150px)
+    const edgeThreshold = Math.min(150, width * 0.15);
+    setShowPrevBtn(x < edgeThreshold);
+    setShowNextBtn(x > width - edgeThreshold);
+  };
+
+  const handleMouseLeave = () => {
+    setIsHovered(false);
+    setShowPrevBtn(false);
+    setShowNextBtn(false);
+  };
+
+  // Touch gesture swiping handlers
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isLeftSwipe) {
+      nextSlide();
+    } else if (isRightSwipe) {
+      prevSlide();
+    }
+  };
 
   // CSS mappings for alignment, justify, and line height/gaps
   const alignmentClasses: Record<string, string> = {
@@ -119,9 +172,14 @@ export function HeroCarousel({ banners }: HeroCarouselProps) {
 
   return (
     <section 
+      ref={sectionRef}
       className="relative overflow-hidden w-full bg-black min-h-[600px] lg:min-h-[700px] flex items-center"
-      onMouseEnter={() => setIsPaused(true)}
-      onMouseLeave={() => setIsPaused(false)}
+      onMouseMove={handleMouseMove}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={handleMouseLeave}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
     >
       {/* Slides Container */}
       <div className="w-full relative h-[600px] lg:h-[700px] flex items-center">
@@ -244,17 +302,21 @@ export function HeroCarousel({ banners }: HeroCarouselProps) {
         })}
       </div>
 
-      {/* Navigation Arrows */}
+      {/* Navigation Arrows (Appear on hover close to the edge) */}
       <button
         onClick={prevSlide}
-        className="absolute left-4 top-1/2 -translate-y-1/2 z-20 p-2.5 rounded-full bg-background/80 backdrop-blur-xs border border-border/20 text-muted-foreground hover:text-foreground hover:bg-background transition-all shadow-xs cursor-pointer"
+        className={`absolute left-4 top-1/2 -translate-y-1/2 z-20 p-2.5 rounded-full bg-background/80 backdrop-blur-xs border border-border/20 text-muted-foreground hover:text-foreground hover:bg-background shadow-xs cursor-pointer transition-all duration-300 ${
+          showPrevBtn ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4 pointer-events-none"
+        }`}
         aria-label="Previous Slide"
       >
         <ChevronLeft className="w-5 h-5" />
       </button>
       <button
         onClick={nextSlide}
-        className="absolute right-4 top-1/2 -translate-y-1/2 z-20 p-2.5 rounded-full bg-background/80 backdrop-blur-xs border border-border/20 text-muted-foreground hover:text-foreground hover:bg-background transition-all shadow-xs cursor-pointer"
+        className={`absolute right-4 top-1/2 -translate-y-1/2 z-20 p-2.5 rounded-full bg-background/80 backdrop-blur-xs border border-border/20 text-muted-foreground hover:text-foreground hover:bg-background shadow-xs cursor-pointer transition-all duration-300 ${
+          showNextBtn ? "opacity-100 translate-x-0" : "opacity-0 translate-x-4 pointer-events-none"
+        }`}
         aria-label="Next Slide"
       >
         <ChevronRight className="w-5 h-5" />
