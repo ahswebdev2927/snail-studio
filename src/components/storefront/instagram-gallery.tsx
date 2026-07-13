@@ -138,7 +138,7 @@ export function InstagramGallery() {
   }, [selectedIdx, handleClose, handlePrev, handleNext]);
 
   return (
-    <section className="py-20 bg-background border-t border-border/20">
+    <section className="py-16 bg-background border-t border-border/20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
         {/* Section Header */}
         <div className="text-center max-w-2xl mx-auto space-y-4">

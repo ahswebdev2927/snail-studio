@@ -28,7 +28,7 @@ export function WhyChooseUs() {
   ];
 
   return (
-    <section id="benefits" className="py-24 bg-background border-y border-border/20 relative overflow-hidden">
+    <section id="benefits" className="py-20 bg-background border-y border-border/20 relative overflow-hidden">
       {/* Decorative background glows */}
       <div className="absolute left-1/4 top-1/4 w-96 h-96 bg-primary/5 rounded-full filter blur-3xl pointer-events-none" />
       <div className="absolute right-1/4 bottom-1/4 w-96 h-96 bg-accent/5 rounded-full filter blur-3xl pointer-events-none" />

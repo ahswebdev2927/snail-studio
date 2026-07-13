@@ -154,7 +154,7 @@ export function InteractiveSizing({ sizeProfiles: dbSizeProfiles }: InteractiveS
   const recommendation = getFittingRecommendation();
 
   return (
-    <section id="sizing" className="py-24 bg-background border-t border-border/20 relative">
+    <section id="sizing" className="py-20 bg-background border-t border-border/20 relative">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
         
         {/* Section Header */}

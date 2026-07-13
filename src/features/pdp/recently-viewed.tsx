@@ -102,7 +102,7 @@ export function RecentlyViewed({ currentSlug }: RecentlyViewedProps) {
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16 border-t border-border/30">
+    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 lg:py-12 border-t border-border/30">
       <div className="space-y-8">
         
         {/* Title & Navigation */}
