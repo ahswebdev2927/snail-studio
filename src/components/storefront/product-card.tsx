@@ -146,11 +146,12 @@ export function ProductCard({ product }: ProductCardProps) {
 
 
   // Determine active badges based on flags (matching store theme)
-  const activeBadges: { text: string; classes: string }[] = [];
+  const activeBadges: { text: string; classes: string; icon?: React.ReactNode }[] = [];
   if (product.isBestSeller) {
     activeBadges.push({
       text: "Best Seller",
-      classes: "bg-primary/10 text-primary border-primary/20 dark:bg-primary/20 dark:text-primary-light dark:border-primary/30",
+      classes: "bg-primary text-primary-foreground border-primary/20 dark:border-primary/30",
+      icon: <Star className="w-2.5 h-2.5 fill-current" />
     });
   }
   if (product.isTrending) {
@@ -162,7 +163,7 @@ export function ProductCard({ product }: ProductCardProps) {
   if (product.isNewArrival) {
     activeBadges.push({
       text: "New Arrival",
-      classes: "bg-foreground/5 text-foreground border-foreground/10 dark:bg-foreground/10 dark:text-foreground dark:border-foreground/20",
+      classes: "bg-foreground text-background border-foreground/10 dark:bg-foreground/10 dark:text-foreground dark:border-foreground/20",
     });
   }
 
@@ -303,8 +304,9 @@ export function ProductCard({ product }: ProductCardProps) {
               {activeBadges.map((badge) => (
                 <span
                   key={badge.text}
-                  className={`inline-block text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded border ${badge.classes}`}
+                  className={`inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded border ${badge.classes}`}
                 >
+                  {badge.icon}
                   {badge.text}
                 </span>
               ))}

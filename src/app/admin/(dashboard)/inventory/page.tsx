@@ -232,7 +232,7 @@ export default function AdminInventoryPage() {
             className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer border ${
               activeTab === "stock"
                 ? "bg-accent text-accent-foreground border-accent"
-                : "bg-secondary hover:bg-muted border-border text-foreground"
+                : "bg-card hover:bg-secondary/15 border-border text-muted-foreground hover:text-foreground"
             }`}
           >
             <Boxes className="w-3.5 h-3.5" />
@@ -243,7 +243,7 @@ export default function AdminInventoryPage() {
             className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer border ${
               activeTab === "logs"
                 ? "bg-accent text-accent-foreground border-accent"
-                : "bg-secondary hover:bg-muted border-border text-foreground"
+                : "bg-card hover:bg-secondary/15 border-border text-muted-foreground hover:text-foreground"
             }`}
           >
             <History className="w-3.5 h-3.5" />
@@ -685,7 +685,7 @@ export default function AdminInventoryPage() {
               </div>
               <button 
                 onClick={() => setAdjustingItem(null)}
-                className="p-1 text-muted-foreground hover:text-foreground hover:bg-secondary/40 rounded-lg transition-colors cursor-pointer"
+                className="p-1 text-muted-foreground hover:text-foreground hover:bg-secondary/15 rounded-lg transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -820,7 +820,7 @@ export default function AdminInventoryPage() {
                 <button
                   type="button"
                   onClick={() => setAdjustingItem(null)}
-                  className="flex-1 py-3 px-4 bg-secondary hover:bg-muted border border-border text-foreground rounded-xl text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer text-center"
+                  className="flex-1 py-3 px-4 bg-transparent hover:bg-secondary/15 border border-border text-foreground rounded-xl text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer text-center"
                 >
                   Cancel
                 </button>

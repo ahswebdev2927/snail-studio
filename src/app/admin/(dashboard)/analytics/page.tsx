@@ -1186,7 +1186,7 @@ export default function AnalyticsPage() {
                         <td className="py-2.5 px-3 text-center">
                           <a 
                             href={`/admin/inventory?q=${encodeURIComponent(v.sku)}`}
-                            className="inline-flex items-center px-2.5 py-1 bg-secondary hover:bg-muted border border-border text-[9px] font-semibold uppercase tracking-wider text-foreground rounded-lg transition-all"
+                            className="inline-flex items-center px-2.5 py-1 bg-secondary/10 hover:bg-secondary/20 border border-secondary/20 text-[9px] font-semibold uppercase tracking-wider text-secondary rounded-lg transition-all"
                           >
                             Restock
                           </a>
@@ -1245,7 +1245,7 @@ export default function AnalyticsPage() {
                         <td className="py-2.5 px-3 text-center">
                           <a 
                             href={`/admin/inventory?q=${encodeURIComponent(v.sku)}`}
-                            className="inline-flex items-center px-2.5 py-1 bg-secondary hover:bg-muted border border-border text-[9px] font-semibold uppercase tracking-wider text-foreground rounded-lg transition-all"
+                            className="inline-flex items-center px-2.5 py-1 bg-secondary/10 hover:bg-secondary/20 border border-secondary/20 text-[9px] font-semibold uppercase tracking-wider text-secondary rounded-lg transition-all"
                           >
                             Restock
                           </a>
@@ -1512,7 +1512,7 @@ export default function AnalyticsPage() {
                           href={`/products/${p.slug}`}
                           target="_blank"
                           rel="noreferrer"
-                          className="inline-flex items-center px-2.5 py-1 bg-secondary hover:bg-muted border border-border text-[9px] font-semibold uppercase tracking-wider text-foreground rounded-lg transition-all"
+                          className="inline-flex items-center px-2.5 py-1 bg-secondary/10 hover:bg-secondary/20 border border-secondary/20 text-[9px] font-semibold uppercase tracking-wider text-secondary rounded-lg transition-all"
                         >
                           View Live
                         </a>
@@ -1788,7 +1788,7 @@ export default function AnalyticsPage() {
                       <td className="py-2.5 px-3 text-center">
                         <a 
                           href={`/admin/customers?q=${encodeURIComponent(s.phone)}`}
-                          className="inline-flex items-center px-2.5 py-1 bg-secondary hover:bg-muted border border-border text-[9px] font-semibold uppercase tracking-wider text-foreground rounded-lg transition-all"
+                          className="inline-flex items-center px-2.5 py-1 bg-secondary/10 hover:bg-secondary/20 border border-secondary/20 text-[9px] font-semibold uppercase tracking-wider text-secondary rounded-lg transition-all"
                         >
                           Customer File
                         </a>
@@ -1931,7 +1931,7 @@ export default function AnalyticsPage() {
                       <td className="py-2.5 px-3 text-center">
                         <a 
                           href={`/admin/coupons?q=${encodeURIComponent(c.code)}`}
-                          className="inline-flex items-center px-2.5 py-1 bg-secondary hover:bg-muted border border-border text-[9px] font-semibold uppercase tracking-wider text-foreground rounded-lg transition-all"
+                          className="inline-flex items-center px-2.5 py-1 bg-secondary/10 hover:bg-secondary/20 border border-secondary/20 text-[9px] font-semibold uppercase tracking-wider text-secondary rounded-lg transition-all"
                         >
                           Manage Coupon
                         </a>
@@ -2127,7 +2127,7 @@ export default function AnalyticsPage() {
           <button 
             onClick={loadAnalytics}
             title="Refresh Ledger"
-            className="p-2.5 bg-secondary hover:bg-muted border border-border rounded-xl text-muted-foreground hover:text-foreground active:scale-[0.98] transition-all cursor-pointer"
+            className="p-2.5 bg-card border border-border hover:bg-secondary/15 rounded-xl text-muted-foreground hover:text-foreground active:scale-[0.98] transition-all cursor-pointer"
           >
             <RefreshCw className="w-4 h-4" />
           </button>

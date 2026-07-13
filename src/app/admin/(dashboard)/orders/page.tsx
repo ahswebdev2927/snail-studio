@@ -708,7 +708,7 @@ export default function AdminOrdersPage() {
                       <td className="py-4 px-5 text-right" onClick={(e) => e.stopPropagation()}>
                         <button
                           onClick={() => handleOpenDetail(order.id)}
-                          className="px-3 py-1.5 bg-secondary hover:bg-muted border border-border text-[10px] font-bold uppercase rounded-lg text-foreground transition-all cursor-pointer"
+                          className="px-3 py-1.5 bg-secondary/10 hover:bg-secondary/20 border border-secondary/20 text-[10px] font-bold uppercase rounded-lg text-secondary transition-all cursor-pointer"
                         >
                           Inspect
                         </button>
@@ -746,7 +746,7 @@ export default function AdminOrdersPage() {
                         setTimeout(() => setCopiedShareLink(false), 2000);
                       }}
                       title="Share Order Tracking Link"
-                      className="p-1 px-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground cursor-pointer transition-all flex items-center justify-center gap-1 border border-border/40"
+                      className="p-1 px-2 rounded-lg hover:bg-secondary/15 text-muted-foreground hover:text-foreground cursor-pointer transition-all flex items-center justify-center gap-1 border border-border/40"
                     >
                       {copiedShareLink ? (
                         <>
@@ -770,7 +770,7 @@ export default function AdminOrdersPage() {
               </div>
               <button
                 onClick={handleCloseDetail}
-                className="p-1.5 rounded-full bg-secondary hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
+                className="p-1.5 rounded-full hover:bg-secondary/15 text-muted-foreground hover:text-foreground cursor-pointer transition-all"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -887,7 +887,7 @@ export default function AdminOrdersPage() {
                             type="button"
                             disabled={!orderDetail.addressHistory || orderDetail.addressHistory.length === 0}
                             onClick={() => setShowAddressHistoryModal(true)}
-                            className="p-1.5 bg-secondary hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed text-muted-foreground hover:text-foreground rounded-lg transition-all cursor-pointer border border-border/30 flex items-center justify-center"
+                            className="p-1.5 bg-card hover:bg-secondary/15 disabled:opacity-40 disabled:cursor-not-allowed text-muted-foreground hover:text-foreground rounded-lg transition-all cursor-pointer border border-border/30 flex items-center justify-center"
                             title="View Address Modification Audit Trail"
                           >
                             <History className="w-3.5 h-3.5" />
@@ -993,7 +993,7 @@ export default function AdminOrdersPage() {
                                     type="button"
                                     disabled={isWaivingDifference}
                                     onClick={handleWaiveDifference}
-                                    className="px-2 py-0.5 bg-secondary hover:bg-muted text-foreground border border-border rounded text-[8px] font-bold uppercase transition-all cursor-pointer"
+                                    className="px-2 py-0.5 bg-transparent hover:bg-secondary/15 text-foreground border border-border rounded text-[8px] font-bold uppercase transition-all cursor-pointer"
                                   >
                                     {isWaivingDifference ? "Waiving..." : "Waive"}
                                   </button>
@@ -1100,14 +1100,14 @@ export default function AdminOrdersPage() {
                                 <button
                                   type="button"
                                   onClick={() => setShowPrintLabel(true)}
-                                  className="flex-1 py-1.5 bg-secondary hover:bg-muted text-[9px] font-bold uppercase tracking-wider rounded-lg border border-border text-foreground transition-all cursor-pointer text-center"
+                                  className="flex-1 py-1.5 bg-transparent hover:bg-secondary/15 text-[9px] font-bold uppercase tracking-wider rounded-lg border border-border text-foreground transition-all cursor-pointer text-center"
                                 >
                                   Print Label
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => setShowPrintInvoice(true)}
-                                  className="flex-1 py-1.5 bg-secondary hover:bg-muted text-[9px] font-bold uppercase tracking-wider rounded-lg border border-border text-foreground transition-all cursor-pointer text-center"
+                                  className="flex-1 py-1.5 bg-transparent hover:bg-secondary/15 text-[9px] font-bold uppercase tracking-wider rounded-lg border border-border text-foreground transition-all cursor-pointer text-center"
                                 >
                                   Print Invoice
                                 </button>
@@ -1545,7 +1545,7 @@ export default function AdminOrdersPage() {
               <h3 className="font-serif text-base font-normal text-foreground">Create Parcel Shipment</h3>
               <button
                 onClick={() => setShowCreateShipmentModal(false)}
-                className="p-1 rounded-full bg-secondary hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
+                className="p-1 rounded-full hover:bg-secondary/15 text-muted-foreground hover:text-foreground cursor-pointer transition-all"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1601,7 +1601,7 @@ export default function AdminOrdersPage() {
                 <button
                   type="button"
                   onClick={() => setShowCreateShipmentModal(false)}
-                  className="flex-1 py-2.5 bg-secondary hover:bg-muted text-muted-foreground hover:text-foreground rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer text-center border border-border"
+                  className="flex-1 py-2.5 bg-transparent hover:bg-secondary/15 text-foreground rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer text-center border border-border"
                 >
                   Cancel
                 </button>
@@ -1620,7 +1620,7 @@ export default function AdminOrdersPage() {
               <button
                 type="button"
                 onClick={() => setShowEditAddressModal(false)}
-                className="p-1 rounded-full bg-secondary hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
+                className="p-1 rounded-full hover:bg-secondary/15 text-muted-foreground hover:text-foreground cursor-pointer transition-all"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1739,7 +1739,7 @@ export default function AdminOrdersPage() {
                 <button
                   type="button"
                   onClick={() => setShowEditAddressModal(false)}
-                  className="flex-1 py-2.5 bg-secondary hover:bg-muted text-muted-foreground hover:text-foreground rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer text-center border border-border"
+                  className="flex-1 py-2.5 bg-transparent hover:bg-secondary/15 text-foreground rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer text-center border border-border"
                 >
                   Cancel
                 </button>
@@ -1761,7 +1761,7 @@ export default function AdminOrdersPage() {
               <button
                 type="button"
                 onClick={() => setShowAddressHistoryModal(false)}
-                className="p-1 rounded-full bg-secondary hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
+                className="p-1 rounded-full hover:bg-secondary/15 text-muted-foreground hover:text-foreground cursor-pointer transition-all"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1815,7 +1815,7 @@ export default function AdminOrdersPage() {
               <button
                 type="button"
                 onClick={() => setShowAddressHistoryModal(false)}
-                className="px-5 py-2 bg-secondary hover:bg-muted text-foreground text-xs font-semibold rounded-xl border border-border transition-colors cursor-pointer"
+                className="px-5 py-2 bg-transparent hover:bg-secondary/15 text-foreground text-xs font-semibold rounded-xl border border-border transition-all cursor-pointer"
               >
                 Close
               </button>

@@ -364,7 +364,7 @@ export default function AdminCouponsPage() {
               <div className="pt-2">
                 <button
                   onClick={() => setIsOpenModal(true)}
-                  className="inline-flex items-center gap-1.5 px-4.5 py-2.5 bg-secondary text-foreground hover:bg-muted border border-border rounded-xl text-xs font-medium transition-all cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-4.5 py-2.5 bg-secondary text-secondary-foreground hover:bg-secondary/95 border border-secondary rounded-xl text-xs font-medium transition-all cursor-pointer"
                 >
                   Create First Coupon
                 </button>
@@ -514,7 +514,7 @@ export default function AdminCouponsPage() {
               </div>
               <button 
                 onClick={() => setIsOpenModal(false)}
-                className="p-1 text-muted-foreground hover:text-foreground hover:bg-secondary/40 rounded-lg transition-colors cursor-pointer"
+                className="p-1 text-muted-foreground hover:text-foreground hover:bg-secondary/15 rounded-lg transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -680,7 +680,7 @@ export default function AdminCouponsPage() {
                 <button
                   type="button"
                   onClick={() => setIsOpenModal(false)}
-                  className="flex-1 py-3 px-4 bg-secondary hover:bg-muted border border-border text-foreground rounded-xl text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer text-center"
+                  className="flex-1 py-3 px-4 bg-transparent hover:bg-secondary/15 border border-border text-foreground rounded-xl text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer text-center"
                 >
                   Cancel
                 </button>

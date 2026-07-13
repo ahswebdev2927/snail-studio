@@ -180,7 +180,7 @@ export default function CustomerOrderActions({
               <button
                 type="button"
                 onClick={() => setShowSupportModal(false)}
-                className="p-1 rounded-full bg-secondary hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
+                className="p-1 rounded-full hover:bg-secondary/15 text-muted-foreground hover:text-foreground cursor-pointer transition-all"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -221,7 +221,7 @@ export default function CustomerOrderActions({
               <button
                 type="button"
                 onClick={() => setShowSupportModal(false)}
-                className="flex-1 py-2 bg-secondary hover:bg-muted text-muted-foreground hover:text-foreground rounded-xl text-xs font-semibold text-center border border-border transition-all cursor-pointer"
+                className="flex-1 py-2 bg-transparent hover:bg-secondary/15 text-foreground rounded-xl text-xs font-semibold text-center border border-border transition-all cursor-pointer"
               >
                 Cancel
               </button>

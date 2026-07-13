@@ -187,7 +187,7 @@ export default function AdminGeneralSettingsPage() {
                     <button
                       type="button"
                       onClick={() => setActivePicker("logo")}
-                      className="px-3.5 py-2 bg-secondary hover:bg-muted text-foreground rounded-xl text-xs font-medium border border-border transition-colors cursor-pointer"
+                      className="px-3.5 py-2 bg-transparent hover:bg-secondary/15 text-foreground rounded-xl text-xs font-medium border border-border transition-all cursor-pointer"
                     >
                       {storeLogo ? "Change Logo" : "Upload Logo"}
                     </button>
@@ -230,7 +230,7 @@ export default function AdminGeneralSettingsPage() {
                     <button
                       type="button"
                       onClick={() => setActivePicker("logo_collapsed")}
-                      className="px-3.5 py-2 bg-secondary hover:bg-muted text-foreground rounded-xl text-xs font-medium border border-border transition-colors cursor-pointer"
+                      className="px-3.5 py-2 bg-transparent hover:bg-secondary/15 text-foreground rounded-xl text-xs font-medium border border-border transition-all cursor-pointer"
                     >
                       {storeLogoCollapsed ? "Change Logo" : "Upload Logo"}
                     </button>

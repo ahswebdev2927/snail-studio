@@ -317,7 +317,7 @@ export default function AdminCategoriesPage() {
                   setCatShowOnHomepage(false);
                   setCatSortOrder(0);
                 }}
-                className="p-1.5 rounded-full bg-secondary hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
+                className="p-1.5 rounded-full hover:bg-secondary/15 text-muted-foreground hover:text-foreground cursor-pointer transition-all"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -380,7 +380,7 @@ export default function AdminCategoriesPage() {
                     <button
                       type="button"
                       onClick={() => setShowMediaPicker(true)}
-                      className="px-4 py-2.5 bg-secondary hover:bg-secondary/80 border border-border rounded-xl text-xs font-semibold cursor-pointer shrink-0"
+                      className="px-4 py-2.5 bg-transparent hover:bg-secondary/15 text-foreground border border-border rounded-xl text-xs font-semibold cursor-pointer shrink-0"
                     >
                       Select Media
                     </button>
@@ -459,7 +459,7 @@ export default function AdminCategoriesPage() {
                     setCatShowInDropdown(false);
                     setCatSortOrder(0);
                   }}
-                  className="px-4 py-2 bg-secondary hover:bg-muted text-foreground border border-border rounded-xl text-xs font-semibold uppercase tracking-wider cursor-pointer"
+                  className="px-4 py-2 bg-transparent hover:bg-secondary/15 text-foreground border border-border rounded-xl text-xs font-semibold uppercase tracking-wider cursor-pointer"
                 >
                   Cancel
                 </button>

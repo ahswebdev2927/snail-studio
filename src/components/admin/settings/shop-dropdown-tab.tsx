@@ -184,7 +184,7 @@ export default function ShopDropdownTab() {
                 <button
                   type="button"
                   onClick={() => setShowMediaPicker(true)}
-                  className="px-4 py-2.5 bg-secondary hover:bg-muted text-foreground border border-border rounded-xl text-xs font-semibold uppercase tracking-wider cursor-pointer shrink-0"
+                  className="px-4 py-2.5 bg-transparent hover:bg-secondary/15 text-foreground border border-border rounded-xl text-xs font-semibold uppercase tracking-wider cursor-pointer shrink-0"
                 >
                   Select Media
                 </button>

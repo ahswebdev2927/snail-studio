@@ -479,7 +479,7 @@ export default function AdminBundlesPage() {
               </div>
               <button
                 onClick={() => setIsOpenModal(false)}
-                className="p-1 text-muted-foreground hover:text-foreground hover:bg-secondary/40 rounded-lg transition-colors cursor-pointer"
+                className="p-1 text-muted-foreground hover:text-foreground hover:bg-secondary/15 rounded-lg transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -642,7 +642,7 @@ export default function AdminBundlesPage() {
                 <button
                   type="button"
                   onClick={() => setIsOpenModal(false)}
-                  className="flex-1 py-3 px-4 bg-secondary hover:bg-muted border border-border text-foreground rounded-xl text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer text-center"
+                  className="flex-1 py-3 px-4 bg-transparent hover:bg-secondary/15 border border-border text-foreground rounded-xl text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer text-center"
                 >
                   Cancel
                 </button>

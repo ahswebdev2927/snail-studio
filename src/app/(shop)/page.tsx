@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { db } from "@/db";
 import { heroBanners, products, sizeProfiles } from "@/db/schema";
-import { eq, and, asc } from "drizzle-orm";
+import { eq, and, asc, desc, sql, inArray } from "drizzle-orm";
 import { HeroCarousel } from "@/components/storefront/hero-carousel";
 import { FeaturedCategories } from "@/components/storefront/featured-categories";
 import { FeaturedCollections } from "@/components/storefront/featured-collections";
@@ -24,32 +24,107 @@ import { RecentlyViewed } from "@/features/pdp/recently-viewed";
 export const revalidate = 3600; // Cache homepage for 1 hour
 
 export default async function Home() {
+  // Calculate trend score using point-based weights:
+  // - Delivered order quantity: 0.5 points
+  // - Active cart quantity: 0.3 points
+  // - Wishlist count: 0.1 points
+  // - Product views: 0.01 points
+  // - Admin manual isTrending override: 10.0 points (ensuring it stays on top)
+  const scoreSql = sql<number>`(
+    COALESCE((
+      SELECT SUM(oi.quantity) * 0.5 
+      FROM order_items oi
+      JOIN orders o ON oi.order_id = o.id
+      JOIN product_variants pv ON oi.variant_id = pv.id
+      WHERE pv.product_id = "products"."id" AND o.status = 'delivered'
+    ), 0) +
+    COALESCE((
+      SELECT SUM(ci.quantity) * 0.3 
+      FROM cart_items ci
+      JOIN product_variants pv ON ci.variant_id = pv.id
+      WHERE pv.product_id = "products"."id"
+    ), 0) +
+    COALESCE((
+      SELECT COUNT(*) * 0.1 
+      FROM wishlist_items wi
+      WHERE wi.product_id = "products"."id"
+    ), 0) +
+    ("products"."views" * 0.01) +
+    (CASE WHEN "products"."is_trending" = 1 THEN 10.0 ELSE 0.0 END)
+  )`;
+
+  // Calculate bestseller score using point-based weights:
+  // - Quantity sold in completed/active sales (paid, confirmed, processing, shipped, delivered): 1.0 points
+  // - Admin manual isBestSeller override: 25.0 points (ensuring it stays on top)
+  const bestsellerScoreSql = sql<number>`(
+    COALESCE((
+      SELECT SUM(oi.quantity) 
+      FROM order_items oi
+      JOIN orders o ON oi.order_id = o.id
+      JOIN product_variants pv ON oi.variant_id = pv.id
+      WHERE pv.product_id = "products"."id" AND o.status IN ('paid', 'confirmed', 'processing', 'shipped', 'delivered')
+    ), 0) +
+    (CASE WHEN "products"."is_best_seller" = 1 THEN 25.0 ELSE 0.0 END)
+  )`;
+
+  // Fetch the top 4 product IDs sorted by trend score and bestseller score
+  const [trendingProductIds, bestsellerProductIds] = await Promise.all([
+    db
+      .select({ id: products.id })
+      .from(products)
+      .where(eq(products.isActive, true))
+      .orderBy(sql`${scoreSql} DESC`)
+      .limit(4),
+    db
+      .select({ id: products.id })
+      .from(products)
+      .where(eq(products.isActive, true))
+      .orderBy(sql`${bestsellerScoreSql} DESC`)
+      .limit(4),
+  ]);
+
+  const trendingIds = trendingProductIds.map((p) => p.id);
+  const bestsellerIds = bestsellerProductIds.map((p) => p.id);
+
   // Fetch hero banners, dynamic product rows, and size profiles in parallel
-  const [activeBanners, bestSellers, newArrivals, trending, activeSizes] = await Promise.all([
+  const [activeBanners, unsortedBestsellers, newArrivals, unsortedTrending, activeSizes] = await Promise.all([
     db.query.heroBanners.findMany({
       where: eq(heroBanners.isActive, true),
       orderBy: asc(heroBanners.sortOrder),
     }),
+    bestsellerIds.length > 0
+      ? db.query.products.findMany({
+          where: inArray(products.id, bestsellerIds),
+          with: { media: { with: { media: true } } },
+        })
+      : Promise.resolve([]),
     db.query.products.findMany({
-      where: and(eq(products.isActive, true), eq(products.isBestSeller, true)),
+      where: eq(products.isActive, true),
+      orderBy: [desc(products.isNewArrival), desc(products.createdAt)],
       with: { media: { with: { media: true } } },
       limit: 4,
     }),
-    db.query.products.findMany({
-      where: and(eq(products.isActive, true), eq(products.isNewArrival, true)),
-      with: { media: { with: { media: true } } },
-      limit: 4,
-    }),
-    db.query.products.findMany({
-      where: and(eq(products.isActive, true), eq(products.isTrending, true)),
-      with: { media: { with: { media: true } } },
-      limit: 4,
-    }),
+    trendingIds.length > 0
+      ? db.query.products.findMany({
+          where: inArray(products.id, trendingIds),
+          with: { media: { with: { media: true } } },
+        })
+      : Promise.resolve([]),
     db.query.sizeProfiles.findMany({
       where: eq(sizeProfiles.isActive, true),
       orderBy: asc(sizeProfiles.thumb), // Sort by Thumb width (XS -> S -> M -> L)
     }),
   ]);
+
+  // Sort bestseller products to match the ranked order of IDs
+  const bestSellers = bestsellerIds
+    .map((id) => unsortedBestsellers.find((p) => p.id === id))
+    .filter((p): p is NonNullable<typeof p> => !!p);
+
+  // Sort trending products to match the ranked order of IDs
+  const trending = trendingIds
+    .map((id) => unsortedTrending.find((p) => p.id === id))
+    .filter((p): p is NonNullable<typeof p> => !!p);
 
   return (
     <div className="flex-1 flex flex-col bg-background text-foreground transition-colors duration-300">

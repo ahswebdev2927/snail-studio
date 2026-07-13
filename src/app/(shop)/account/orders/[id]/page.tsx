@@ -108,7 +108,7 @@ export default async function OrderDetailsPage({ params }: PageProps) {
         </div>
         <Link 
           href="/account/orders"
-          className="inline-flex justify-center items-center px-5 py-2.5 rounded-xl text-xs font-semibold bg-secondary text-secondary-foreground border border-border hover:bg-muted transition-colors cursor-pointer"
+          className="inline-flex justify-center items-center px-5 py-2.5 rounded-xl text-xs font-semibold bg-secondary text-secondary-foreground border border-secondary hover:bg-secondary/95 transition-all cursor-pointer"
         >
           Back to Orders
         </Link>
@@ -131,7 +131,7 @@ export default async function OrderDetailsPage({ params }: PageProps) {
         </div>
         <Link 
           href="/account/orders"
-          className="inline-flex justify-center items-center px-5 py-2.5 rounded-xl text-xs font-semibold bg-secondary text-secondary-foreground border border-border hover:bg-muted transition-colors cursor-pointer"
+          className="inline-flex justify-center items-center px-5 py-2.5 rounded-xl text-xs font-semibold bg-secondary text-secondary-foreground border border-secondary hover:bg-secondary/95 transition-all cursor-pointer"
         >
           Back to Orders
         </Link>

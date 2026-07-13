@@ -286,7 +286,7 @@ export default async function AccountPage() {
                 </p>
                 <Link 
                   href="/account/addresses"
-                  className="inline-flex justify-center items-center px-4 py-1.5 rounded-full text-[10px] font-semibold uppercase tracking-wider bg-secondary text-secondary-foreground hover:bg-muted transition-all border border-border"
+                  className="inline-flex justify-center items-center px-4 py-1.5 rounded-full text-[10px] font-semibold uppercase tracking-wider bg-secondary text-secondary-foreground hover:bg-secondary/95 transition-all border border-secondary"
                 >
                   Add Address
                 </Link>

@@ -690,7 +690,7 @@ export default function AnnouncementsTab() {
                     <button
                       type="button"
                       onClick={() => insertHtmlHelper("<strong>", "</strong>")}
-                      className="px-2 py-0.5 text-[9px] font-bold border border-border rounded bg-secondary hover:bg-muted transition-all cursor-pointer flex items-center gap-0.5 text-foreground/80"
+                      className="px-2 py-0.5 text-[9px] font-bold border border-border rounded bg-transparent hover:bg-secondary/15 transition-all cursor-pointer flex items-center gap-0.5 text-foreground/80"
                       title="Insert Bold Text"
                     >
                       <BoldIcon className="w-2.5 h-2.5" />
@@ -699,7 +699,7 @@ export default function AnnouncementsTab() {
                     <button
                       type="button"
                       onClick={() => insertHtmlHelper('<a href="/shop" class="underline font-bold hover:opacity-85 transition-opacity">', '</a>')}
-                      className="px-2 py-0.5 text-[9px] font-bold border border-border rounded bg-secondary hover:bg-muted transition-all cursor-pointer flex items-center gap-0.5 text-foreground/80"
+                      className="px-2 py-0.5 text-[9px] font-bold border border-border rounded bg-transparent hover:bg-secondary/15 transition-all cursor-pointer flex items-center gap-0.5 text-foreground/80"
                       title="Insert Link Tag"
                     >
                       <LinkIcon className="w-2.5 h-2.5" />

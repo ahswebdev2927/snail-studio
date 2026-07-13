@@ -495,7 +495,7 @@ export default function AdminAttributesPage() {
                 <div className="flex items-center gap-1.5 shrink-0">
                   <button
                     onClick={() => openGroupEditModal(group)}
-                    className="p-1.5 bg-secondary hover:bg-muted text-muted-foreground hover:text-foreground rounded-lg transition-all border border-border/40 cursor-pointer"
+                    className="p-1.5 bg-secondary/10 hover:bg-secondary/20 text-secondary border border-secondary/20 rounded-lg transition-all cursor-pointer"
                     title="Edit Group"
                   >
                     <Edit3 className="w-3 h-3" />
@@ -592,7 +592,7 @@ export default function AdminAttributesPage() {
               <h3 className="font-serif text-lg font-normal text-foreground">Create Attribute Group</h3>
               <button
                 onClick={() => setIsGroupModalOpen(false)}
-                className="p-1.5 rounded-full bg-secondary hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
+                className="p-1.5 rounded-full hover:bg-secondary/15 text-muted-foreground hover:text-foreground cursor-pointer transition-all"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -736,7 +736,7 @@ export default function AdminAttributesPage() {
                 <button
                   type="button"
                   onClick={() => setIsGroupModalOpen(false)}
-                  className="px-4 py-2 bg-secondary hover:bg-muted text-foreground border border-border rounded-xl text-xs font-semibold uppercase tracking-wider cursor-pointer"
+                  className="px-4 py-2 bg-transparent hover:bg-secondary/15 text-foreground border border-border rounded-xl text-xs font-semibold uppercase tracking-wider cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -772,7 +772,7 @@ export default function AdminAttributesPage() {
               </h3>
               <button
                 onClick={() => setSelectedGroup(null)}
-                className="p-1.5 rounded-full bg-secondary hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
+                className="p-1.5 rounded-full hover:bg-secondary/15 text-muted-foreground hover:text-foreground cursor-pointer transition-all"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -917,7 +917,7 @@ export default function AdminAttributesPage() {
                 <button
                   type="button"
                   onClick={() => setSelectedGroup(null)}
-                  className="px-4 py-2 bg-secondary hover:bg-muted text-foreground border border-border rounded-xl text-xs font-semibold uppercase tracking-wider cursor-pointer"
+                  className="px-4 py-2 bg-transparent hover:bg-secondary/15 text-foreground border border-border rounded-xl text-xs font-semibold uppercase tracking-wider cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -942,7 +942,7 @@ export default function AdminAttributesPage() {
               <h3 className="font-serif text-lg font-normal text-foreground">Edit Label / Value</h3>
               <button
                 onClick={() => setSelectedLabel(null)}
-                className="p-1.5 rounded-full bg-secondary hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
+                className="p-1.5 rounded-full hover:bg-secondary/15 text-muted-foreground hover:text-foreground cursor-pointer transition-all"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -979,7 +979,7 @@ export default function AdminAttributesPage() {
                 <button
                   type="button"
                   onClick={() => setSelectedLabel(null)}
-                  className="px-4 py-2 bg-secondary hover:bg-muted text-foreground border border-border rounded-xl text-xs font-semibold uppercase tracking-wider cursor-pointer"
+                  className="px-4 py-2 bg-transparent hover:bg-secondary/15 text-foreground border border-border rounded-xl text-xs font-semibold uppercase tracking-wider cursor-pointer"
                 >
                   Cancel
                 </button>

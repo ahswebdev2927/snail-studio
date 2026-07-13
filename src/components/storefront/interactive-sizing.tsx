@@ -60,10 +60,10 @@ interface InteractiveSizingProps {
 export function InteractiveSizing({ sizeProfiles: dbSizeProfiles }: InteractiveSizingProps = {}) {
   const activeProfiles: SizeProfile[] = dbSizeProfiles && dbSizeProfiles.length > 0
     ? dbSizeProfiles.map((p) => ({
-        name: p.name,
-        description: p.description,
-        measurements: [p.thumb, p.index, p.middle, p.ring, p.pinky],
-      }))
+      name: p.name,
+      description: p.description,
+      measurements: [p.thumb, p.index, p.middle, p.ring, p.pinky],
+    }))
     : SIZE_PROFILES;
 
   const [activeTab, setActiveTab] = useState<"calculator" | "chart" | "guide">("chart");
@@ -120,7 +120,7 @@ export function InteractiveSizing({ sizeProfiles: dbSizeProfiles }: InteractiveS
 
     if (eligibleProfiles.length > 0) {
       const bestFit = eligibleProfiles[0];
-      
+
       // If total filing needed is low (<= 3mm total across all 5 fingers), recommend it with filing advice
       if (bestFit.totalWaste <= 3) {
         return {
@@ -156,7 +156,7 @@ export function InteractiveSizing({ sizeProfiles: dbSizeProfiles }: InteractiveS
   return (
     <section id="sizing" className="py-20 bg-background border-t border-border/20 relative">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
-        
+
         {/* Section Header */}
         <div className="text-center max-w-2xl mx-auto space-y-4">
           <span className="text-xs uppercase tracking-widest text-primary font-bold">Perfect Fit Guaranteed</span>
@@ -173,33 +173,30 @@ export function InteractiveSizing({ sizeProfiles: dbSizeProfiles }: InteractiveS
           <div className="flex w-full justify-between">
             <button
               onClick={() => setActiveTab("chart")}
-              className={`pb-4 text-xs font-semibold uppercase tracking-widest transition-all relative w-1/3 flex items-center justify-center gap-1.5 cursor-pointer ${
-                activeTab === "chart"
-                  ? "text-primary font-bold border-b-2 border-primary"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
+              className={`pb-4 text-xs font-semibold uppercase tracking-widest transition-all relative w-1/3 flex items-center justify-center gap-1.5 cursor-pointer ${activeTab === "chart"
+                ? "text-primary font-bold border-b-2 border-primary"
+                : "text-muted-foreground hover:text-foreground"
+                }`}
             >
               <Ruler className="w-4 h-4" />
               Size Chart
             </button>
             <button
               onClick={() => setActiveTab("guide")}
-              className={`pb-4 text-xs font-semibold uppercase tracking-widest transition-all relative w-1/3 flex items-center justify-center gap-1.5 cursor-pointer ${
-                activeTab === "guide"
-                  ? "text-primary font-bold border-b-2 border-primary"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
+              className={`pb-4 text-xs font-semibold uppercase tracking-widest transition-all relative w-1/3 flex items-center justify-center gap-1.5 cursor-pointer ${activeTab === "guide"
+                ? "text-primary font-bold border-b-2 border-primary"
+                : "text-muted-foreground hover:text-foreground"
+                }`}
             >
               <HelpCircle className="w-4 h-4" />
               How to Measure
             </button>
             <button
               onClick={() => setActiveTab("calculator")}
-              className={`pb-4 text-xs font-semibold uppercase tracking-widest transition-all relative w-1/3 flex items-center justify-center gap-1.5 cursor-pointer ${
-                activeTab === "calculator"
-                  ? "text-primary font-bold border-b-2 border-primary"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
+              className={`pb-4 text-xs font-semibold uppercase tracking-widest transition-all relative w-1/3 flex items-center justify-center gap-1.5 cursor-pointer ${activeTab === "calculator"
+                ? "text-primary font-bold border-b-2 border-primary"
+                : "text-muted-foreground hover:text-foreground"
+                }`}
             >
               <Scale className="w-4 h-4" />
               Calculator
@@ -209,7 +206,7 @@ export function InteractiveSizing({ sizeProfiles: dbSizeProfiles }: InteractiveS
 
         {/* Tab Contents */}
         <div className="max-w-5xl mx-auto">
-          
+
           {/* TAB 1: CALCULATOR */}
           {activeTab === "calculator" && (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center bg-secondary/35 border border-border/40 rounded-3xl p-6 sm:p-10 shadow-xs">
@@ -264,7 +261,7 @@ export function InteractiveSizing({ sizeProfiles: dbSizeProfiles }: InteractiveS
                   <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-light block">
                     Fitting Recommendation
                   </span>
-                  
+
                   <div className="space-y-1">
                     <div className="flex items-baseline gap-2">
                       <span className="text-xs text-muted-foreground font-light">Recommended Size:</span>
@@ -314,27 +311,26 @@ export function InteractiveSizing({ sizeProfiles: dbSizeProfiles }: InteractiveS
                   <div className="grid grid-cols-5 gap-2 text-center text-[10px]">
                     {FINGERS.map((finger, idx) => {
                       const userVal = measurements[idx];
-                      const stdVal = recommendation.type !== "out-of-range" 
+                      const stdVal = recommendation.type !== "out-of-range"
                         ? activeProfiles.find(p => p.name === recommendation.profileName)?.measurements[idx] || userVal
                         : userVal;
-                      
+
                       const diff = stdVal - userVal;
 
                       return (
                         <div key={finger.name} className="p-2 rounded-lg bg-secondary/50 border border-border/20 space-y-1">
                           <span className="text-muted-foreground block text-[9px] truncate">{finger.name}</span>
                           <span className="font-semibold text-foreground font-mono block">{userVal}mm</span>
-                          
+
                           {recommendation.type === "out-of-range" ? (
                             <span className="font-mono text-[8px] font-bold block text-rose-500">Custom</span>
                           ) : (
-                            <span className={`font-mono text-[8px] font-bold block ${
-                              diff === 0 
-                                ? "text-emerald-600 font-semibold" 
-                                : diff > 0 
-                                  ? "text-amber-600" 
-                                  : "text-rose-600"
-                            }`}>
+                            <span className={`font-mono text-[8px] font-bold block ${diff === 0
+                              ? "text-emerald-600 font-semibold"
+                              : diff > 0
+                                ? "text-amber-600"
+                                : "text-rose-600"
+                              }`}>
                               {diff === 0 ? "Match" : diff > 0 ? `+${diff}mm` : `${diff}mm`}
                             </span>
                           )}
@@ -382,11 +378,10 @@ export function InteractiveSizing({ sizeProfiles: dbSizeProfiles }: InteractiveS
                   </thead>
                   <tbody className="divide-y divide-border/20 text-muted-foreground font-mono">
                     {activeProfiles.map((profile) => (
-                      <tr 
+                      <tr
                         key={profile.name}
-                        className={`hover:bg-primary/5 hover:text-foreground transition-colors ${
-                          recommendation.profileName === profile.name ? "bg-primary/5 text-foreground font-medium" : ""
-                        }`}
+                        className={`hover:bg-primary/5 hover:text-foreground transition-colors ${recommendation.profileName === profile.name ? "bg-primary/5 text-foreground font-medium" : ""
+                          }`}
                       >
                         <td className="py-4 px-4 font-semibold text-primary font-sans">{profile.name} ({profile.description})</td>
                         {profile.measurements.map((m, idx) => (
@@ -407,7 +402,7 @@ export function InteractiveSizing({ sizeProfiles: dbSizeProfiles }: InteractiveS
           {/* TAB 3: HOW TO MEASURE */}
           {activeTab === "guide" && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-fade-in">
-              
+
               {/* Method 1 */}
               <div className="bg-card border border-border/30 rounded-3xl p-6 sm:p-8 space-y-4 shadow-xs">
                 <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-serif font-bold text-sm">
@@ -452,7 +447,7 @@ export function InteractiveSizing({ sizeProfiles: dbSizeProfiles }: InteractiveS
         </div>
 
         {/* Full Size Guide Page Link */}
-        <div className="text-center pt-8">
+        <div className="text-center pt-4">
           <Link
             href="/sizing-guide"
             className="inline-flex items-center justify-center gap-2 px-8 py-3.5 border border-primary text-primary hover:bg-primary hover:text-primary-foreground text-xs font-semibold uppercase tracking-widest rounded-full transition-all duration-300 shadow-xs hover:shadow-sm cursor-pointer"

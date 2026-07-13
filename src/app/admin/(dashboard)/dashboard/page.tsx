@@ -144,9 +144,9 @@ export default function AdminDashboardPage() {
           </Link>
           <Link
             href="/admin/coupons"
-            className="inline-flex items-center gap-1.5 px-4.5 py-2.5 bg-secondary hover:bg-muted border border-border rounded-xl text-xs font-semibold uppercase tracking-wider text-foreground transition-all cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-4.5 py-2.5 bg-secondary text-secondary-foreground hover:bg-secondary/95 border border-secondary rounded-xl text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer"
           >
-            <Tag className="w-4 h-4 text-muted-foreground" />
+            <Tag className="w-4 h-4 text-secondary-foreground" />
             New Coupon
           </Link>
         </div>

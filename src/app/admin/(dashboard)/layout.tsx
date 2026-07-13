@@ -52,7 +52,7 @@ export default async function AdminLayout({
             <div className="w-full pt-4 flex flex-col sm:flex-row gap-3">
               <a
                 href="/"
-                className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full text-xs font-semibold uppercase tracking-wider bg-secondary text-secondary-foreground hover:bg-muted transition-all border border-border"
+                className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full text-xs font-semibold uppercase tracking-wider bg-secondary text-secondary-foreground hover:bg-secondary/95 transition-all border border-secondary"
               >
                 <Home className="w-4 h-4" />
                 Storefront

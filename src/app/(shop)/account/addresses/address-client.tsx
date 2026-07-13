@@ -222,7 +222,7 @@ export function AddressClient({ initialAddresses }: AddressClientProps) {
       case "Home": return "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/25";
       case "Work": return "bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-500/25";
       case "Hostel": return "bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/25";
-      default: return "bg-secondary text-muted-foreground border-border/40";
+      default: return "bg-secondary/10 text-secondary border-secondary/25";
     }
   };
 
@@ -455,7 +455,7 @@ export function AddressClient({ initialAddresses }: AddressClientProps) {
                         className={`px-4 py-2 text-xs font-medium rounded-xl border transition-all flex items-center gap-1.5 cursor-pointer ${
                           label === lblOption
                             ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                            : "bg-secondary/35 text-muted-foreground border-border/40 hover:border-border/80"
+                            : "bg-secondary/10 text-foreground border-border/40 hover:border-border/80"
                         }`}
                       >
                         {getLabelIcon(lblOption)}
