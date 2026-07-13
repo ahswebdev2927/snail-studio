@@ -488,7 +488,7 @@ export default function HeroBannersTab() {
                   <button
                     type="button"
                     onClick={() => setShowMediaPicker(true)}
-                    className="px-4 py-2.5 bg-secondary hover:bg-secondary/80 border border-border rounded-xl text-xs font-semibold cursor-pointer shrink-0"
+                    className="px-4 py-2.5 bg-secondary hover:bg-secondary/95 text-secondary-foreground border border-secondary rounded-xl text-xs font-semibold cursor-pointer shrink-0 transition-colors"
                   >
                     Select Media
                   </button>
@@ -727,7 +727,7 @@ export default function HeroBannersTab() {
       {/* Cloudinary Media Picker Modal */}
       {showMediaPicker && (
         <div className="fixed inset-0 z-60 bg-foreground/20 backdrop-blur-xs overflow-y-auto flex items-center justify-center p-4">
-          <div className="bg-card border border-border/40 rounded-3xl w-full max-w-4xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto relative my-auto">
+          <div className="w-full max-w-4xl relative my-auto">
             <MediaPicker
               onSelect={handleMediaSelect}
               onClose={() => setShowMediaPicker(false)}

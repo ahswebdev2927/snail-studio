@@ -331,7 +331,7 @@ export default function AdminReviewsPage() {
                       Author: {review.reviewerName || "Shopper"}
                     </span>
                     {review.isVerifiedPurchase && (
-                      <span className="inline-flex items-center gap-1 text-[9px] font-semibold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 dark:text-emerald-400 dark:bg-emerald-950/30 dark:border-emerald-900/50 uppercase tracking-wider">
+                      <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-600 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20 dark:text-emerald-400 dark:bg-emerald-500/10 dark:border-emerald-500/20 uppercase tracking-wider">
                         <Check className="w-3 h-3 shrink-0" /> Verified Purchase
                       </span>
                     )}

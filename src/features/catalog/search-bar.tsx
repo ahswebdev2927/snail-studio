@@ -39,7 +39,7 @@ export function SearchBar({ value, onChange }: SearchBarProps) {
         value={localValue}
         onChange={(e) => setLocalValue(e.target.value)}
         placeholder="Search premium nails (e.g. ombre, matte, stiletto)..."
-        className="block w-full pl-11 pr-10 py-3 text-sm bg-secondary/20 hover:bg-secondary/40 focus:bg-background border border-border/40 hover:border-border/80 focus:border-primary/60 rounded-full focus:ring-2 focus:ring-primary/5 transition-all duration-300 outline-none font-light placeholder:text-muted-foreground/60 text-foreground"
+        className="block w-full pl-11 pr-10 py-3 text-sm bg-transparent border border-border/40 hover:border-border/80 focus:border-primary/60 rounded-full focus:ring-2 focus:ring-primary/5 transition-all duration-300 outline-none font-light placeholder:text-muted-foreground/60 text-foreground"
       />
       {localValue && (
         <button

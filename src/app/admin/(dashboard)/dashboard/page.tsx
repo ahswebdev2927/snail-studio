@@ -127,8 +127,8 @@ export default function AdminDashboardPage() {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-6 bg-card border border-border/40 rounded-3xl relative overflow-hidden transition-all duration-300">
         <div className="absolute right-0 top-0 w-64 h-full bg-gradient-to-l from-primary/5 to-transparent pointer-events-none rounded-r-3xl" />
         <div className="space-y-1 relative z-10">
-          <h1 className="font-serif text-2xl font-normal text-foreground">
-            Welcome Back, <span className="font-serif italic font-light text-primary">Administrator</span>
+          <h1 className="text-2xl font-normal text-foreground">
+            Welcome Back, <span className="italic font-light text-primary">Administrator</span>
           </h1>
           <p className="text-xs text-muted-foreground font-light">
             Here is what's happening with Snail Studio today.
@@ -163,7 +163,7 @@ export default function AdminDashboardPage() {
             </div>
           </div>
           <div className="mt-4 space-y-1">
-            <p className="font-serif text-2xl font-semibold tracking-wide text-foreground">
+            <p className="text-2xl font-semibold tracking-wide text-foreground">
               {formatPrice(stats.totalSales)}
             </p>
             <p className="text-[10px] text-muted-foreground font-light">Revenue from completed checkout sessions</p>
@@ -179,7 +179,7 @@ export default function AdminDashboardPage() {
             </div>
           </div>
           <div className="mt-4 space-y-1">
-            <p className="font-serif text-2xl font-semibold tracking-wide text-foreground">
+            <p className="text-2xl font-semibold tracking-wide text-foreground">
               {stats.totalOrders}
             </p>
             <p className="text-[10px] text-muted-foreground font-light">Total client purchases registered</p>
@@ -195,7 +195,7 @@ export default function AdminDashboardPage() {
             </div>
           </div>
           <div className="mt-4 space-y-1">
-            <p className="font-serif text-2xl font-semibold tracking-wide text-foreground">
+            <p className="text-2xl font-semibold tracking-wide text-foreground">
               {stats.totalCustomers}
             </p>
             <p className="text-[10px] text-muted-foreground font-light">Registered shopper profiles</p>
@@ -213,7 +213,7 @@ export default function AdminDashboardPage() {
             </div>
           </div>
           <div className="mt-4 space-y-1">
-            <p className={`font-serif text-2xl font-semibold tracking-wide ${
+            <p className={`text-2xl font-semibold tracking-wide ${
               stats.lowStockCount > 0 ? "text-amber-500 font-bold" : "text-foreground"
             }`}>
               {stats.lowStockCount} SKUs

@@ -311,7 +311,7 @@ export default function AdminBundlesPage() {
             placeholder="Search bundles by name or description..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-border rounded-xl text-xs bg-secondary/20 outline-hidden focus:border-primary/50 text-foreground transition-all font-light placeholder:text-muted-foreground/35"
+            className="w-full pl-10 pr-4 py-2 border border-border rounded-xl text-xs bg-transparent outline-hidden focus:border-primary/50 text-foreground transition-all font-light placeholder:text-muted-foreground/35"
           />
         </div>
         <div className="flex items-center gap-3">

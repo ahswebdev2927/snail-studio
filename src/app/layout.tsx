@@ -1,14 +1,7 @@
 import type { Metadata } from "next";
-import { Cormorant_Garamond, Manrope, Inter } from "next/font/google";
+import { Manrope, Inter } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
-
-const cormorant = Cormorant_Garamond({
-  variable: "--font-cormorant",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  display: "swap",
-});
 
 const manrope = Manrope({
   variable: "--font-manrope",
@@ -41,7 +34,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${cormorant.variable} ${manrope.variable} ${inter.variable}`} suppressHydrationWarning>
+    <html lang="en" className={`${manrope.variable} ${inter.variable}`} suppressHydrationWarning>
       <body className="font-sans antialiased min-h-screen flex flex-col">
         <Script
           id="theme-initializer"

@@ -330,7 +330,7 @@ export default function NotificationsInboxPage() {
               onClick={() => { setActiveCategory("all"); setPage(1); }}
               className={cn(
                 "w-full text-left px-3 py-1.5 rounded-lg text-xs transition-all flex items-center gap-2 cursor-pointer",
-                activeCategory === "all" ? "bg-secondary text-foreground font-semibold" : "text-muted-foreground hover:bg-secondary/35 hover:text-foreground"
+                activeCategory === "all" ? "bg-secondary text-secondary-foreground font-semibold" : "text-muted-foreground hover:bg-secondary/35 hover:text-foreground"
               )}
             >
               All Categories
@@ -344,7 +344,7 @@ export default function NotificationsInboxPage() {
                   onClick={() => { setActiveCategory(cat); setPage(1); }}
                   className={cn(
                     "w-full text-left px-3 py-1.5 rounded-lg text-xs transition-all flex items-center gap-2 cursor-pointer",
-                    activeCategory === cat ? "bg-secondary text-foreground font-semibold" : "text-muted-foreground hover:bg-secondary/35 hover:text-foreground"
+                    activeCategory === cat ? "bg-secondary text-secondary-foreground font-semibold" : "text-muted-foreground hover:bg-secondary/35 hover:text-foreground"
                   )}
                 >
                   <Icon className="w-3.5 h-3.5" />

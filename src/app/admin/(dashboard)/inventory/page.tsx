@@ -17,7 +17,8 @@ import {
   AlertCircle,
   TrendingUp,
   TrendingDown,
-  Info
+  Info,
+  Pencil
 } from "lucide-react";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 
@@ -484,9 +485,10 @@ export default function AdminInventoryPage() {
                                     setEditingId(item.id);
                                     setEditingThreshold(item.lowStockThreshold);
                                   }}
-                                  className="opacity-0 group-hover:opacity-100 group-hover/threshold:opacity-100 px-1.5 py-0.5 bg-secondary/80 border border-border text-[9px] font-medium text-foreground hover:bg-muted rounded transition-all cursor-pointer"
+                                  className="opacity-0 group-hover:opacity-100 group-hover/threshold:opacity-100 p-1 hover:bg-secondary/15 rounded text-muted-foreground hover:text-foreground transition-all cursor-pointer"
+                                  title="Edit Alert Threshold"
                                 >
-                                  Edit
+                                  <Pencil className="w-3.5 h-3.5" />
                                 </button>
                               </div>
                             )}

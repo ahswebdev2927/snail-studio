@@ -434,7 +434,7 @@ export default function Header({
           <input
             type="text"
             placeholder="Search panels... (Ctrl+K)"
-            className="w-full pl-10 pr-4 py-2 bg-secondary/35 border border-border/50 focus:border-primary focus:ring-1 focus:ring-primary rounded-2xl text-xs outline-none transition-all placeholder:text-muted-foreground/50"
+            className="w-full pl-10 pr-4 py-2 bg-transparent border border-border/50 focus:border-primary focus:ring-1 focus:ring-primary rounded-2xl text-xs outline-none transition-all placeholder:text-muted-foreground/50"
           />
         </div>
 

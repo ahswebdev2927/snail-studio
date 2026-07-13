@@ -485,7 +485,7 @@ export default function AdminCategoriesPage() {
       {/* Category Media Picker Modal */}
       {showMediaPicker && (
         <div className="fixed inset-0 z-60 bg-foreground/20 backdrop-blur-xs overflow-y-auto flex items-center justify-center p-4">
-          <div className="bg-card border border-border/40 rounded-3xl w-full max-w-4xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto relative my-auto">
+          <div className="w-full max-w-4xl relative my-auto">
             <MediaPicker
               onSelect={handleMediaSelect}
               onClose={() => setShowMediaPicker(false)}

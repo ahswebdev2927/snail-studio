@@ -323,7 +323,7 @@ export default function AdminCouponsPage() {
             placeholder="Search by Coupon Code (e.g. SAVE20)..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-secondary/30 border border-border rounded-xl text-xs outline-none focus:border-primary focus:ring-1 focus:ring-primary text-foreground placeholder:text-muted-foreground/35 font-medium transition-all"
+            className="w-full pl-10 pr-4 py-2 bg-transparent border border-border rounded-xl text-xs outline-none focus:border-primary focus:ring-1 focus:ring-primary text-foreground placeholder:text-muted-foreground/35 font-medium transition-all"
           />
         </div>
         <div className="flex items-center gap-2">

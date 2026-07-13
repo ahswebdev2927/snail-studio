@@ -345,7 +345,7 @@ export default function AdminAuditLogsPage() {
                     className="p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 cursor-pointer select-none group"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="p-2 bg-secondary/60 rounded-xl text-primary group-hover:scale-105 transition-transform">
+                      <div className="p-2 bg-primary/10 rounded-xl text-primary group-hover:scale-105 transition-all">
                         <Activity className="w-4 h-4" />
                       </div>
                       <div className="space-y-0.5">
@@ -356,7 +356,7 @@ export default function AdminAuditLogsPage() {
                           <span className="font-medium text-foreground">
                             {log.entityType === "product" ? "Product ID" : "Variant ID"}:
                           </span>
-                          <span className="font-mono text-[9px] bg-secondary/80 px-1 py-0.25 rounded">{log.entityId}</span>
+                          <span className="font-mono text-[9px] bg-transparent border border-border px-1.5 py-0.5 rounded text-foreground">{log.entityId}</span>
                         </div>
                       </div>
                     </div>
@@ -376,8 +376,8 @@ export default function AdminAuditLogsPage() {
                       </div>
                       
                       {/* Chevron Toggle */}
-                      <div className="text-muted-foreground/65 p-1 bg-secondary/40 rounded-lg group-hover:bg-secondary transition-colors shrink-0">
-                        {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                      <div className="text-muted-foreground group-hover:text-foreground p-1.5 bg-secondary/10 group-hover:bg-secondary/20 rounded-lg transition-all shrink-0 border border-secondary/10">
+                        {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                       </div>
                     </div>
                   </div>

@@ -669,7 +669,7 @@ export default function ProductForm({ mode, productId, initialData }: ProductFor
                   type="text"
                   placeholder="e.g. French Ombre Glitter Nails"
                   {...register("name")}
-                  className="w-full px-4 py-3 bg-secondary/35 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-2xl text-xs outline-none transition-all placeholder:text-muted-foreground/45 text-foreground"
+                  className="w-full px-4 py-3 bg-white border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-2xl text-xs outline-none transition-all placeholder:text-muted-foreground/45 text-foreground"
                 />
                 {errors.name && (
                   <p className="text-[10px] text-destructive ml-1">{errors.name.message}</p>
@@ -684,7 +684,7 @@ export default function ProductForm({ mode, productId, initialData }: ProductFor
                   type="text"
                   placeholder="french-ombre-glitter-nails"
                   {...register("slug")}
-                  className="w-full px-4 py-3 bg-secondary/35 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-2xl text-xs outline-none transition-all placeholder:text-muted-foreground/45 text-foreground"
+                  className="w-full px-4 py-3 bg-white border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-2xl text-xs outline-none transition-all placeholder:text-muted-foreground/45 text-foreground"
                 />
                 {errors.slug && (
                   <p className="text-[10px] text-destructive ml-1">{errors.slug.message}</p>
@@ -697,15 +697,43 @@ export default function ProductForm({ mode, productId, initialData }: ProductFor
                 </label>
                 <select
                   {...register("categoryId")}
-                  className="w-full px-4 py-3 bg-secondary/35 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-2xl text-xs outline-none transition-all text-foreground"
+                  className="w-full px-4 py-3 bg-white border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-2xl text-xs outline-none transition-all text-foreground"
                 >
                   <option value="" className="bg-card text-foreground">Select Category</option>
-                  {categories.map((c) => (
-                    <option key={c.id} value={c.id} className="bg-card text-foreground">
-                      {c.parentId ? "— " : ""}
-                      {c.name}
-                    </option>
-                  ))}
+                  {(() => {
+                    const parents = categories.filter((c) => !c.parentId);
+                    const childrenMap = categories.reduce((acc: any, c) => {
+                      if (c.parentId) {
+                        if (!acc[c.parentId]) acc[c.parentId] = [];
+                        acc[c.parentId].push(c);
+                      }
+                      return acc;
+                    }, {});
+
+                    return parents.map((parent) => {
+                      const children = childrenMap[parent.id] || [];
+                      if (children.length > 0) {
+                        return (
+                          <optgroup key={parent.id} label={parent.name} className="bg-card text-foreground font-semibold">
+                            <option value={parent.id} className="bg-card text-foreground font-normal">
+                              {parent.name} (Parent)
+                            </option>
+                            {children.map((child: any) => (
+                              <option key={child.id} value={child.id} className="bg-card text-foreground font-normal">
+                                {child.name}
+                              </option>
+                            ))}
+                          </optgroup>
+                        );
+                      } else {
+                        return (
+                          <option key={parent.id} value={parent.id} className="bg-card text-foreground">
+                            {parent.name}
+                          </option>
+                        );
+                      }
+                    });
+                  })()}
                 </select>
               </div>
 
@@ -715,7 +743,7 @@ export default function ProductForm({ mode, productId, initialData }: ProductFor
                 </label>
                 <select
                   {...register("brandId")}
-                  className="w-full px-4 py-3 bg-secondary/35 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-2xl text-xs outline-none transition-all text-foreground"
+                  className="w-full px-4 py-3 bg-white border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-2xl text-xs outline-none transition-all text-foreground"
                 >
                   <option value="" className="bg-card text-foreground">Select Brand</option>
                   {brands.map((b) => (
@@ -741,7 +769,7 @@ export default function ProductForm({ mode, productId, initialData }: ProductFor
                   rows={2}
                   placeholder="Glamorous ombre press-on nails with sparkle elements..."
                   {...register("shortDescription")}
-                  className="w-full px-4 py-3 bg-secondary/35 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-2xl text-xs outline-none transition-all placeholder:text-muted-foreground/45 resize-none text-foreground"
+                  className="w-full px-4 py-3 bg-white border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-2xl text-xs outline-none transition-all placeholder:text-muted-foreground/45 resize-none text-foreground"
                 />
                 {errors.shortDescription && (
                   <p className="text-[10px] text-destructive ml-1">{errors.shortDescription.message}</p>
@@ -756,7 +784,7 @@ export default function ProductForm({ mode, productId, initialData }: ProductFor
                   rows={5}
                   placeholder="Provide deep details about nail durability, sizes included, application glue kits, and reuse..."
                   {...register("description")}
-                  className="w-full px-4 py-3 bg-secondary/35 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-2xl text-xs outline-none transition-all placeholder:text-muted-foreground/45 text-foreground"
+                  className="w-full px-4 py-3 bg-white border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-2xl text-xs outline-none transition-all placeholder:text-muted-foreground/45 text-foreground"
                 />
               </div>
             </div>
@@ -1313,7 +1341,7 @@ export default function ProductForm({ mode, productId, initialData }: ProductFor
                   type="text"
                   placeholder="Buy French Ombre Nails Online | Store"
                   {...register("metaTitle")}
-                  className="w-full px-4 py-3 bg-secondary/35 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-2xl text-xs outline-none transition-all placeholder:text-muted-foreground/45 text-foreground"
+                  className="w-full px-4 py-3 bg-white border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-2xl text-xs outline-none transition-all placeholder:text-muted-foreground/45 text-foreground"
                 />
                 {errors.metaTitle && (
                   <p className="text-[10px] text-destructive ml-1">{errors.metaTitle.message}</p>
@@ -1328,7 +1356,7 @@ export default function ProductForm({ mode, productId, initialData }: ProductFor
                   rows={3}
                   placeholder="High-quality, durable press-on nails..."
                   {...register("metaDescription")}
-                  className="w-full px-4 py-3 bg-secondary/35 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-2xl text-xs outline-none transition-all placeholder:text-muted-foreground/45 resize-none text-foreground"
+                  className="w-full px-4 py-3 bg-white border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-2xl text-xs outline-none transition-all placeholder:text-muted-foreground/45 resize-none text-foreground"
                 />
                 {errors.metaDescription && (
                   <p className="text-[10px] text-destructive ml-1">{errors.metaDescription.message}</p>
@@ -1356,7 +1384,7 @@ export default function ProductForm({ mode, productId, initialData }: ProductFor
                   type="text"
                   placeholder="https://cloudinary.com/..."
                   {...register("ogImage")}
-                  className="w-full px-4 py-3 bg-secondary/35 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-2xl text-xs outline-none transition-all placeholder:text-muted-foreground/45 text-foreground font-mono"
+                  className="w-full px-4 py-3 bg-white border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-2xl text-xs outline-none transition-all placeholder:text-muted-foreground/45 text-foreground font-mono"
                 />
                 {watch("ogImage") && (
                   <div className="mt-2 aspect-[1.91/1] w-full rounded-xl border border-border overflow-hidden bg-secondary/20">
@@ -1379,7 +1407,7 @@ export default function ProductForm({ mode, productId, initialData }: ProductFor
                 </label>
                 <select
                   {...register("status")}
-                  className="w-full px-4 py-3 bg-secondary/35 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-2xl text-xs outline-none transition-all text-foreground font-semibold"
+                  className="w-full px-4 py-3 bg-white border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-2xl text-xs outline-none transition-all text-foreground font-semibold"
                 >
                   <option value="Active">Active (Visible Everywhere)</option>
                   <option value="Draft">Draft (Admin Only)</option>
@@ -1455,26 +1483,13 @@ export default function ProductForm({ mode, productId, initialData }: ProductFor
       {/* Cloudinary Media Selection Modal */}
       {showMediaPicker && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-foreground/35 backdrop-blur-sm p-4 flex items-center justify-center">
-          <div className="bg-card border border-border w-full max-w-4xl max-h-[85vh] rounded-3xl overflow-hidden shadow-2xl flex flex-col animate-scale-up my-auto">
-            <div className="p-4 border-b border-border/40 flex items-center justify-between shrink-0">
-              <span className="text-sm font-semibold tracking-wide uppercase">
-                Select Cloudinary Assets
-              </span>
-              <button
-                type="button"
-                onClick={() => setShowMediaPicker(false)}
-                className="p-1.5 hover:bg-secondary rounded-xl transition-colors cursor-pointer"
-              >
-                <X className="w-5 h-5 text-muted-foreground" />
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto p-2">
-              <MediaPicker
-                maxSelection={pickerTarget === "featured" || pickerTarget === "ogImage" ? 1 : 10}
-                onSelect={handleMediaSelect}
-                onClose={() => setShowMediaPicker(false)}
-              />
-            </div>
+          <div className="w-full max-w-4xl relative my-auto">
+            <MediaPicker
+              maxSelection={pickerTarget === "featured" || pickerTarget === "ogImage" ? 1 : 10}
+              onSelect={handleMediaSelect}
+              onClose={() => setShowMediaPicker(false)}
+              title="Select Product Media"
+            />
           </div>
         </div>
       )}
@@ -1556,7 +1571,7 @@ function VariantEditDialog({ variant, onClose, onSave, saving }: VariantEditDial
                 type="text"
                 value={sku}
                 onChange={(e) => setSku(e.target.value.toUpperCase())}
-                className="w-full px-3 py-2 bg-secondary/35 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl outline-none font-mono text-foreground"
+                className="w-full px-3 py-2 bg-white border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl outline-none font-mono text-foreground"
               />
             </div>
             <div className="space-y-1">
@@ -1565,7 +1580,7 @@ function VariantEditDialog({ variant, onClose, onSave, saving }: VariantEditDial
                 type="text"
                 value={barcode}
                 onChange={(e) => setBarcode(e.target.value)}
-                className="w-full px-3 py-2 bg-secondary/35 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl outline-none font-mono text-foreground"
+                className="w-full px-3 py-2 bg-white border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl outline-none font-mono text-foreground"
               />
             </div>
           </div>
@@ -1578,7 +1593,7 @@ function VariantEditDialog({ variant, onClose, onSave, saving }: VariantEditDial
                 step="0.01"
                 value={price}
                 onChange={(e) => setPrice(Number(e.target.value))}
-                className="w-full px-3 py-2 bg-secondary/35 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl outline-none text-foreground font-semibold"
+                className="w-full px-3 py-2 bg-white border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl outline-none text-foreground font-semibold"
               />
             </div>
             <div className="space-y-1">
@@ -1588,7 +1603,7 @@ function VariantEditDialog({ variant, onClose, onSave, saving }: VariantEditDial
                 step="0.01"
                 value={compareAtPrice}
                 onChange={(e) => setCompareAtPrice(e.target.value)}
-                className="w-full px-3 py-2 bg-secondary/35 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl outline-none text-foreground"
+                className="w-full px-3 py-2 bg-white border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl outline-none text-foreground"
               />
             </div>
           </div>
@@ -1600,7 +1615,7 @@ function VariantEditDialog({ variant, onClose, onSave, saving }: VariantEditDial
                 type="number"
                 value={stock}
                 onChange={(e) => setStock(Number(e.target.value))}
-                className="w-full px-3 py-2 bg-secondary/35 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl outline-none text-foreground font-semibold font-mono text-center"
+                className="w-full px-3 py-2 bg-white border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl outline-none text-foreground font-semibold font-mono text-center"
               />
             </div>
             <div className="space-y-1">
@@ -1608,7 +1623,7 @@ function VariantEditDialog({ variant, onClose, onSave, saving }: VariantEditDial
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value as any)}
-                className="w-full px-3 py-2 bg-secondary/35 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl outline-none text-foreground font-semibold"
+                className="w-full px-3 py-2 bg-white border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl outline-none text-foreground font-semibold"
               >
                 <option value="Active">Active</option>
                 <option value="Disabled">Disabled</option>

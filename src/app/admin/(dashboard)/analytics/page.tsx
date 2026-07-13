@@ -388,7 +388,7 @@ export default function AnalyticsPage() {
               </div>
             </div>
             <div className="mt-4 space-y-1">
-              <p className="font-serif text-2xl font-semibold tracking-wide text-foreground">
+              <p className="text-2xl font-semibold tracking-wide text-foreground">
                 {formatPriceDecimal(summary.netRevenue)}
               </p>
               <p className="text-[10px] text-muted-foreground font-light">Gross: {formatPrice(summary.grossRevenue)} | Refund: {formatPrice(summary.refundsTotal)}</p>
@@ -404,7 +404,7 @@ export default function AnalyticsPage() {
               </div>
             </div>
             <div className="mt-4 space-y-1">
-              <p className="font-serif text-2xl font-semibold tracking-wide text-foreground">
+              <p className="text-2xl font-semibold tracking-wide text-foreground">
                 {formatPriceDecimal(summary.aov)}
               </p>
               <p className="text-[10px] text-muted-foreground font-light">Average net basket revenue per transaction</p>
@@ -420,7 +420,7 @@ export default function AnalyticsPage() {
               </div>
             </div>
             <div className="mt-4 space-y-1">
-              <p className="font-serif text-2xl font-semibold tracking-wide text-foreground">
+              <p className="text-2xl font-semibold tracking-wide text-foreground">
                 {summary.orderCount} Orders
               </p>
               <p className="text-[10px] text-muted-foreground font-light">Completed checkouts in timeframe</p>
@@ -436,7 +436,7 @@ export default function AnalyticsPage() {
               </div>
             </div>
             <div className="mt-4 space-y-1">
-              <p className="font-serif text-lg font-semibold tracking-wide text-foreground">
+              <p className="text-lg font-semibold tracking-wide text-foreground">
                 - {formatPrice(summary.discountAmount)}
               </p>
               <p className="text-[10px] text-muted-foreground font-light">Tax: +{formatPrice(summary.taxAmount)} | Shipping: +{formatPrice(summary.shippingAmount)}</p>
@@ -454,7 +454,7 @@ export default function AnalyticsPage() {
               </p>
             </div>
             {activeRevenuePoint && (
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-secondary/80 border border-border/60 rounded-xl text-[10px]">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-transparent border border-border rounded-xl text-[10px]">
                 <span className="font-medium text-foreground">{formatDateLabel(activeRevenuePoint.date)}:</span>
                 <span className="font-bold text-primary">{formatPriceDecimal(activeRevenuePoint.amount)}</span>
                 <span className="text-muted-foreground font-light">({activeRevenuePoint.count} orders)</span>
@@ -732,7 +732,7 @@ export default function AnalyticsPage() {
                 </p>
               </div>
               {activeOrderPoint && (
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-secondary/80 border border-border/60 rounded-xl text-[10px]">
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-transparent border border-border rounded-xl text-[10px]">
                   <span className="font-medium text-foreground">{formatDateLabel(activeOrderPoint.date)}:</span>
                   <span className="font-bold text-primary">{activeOrderPoint.count} Orders</span>
                 </div>

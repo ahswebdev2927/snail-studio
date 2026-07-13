@@ -248,7 +248,7 @@ export function SearchOverlay() {
             value={query}
             onChange={handleInputChange}
             placeholder="Search nails, shapes, colors, or collections..."
-            className="w-full bg-secondary/30 border border-border/40 focus:border-primary/50 focus:outline-hidden focus:ring-1 focus:ring-primary/20 rounded-full py-4.5 pl-6 pr-14 text-sm text-foreground transition-all placeholder:text-muted-foreground/60 font-light"
+            className="w-full bg-transparent border border-border/40 focus:border-primary/50 focus:outline-hidden focus:ring-1 focus:ring-primary/20 rounded-full py-4.5 pl-6 pr-14 text-sm text-foreground transition-all placeholder:text-muted-foreground/60 font-light"
           />
           <button
             type="submit"
