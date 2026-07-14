@@ -4,6 +4,10 @@ import CheckoutClient from "@/features/checkout/checkout-client";
 export const metadata = {
   title: "Secure Checkout | Snail Studio",
   description: "Complete your purchase of luxury handcrafted press-on nails securely. Enter shipping address, choose delivery speed, and pay.",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default function CheckoutPage() {

@@ -17,9 +17,15 @@ import { InstagramGallery } from "@/components/storefront/instagram-gallery";
 import { CustomerTestimonials } from "@/components/storefront/customer-testimonials";
 import { InteractiveSizing } from "@/components/storefront/interactive-sizing";
 import { RecentlyViewed } from "@/features/pdp/recently-viewed";
+import type { Metadata } from "next";
+import { getBaseMetadata } from "@/lib/seo";
 
-
-
+export const metadata: Metadata = getBaseMetadata({
+  title: "Snail Studio | Premium Custom Press-On Nails E-Commerce",
+  description: "Experience salon-quality manicures from home with our custom-designed, luxury press-on nails. Handcrafted, reusable, and tailored to perfection.",
+  path: "/",
+  keywords: "press-on nails, custom press-on nails, luxury press-ons, reusable fake nails, custom manicure, Snail Studio",
+});
 
 export const revalidate = 3600; // Cache homepage for 1 hour
 

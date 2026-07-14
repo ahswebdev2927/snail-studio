@@ -12,6 +12,8 @@ import { ProductReviews } from "@/features/pdp/product-reviews";
 import { RelatedProducts } from "@/features/pdp/related-products";
 import { FrequentlyBoughtTogether } from "@/features/pdp/frequently-bought-together";
 import { RecentlyViewedTracker, RecentlyViewed } from "@/features/pdp/recently-viewed";
+import { getBaseMetadata, getProductJsonLd, getBreadcrumbJsonLd, getFAQJsonLd } from "@/lib/seo";
+import { getOptimizedImageUrl } from "@/lib/cloudinary/utils";
 
 export const revalidate = 3600; // Cache pages for 1 hour, then regenerate in background
 export const dynamicParams = true; // Support dynamic rendering of newly added products
@@ -51,9 +53,13 @@ export async function generateMetadata({
     return { title: "Product Not Found | Snail Studio" };
   }
 
-  const featuredMedia =
-    product.media.find((m) => m.isFeatured) ?? product.media[0];
-  const ogImageUrl = featuredMedia?.media?.url ?? undefined;
+  const featuredMedia = product.media.find((m) => m.isFeatured) ?? product.media[0];
+  const rawImageUrl = featuredMedia?.media?.url;
+  
+  // Transform Cloudinary image to standard OG size (1200x630)
+  const ogImageUrl = rawImageUrl 
+    ? getOptimizedImageUrl(rawImageUrl, { width: 1200, height: 630, crop: "fill", gravity: "auto" })
+    : undefined;
 
   const title = product.metaTitle ?? `${product.name} | Snail Studio`;
   const description =
@@ -61,18 +67,17 @@ export async function generateMetadata({
     product.shortDescription ??
     `Shop ${product.name} — premium handcrafted press-on nails by Snail Studio.`;
 
-  return {
+  // Build page-specific keywords
+  const keywordsList = ["press-on nails", "snail studio", product.name.toLowerCase()];
+  if (product.category?.name) keywordsList.push(product.category.name.toLowerCase());
+
+  return getBaseMetadata({
     title,
     description,
-    openGraph: {
-      title,
-      description,
-      type:   "website",
-      locale: "en_IN",
-      images: ogImageUrl ? [{ url: ogImageUrl, alt: product.name }] : undefined,
-    },
-    alternates: { canonical: `/products/${slug}` },
-  };
+    path: `/products/${slug}`,
+    imageUrl: ogImageUrl,
+    keywords: keywordsList.join(", "),
+  });
 }
 
 /* -----------------------------------------------------------------------
@@ -359,43 +364,60 @@ export default async function ProductPage({
     { label: product.name },
   ];
 
-  /* ----- 6. JSON-LD Product schema ----- */
-  const featuredMedia = galleryMedia.find((m) => m.isFeatured) ?? galleryMedia[0];
-  const productJsonLd = {
-    "@context": "https://schema.org",
-    "@type":    "Product",
-    name:        product.name,
-    description: product.description ?? product.shortDescription ?? undefined,
-    image:       featuredMedia?.url,
-    sku:         fullVariants[0]?.sku,
-    brand: product.brand
-      ? { "@type": "Brand", name: product.brand.name }
-      : undefined,
-    offers: {
-      "@type":        "AggregateOffer",
-      priceCurrency:  "INR",
-      lowPrice:       (product.priceMin / 100).toFixed(2),
-      highPrice:      (product.priceMax / 100).toFixed(2),
-      offerCount:     fullVariants.filter((v) => v.status === "Active").length,
-      availability:
-        product.status === "Out Of Stock"
-          ? "https://schema.org/OutOfStock"
-          : "https://schema.org/InStock",
-    },
-    ...(reviewCount > 0 && {
-      aggregateRating: {
-        "@type":      "AggregateRating",
-        ratingValue:  averageRating.toFixed(1),
-        reviewCount,
-        bestRating:   5,
-        worstRating:  1,
-      },
-    }),
-  };
-
   /* ----- 7. Primary image URL for cart item thumbnail ----- */
   const primaryImageUrl =
     galleryMedia.find((m) => m.isFeatured)?.url ?? galleryMedia[0]?.url;
+
+  /* ----- 6. JSON-LD schemas ----- */
+  const productJsonLd = getProductJsonLd({
+    name: product.name,
+    slug: product.slug,
+    description: product.description,
+    shortDescription: product.shortDescription,
+    priceMin: product.priceMin,
+    priceMax: product.priceMax,
+    imageUrl: primaryImageUrl,
+    sku: fullVariants[0]?.sku,
+    brandName: product.brand?.name,
+    categoryName: product.category?.name,
+    isInStock: product.status !== "Out Of Stock",
+    reviewCount,
+    averageRating,
+    reviews: formattedReviews.map(r => ({
+      authorName: r.reviewerName,
+      datePublished: r.createdAt,
+      comment: r.comment,
+      rating: r.rating,
+      title: r.title,
+    })),
+  });
+
+  const breadcrumbJsonLd = getBreadcrumbJsonLd(
+    breadcrumbs.map((crumb) => ({
+      name: crumb.label,
+      url: crumb.href,
+    }))
+  );
+
+  const productFaqs = [
+    {
+      q: "Are Snail Studio press-on nails reusable?",
+      a: "Yes! If you apply them using our Adhesive Glue Tabs, they can be easily peeled off and reused multiple times. If you use Liquid Nail Glue, they are still reusable if you gently buff away the old glue residue from the back of the press-on nails using the wooden stick and nail buffer included in your kit.",
+    },
+    {
+      q: "How do I find my correct nail size?",
+      a: "No measuring required! Every Snail Studio press-on nail set comes with 24 nails covering 10 to 12 different sizes. This ensures a perfect fit for every finger shape and size, with extra spares to customize your fit.",
+    },
+    {
+      q: "Will press-on nails damage my natural nails?",
+      a: "No! Adhesive tabs cause zero damage and are perfect for short-term wear. For liquid glue, as long as you follow our recommended soak-off removal guide (using warm soapy water and cuticle oil) and never rip them off by force, your natural nails will remain completely healthy and undamaged.",
+    },
+    {
+      q: "How long do they last?",
+      a: "Adhesive tabs typically last 1 to 3 days, making them perfect for weekend wear or special events. Liquid nail glue can last 2 to 3 weeks with proper application, light prep, and a secure fit.",
+    },
+  ];
+  const faqJsonLd = getFAQJsonLd(productFaqs);
 
   /* ----- 7.1 Fetch Frequently Bought Together (FBT) Recommendations ----- */
   const dbRecommendations = await db.query.products.findMany({
@@ -512,6 +534,14 @@ export default async function ProductPage({
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
       />
 
       {/* Background tracking for Recently Viewed history */}

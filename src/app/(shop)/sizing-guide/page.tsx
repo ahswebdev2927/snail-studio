@@ -3,14 +3,17 @@ import { db } from "@/db";
 import { sizeProfiles, systemSettings } from "@/db/schema";
 import { eq, asc } from "drizzle-orm";
 import { SizingGuideClient } from "@/components/storefront/sizing-guide-client";
+import type { Metadata } from "next";
+import { getBaseMetadata, getBreadcrumbJsonLd } from "@/lib/seo";
 
 export const revalidate = 3600; // Cache size guide page for 1 hour
 
-export const metadata = {
+export const metadata: Metadata = getBaseMetadata({
   title: "Press-On Nail Size Guide & Simulator | Snail Studio",
   description: "Find your perfect press-on nail fit. Use our interactive size and length visualizer, learn how to measure your nails at home, and view standard size charts.",
+  path: "/sizing-guide",
   keywords: "nail size guide, press-on nail sizing, nail length chart, custom nails, how to measure nail bed, Snail Studio",
-};
+});
 
 export default async function SizingGuidePage() {
   // Fetch active size profiles and length chart settings in parallel
@@ -46,10 +49,21 @@ export default async function SizingGuidePage() {
     ];
   }
 
+  const breadcrumbJsonLd = getBreadcrumbJsonLd([
+    { name: "Home", url: "/" },
+    { name: "Size Guide", url: "/sizing-guide" },
+  ]);
+
   return (
-    <SizingGuideClient
-      sizeProfiles={activeSizes}
-      lengthChartData={lengthChartData}
-    />
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
+      <SizingGuideClient
+        sizeProfiles={activeSizes}
+        lengthChartData={lengthChartData}
+      />
+    </>
   );
 }

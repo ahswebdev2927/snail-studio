@@ -10,6 +10,10 @@ import { AccountNav } from "./account-nav";
 export const metadata = {
   title: "My Account | Snail Studio",
   description: "Manage your profile, orders, addresses, and wishlist at Snail Studio.",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default async function AccountLayout({

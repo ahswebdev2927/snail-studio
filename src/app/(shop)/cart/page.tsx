@@ -4,6 +4,10 @@ import CartClient from "@/features/cart/cart-client";
 export const metadata = {
   title: "Your Shopping Cart | Snail Studio",
   description: "Review your handcrafted press-on nails, edit quantities, apply discount codes, and complete your checkout securely.",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default function CartPage() {
