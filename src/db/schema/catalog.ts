@@ -142,11 +142,14 @@ export const wishlists = sqliteTable('wishlists', {
   id: text('id').primaryKey(),
   userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)
-});
+}, (table) => [
+  index('wishlists_user_id_idx').on(table.userId)
+]);
 
 export const wishlistItems = sqliteTable('wishlist_items', {
   wishlistId: text('wishlist_id').notNull().references(() => wishlists.id, { onDelete: 'cascade' }),
-  productId: text('product_id').notNull().references(() => products.id, { onDelete: 'cascade' })
+  productId: text('product_id').notNull().references(() => products.id, { onDelete: 'cascade' }),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)
 }, (t) => [
   primaryKey({ columns: [t.wishlistId, t.productId] })
 ]);

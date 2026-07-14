@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, primaryKey } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, primaryKey, index } from 'drizzle-orm/sqlite-core';
 import { sql } from 'drizzle-orm';
 import { products } from './catalog';
 import { users } from './auth';
@@ -13,7 +13,10 @@ export const reviews = sqliteTable('reviews', {
   comment: text('comment'),
   isApproved: integer('is_approved', { mode: 'boolean' }).notNull().default(false),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)
-});
+}, (table) => [
+  index('reviews_user_id_idx').on(table.userId),
+  index('reviews_product_id_idx').on(table.productId)
+]);
 
 export const reviewImages = sqliteTable('review_images', {
   reviewId: text('review_id').notNull().references(() => reviews.id, { onDelete: 'cascade' }),

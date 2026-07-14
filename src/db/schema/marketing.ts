@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, uniqueIndex, primaryKey } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, uniqueIndex, primaryKey, index } from 'drizzle-orm/sqlite-core';
 import { sql } from 'drizzle-orm';
 import { orders } from './orders';
 import { users } from './auth';
@@ -25,7 +25,9 @@ export const couponUsage = sqliteTable('coupon_usage', {
   orderId: text('order_id').notNull().references(() => orders.id, { onDelete: 'cascade' }),
   userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)
-});
+}, (table) => [
+  index('coupon_usage_user_id_idx').on(table.userId)
+]);
 
 export const heroBanners = sqliteTable('hero_banners', {
   id: text('id').primaryKey(),

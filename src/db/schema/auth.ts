@@ -80,4 +80,7 @@ export const userAuditLogs = sqliteTable('user_audit_logs', {
   changes: text('changes'), // Stores stringified JSON of differences
   ipAddress: text('ip_address'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)
-});
+}, (table) => [
+  index('user_audit_logs_user_id_idx').on(table.userId),
+  index('user_audit_logs_created_at_idx').on(table.createdAt)
+]);
