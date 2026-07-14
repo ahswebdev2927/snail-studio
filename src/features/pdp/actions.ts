@@ -1,8 +1,8 @@
 "use server";
 
 import { db } from "@/db";
-import { wishlists, wishlistItems, orders, orderItems, productVariants, reviews, media, reviewImages, products } from "@/db/schema";
-import { eq, and, inArray, sql } from "drizzle-orm";
+import { wishlists, wishlistItems, orders, orderItems, productVariants, reviews, media, reviewImages, products, recentlyViewed } from "@/db/schema";
+import { eq, and, inArray, sql, desc } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { getSessionUser } from "@/lib/auth/session";
 import { nanoid } from "nanoid";
@@ -420,6 +420,36 @@ export async function incrementProductViews(productId: string) {
     await db.update(products)
       .set({ views: sql`${products.views} + 1` })
       .where(eq(products.id, productId));
+
+    // Log to recently_viewed table for authenticated users
+    const user = await getAuthUser();
+    if (user) {
+      await db.transaction(async (tx) => {
+        // Remove existing views for this user + product to bubble it to the top
+        await tx.delete(recentlyViewed)
+          .where(and(eq(recentlyViewed.userId, user.id), eq(recentlyViewed.productId, productId)));
+        
+        // Insert new view
+        await tx.insert(recentlyViewed).values({
+          id: `view_${nanoid(12)}`,
+          userId: user.id,
+          productId,
+        });
+
+        // Keep only top 20 items per user
+        const userViews = await tx
+          .select({ id: recentlyViewed.id })
+          .from(recentlyViewed)
+          .where(eq(recentlyViewed.userId, user.id))
+          .orderBy(desc(recentlyViewed.createdAt));
+
+        if (userViews.length > 20) {
+          const idsToDelete = userViews.slice(20).map(v => v.id);
+          await tx.delete(recentlyViewed).where(inArray(recentlyViewed.id, idsToDelete));
+        }
+      });
+    }
+
     return { success: true };
   } catch (error) {
     console.error("Error incrementing product views:", error);

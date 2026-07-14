@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminAuth } from "@/lib/firebase/admin";
 import { db } from "@/db";
-import { users } from "@/db/schema";
+import { users, userAuditLogs } from "@/db/schema";
 import { eq, or } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { createSession } from "@/lib/auth/refresh-token";
@@ -133,6 +133,21 @@ export async function POST(req: NextRequest) {
       userAgent,
       ipAddress
     );
+
+    // Write successful login event to userAuditLogs
+    try {
+      await db.insert(userAuditLogs).values({
+        id: `aud_${nanoid(12)}`,
+        userId: user.id,
+        action: "login",
+        entityType: "user",
+        entityId: user.id,
+        ipAddress: ipAddress || null,
+        changes: null,
+      });
+    } catch (auditError) {
+      console.error("Failed to write login audit log:", auditError);
+    }
 
     // Merge guest cart to customer cart if guestCartToken cookie exists
     const guestCartToken = req.cookies.get("guestCartToken")?.value;
