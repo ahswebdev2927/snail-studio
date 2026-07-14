@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { users, orders } from "@/db/schema";
-import { eq, and, or, like, desc, sql } from "drizzle-orm";
+import { eq, and, or, like, desc, sql, inArray } from "drizzle-orm";
 import { authorize } from "@/middleware/auth";
+import { getCustomersInSegment, getSegmentCounts } from "@/services/crm/segmentation.service";
 
-// GET /api/admin/customers - Retrieve registered customers list with lifetime order statistics (Admin only)
+// GET /api/admin/customers - Retrieve registered customers list with lifetime order statistics & segmentation (Admin only)
 export async function GET(req: NextRequest) {
   try {
     const auth = await authorize(req, "admin");
@@ -14,8 +15,22 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const q = searchParams.get("q") || "";
+    const segment = searchParams.get("segment") || "";
 
+    const segmentCounts = await getSegmentCounts();
     const conditions = [eq(users.role, "customer")];
+
+    // Apply segment filter if requested
+    if (segment.trim()) {
+      const userIds = await getCustomersInSegment(segment.trim());
+      if (userIds.length === 0) {
+        return NextResponse.json({
+          customers: [],
+          segmentCounts,
+        }, { status: 200 });
+      }
+      conditions.push(inArray(users.id, userIds));
+    }
 
     // Apply text search on name, phone, or email if provided
     if (q.trim()) {
@@ -49,7 +64,10 @@ export async function GET(req: NextRequest) {
       .groupBy(users.id)
       .orderBy(desc(users.createdAt));
 
-    return NextResponse.json(results, { status: 200 });
+    return NextResponse.json({
+      customers: results,
+      segmentCounts,
+    }, { status: 200 });
 
   } catch (error: any) {
     console.error("GET /api/admin/customers error:", error);
