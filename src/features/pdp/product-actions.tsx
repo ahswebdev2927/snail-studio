@@ -444,7 +444,10 @@ export function ProductActions({
 
   /* ----- Wishlist Toggle ----- */
   const handleWishlistToggle = () => {
-    toggleWishlist(productId);
+    const price = selectedVariant 
+      ? selectedVariant.price / 100 
+      : (variants[0]?.price ? variants[0].price / 100 : undefined);
+    toggleWishlist(productId, { name: productName, price });
   };
 
   /* ----- No variants fallback ----- */

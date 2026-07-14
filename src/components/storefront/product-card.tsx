@@ -205,7 +205,7 @@ export function ProductCard({ product }: ProductCardProps) {
           type="button"
           onClick={(e) => {
             e.preventDefault();
-            toggleWishlist(product.id);
+            toggleWishlist(product.id, { name: product.name, price: product.priceMin / 100 });
           }}
           className="absolute top-3 right-3 p-1.5 rounded-full bg-white/80 dark:bg-black/40 hover:bg-white dark:hover:bg-black backdrop-blur-xs border border-border/20 shadow-xs text-muted-foreground hover:text-rose-500 hover:scale-105 active:scale-95 transition-all cursor-pointer z-20"
           aria-label="Toggle Wishlist"

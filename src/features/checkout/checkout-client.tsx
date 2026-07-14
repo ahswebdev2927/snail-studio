@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { useCartStore } from "@/lib/hooks/use-cart-store";
 import { Button } from "@/components/ui/button";
+import { trackBeginCheckout, trackApplyCoupon } from "@/lib/analytics";
 import { formatPrice, cn } from "@/lib/utils";
 import { calculateBundleDiscount } from "@/lib/bundles";
 import CloudinaryImage from "@/components/media/cloudinary-image";
@@ -111,6 +112,23 @@ export default function CheckoutClient() {
   const clearCart = useCartStore((state) => state.clearCart);
 
   // Load Razorpay Script
+  const trackedCheckoutRef = React.useRef(false);
+  useEffect(() => {
+    if (mounted && cart.length > 0 && !trackedCheckoutRef.current) {
+      trackedCheckoutRef.current = true;
+      trackBeginCheckout(
+        cart.map((item) => ({
+          item_id: item.id,
+          item_name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          item_variant: item.variantName,
+        })),
+        cart.reduce((acc, curr) => acc + curr.price * curr.quantity, 0)
+      );
+    }
+  }, [mounted, cart]);
+
   useEffect(() => {
     setMounted(true);
     const script = document.createElement("script");
@@ -285,6 +303,7 @@ export default function CheckoutClient() {
       if (valRes.ok && data.valid) {
         setAppliedCoupon(data);
         setCouponSuccess(`Coupon '${data.code}' applied successfully! Saved ${formatPrice(data.discountAmount)}`);
+        trackApplyCoupon(data.code);
       } else {
         setCouponError(data.error || "Invalid coupon code.");
       }

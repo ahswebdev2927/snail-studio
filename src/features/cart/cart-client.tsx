@@ -228,7 +228,7 @@ export default function CartClient() {
     if (!prodId) return;
 
     if (!wishlist.includes(prodId)) {
-      await toggleWishlist(prodId);
+      await toggleWishlist(prodId, { name: item.name, price: item.price });
     }
     removeFromCart(item.id);
   };
@@ -269,7 +269,7 @@ export default function CartClient() {
       });
     }
 
-    toggleWishlist(product.id);
+    toggleWishlist(product.id, { name: product.name, price: product.priceMin / 100 });
   };
 
   if (!mounted) {
@@ -323,7 +323,7 @@ export default function CartClient() {
                   Move to Bag
                 </button>
                 <button
-                  onClick={() => toggleWishlist(product.id)}
+                  onClick={() => toggleWishlist(product.id, { name: product.name, price: product.priceMin / 100 })}
                   className="p-2 text-muted-foreground/60 hover:text-destructive hover:bg-destructive/5 rounded-full transition-colors cursor-pointer"
                   aria-label="Remove from wishlist"
                 >

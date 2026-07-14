@@ -14,6 +14,7 @@ import {
   AlertCircle
 } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
+import { PurchaseTracker } from "@/components/purchase-tracker";
 
 interface SuccessPageProps {
   searchParams: Promise<{ orderId?: string }>;
@@ -92,8 +93,26 @@ export default async function OrderSuccessPage({ searchParams }: SuccessPageProp
   const currentStatus = orderRecord.status.toLowerCase();
   const isPaid = currentStatus !== "pending" && currentStatus !== "cancelled";
 
+  // Format order for GA4 tracker
+  const trackerOrder = {
+    id: orderRecord.id,
+    totalAmount: orderRecord.totalAmount,
+    taxAmount: orderRecord.taxAmount,
+    shippingAmount: orderRecord.shippingAmount,
+    couponCode: orderRecord.couponCode,
+    items: orderRecord.items.map((item) => ({
+      id: item.variantId || item.id,
+      name: item.variant?.product?.name || "Premium Handcrafted Nails",
+      price: item.price,
+      quantity: item.quantity,
+      variantName: item.variant?.name || "Default Style",
+    })),
+  };
+
   return (
-    <div className="min-h-screen bg-background text-foreground px-4 md:px-8 py-12 max-w-4xl mx-auto">
+    <>
+      <PurchaseTracker order={trackerOrder} />
+      <div className="min-h-screen bg-background text-foreground px-4 md:px-8 py-12 max-w-4xl mx-auto">
       
       {/* Thank you card */}
       <div className="bg-card border border-border/40 rounded-3xl p-6 md:p-10 space-y-8 shadow-sm text-center">
@@ -278,5 +297,6 @@ export default async function OrderSuccessPage({ searchParams }: SuccessPageProp
 
       </div>
     </div>
+    </>
   );
 }

@@ -4,6 +4,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { ChevronLeft, ChevronRight, Clock } from "lucide-react";
 import { ProductCard } from "@/components/storefront/product-card";
 import { incrementProductViews } from "./actions";
+import { trackViewItem } from "@/lib/analytics";
 
 /* -----------------------------------------------------------------------
  * RecentlyViewedTracker — Client Tracker Component
@@ -33,6 +34,13 @@ export function RecentlyViewedTracker({ product }: TrackerProps) {
     incrementProductViews(product.id).catch((err) =>
       console.error("Failed to increment views:", err)
     );
+
+    // Track view_item event in GA4
+    trackViewItem({
+      item_id: product.id,
+      item_name: product.name,
+      price: product.priceMin,
+    });
 
     try {
       const saved = localStorage.getItem("snail_recently_viewed");

@@ -131,8 +131,11 @@ export default function Sidebar({ isCollapsed, isMobileOpen, closeMobileSidebar,
     },
     {
       name: "Analytics",
-      href: "/admin/analytics",
-      icon: BarChart3
+      icon: BarChart3,
+      subItems: [
+        { name: "Store Operations", href: "/admin/analytics/store", icon: BarChart3 },
+        { name: "Traffic & Acquisition (GA4)", href: "/admin/analytics/traffic", icon: Store }
+      ]
     },
     {
       name: "Catalog",

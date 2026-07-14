@@ -11,6 +11,7 @@ import { SearchResults } from "@/features/catalog/search-results";
 import { SearchPagination } from "@/features/catalog/search-pagination";
 import { SearchEmptyState } from "@/features/catalog/search-empty-state";
 import { SlidersHorizontal, ArrowUpDown, X } from "lucide-react";
+import { trackSearch, trackViewItemList } from "@/lib/analytics";
 
 // Helper to compile search filters into query string
 function buildQueryString(filters: FilterState, q: string, page: number, sort: string) {
@@ -208,6 +209,7 @@ export default function ShopCatalog() {
 
             // Log search query for analytics on page 1 of new searches
             if (searchQuery.trim() && page === 1) {
+              trackSearch(searchQuery.trim());
               fetch("/api/search/log", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -216,6 +218,25 @@ export default function ShopCatalog() {
                   resultsCount: json.pagination?.totalItems || newProducts.length,
                 }),
               }).catch((e) => console.error("Failed to log catalog search query:", e));
+            }
+
+            // Track collection, category or search list view in GA4
+            if (page === 1 && newProducts.length > 0) {
+              const gaItems = newProducts.map((p: any, idx: number) => ({
+                item_id: p.id,
+                item_name: p.name,
+                price: p.price / 100, // paise to standard currency units (INR)
+                index: idx + 1,
+              }));
+              let listName = "Catalog";
+              if (filters.category) {
+                listName = `Category: ${filters.category}`;
+              } else if (filters.collection) {
+                listName = `Collection: ${filters.collection}`;
+              } else if (searchQuery.trim()) {
+                listName = `Search: ${searchQuery.trim()}`;
+              }
+              trackViewItemList(listName, gaItems);
             }
           }
         }

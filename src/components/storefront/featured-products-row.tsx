@@ -55,7 +55,7 @@ export function FeaturedProductsRow({ products }: FeaturedProductsRowProps) {
               </div>
               {/* Floating Wishlist Heart */}
               <button
-                onClick={() => toggleWishlist(product.id)}
+                onClick={() => toggleWishlist(product.id, { name: product.name, price: product.price })}
                 className="absolute top-4 right-4 p-2.5 rounded-full bg-background/95 backdrop-blur-xs border border-border/20 shadow-sm text-muted-foreground hover:text-red-500 hover:scale-105 active:scale-95 transition-all cursor-pointer"
                 aria-label="Add to Wishlist"
               >

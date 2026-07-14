@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { toggleWishlistDb } from "@/features/pdp/actions";
+import { trackAddToCart, trackRemoveFromCart, trackAddToWishlist } from "@/lib/analytics";
 
 export interface CartItem {
   id: string;
@@ -24,7 +25,7 @@ interface CartStore {
   addToCart: (item: Omit<CartItem, "quantity">, qty?: number) => void;
   removeFromCart: (itemId: string) => void;
   updateQuantity: (itemId: string, qty: number) => void;
-  toggleWishlist: (productId: string) => Promise<void>;
+  toggleWishlist: (productId: string, itemDetails?: { name?: string; price?: number }) => Promise<void>;
   isInWishlist: (productId: string) => boolean;
   clearCart: () => void;
   loadPersistedData: () => void;
@@ -39,6 +40,15 @@ export const useCartStore = create<CartStore>((set, get) => ({
   setSearchOpen: (open) => set({ searchOpen: open }),
   
   addToCart: (item, qty = 1) => {
+    // Track GA4 event
+    trackAddToCart({
+      item_id: item.id,
+      item_name: item.name,
+      price: item.price,
+      quantity: qty,
+      item_variant: item.variantName || `${item.shape || ''} ${item.length || ''} ${item.size || ''}`.trim(),
+    });
+
     set((state) => {
       const existingIndex = state.cart.findIndex((i) => i.id === item.id);
       let newCart;
@@ -59,6 +69,18 @@ export const useCartStore = create<CartStore>((set, get) => ({
   },
   
   removeFromCart: (itemId) => {
+    // Find the item to track before removal
+    const item = get().cart.find((i) => i.id === itemId);
+    if (item) {
+      trackRemoveFromCart({
+        item_id: item.id,
+        item_name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+        item_variant: item.variantName,
+      });
+    }
+
     set((state) => {
       const newCart = state.cart.filter((item) => item.id !== itemId);
       if (typeof window !== "undefined") {
@@ -79,7 +101,7 @@ export const useCartStore = create<CartStore>((set, get) => ({
     });
   },
   
-  toggleWishlist: async (productId) => {
+  toggleWishlist: async (productId, itemDetails) => {
     // 1. Optimistic local update
     let originallyFav = false;
     set((state) => {
@@ -87,6 +109,16 @@ export const useCartStore = create<CartStore>((set, get) => ({
       const newWishlist = originallyFav
         ? state.wishlist.filter((id) => id !== productId)
         : [...state.wishlist, productId];
+      
+      // Track GA4 event if adding to wishlist
+      if (!originallyFav) {
+        trackAddToWishlist({
+          item_id: productId,
+          item_name: itemDetails?.name || `Product ${productId}`,
+          price: itemDetails?.price,
+        });
+      }
+
       if (typeof window !== "undefined") {
         localStorage.setItem("snail_wishlist", JSON.stringify(newWishlist));
       }

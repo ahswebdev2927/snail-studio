@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import { Manrope, Inter } from "next/font/google";
 import Script from "next/script";
+import { GoogleAnalytics } from "@next/third-parties/google";
 import "./globals.css";
 import { getSiteUrl, getOrganizationJsonLd, getWebsiteJsonLd } from "@/lib/seo";
+import { GA_MEASUREMENT_ID } from "@/lib/analytics";
+import { AnalyticsTracker } from "@/components/analytics-tracker";
 
 const manrope = Manrope({
   variable: "--font-manrope",
@@ -58,6 +61,24 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${manrope.variable} ${inter.variable}`} suppressHydrationWarning>
       <body className="font-sans antialiased min-h-screen flex flex-col">
+        {GA_MEASUREMENT_ID && (
+          <>
+            <Script
+              async
+              src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
+              strategy="afterInteractive"
+            />
+            <Script id="google-analytics" strategy="afterInteractive">
+              {`
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                gtag('config', '${GA_MEASUREMENT_ID}');
+              `}
+            </Script>
+          </>
+        )}
+        <AnalyticsTracker />
         {/* Sitewide JSON-LD structured data */}
         <script
           type="application/ld+json"
