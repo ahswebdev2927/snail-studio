@@ -55,11 +55,22 @@ export default function TrafficAnalyticsPage() {
   const [dateRange, setDateRange] = useState("30d");
   const [isLoading, setIsLoading] = useState(true);
   const [gaData, setGaData] = useState<GA4AnalyticsResponse | null>(null);
+  const [useMock, setUseMock] = useState(false);
+  const [isDev, setIsDev] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const hostname = window.location.hostname;
+      if (hostname === "localhost" || hostname === "127.0.0.1" || hostname.includes("192.168.")) {
+        setIsDev(true);
+      }
+    }
+  }, []);
 
   async function loadGoogleAnalytics() {
     setIsLoading(true);
     try {
-      const res = await fetch(`/api/admin/analytics/google-analytics?range=${dateRange}`);
+      const res = await fetch(`/api/admin/analytics/google-analytics?range=${dateRange}${useMock ? "&useMock=true" : ""}`);
       if (res.ok) {
         setGaData(await res.json());
       }
@@ -72,7 +83,7 @@ export default function TrafficAnalyticsPage() {
 
   useEffect(() => {
     loadGoogleAnalytics();
-  }, [dateRange]);
+  }, [dateRange, useMock]);
 
   const formatDuration = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
@@ -100,6 +111,20 @@ export default function TrafficAnalyticsPage() {
               <Signal className="w-3.5 h-3.5" />
               <span>{gaData.realtimeUsers} Online Now</span>
             </div>
+          )}
+
+          {/* Mock data toggle (only in dev mode) */}
+          {isDev && (
+            <label className="inline-flex items-center gap-2 cursor-pointer bg-card border border-border px-3 py-1.5 rounded-xl text-xs font-semibold text-muted-foreground select-none hover:bg-secondary/15 transition-all">
+              <input
+                type="checkbox"
+                checked={useMock}
+                onChange={(e) => setUseMock(e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="relative w-8 h-4.5 bg-secondary/50 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-3.5 rtl:peer-checked:after:-translate-x-3.5 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-muted-foreground peer-checked:after:bg-primary after:border-border after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-primary/20"></div>
+              <span>Sample Data</span>
+            </label>
           )}
 
           {/* Refresh Button */}

@@ -16,10 +16,14 @@ export async function GET(req: NextRequest) {
       return auth.response!;
     }
 
-    // 2. Parse range parameters
+    // 2. Parse range and mock parameters
     const { searchParams } = new URL(req.url);
     const range = searchParams.get("range") || "30d";
+    const useMockParam = searchParams.get("useMock") === "true";
     
+    const isProduction = process.env.APP_ENV === "production" || process.env.NODE_ENV === "production";
+    const forceMock = useMockParam && !isProduction;
+
     let days = 30;
     if (range === "7d") {
       days = 7;
@@ -31,11 +35,11 @@ export async function GET(req: NextRequest) {
 
     // 3. Query the GA4 API reports in parallel
     const [summary, sources, campaigns, funnel, realtimeUsers] = await Promise.all([
-      getTrafficSummary(days),
-      getTrafficSources(days),
-      getCampaignAttribution(days),
-      getFunnelMetrics(days),
-      getRealtimeActiveUsers(),
+      getTrafficSummary(days, forceMock),
+      getTrafficSources(days, forceMock),
+      getCampaignAttribution(days, forceMock),
+      getFunnelMetrics(days, forceMock),
+      getRealtimeActiveUsers(forceMock),
     ]);
 
     // 4. Return report payload

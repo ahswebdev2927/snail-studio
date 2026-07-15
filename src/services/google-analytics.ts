@@ -28,7 +28,36 @@ const getGAClient = () => {
 /**
  * Helper to generate mock data for local testing or when credentials are not configured.
  */
-const getMockData = (type: "summary" | "sources" | "campaigns" | "funnel", days = 30) => {
+const getMockData = (type: "summary" | "sources" | "campaigns" | "funnel", days = 30, useMockFallback = true) => {
+  const isProduction = process.env.APP_ENV === "production" || process.env.NODE_ENV === "production";
+  
+  if (isProduction || !useMockFallback) {
+    switch (type) {
+      case "summary":
+        return {
+          activeUsers: 0,
+          sessions: 0,
+          pageViews: 0,
+          bounceRate: 0,
+          avgSessionDuration: 0,
+        };
+      case "sources":
+      case "campaigns":
+        return [];
+      case "funnel":
+        return [
+          { step: "Session Start (Visit)", count: 0, rate: 0 },
+          { step: "Product View", count: 0, rate: 0 },
+          { step: "Add To Wishlist", count: 0, rate: 0 },
+          { step: "Add To Cart", count: 0, rate: 0 },
+          { step: "Begin Checkout", count: 0, rate: 0 },
+          { step: "Purchase", count: 0, rate: 0 },
+        ];
+      default:
+        return {};
+    }
+  }
+
   const dateStr = `${days} Days`;
   switch (type) {
     case "summary":
@@ -71,10 +100,13 @@ const getMockData = (type: "summary" | "sources" | "campaigns" | "funnel", days 
 /**
  * Fetch Traffic & Overview Summary
  */
-export async function getTrafficSummary(days = 30) {
+export async function getTrafficSummary(days = 30, forceMock = false) {
+  if (forceMock) {
+    return getMockData("summary", days, true);
+  }
   const client = getGAClient();
   if (!client || !propertyId) {
-    return getMockData("summary", days);
+    return getMockData("summary", days, forceMock);
   }
 
   try {
@@ -93,7 +125,7 @@ export async function getTrafficSummary(days = 30) {
     const row = response.rows?.[0];
     if (!row || !row.metricValues) {
       console.log("⚠️ Google Analytics API returned empty summary rows. Serving SAMPLE data.");
-      return getMockData("summary", days);
+      return getMockData("summary", days, forceMock);
     }
 
     console.log("📊 GA4 API Success: Loaded LIVE traffic overview summary.");
@@ -106,17 +138,20 @@ export async function getTrafficSummary(days = 30) {
     };
   } catch (error) {
     console.log("⚠️ GA4 API query failed (Traffic Summary). Serving SAMPLE data fallback.", (error as Error).message);
-    return getMockData("summary", days);
+    return getMockData("summary", days, forceMock);
   }
 }
 
 /**
  * Fetch Traffic Acquisition Sources
  */
-export async function getTrafficSources(days = 30) {
+export async function getTrafficSources(days = 30, forceMock = false) {
+  if (forceMock) {
+    return getMockData("sources", days, true);
+  }
   const client = getGAClient();
   if (!client || !propertyId) {
-    return getMockData("sources", days);
+    return getMockData("sources", days, forceMock);
   }
 
   try {
@@ -135,7 +170,7 @@ export async function getTrafficSources(days = 30) {
 
     if (!response.rows || response.rows.length === 0) {
       console.log("⚠️ Google Analytics API returned empty source rows. Serving SAMPLE data.");
-      return getMockData("sources", days);
+      return getMockData("sources", days, forceMock);
     }
 
     console.log("📊 GA4 API Success: Loaded LIVE acquisition channels.");
@@ -152,17 +187,20 @@ export async function getTrafficSources(days = 30) {
     });
   } catch (error) {
     console.log("⚠️ GA4 API query failed (Traffic Sources). Serving SAMPLE data fallback.", (error as Error).message);
-    return getMockData("sources", days);
+    return getMockData("sources", days, forceMock);
   }
 }
 
 /**
  * Fetch Campaign Attribution (UTM Campaign tracking)
  */
-export async function getCampaignAttribution(days = 30) {
+export async function getCampaignAttribution(days = 30, forceMock = false) {
+  if (forceMock) {
+    return getMockData("campaigns", days, true);
+  }
   const client = getGAClient();
   if (!client || !propertyId) {
-    return getMockData("campaigns", days);
+    return getMockData("campaigns", days, forceMock);
   }
 
   try {
@@ -180,7 +218,7 @@ export async function getCampaignAttribution(days = 30) {
 
     if (!response.rows || response.rows.length === 0) {
       console.log("⚠️ Google Analytics API returned empty campaign rows. Serving SAMPLE data.");
-      return getMockData("campaigns", days);
+      return getMockData("campaigns", days, forceMock);
     }
 
     // Filter out internal/empty campaigns e.g. "(organic)", "(referral)", "(direct)"
@@ -199,24 +237,27 @@ export async function getCampaignAttribution(days = 30) {
 
     if (filteredCampaigns.length === 0) {
       console.log("ℹ️ No campaign attributes found in active GA4 reports. Serving SAMPLE data.");
-      return getMockData("campaigns", days);
+      return getMockData("campaigns", days, forceMock);
     }
 
     console.log("📊 GA4 API Success: Loaded LIVE campaign performance reports.");
     return filteredCampaigns;
   } catch (error) {
     console.log("⚠️ GA4 API query failed (Campaign Performance). Serving SAMPLE data fallback.", (error as Error).message);
-    return getMockData("campaigns", days);
+    return getMockData("campaigns", days, forceMock);
   }
 }
 
 /**
  * Fetch Conversion Funnel Metrics
  */
-export async function getFunnelMetrics(days = 30) {
+export async function getFunnelMetrics(days = 30, forceMock = false) {
+  if (forceMock) {
+    return getMockData("funnel", days, true);
+  }
   const client = getGAClient();
   if (!client || !propertyId) {
-    return getMockData("funnel", days);
+    return getMockData("funnel", days, forceMock);
   }
 
   try {
@@ -275,17 +316,21 @@ export async function getFunnelMetrics(days = 30) {
     return formattedSteps;
   } catch (error) {
     console.log("⚠️ GA4 API query failed (Conversion Funnel). Serving SAMPLE data fallback.", (error as Error).message);
-    return getMockData("funnel", days);
+    return getMockData("funnel", days, forceMock);
   }
 }
 
 /**
  * Fetch Realtime Active Users (last 30 minutes)
  */
-export async function getRealtimeActiveUsers() {
+export async function getRealtimeActiveUsers(forceMock = false) {
+  const isProduction = process.env.APP_ENV === "production" || process.env.NODE_ENV === "production";
+  if (forceMock && !isProduction) {
+    return 15 + Math.floor(Math.random() * 8);
+  }
   const client = getGAClient();
   if (!client || !propertyId) {
-    return 15 + Math.floor(Math.random() * 8); // Mock live users fallback
+    return isProduction ? 0 : 15 + Math.floor(Math.random() * 8); // Mock live users fallback
   }
 
   try {
@@ -300,6 +345,6 @@ export async function getRealtimeActiveUsers() {
     return activeCount;
   } catch (error) {
     console.log("⚠️ GA4 API query failed (Realtime Active Users). Serving SAMPLE active users count.", (error as Error).message);
-    return 15 + Math.floor(Math.random() * 8); // default fallback
+    return isProduction ? 0 : 15 + Math.floor(Math.random() * 8); // default fallback
   }
 }
