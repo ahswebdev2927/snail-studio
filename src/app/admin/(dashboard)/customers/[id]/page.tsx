@@ -139,6 +139,35 @@ export default function CustomerProfile360Page() {
   // Tab State
   const [activeTab, setActiveTab] = useState<"timeline" | "orders" | "wishlist" | "searches">("timeline");
 
+  // Timeline Pagination and Filtering State
+  const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([]);
+  const [timelinePage, setTimelinePage] = useState(1);
+  const [timelineLimit, setTimelineLimit] = useState(10);
+  const [timelineType, setTimelineType] = useState("");
+  const [totalTimelinePages, setTotalTimelinePages] = useState(1);
+  const [isTimelineLoading, setIsTimelineLoading] = useState(false);
+
+  const loadTimelineData = async (page: number, limit: number, type: string) => {
+    setIsTimelineLoading(true);
+    try {
+      const query = new URLSearchParams({
+        page: page.toString(),
+        limit: limit.toString(),
+        type: type
+      });
+      const res = await fetch(`/api/admin/customers/${id}/timeline?${query.toString()}`);
+      if (res.ok) {
+        const payload = await res.json();
+        setTimelineEvents(payload.events || []);
+        setTotalTimelinePages(payload.pagination?.totalPages || 1);
+      }
+    } catch (err) {
+      console.error("Error fetching timeline:", err);
+    } finally {
+      setIsTimelineLoading(false);
+    }
+  };
+
   const loadCustomerData = async () => {
     setIsLoading(true);
     try {
@@ -165,6 +194,12 @@ export default function CustomerProfile360Page() {
       loadCustomerData();
     }
   }, [id]);
+
+  useEffect(() => {
+    if (id) {
+      loadTimelineData(timelinePage, timelineLimit, timelineType);
+    }
+  }, [id, timelinePage, timelineLimit, timelineType]);
 
   const handleAddTag = async (tagToAdd: string) => {
     const trimmed = tagToAdd.trim();
@@ -599,11 +634,57 @@ export default function CustomerProfile360Page() {
           {/* TAB 1: Activity Timeline */}
           {activeTab === "timeline" && (
             <div className="space-y-6">
-              {data.timeline.length === 0 ? (
-                <p className="text-xs text-muted-foreground italic py-8 text-center">No timeline activity logged for this shopper.</p>
+              {/* Filter and Limit selectors */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/10 pb-4 mb-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase">Filter Log:</span>
+                  <select
+                    value={timelineType}
+                    onChange={(e) => {
+                      setTimelineType(e.target.value);
+                      setTimelinePage(1); // Reset page on filter change
+                    }}
+                    className="bg-secondary/40 border border-border/40 focus:border-primary focus:outline-none rounded-xl px-3 py-1.5 text-xs font-semibold text-foreground cursor-pointer"
+                  >
+                    <option value="">All Events</option>
+                    <option value="login">Sign-ins</option>
+                    <option value="orders">Orders</option>
+                    <option value="reviews">Reviews</option>
+                    <option value="wishlist">Wishlist</option>
+                    <option value="search">Searches</option>
+                    <option value="email">Emails</option>
+                    <option value="coupon">Coupons</option>
+                  </select>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase">Logs per page:</span>
+                  <select
+                    value={timelineLimit}
+                    onChange={(e) => {
+                      setTimelineLimit(Number(e.target.value));
+                      setTimelinePage(1); // Reset page on limit change
+                    }}
+                    className="bg-secondary/40 border border-border/40 focus:border-primary focus:outline-none rounded-xl px-2.5 py-1 text-xs font-semibold text-foreground cursor-pointer"
+                  >
+                    <option value={5}>5</option>
+                    <option value={10}>10</option>
+                    <option value={20}>20</option>
+                    <option value={50}>50</option>
+                  </select>
+                </div>
+              </div>
+
+              {isTimelineLoading ? (
+                <div className="py-16 text-center flex flex-col items-center justify-center gap-2 text-muted-foreground">
+                  <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                  <p className="text-xs font-light">Loading timeline logs...</p>
+                </div>
+              ) : timelineEvents.length === 0 ? (
+                <p className="text-xs text-muted-foreground italic py-8 text-center">No timeline activity matches the filter criteria.</p>
               ) : (
                 <div className="relative pl-6 border-l border-border/30 ml-3 space-y-6 py-2">
-                  {data.timeline.map((event) => (
+                  {timelineEvents.map((event) => (
                     <div key={event.id} className="relative group">
                       {/* Left timeline dot indicator with customized category icon */}
                       <div className="absolute -left-[35px] top-0.5 p-1.5 bg-card border border-border/50 rounded-full group-hover:scale-110 transition-all shadow-sm">
@@ -631,6 +712,31 @@ export default function CustomerProfile360Page() {
                       </div>
                     </div>
                   ))}
+                </div>
+              )}
+
+              {/* Pagination controls */}
+              {!isTimelineLoading && totalTimelinePages > 1 && (
+                <div className="flex items-center justify-between border-t border-border/10 pt-4 mt-6">
+                  <span className="text-[10px] text-muted-foreground font-light">
+                    Showing page {timelinePage} of {totalTimelinePages}
+                  </span>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setTimelinePage(prev => Math.max(1, prev - 1))}
+                      disabled={timelinePage === 1}
+                      className="px-3.5 py-1.5 border border-border/40 bg-secondary/20 hover:bg-secondary/40 text-xs font-semibold rounded-lg disabled:opacity-40 transition-all cursor-pointer"
+                    >
+                      Previous
+                    </button>
+                    <button
+                      onClick={() => setTimelinePage(prev => Math.min(totalTimelinePages, prev + 1))}
+                      disabled={timelinePage === totalTimelinePages}
+                      className="px-3.5 py-1.5 border border-border/40 bg-secondary/20 hover:bg-secondary/40 text-xs font-semibold rounded-lg disabled:opacity-40 transition-all cursor-pointer"
+                    >
+                      Next
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
