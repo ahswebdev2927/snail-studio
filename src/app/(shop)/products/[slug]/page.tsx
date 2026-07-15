@@ -525,6 +525,7 @@ export default async function ProductPage({
     rating: averageRating,
     reviewsCount: reviewCount,
     images: galleryMedia.map((m) => ({ url: m.url })),
+    categoryName: product.category?.name || null,
   };
 
   /* ----- 8. Render ----- */

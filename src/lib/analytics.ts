@@ -186,3 +186,59 @@ export const trackApplyCoupon = (couponCode: string) => {
     coupon_code: couponCode,
   });
 };
+
+/**
+ * Track when a user views their cart (cart page or drawer)
+ * Event name: view_cart
+ */
+export const trackViewCart = (items: GA4Item[], value?: number, currency = "INR") => {
+  const totalValue = value ?? items.reduce((acc, curr) => acc + (curr.price || 0) * (curr.quantity || 1), 0);
+  
+  event("view_cart", {
+    currency,
+    value: totalValue,
+    items,
+  });
+};
+
+/**
+ * Track when shipping info is submitted/selected
+ * Event name: add_shipping_info
+ */
+export const trackAddShippingInfo = (
+  shippingTier: string,
+  items: GA4Item[],
+  value?: number,
+  coupon?: string,
+  currency = "INR"
+) => {
+  const totalValue = value ?? items.reduce((acc, curr) => acc + (curr.price || 0) * (curr.quantity || 1), 0);
+  event("add_shipping_info", {
+    currency,
+    value: totalValue,
+    shipping_tier: shippingTier,
+    coupon,
+    items,
+  });
+};
+
+/**
+ * Track when payment info is selected/submitted
+ * Event name: add_payment_info
+ */
+export const trackAddPaymentInfo = (
+  paymentType: string,
+  items: GA4Item[],
+  value?: number,
+  coupon?: string,
+  currency = "INR"
+) => {
+  const totalValue = value ?? items.reduce((acc, curr) => acc + (curr.price || 0) * (curr.quantity || 1), 0);
+  event("add_payment_info", {
+    currency,
+    value: totalValue,
+    payment_type: paymentType,
+    coupon,
+    items,
+  });
+};

@@ -20,6 +20,7 @@ export interface TrackerProduct {
   rating?: number;
   reviewsCount?: number;
   images: { url: string }[];
+  categoryName?: string | null;
 }
 
 interface TrackerProps {
@@ -39,7 +40,9 @@ export function RecentlyViewedTracker({ product }: TrackerProps) {
     trackViewItem({
       item_id: product.id,
       item_name: product.name,
-      price: product.priceMin,
+      price: product.priceMin / 100, // convert paise to standard INR Rupees
+      item_brand: "Snail Studio",
+      item_category: product.categoryName || undefined,
     });
 
     try {

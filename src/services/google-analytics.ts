@@ -348,3 +348,60 @@ export async function getRealtimeActiveUsers(forceMock = false) {
     return isProduction ? 0 : 15 + Math.floor(Math.random() * 8); // default fallback
   }
 }
+
+/**
+ * Fetch GA4 Search Queries
+ */
+export async function getSearchQueries(days = 30, forceMock = false) {
+  const isProduction = process.env.APP_ENV === "production" || process.env.NODE_ENV === "production";
+  if (forceMock && !isProduction) {
+    return [
+      { term: "press on nails", count: 124 },
+      { term: "french tip", count: 98 },
+      { term: "coffin nails", count: 76 },
+      { term: "sizing kit", count: 54 },
+      { term: "glue", count: 32 },
+    ];
+  }
+  const client = getGAClient();
+  if (!client || !propertyId) {
+    return isProduction ? [] : [
+      { term: "press on nails", count: 124 },
+      { term: "french tip", count: 98 },
+      { term: "coffin nails", count: 76 },
+      { term: "sizing kit", count: 54 },
+      { term: "glue", count: 32 },
+    ];
+  }
+
+  try {
+    const [response] = await client.runReport({
+      property: `properties/${propertyId}`,
+      dateRanges: [{ startDate: `${days}daysAgo`, endDate: "today" }],
+      dimensions: [{ name: "searchTerm" }],
+      metrics: [{ name: "eventCount" }],
+      dimensionFilter: {
+        filter: {
+          fieldName: "eventName",
+          stringFilter: {
+            value: "search"
+          }
+        }
+      },
+      limit: 15,
+    });
+
+    if (!response.rows || response.rows.length === 0) {
+      return [];
+    }
+
+    console.log("📊 GA4 API Success: Loaded LIVE search query analytics.");
+    return response.rows.map((row) => ({
+      term: row.dimensionValues?.[0]?.value || "unknown",
+      count: parseInt(row.metricValues?.[0]?.value || "0", 10),
+    }));
+  } catch (error) {
+    console.log("⚠️ GA4 API query failed (Search Queries).", (error as Error).message);
+    return [];
+  }
+}

@@ -10,6 +10,7 @@ import { Button } from "../ui/button";
 import { formatPrice, cn } from "@/lib/utils";
 import { calculateBundleDiscount } from "@/lib/bundles";
 import CloudinaryImage from "../media/cloudinary-image";
+import { trackViewCart } from "@/lib/analytics";
 
 export function CartDrawer() {
   const router = useRouter();
@@ -32,8 +33,20 @@ export function CartDrawer() {
           }
         })
         .catch((err) => console.error("Failed to load active bundles in cart drawer:", err));
+
+      // Trigger GA4 view_cart event when drawer is opened
+      if (cart.length > 0) {
+        const gaItems = cart.map((item) => ({
+          item_id: item.productId || item.id,
+          item_name: item.name,
+          price: item.price / 100, // paise to standard INR Rupees
+          quantity: item.quantity,
+          item_variant: item.variantName || undefined,
+        }));
+        trackViewCart(gaItems);
+      }
     }
-  }, [cartOpen]);
+  }, [cartOpen, cart]);
 
   // Calculate subtotal. If price is in paise, subtotal will be in paise.
   // Standard prices in DB are in paise (e.g. 299900 = ₹2,999.00).

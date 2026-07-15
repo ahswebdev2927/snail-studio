@@ -5,7 +5,8 @@ import {
   getTrafficSources, 
   getCampaignAttribution, 
   getFunnelMetrics,
-  getRealtimeActiveUsers
+  getRealtimeActiveUsers,
+  getSearchQueries
 } from "@/services/google-analytics";
 
 export async function GET(req: NextRequest) {
@@ -34,12 +35,13 @@ export async function GET(req: NextRequest) {
     }
 
     // 3. Query the GA4 API reports in parallel
-    const [summary, sources, campaigns, funnel, realtimeUsers] = await Promise.all([
+    const [summary, sources, campaigns, funnel, realtimeUsers, searchQueries] = await Promise.all([
       getTrafficSummary(days, forceMock),
       getTrafficSources(days, forceMock),
       getCampaignAttribution(days, forceMock),
       getFunnelMetrics(days, forceMock),
       getRealtimeActiveUsers(forceMock),
+      getSearchQueries(days, forceMock),
     ]);
 
     // 4. Return report payload
@@ -49,6 +51,7 @@ export async function GET(req: NextRequest) {
       campaigns,
       funnel,
       realtimeUsers,
+      searchQueries,
     });
   } catch (error) {
     console.error("Error in Google Analytics admin route:", error);

@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import { useCartStore } from "@/lib/hooks/use-cart-store";
 import { Button } from "@/components/ui/button";
-import { trackBeginCheckout, trackApplyCoupon } from "@/lib/analytics";
+import { trackBeginCheckout, trackApplyCoupon, trackAddShippingInfo, trackAddPaymentInfo } from "@/lib/analytics";
 import { formatPrice, cn } from "@/lib/utils";
 import { calculateBundleDiscount } from "@/lib/bundles";
 import CloudinaryImage from "@/components/media/cloudinary-image";
@@ -120,11 +120,11 @@ export default function CheckoutClient() {
         cart.map((item) => ({
           item_id: item.id,
           item_name: item.name,
-          price: item.price,
+          price: item.price / 100, // paise to standard INR Rupees
           quantity: item.quantity,
           item_variant: item.variantName,
         })),
-        cart.reduce((acc, curr) => acc + curr.price * curr.quantity, 0)
+        cart.reduce((acc, curr) => acc + (curr.price / 100) * curr.quantity, 0)
       );
     }
   }, [mounted, cart]);
@@ -337,12 +337,40 @@ export default function CheckoutClient() {
     return true;
   };
 
+  const getGA4CartItems = () => {
+    return cart.map((item) => ({
+      item_id: item.id,
+      item_name: item.name,
+      price: item.price / 100, // paise to standard INR Rupees
+      quantity: item.quantity,
+      item_variant: item.variantName || undefined,
+    }));
+  };
+
+  const getGA4CartValue = () => {
+    return cart.reduce((acc, curr) => acc + (curr.price / 100) * curr.quantity, 0);
+  };
+
   const handleStepSubmit = (step: CheckoutStep) => {
     if (step === "address") {
       if (validateAddressStep()) setCurrentStep("shipping");
     } else if (step === "shipping") {
+      // Trigger GA4 add_shipping_info event
+      trackAddShippingInfo(
+        shippingMethod === "express" ? "Express Shipping" : "Standard Shipping",
+        getGA4CartItems(),
+        getGA4CartValue(),
+        appliedCoupon?.code || undefined
+      );
       setCurrentStep("payment");
     } else if (step === "payment") {
+      // Trigger GA4 add_payment_info event
+      trackAddPaymentInfo(
+        paymentGateway === "razorpay" ? "Razorpay Gateway" : "Razorpay Gateway",
+        getGA4CartItems(),
+        getGA4CartValue(),
+        appliedCoupon?.code || undefined
+      );
       setCurrentStep("review");
     }
   };

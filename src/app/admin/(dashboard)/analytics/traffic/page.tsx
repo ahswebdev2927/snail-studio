@@ -11,7 +11,8 @@ import {
   Tag, 
   Loader2,
   Store,
-  Signal
+  Signal,
+  Search
 } from "lucide-react";
 
 interface GA4Summary {
@@ -43,12 +44,18 @@ interface FunnelStep {
   rate: number;
 }
 
+interface GA4SearchQuery {
+  term: string;
+  count: number;
+}
+
 interface GA4AnalyticsResponse {
   summary: GA4Summary;
   sources: TrafficSource[];
   campaigns: CampaignAttribution[];
   funnel: FunnelStep[];
   realtimeUsers: number;
+  searchQueries: GA4SearchQuery[];
 }
 
 export default function TrafficAnalyticsPage() {
@@ -57,6 +64,11 @@ export default function TrafficAnalyticsPage() {
   const [gaData, setGaData] = useState<GA4AnalyticsResponse | null>(null);
   const [useMock, setUseMock] = useState(false);
   const [isDev, setIsDev] = useState(false);
+  
+  // Custom vs GA4 Search states
+  const [searchSource, setSearchSource] = useState<"ga4" | "custom">("ga4");
+  const [customSearchData, setCustomSearchData] = useState<any | null>(null);
+  const [isLoadingCustomSearch, setIsLoadingCustomSearch] = useState(false);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -66,6 +78,26 @@ export default function TrafficAnalyticsPage() {
       }
     }
   }, []);
+
+  async function loadCustomSearch() {
+    setIsLoadingCustomSearch(true);
+    try {
+      const res = await fetch("/api/admin/settings/search-analytics");
+      if (res.ok) {
+        setCustomSearchData(await res.json());
+      }
+    } catch (error) {
+      console.error("Error loading custom search analytics:", error);
+    } finally {
+      setIsLoadingCustomSearch(false);
+    }
+  }
+
+  useEffect(() => {
+    if (searchSource === "custom" && !customSearchData) {
+      loadCustomSearch();
+    }
+  }, [searchSource, customSearchData]);
 
   async function loadGoogleAnalytics() {
     setIsLoading(true);
@@ -401,6 +433,164 @@ export default function TrafficAnalyticsPage() {
               <p className="text-xs text-muted-foreground/80 font-light italic py-8 text-center">
                 No campaign traffic detected in selected period.
               </p>
+            )}
+          </div>
+
+          {/* Search Intelligence & Analytics Section */}
+          <div className="bg-card border border-border/40 rounded-3xl p-6 space-y-6 hover:border-primary/10 transition-all shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border/10 pb-4">
+              <div className="flex items-center gap-2">
+                <Search className="w-5 h-5 text-primary" />
+                <div className="space-y-0.5">
+                  <h3 className="text-sm font-bold text-foreground">
+                    Search Intelligence & Keywords
+                  </h3>
+                  <p className="text-[10px] text-muted-foreground font-light">
+                    Track search terms, frequencies, and missed queries across your storefront.
+                  </p>
+                </div>
+              </div>
+              
+              {/* Toggle Switch */}
+              <div className="inline-flex p-1 bg-secondary/15 rounded-xl border border-border/40 self-start sm:self-auto">
+                <button
+                  onClick={() => setSearchSource("ga4")}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${searchSource === "ga4" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                >
+                  GA4 Search Data
+                </button>
+                <button
+                  onClick={() => setSearchSource("custom")}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${searchSource === "custom" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                >
+                  Local Database
+                </button>
+              </div>
+            </div>
+
+            {searchSource === "ga4" ? (
+              /* GA4 Search Analytics View */
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                    Popular Search Keywords (from Google Analytics)
+                  </h4>
+                </div>
+                {gaData.searchQueries && gaData.searchQueries.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs font-light">
+                      <thead>
+                        <tr className="border-b border-border/10 text-muted-foreground font-medium uppercase tracking-wider text-[10px]">
+                          <th className="py-2.5 px-1">Search Query Term</th>
+                          <th className="py-2.5 text-right px-1">Search Frequency (GA4 Events)</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border/5">
+                        {gaData.searchQueries.map((item, idx) => (
+                          <tr key={idx} className="hover:bg-secondary/10 transition-colors">
+                            <td className="py-3 px-1 font-medium text-foreground text-xs">
+                              &ldquo;{item.term}&rdquo;
+                            </td>
+                            <td className="py-3 text-right font-mono text-muted-foreground px-1 text-xs">
+                              {item.count.toLocaleString()}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground/80 font-light italic py-8 text-center">
+                    No search terms recorded in GA4 for selected period.
+                  </p>
+                )}
+              </div>
+            ) : (
+              /* Custom Local Search Analytics View */
+              <div className="space-y-6">
+                {isLoadingCustomSearch ? (
+                  <div className="flex flex-col items-center justify-center py-12 gap-2 text-muted-foreground">
+                    <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                    <p className="text-[10px] font-light">Retrieving local database search stats...</p>
+                  </div>
+                ) : customSearchData ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Popular Searches */}
+                    <div className="space-y-4">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-500">
+                        Top Trending Search Terms (Database)
+                      </h4>
+                      {customSearchData.popular && customSearchData.popular.length > 0 ? (
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-left text-xs font-light">
+                            <thead>
+                              <tr className="border-b border-border/10 text-muted-foreground font-medium uppercase tracking-wider text-[10px]">
+                                <th className="py-2.5 px-1">Search Term</th>
+                                <th className="py-2.5 text-right px-1">Search Count</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-border/5">
+                              {customSearchData.popular.slice(0, 10).map((item: any, idx: number) => (
+                                <tr key={idx} className="hover:bg-secondary/10 transition-colors">
+                                  <td className="py-3 px-1 font-medium text-foreground capitalize text-xs">
+                                    {item.query}
+                                  </td>
+                                  <td className="py-3 text-right font-mono text-muted-foreground px-1 text-xs">
+                                    {item.count.toLocaleString()}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      ) : (
+                        <p className="text-xs text-muted-foreground/80 font-light italic py-8 text-center">
+                          No searches logged in database yet.
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Failed Searches */}
+                    <div className="space-y-4">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-rose-500">
+                        Missed Searches (0 Results Found)
+                      </h4>
+                      {customSearchData.failed && customSearchData.failed.length > 0 ? (
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-left text-xs font-light">
+                            <thead>
+                              <tr className="border-b border-border/10 text-muted-foreground font-medium uppercase tracking-wider text-[10px]">
+                                <th className="py-2.5 px-1">Search Term</th>
+                                <th className="py-2.5 text-right px-1">Missed Frequency</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-border/5">
+                              {customSearchData.failed.slice(0, 10).map((item: any, idx: number) => (
+                                <tr key={idx} className="hover:bg-secondary/10 transition-colors">
+                                  <td className="py-3 px-1 font-medium text-rose-500/90 capitalize text-xs">
+                                    {item.query}
+                                  </td>
+                                  <td className="py-3 text-right font-mono text-muted-foreground px-1 text-xs">
+                                    {item.count.toLocaleString()}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      ) : (
+                        <p className="text-xs text-muted-foreground/80 font-light italic py-8 text-center">
+                          No missed searches recorded.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground/80 font-light italic py-8 text-center">
+                    Failed to load local database search reports.
+                  </p>
+                )}
+              </div>
             )}
           </div>
         </div>

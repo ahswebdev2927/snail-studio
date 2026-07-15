@@ -25,6 +25,7 @@ import { getCartCrossSellProducts, validateCartStock } from "@/features/cart/act
 import { calculateBundleDiscount } from "@/lib/bundles";
 import CloudinaryImage from "@/components/media/cloudinary-image";
 import { getWishlistProducts } from "@/features/wishlist/actions";
+import { trackViewCart } from "@/lib/analytics";
 
 export default function CartClient() {
   const router = useRouter();
@@ -68,6 +69,20 @@ export default function CartClient() {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Trigger GA4 view_cart event on mount
+  useEffect(() => {
+    if (mounted && cart.length > 0) {
+      const gaItems = cart.map((item) => ({
+        item_id: item.productId || item.id,
+        item_name: item.name,
+        price: item.price / 100, // paise to standard INR Rupees
+        quantity: item.quantity,
+        item_variant: item.variantName || undefined,
+      }));
+      trackViewCart(gaItems);
+    }
+  }, [mounted]);
 
   // Fetch cross-sells on mount/cart changes
   useEffect(() => {
