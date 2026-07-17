@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { 
@@ -26,8 +26,13 @@ import {
   Compass, 
   ShieldAlert, 
   MessageSquare,
-  TrendingUp
+  TrendingUp,
+  Monitor,
+  Smartphone,
+  Percent,
+  Send
 } from "lucide-react";
+import { sendTargetedWishlistEmailAction, sendTargetedCartAbandonedEmailAction } from "@/features/marketing/actions";
 
 interface CustomerDetails {
   id: string;
@@ -107,6 +112,20 @@ interface TimelineEvent {
   metadata?: any;
 }
 
+interface CartItemDetails {
+  productId: string;
+  name: string;
+  variantName: string;
+  price: number;
+  quantity: number;
+}
+
+interface AvailableCouponDetails {
+  id: string;
+  code: string;
+  description: string;
+}
+
 interface Customer360Payload {
   customer: CustomerDetails;
   stats: StatsSummary;
@@ -119,9 +138,59 @@ interface Customer360Payload {
   searches: SearchLog[];
   coupons: CouponRedemption[];
   timeline: TimelineEvent[];
+  cart?: CartItemDetails[];
+  availableCoupons?: AvailableCouponDetails[];
 }
 
 const PREDEFINED_TAGS = ["VIP", "Influencer", "Wholesale", "Staff", "Tester"];
+
+const DEFAULT_WISHLIST_HTML = `<html>
+  <body style="font-family: Arial, sans-serif; color: #2C2520; background-color: #FCFAF7; padding: 20px;">
+    <div style="max-width: 600px; margin: 0 auto; background-color: white; border: 1px solid #EAE6DF; border-radius: 15px; padding: 30px; box-shadow: 0 4px 10px rgba(0,0,0,0.02);">
+      <h1 style="color: #A85328; font-family: Georgia, serif; font-size: 24px; text-align: center; margin-bottom: 25px;">Your Saved Styles Await</h1>
+      <p>Hello {{customer_name}},</p>
+      <p>We noticed you saved some premium, reusable press-on nail sets in your wishlist. Because our artists paint each set by hand in small batches, popular designs and sizes sell out quickly.</p>
+      
+      <h3 style="color: #A85328; border-bottom: 1px solid #EAE6DF; padding-bottom: 8px; margin-top: 25px;">Saved Items in Your Wishlist</h3>
+      <div style="margin: 20px 0;">
+        {{wishlist_products}}
+      </div>
+
+      {{coupon_block}}
+
+      <p style="text-align: center; margin: 30px 0;">
+        <a href="http://localhost:3000/shop" style="background-color: #A85328; color: white; padding: 12px 30px; border-radius: 25px; text-decoration: none; font-weight: bold; font-size: 14px;">Return & Order Now</a>
+      </p>
+      <p style="font-size: 12px; color: #999; text-align: center; margin-top: 40px; border-top: 1px solid #EAE6DF; padding-top: 15px;">
+        Snail Studios &bull; Premium Reusable Handcrafted Press-On Nails
+      </p>
+    </div>
+  </body>
+</html>`;
+
+const DEFAULT_CART_HTML = `<html>
+  <body style="font-family: Arial, sans-serif; color: #2C2520; background-color: #FCFAF7; padding: 20px;">
+    <div style="max-width: 600px; margin: 0 auto; background-color: white; border: 1px solid #EAE6DF; border-radius: 15px; padding: 30px; box-shadow: 0 4px 10px rgba(0,0,0,0.02);">
+      <h1 style="color: #A85328; font-family: Georgia, serif; font-size: 24px; text-align: center; margin-bottom: 25px;">Don't Leave Your Nails Behind</h1>
+      <p>Hello {{customer_name}},</p>
+      <p>We saved the handcrafted sets left in your shopping cart. Because our nail sets are painted by hand in limited batches, your cart reservation will expire soon and items may sell out.</p>
+      
+      <h3 style="color: #A85328; border-bottom: 1px solid #EAE6DF; padding-bottom: 8px; margin-top: 25px;">Items in Your Shopping Cart</h3>
+      <div style="margin: 20px 0;">
+        {{cart_products}}
+      </div>
+
+      {{coupon_block}}
+
+      <p style="text-align: center; margin: 30px 0;">
+        <a href="http://localhost:3000/cart" style="background-color: #A85328; color: white; padding: 12px 30px; border-radius: 25px; text-decoration: none; font-weight: bold; font-size: 14px;">Complete My Checkout</a>
+      </p>
+      <p style="font-size: 12px; color: #999; text-align: center; margin-top: 40px; border-top: 1px solid #EAE6DF; padding-top: 15px;">
+        Snail Studios &bull; Premium Reusable Handcrafted Press-On Nails
+      </p>
+    </div>
+  </body>
+</html>`;
 
 export default function CustomerProfile360Page() {
   const router = useRouter();
@@ -138,6 +207,181 @@ export default function CustomerProfile360Page() {
 
   // Tab State
   const [activeTab, setActiveTab] = useState<"timeline" | "orders" | "wishlist" | "searches">("timeline");
+
+  // Marketing targeted campaign dispatch states
+  const [selectedWishlistCouponId, setSelectedWishlistCouponId] = useState("");
+  const [selectedCartCouponId, setSelectedCartCouponId] = useState("");
+  const [isWishlistSending, setIsWishlistSending] = useState(false);
+  const [isCartSending, setIsCartSending] = useState(false);
+  const [wishlistTriggerMessage, setWishlistTriggerMessage] = useState("");
+  const [cartTriggerMessage, setCartTriggerMessage] = useState("");
+
+  // Custom message modal state
+  const [isCustomCampaignModalOpen, setIsCustomCampaignModalOpen] = useState(false);
+  const [customCampaignType, setCustomCampaignType] = useState<"wishlist" | "cart" | null>(null);
+  const [customSubject, setCustomSubject] = useState("");
+  const [customBodyHtml, setCustomBodyHtml] = useState("");
+  const [customCouponId, setCustomCouponId] = useState("");
+  const [previewMode, setPreviewMode] = useState<"desktop" | "mobile">("desktop");
+
+  const modalTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const modalMirrorRef = useRef<HTMLDivElement>(null);
+
+  const handleModalScroll = (e: React.UIEvent<HTMLTextAreaElement>) => {
+    const mirror = modalMirrorRef.current;
+    if (mirror) {
+      mirror.scrollTop = e.currentTarget.scrollTop;
+      mirror.scrollLeft = e.currentTarget.scrollLeft;
+    }
+  };
+
+  const highlightPlaceholders = (text: string) => {
+    const parts = text.split(/(\{\{[a-zA-Z0-9_]+\}\})/g);
+    return parts.map((part, index) => {
+      if (part.startsWith("{{") && part.endsWith("}}")) {
+        return (
+          <span
+            key={index}
+            className="bg-amber-500/20 text-amber-900 dark:text-amber-200 font-bold px-0.5 rounded border border-amber-500/30"
+          >
+            {part}
+          </span>
+        );
+      }
+      return part;
+    });
+  };
+
+  const insertPlaceholderIntoModal = (tag: string) => {
+    const textarea = modalTextareaRef.current;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = textarea.value;
+    const before = text.substring(0, start);
+    const after = text.substring(end, text.length);
+
+    const newValue = before + tag + after;
+    setCustomBodyHtml(newValue);
+
+    setTimeout(() => {
+      textarea.focus();
+      textarea.selectionStart = textarea.selectionEnd = start + tag.length;
+    }, 0);
+  };
+
+  const getCompiledPreview = () => {
+    let html = customBodyHtml;
+    
+    // Replace user name
+    const userName = data?.customer?.name || "Jane Doe";
+    html = html.replace(/\{\{customer_name\}\}/g, userName);
+    
+    // Replace coupon code
+    let couponCode = "WELCOME10";
+    if (customCouponId) {
+      const coup = availableCoupons.find(c => c.id === customCouponId);
+      if (coup) couponCode = coup.code;
+    }
+    html = html.replace(/\{\{coupon_code\}\}/g, couponCode);
+
+    // Replace coupon block if it exists
+    const couponBlock = customCouponId 
+      ? `<div style="border: 2px dashed #A85328; background-color: #FAF6F0; padding: 20px; border-radius: 10px; text-align: center; margin: 25px 0;">
+          <p style="margin: 0; font-size: 13px; color: #666;">Enjoy a special discount on your purchase:</p>
+          <h2 style="font-family: monospace; font-size: 24px; margin: 8px 0; color: #A85328; letter-spacing: 2px;">${couponCode}</h2>
+         </div>`
+      : "";
+    html = html.replace(/\{\{coupon_block\}\}/g, couponBlock);
+
+    // Replaces products
+    if (customCampaignType === "wishlist") {
+      const productsHtml = (data?.wishlist || []).map(p => {
+        const featuredImg = p.media && p.media.length > 0 ? p.media[0].media?.url : "https://via.placeholder.com/150";
+        return `
+          <div style="display: flex; gap: 15px; align-items: center; border: 1px solid #EAE6DF; padding: 12px; border-radius: 12px; margin-bottom: 10px;">
+            <img src="${featuredImg}" style="width: 50px; height: 50px; border-radius: 8px; object-fit: cover;" />
+            <div>
+              <h4 style="margin: 0; font-size: 14px; color: #2C2520;">${p.name}</h4>
+              <span style="font-size: 12px; color: #A85328; font-weight: bold;">₹${p.priceMin}</span>
+            </div>
+          </div>
+        `;
+      }).join("");
+      html = html.replace(/\{\{wishlist_products\}\}/g, productsHtml || "<p style='font-style: italic; color: #999;'>No items in wishlist</p>");
+    } else {
+      const cartHtml = (data?.cart || []).map(item => {
+        return `
+          <div style="display: flex; justify-content: space-between; align-items: center; border: 1px solid #EAE6DF; padding: 12px; border-radius: 12px; margin-bottom: 10px;">
+            <div>
+              <h4 style="margin: 0; font-size: 14px; color: #2C2520;">${item.name}</h4>
+              <span style="font-size: 11px; color: #777;">Variant: ${item.variantName}</span>
+            </div>
+            <div style="text-align: right;">
+              <span style="font-size: 12px; color: #777;">${item.quantity} &times; </span>
+              <span style="font-size: 12px; color: #2C2520; font-weight: bold;">₹${item.price}</span>
+            </div>
+          </div>
+        `;
+      }).join("");
+      html = html.replace(/\{\{cart_products\}\}/g, cartHtml || "<p style='font-style: italic; color: #999;'>No items in cart</p>");
+    }
+
+    return html;
+  };
+
+  const handleSendWishlistReminder = async () => {
+    if (isWishlistSending) return;
+    setIsWishlistSending(true);
+    setWishlistTriggerMessage("");
+    try {
+      const res = await sendTargetedWishlistEmailAction(
+        id as string,
+        customCouponId || null,
+        customSubject,
+        customBodyHtml
+      );
+      if (res.success) {
+        setWishlistTriggerMessage("✅ Wishlist reminder email sent successfully!");
+        setIsCustomCampaignModalOpen(false);
+        loadTimelineData(timelinePage, timelineLimit, timelineType);
+      } else {
+        alert(`Error: ${res.error || "Failed to send"}`);
+      }
+    } catch (err: any) {
+      alert(`Exception: ${err.message || String(err)}`);
+    } finally {
+      setIsWishlistSending(false);
+      setTimeout(() => setWishlistTriggerMessage(""), 5000);
+    }
+  };
+
+  const handleSendCartRecovery = async () => {
+    if (isCartSending) return;
+    setIsCartSending(true);
+    setCartTriggerMessage("");
+    try {
+      const res = await sendTargetedCartAbandonedEmailAction(
+        id as string,
+        customCouponId || null,
+        customSubject,
+        customBodyHtml
+      );
+      if (res.success) {
+        setCartTriggerMessage("✅ Cart recovery email sent successfully!");
+        setIsCustomCampaignModalOpen(false);
+        loadTimelineData(timelinePage, timelineLimit, timelineType);
+      } else {
+        alert(`Error: ${res.error || "Failed to send"}`);
+      }
+    } catch (err: any) {
+      alert(`Exception: ${err.message || String(err)}`);
+    } finally {
+      setIsCartSending(false);
+      setTimeout(() => setCartTriggerMessage(""), 5000);
+    }
+  };
 
   // Timeline Pagination and Filtering State
   const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([]);
@@ -314,7 +558,19 @@ export default function CustomerProfile360Page() {
     );
   }
 
-  const { customer, stats, preferences, segments, orders: customerOrders, wishlist, recentlyViewed, searches, coupons } = data;
+  const { 
+    customer, 
+    stats, 
+    preferences, 
+    segments, 
+    orders: customerOrders, 
+    wishlist, 
+    recentlyViewed, 
+    searches, 
+    coupons,
+    cart = [],
+    availableCoupons = []
+  } = data;
   const customerInitials = customer.name
     ? customer.name.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase()
     : "S";
@@ -796,93 +1052,174 @@ export default function CustomerProfile360Page() {
             </div>
           )}
 
-          {/* TAB 3: Wishlist & Viewed history */}
+          {/* TAB 3: Wishlist, Cart & Viewed history */}
           {activeTab === "wishlist" && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="space-y-8">
               
-              {/* Left Column: Wishlist */}
-              <div className="space-y-4">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
-                  <Heart className="w-3.5 h-3.5 text-rose-500 fill-rose-500" />
-                  Wishlist Products ({wishlist.length})
-                </span>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 
-                {wishlist.length === 0 ? (
-                  <p className="text-xs text-muted-foreground italic py-6">Wishlist is currently empty.</p>
-                ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {wishlist.map((p) => {
-                      const featuredImg = p.media && p.media.length > 0 ? p.media[0].media?.url : null;
-                      return (
-                        <div key={p.id} className="bg-secondary/20 border border-border/30 rounded-2xl p-3 flex gap-3 items-center">
-                          {featuredImg ? (
-                            <img 
-                              src={featuredImg} 
-                              alt={p.name} 
-                              className="w-12 h-12 rounded-xl object-cover border border-border shrink-0"
-                            />
-                          ) : (
-                            <div className="w-12 h-12 rounded-xl bg-secondary/80 border border-border flex items-center justify-center shrink-0">
-                              <Eye className="w-5 h-5 text-muted-foreground" />
-                            </div>
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <h4 className="text-xs font-semibold text-foreground truncate">{p.name}</h4>
-                            <span className="text-[10px] text-muted-foreground font-mono">{p.slug}</span>
-                            <span className="text-[10px] font-bold text-foreground block">{formatPrice(p.priceMin)}</span>
-                          </div>
-                          <Link 
-                            href={`/admin/products?search=${encodeURIComponent(p.name)}`}
-                            className="p-1.5 bg-card border border-border hover:bg-secondary/40 rounded-full transition-all cursor-pointer shrink-0"
-                            aria-label={`View catalog details for product ${p.name}`}
-                          >
-                            <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                          </Link>
-                        </div>
-                      );
-                    })}
+                {/* Left Column: Wishlist Products & Email Dispatch */}
+                <div className="bg-card border border-border/30 rounded-3xl p-6 shadow-sm space-y-4">
+                  <div className="flex justify-between items-center pb-2 border-b border-border/20">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+                      <Heart className="w-3.5 h-3.5 text-rose-500 fill-rose-500" />
+                      Wishlist Products ({wishlist.length})
+                    </span>
                   </div>
-                )}
+
+                  {wishlist.length === 0 ? (
+                    <p className="text-xs text-muted-foreground italic py-4">Wishlist is currently empty.</p>
+                  ) : (
+                    <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
+                      {wishlist.map((p) => {
+                        const featuredImg = p.media && p.media.length > 0 ? p.media[0].media?.url : null;
+                        return (
+                          <div key={p.id} className="bg-secondary/15 border border-border/20 rounded-xl p-2.5 flex gap-3 items-center text-xs">
+                            {featuredImg ? (
+                              <img src={featuredImg} alt={p.name} className="w-10 h-10 rounded-lg object-cover border shrink-0" />
+                            ) : (
+                              <div className="w-10 h-10 rounded-lg bg-secondary border flex items-center justify-center shrink-0">
+                                <Eye className="w-4 h-4 text-muted-foreground" />
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-bold text-foreground truncate">{p.name}</h4>
+                              <span className="text-[10px] text-muted-foreground block">{formatPrice(p.priceMin)}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Targeted Wishlist Dispatch Trigger */}
+                  {wishlist.length > 0 && (
+                    <div className="pt-4 border-t border-border/20 space-y-3 bg-secondary/5 p-4 rounded-2xl">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-foreground">Trigger Wishlist Campaign</h4>
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <select
+                          value={selectedWishlistCouponId}
+                          onChange={(e) => setSelectedWishlistCouponId(e.target.value)}
+                          className="flex-1 bg-background border border-border rounded-xl px-3 py-2 text-xs font-medium focus:outline-none focus:border-primary text-foreground"
+                        >
+                          <option value="">No coupon attached</option>
+                          {availableCoupons.map((c) => (
+                            <option key={c.id} value={c.id}>{c.code} ({c.description})</option>
+                          ))}
+                        </select>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCustomCampaignType("wishlist");
+                            setCustomSubject("Items in your Snail Studios wishlist are waiting for you!");
+                            setCustomBodyHtml(DEFAULT_WISHLIST_HTML);
+                            setCustomCouponId(selectedWishlistCouponId);
+                            setIsCustomCampaignModalOpen(true);
+                          }}
+                          className="bg-primary text-primary-foreground hover:bg-primary/95 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0"
+                        >
+                          Send Email
+                        </button>
+                      </div>
+                      {wishlistTriggerMessage && (
+                        <p className="text-[10px] font-bold text-primary mt-1">{wishlistTriggerMessage}</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Right Column: Active Cart & Email Dispatch */}
+                <div className="bg-card border border-border/30 rounded-3xl p-6 shadow-sm space-y-4">
+                  <div className="flex justify-between items-center pb-2 border-b border-border/20">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+                      <ShoppingBag className="w-3.5 h-3.5 text-primary" />
+                      Active Shopping Cart ({cart.length} items)
+                    </span>
+                  </div>
+
+                  {cart.length === 0 ? (
+                    <p className="text-xs text-muted-foreground italic py-4">Shopping cart is currently empty.</p>
+                  ) : (
+                    <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
+                      {cart.map((item, idx) => (
+                        <div key={idx} className="bg-secondary/15 border border-border/20 rounded-xl p-2.5 flex gap-3 items-center text-xs justify-between">
+                          <div>
+                            <h4 className="font-bold text-foreground">{item.name}</h4>
+                            <span className="text-[10px] text-muted-foreground block">Size/Variant: {item.variantName}</span>
+                          </div>
+                          <div className="text-right shrink-0 font-semibold text-xs">
+                            <span className="text-muted-foreground font-light">{item.quantity} &times; </span>
+                            <span>{formatPrice(item.price)}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Targeted Cart Dispatch Trigger */}
+                  {cart.length > 0 && (
+                    <div className="pt-4 border-t border-border/20 space-y-3 bg-secondary/5 p-4 rounded-2xl">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-foreground">Trigger Abandoned Cart recovery</h4>
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <select
+                          value={selectedCartCouponId}
+                          onChange={(e) => setSelectedCartCouponId(e.target.value)}
+                          className="flex-1 bg-background border border-border rounded-xl px-3 py-2 text-xs font-medium focus:outline-none focus:border-primary text-foreground"
+                        >
+                          <option value="">No coupon attached</option>
+                          {availableCoupons.map((c) => (
+                            <option key={c.id} value={c.id}>{c.code} ({c.description})</option>
+                          ))}
+                        </select>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCustomCampaignType("cart");
+                            setCustomSubject("Still thinking about your Snail Studios cart items?");
+                            setCustomBodyHtml(DEFAULT_CART_HTML);
+                            setCustomCouponId(selectedCartCouponId);
+                            setIsCustomCampaignModalOpen(true);
+                          }}
+                          className="bg-primary text-primary-foreground hover:bg-primary/95 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0"
+                        >
+                          Send Email
+                        </button>
+                      </div>
+                      {cartTriggerMessage && (
+                        <p className="text-[10px] font-bold text-primary mt-1">{cartTriggerMessage}</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+
               </div>
 
-              {/* Right Column: Recently Viewed */}
-              <div className="space-y-4">
+              {/* Bottom Row: Recently Viewed */}
+              <div className="bg-card border border-border/30 rounded-3xl p-6 shadow-sm space-y-4">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
                   <Clock className="w-3.5 h-3.5 text-primary" />
-                  Recently Viewed History ({recentlyViewed.length})
+                  Recently Viewed Products ({recentlyViewed.length})
                 </span>
-
+                
                 {recentlyViewed.length === 0 ? (
-                  <p className="text-xs text-muted-foreground italic py-6">No historical views captured yet.</p>
+                  <p className="text-xs text-muted-foreground italic py-4">No recently viewed sets recorded.</p>
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                     {recentlyViewed.map((p) => {
                       const featuredImg = p.media && p.media.length > 0 ? p.media[0].media?.url : null;
                       return (
-                        <div key={p.id} className="bg-secondary/20 border border-border/30 rounded-2xl p-3 flex gap-3 items-center">
+                        <div key={p.id} className="bg-secondary/15 border border-border/20 rounded-xl p-3 flex gap-3 items-center text-xs">
                           {featuredImg ? (
-                            <img 
-                              src={featuredImg} 
-                              alt={p.name} 
-                              className="w-12 h-12 rounded-xl object-cover border border-border shrink-0"
-                            />
+                            <img src={featuredImg} alt={p.name} className="w-10 h-10 rounded-lg object-cover border shrink-0" />
                           ) : (
-                            <div className="w-12 h-12 rounded-xl bg-secondary/80 border border-border flex items-center justify-center shrink-0">
-                              <Eye className="w-5 h-5 text-muted-foreground" />
+                            <div className="w-10 h-10 rounded-lg bg-secondary border flex items-center justify-center shrink-0">
+                              <Eye className="w-4 h-4 text-muted-foreground" />
                             </div>
                           )}
                           <div className="flex-1 min-w-0">
-                            <h4 className="text-xs font-semibold text-foreground truncate">{p.name}</h4>
-                            <span className="text-[10px] text-muted-foreground font-mono">{p.slug}</span>
+                            <h4 className="font-bold text-foreground truncate">{p.name}</h4>
                             <span className="text-[10px] font-bold text-foreground block">{formatPrice(p.priceMin)}</span>
                           </div>
-                          <Link 
-                            href={`/admin/products?search=${encodeURIComponent(p.name)}`}
-                            className="p-1.5 bg-card border border-border hover:bg-secondary/40 rounded-full transition-all cursor-pointer shrink-0"
-                            aria-label={`View catalog details for product ${p.name}`}
-                          >
-                            <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                          </Link>
                         </div>
                       );
                     })}
@@ -980,6 +1317,190 @@ export default function CustomerProfile360Page() {
 
         </div>
       </div>
+
+      {/* Customize & Preview Modal */}
+      {isCustomCampaignModalOpen && (
+        <div className="fixed inset-0 bg-background/85 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-card border border-border rounded-3xl w-full max-w-5xl h-[88vh] flex flex-col shadow-2xl overflow-hidden font-sans">
+            {/* Modal Header */}
+            <div className="bg-secondary/10 px-6 py-4 border-b border-border/40 flex justify-between items-center">
+              <div>
+                <h3 className="text-base font-bold font-serif text-foreground">
+                  Customize & Preview Targeted {customCampaignType === "wishlist" ? "Wishlist" : "Cart"} Email
+                </h3>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  Refine campaign copy details for {data?.customer?.name || "this customer"} before dispatching.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsCustomCampaignModalOpen(false)}
+                className="p-1.5 rounded-lg hover:bg-secondary/30 text-muted-foreground hover:text-foreground transition-all"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+              {/* Left Column: Form & Editor */}
+              <div className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Email Subject Line</label>
+                  <input
+                    type="text"
+                    required
+                    value={customSubject}
+                    onChange={(e) => setCustomSubject(e.target.value)}
+                    className="w-full bg-secondary/10 border border-border/60 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-primary transition-all text-foreground font-medium"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+                    Attach Coupon
+                  </label>
+                  <select
+                    value={customCouponId}
+                    onChange={(e) => setCustomCouponId(e.target.value)}
+                    className="w-full bg-secondary/10 border border-border/60 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-primary transition-all text-foreground font-medium"
+                  >
+                    <option value="">No coupon attached</option>
+                    {availableCoupons.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.code} ({c.description})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex justify-between">
+                    <span>Body HTML Content</span>
+                    <span className="text-[9px] text-primary tracking-normal font-semibold lowercase font-sans">supports personalization tags</span>
+                  </label>
+
+                  {/* Smart Insertion Toolbar */}
+                  <div className="flex flex-wrap gap-1 p-1 bg-secondary/15 border border-border/40 rounded-xl mb-1">
+                    <span className="text-[9px] font-bold text-muted-foreground flex items-center px-1 select-none">
+                      ⚡ Insert:
+                    </span>
+                    {[
+                      { label: "👤 Name", tag: "{{customer_name}}", tooltip: "Customer Name" },
+                      { label: "🎟️ Coupon", tag: "{{coupon_code}}", tooltip: "Coupon Code" },
+                      customCampaignType === "wishlist"
+                        ? { label: "❤️ Wishlist", tag: "{{wishlist_products}}", tooltip: "Wishlist products grid" }
+                        : { label: "🛒 Cart", tag: "{{cart_products}}", tooltip: "Abandoned cart products list" },
+                      { label: "🎟️ Coupon Block", tag: "{{coupon_block}}", tooltip: "Attaches a beautiful discount box" },
+                    ].map((ph) => (
+                      <button
+                        key={ph.tag}
+                        type="button"
+                        title={ph.tooltip}
+                        onClick={() => insertPlaceholderIntoModal(ph.tag)}
+                        className="px-2 py-0.5 text-[9px] font-bold bg-background hover:bg-primary/5 hover:text-primary text-foreground border border-border/40 rounded-md transition-all hover:scale-[1.01]"
+                      >
+                        {ph.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="relative border border-border rounded-xl bg-background overflow-hidden min-h-[240px]">
+                    {/* Highlight overlay layer */}
+                    <div
+                      ref={modalMirrorRef}
+                      className="absolute inset-0 p-3 font-mono text-[10px] leading-relaxed whitespace-pre-wrap break-all overflow-hidden text-transparent select-none"
+                      style={{ wordBreak: "break-word" }}
+                    >
+                      {highlightPlaceholders(customBodyHtml)}
+                    </div>
+
+                    {/* Actual textarea */}
+                    <textarea
+                      ref={modalTextareaRef}
+                      required
+                      rows={10}
+                      value={customBodyHtml}
+                      onScroll={handleModalScroll}
+                      onChange={(e) => setCustomBodyHtml(e.target.value)}
+                      className="relative w-full bg-transparent p-3 font-mono text-[10px] leading-relaxed focus:outline-none focus:ring-0 focus:border-transparent transition-all text-foreground shadow-inner resize-y z-10"
+                      style={{ wordBreak: "break-word", minHeight: "240px" }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column: Live Compiled Preview */}
+              <div className="border border-border/40 rounded-2xl overflow-hidden bg-background shadow-sm flex flex-col h-[52vh] xl:sticky xl:top-2">
+                <div className="bg-secondary/15 border-b border-border/40 px-4 py-2 flex justify-between items-center">
+                  <span className="font-semibold text-[10px] uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+                    <Eye size={12} className="text-primary" /> Live Email Preview
+                  </span>
+                  {/* Desktop/Mobile toggles */}
+                  <div className="flex items-center border border-border/50 rounded-lg p-0.5 bg-secondary/10 scale-90">
+                    <button
+                      type="button"
+                      onClick={() => setPreviewMode("desktop")}
+                      className={`px-2 py-1 rounded flex items-center gap-1 text-[9px] font-semibold transition-all ${
+                        previewMode === "desktop" ? "bg-background text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      <Monitor size={10} /> Desktop
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPreviewMode("mobile")}
+                      className={`px-2 py-1 rounded flex items-center gap-1 text-[9px] font-semibold transition-all ${
+                        previewMode === "mobile" ? "bg-background text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      <Smartphone size={10} /> Mobile
+                    </button>
+                  </div>
+                </div>
+                <div className="flex-1 flex justify-center py-4 bg-secondary/5 overflow-hidden">
+                  <div
+                    className={`transition-all duration-300 w-full flex justify-center ${
+                      previewMode === "mobile" ? "max-w-[280px] border-[4px] border-secondary-foreground/20 rounded-[20px] p-1 bg-background" : "px-3"
+                    }`}
+                  >
+                    <iframe
+                      srcDoc={getCompiledPreview()}
+                      title="Live Preview Sandbox"
+                      className="w-full h-full border border-border/20 rounded-lg bg-white shadow-inner"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="bg-secondary/10 px-6 py-4 border-t border-border/40 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setIsCustomCampaignModalOpen(false)}
+                className="px-4 py-2 rounded-xl border border-border hover:bg-secondary/20 text-xs font-semibold"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isWishlistSending || isCartSending}
+                onClick={customCampaignType === "wishlist" ? handleSendWishlistReminder : handleSendCartRecovery}
+                className="px-5 py-2 rounded-xl bg-primary text-primary-foreground hover:bg-primary/95 text-xs font-bold shadow-md shadow-primary/25 disabled:opacity-50 transition-all flex items-center gap-1.5"
+              >
+                {isWishlistSending || isCartSending ? (
+                  "Sending..."
+                ) : (
+                  <>
+                    <Send size={12} /> Send Custom Email
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

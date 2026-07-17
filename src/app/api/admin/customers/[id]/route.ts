@@ -18,7 +18,9 @@ import {
   couponUsage, 
   coupons, 
   customerTags,
-  searchLogs
+  searchLogs,
+  carts,
+  cartItems
 } from "@/db/schema";
 import { eq, and, desc, inArray, sql } from "drizzle-orm";
 import { authorize } from "@/middleware/auth";
@@ -227,6 +229,49 @@ export async function GET(
       .limit(1);
     const favoriteCollection = favCollection[0]?.name || "None yet";
 
+    // 14. Query customer active cart products
+    const userCart = await db.query.carts.findFirst({
+      where: eq(carts.userId, id),
+    });
+
+    const cartProducts: any[] = [];
+    if (userCart) {
+      const items = await db.query.cartItems.findMany({
+        where: eq(cartItems.cartId, userCart.id),
+      });
+
+      for (const item of items) {
+        const variant = await db.query.productVariants.findFirst({
+          where: eq(productVariants.id, item.variantId),
+        });
+        if (variant) {
+          const prod = await db.query.products.findFirst({
+            where: eq(products.id, variant.productId),
+          });
+          if (prod) {
+            cartProducts.push({
+              productId: prod.id,
+              name: prod.name,
+              variantName: variant.name,
+              price: variant.price,
+              quantity: item.quantity,
+            });
+          }
+        }
+      }
+    }
+
+    // 15. Fetch active coupons in the system
+    const activeCoupons = await db.query.coupons.findMany({
+      where: eq(coupons.isActive, true),
+    });
+
+    const couponsData = activeCoupons.map((c) => ({
+      id: c.id,
+      code: c.code,
+      description: c.discountType === "percentage" ? `${c.discountValue}% OFF` : `₹${(c.discountValue / 100).toFixed(0)} OFF`,
+    }));
+
     // Compile into Customer 360 payload
     const payload = {
       customer: {
@@ -260,6 +305,8 @@ export async function GET(
       searches,
       coupons: couponsUsed,
       timeline,
+      cart: cartProducts,
+      availableCoupons: couponsData,
     };
 
     return NextResponse.json(payload, { status: 200 });

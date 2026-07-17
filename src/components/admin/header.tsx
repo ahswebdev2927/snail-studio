@@ -4,8 +4,6 @@ import React, { useState, useRef, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import {
   Menu,
-  ChevronLeft,
-  ChevronRight,
   Sun,
   Moon,
   Bell,
@@ -20,7 +18,9 @@ import {
   MessageSquare,
   Server,
   AlertCircle,
-  X
+  X,
+  AlignLeft,
+  AlignJustify
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SessionUser } from "@/lib/auth/session";
@@ -413,11 +413,24 @@ export default function Header({
           aria-label={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
           className="hidden lg:flex p-2 rounded-xl text-muted-foreground hover:bg-secondary/60 hover:text-foreground cursor-pointer"
         >
-          {isCollapsed ? (
-            <ChevronRight className="w-5 h-5 animate-pulse" />
-          ) : (
-            <ChevronLeft className="w-5 h-5" />
-          )}
+          <div className="relative w-5 h-5 flex items-center justify-center">
+            <div
+              className={cn(
+                "absolute inset-0 transition-all duration-300 transform flex items-center justify-center",
+                isCollapsed ? "opacity-100 scale-100 rotate-0" : "opacity-0 scale-75 rotate-90"
+              )}
+            >
+              <AlignLeft className="w-5 h-5" />
+            </div>
+            <div
+              className={cn(
+                "absolute inset-0 transition-all duration-300 transform flex items-center justify-center",
+                isCollapsed ? "opacity-0 scale-75 -rotate-90" : "opacity-100 scale-100 rotate-0"
+              )}
+            >
+              <AlignJustify className="w-5 h-5" />
+            </div>
+          </div>
         </button>
 
         {/* Current Screen Title */}

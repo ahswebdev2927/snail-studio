@@ -61,6 +61,127 @@ export const sizeProfiles = sqliteTable('size_profiles', {
   uniqueIndex('size_profiles_name_unique').on(table.name)
 ]);
 
+export const launchSubscribers = sqliteTable('launch_subscribers', {
+  id: text('id').primaryKey(), // nanoid
+  email: text('email').notNull().unique(),
+  name: text('name'),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)
+});
+
+export const emailMarketingPreferences = sqliteTable('email_marketing_preferences', {
+  id: text('id').primaryKey(), // nanoid
+  email: text('email').notNull().unique(),
+  userId: text('user_id').references(() => users.id, { onDelete: 'cascade' }), // optional link if registered
+  newsletter: integer('newsletter', { mode: 'boolean' }).notNull().default(true),
+  promotions: integer('promotions', { mode: 'boolean' }).notNull().default(true),
+  launchNotifications: integer('launch_notifications', { mode: 'boolean' }).notNull().default(true),
+  backInStock: integer('back_in_stock', { mode: 'boolean' }).notNull().default(true),
+  productUpdates: integer('product_updates', { mode: 'boolean' }).notNull().default(true),
+  priceDrops: integer('price_drops', { mode: 'boolean' }).notNull().default(true),
+  unsubscribedAll: integer('unsubscribed_all', { mode: 'boolean' }).notNull().default(false),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)
+}, (table) => [
+  index('pref_email_idx').on(table.email),
+  index('pref_user_id_idx').on(table.userId)
+]);
+
+export const marketingCampaigns = sqliteTable('marketing_campaigns', {
+  id: text('id').primaryKey(), // nanoid
+  name: text('name').notNull(), // admin internal name
+  subject: text('subject').notNull(), // email subject line
+  campaignType: text('campaign_type', {
+    enum: [
+      'promotions', 'flash_sales', 'new_arrivals', 'product_launches', 'newsletters', 'festival_offers', 'coupons',
+      'promotion', 'new_collection', 'festival', 'flash_sale', 'vip_offer', 'wishlist_reminder', 'cart_recovery', 'review_request', 'win_back', 'custom'
+    ]
+  }).notNull(),
+  segmentType: text('segment_type', {
+    enum: ['all', 'selected', 'vip', 'frequent', 'new', 'inactive', 'cart_abandoners', 'wishlist', 'launch_subscribers', 'custom']
+  }).notNull(),
+  segmentDetails: text('segment_details'), // JSON string for selected user IDs / custom filter criteria
+  templateName: text('template_name').notNull(), // promotions, coupons, newsletter, launch, flash_sale, etc.
+  bodyHtml: text('body_html').notNull(), // compiled HTML body
+  bodyJson: text('body_json'), // structured blocks configuration (if using builder UI)
+  couponId: text('coupon_id').references(() => coupons.id, { onDelete: 'set null' }), // optional coupon attachment
+  featuredProductIds: text('featured_product_ids'), // JSON string array of product IDs to show in grid
+  status: text('status', {
+    enum: ['draft', 'scheduled', 'queued', 'sending', 'completed', 'paused', 'cancelled', 'failed', 'sent']
+  }).notNull().default('draft'),
+  scheduledAt: integer('scheduled_at', { mode: 'timestamp' }),
+  sentAt: integer('sent_at', { mode: 'timestamp' }),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)
+});
+
+export const marketingCampaignDeliveries = sqliteTable('marketing_campaign_deliveries', {
+  id: text('id').primaryKey(), // unique delivery track ID
+  campaignId: text('campaign_id').notNull().references(() => marketingCampaigns.id, { onDelete: 'cascade' }),
+  userId: text('user_id').references(() => users.id, { onDelete: 'set null' }),
+  email: text('email').notNull(),
+  resendMessageId: text('resend_message_id'), // message ID returned by Resend API
+  status: text('status', {
+    enum: ['sent', 'delivered', 'opened', 'clicked', 'bounced', 'complained', 'unsubscribed', 'failed']
+  }).notNull().default('sent'),
+  revenue: integer('revenue').notNull().default(0), // revenue generated in paise
+  openedAt: integer('opened_at', { mode: 'timestamp' }),
+  clickedAt: integer('clicked_at', { mode: 'timestamp' }),
+  bouncedAt: integer('bounced_at', { mode: 'timestamp' }),
+  unsubscribedAt: integer('unsubscribed_at', { mode: 'timestamp' }),
+  sentAt: integer('sent_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)
+}, (table) => [
+  index('delivery_campaign_id_idx').on(table.campaignId),
+  index('delivery_email_idx').on(table.email),
+  index('delivery_resend_id_idx').on(table.resendMessageId)
+]);
+
+export const marketingCampaignRuns = sqliteTable('marketing_campaign_runs', {
+  id: text('id').primaryKey(),
+  campaignId: text('campaign_id').notNull().references(() => marketingCampaigns.id, { onDelete: 'cascade' }),
+  status: text('status', {
+    enum: ['started', 'completed', 'failed']
+  }).notNull().default('started'),
+  recipientsCount: integer('recipients_count').notNull().default(0),
+  sentCount: integer('sent_count').notNull().default(0),
+  failedCount: integer('failed_count').notNull().default(0),
+  revenue: integer('revenue').notNull().default(0), // total checkout revenue attributed in paise
+  ctr: integer('ctr').notNull().default(0), // CTR percentage (0-100)
+  startedAt: integer('started_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
+  completedAt: integer('completed_at', { mode: 'timestamp' })
+}, (table) => [
+  index('run_campaign_id_idx').on(table.campaignId)
+]);
+
+export const marketingRecipientSnapshots = sqliteTable('marketing_recipient_snapshots', {
+  id: text('id').primaryKey(),
+  campaignId: text('campaign_id').notNull().references(() => marketingCampaigns.id, { onDelete: 'cascade' }),
+  runId: text('run_id').notNull().references(() => marketingCampaignRuns.id, { onDelete: 'cascade' }),
+  userId: text('user_id').references(() => users.id, { onDelete: 'set null' }),
+  email: text('email').notNull(),
+  status: text('status', {
+    enum: ['pending', 'sent', 'failed']
+  }).notNull().default('pending'),
+  retryCount: integer('retry_count').notNull().default(0),
+  nextRetryAt: integer('next_retry_at', { mode: 'timestamp' }),
+  errorMessage: text('error_message'),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)
+}, (table) => [
+  index('snapshot_campaign_id_idx').on(table.campaignId),
+  index('snapshot_run_id_idx').on(table.runId),
+  index('snapshot_email_idx').on(table.email)
+]);
+
+export const marketingSuppressions = sqliteTable('marketing_suppressions', {
+  id: text('id').primaryKey(),
+  email: text('email').notNull(),
+  reason: text('reason', {
+    enum: ['hard_bounce', 'complaint', 'manual_unsubscribe']
+  }).notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)
+}, (table) => [
+  uniqueIndex('suppression_email_unique_idx').on(table.email)
+]);
+
 export const announcements = sqliteTable('announcements', {
   id: text('id').primaryKey(),
   text: text('text').notNull(),
@@ -96,4 +217,3 @@ export const productBundleItems = sqliteTable('product_bundle_items', {
 }, (t) => [
   primaryKey({ columns: [t.bundleId, t.productId] })
 ]);
-

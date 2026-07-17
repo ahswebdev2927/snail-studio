@@ -84,16 +84,20 @@ export default function RootLayout({
         <AnalyticsTracker />
         {/* Sitewide JSON-LD structured data */}
         <script
+          id="ld-json-org"
           type="application/ld+json"
+          suppressHydrationWarning
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
         />
         <script
+          id="ld-json-web"
           type="application/ld+json"
+          suppressHydrationWarning
           dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
         />
-        <Script
+        <script
           id="theme-initializer"
-          strategy="beforeInteractive"
+          suppressHydrationWarning
           dangerouslySetInnerHTML={{
             __html: `
               try {

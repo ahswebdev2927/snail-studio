@@ -29,7 +29,8 @@ import {
   Truck,
   Mail,
   CreditCard,
-  Search
+  Search,
+  Send
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SessionUser } from "@/lib/auth/session";
@@ -182,6 +183,11 @@ export default function Sidebar({ isCollapsed, isMobileOpen, closeMobileSidebar,
       name: "Notifications",
       href: "/admin/notifications",
       icon: Bell
+    },
+    {
+      name: "Marketing",
+      href: "/admin/marketing",
+      icon: Send
     },
     {
       name: "Settings",
