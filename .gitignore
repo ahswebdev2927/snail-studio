@@ -17,6 +17,10 @@
 /.next/
 /out/
 
+/.agents/
+/graphify-out/
+.graphifyignore
+
 # production
 /build
 
