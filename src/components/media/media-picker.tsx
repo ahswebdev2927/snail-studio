@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { CloudinaryImage } from "./cloudinary-image";
-import { Search, Upload, Check, Loader2, X, Film } from "lucide-react";
+import { Search, Upload, Check, Loader2, X, Film, Trash2 } from "lucide-react";
 
 interface MediaItem {
   id: string;
@@ -52,6 +52,11 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
   const [uploadError, setUploadError] = useState("");
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
 
+  const [deletingItem, setDeletingItem] = useState<MediaItem | null>(null);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
+
   const fetchMedia = async () => {
     setIsLoading(true);
     try {
@@ -92,6 +97,34 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
       } else if (selectedItems.length < maxSelection) {
         setSelectedItems([...selectedItems, item]);
       }
+    }
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deletingItem || deleteConfirmText !== "delete-media") return;
+
+    setIsDeleting(true);
+    setDeleteError("");
+
+    try {
+      const res = await fetch(`/api/media?id=${deletingItem.id}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Failed to delete media asset.");
+      }
+
+      setMediaItems((prev) => prev.filter((item) => item.id !== deletingItem.id));
+      setSelectedItems((prev) => prev.filter((item) => item.id !== deletingItem.id));
+      setDeletingItem(null);
+      setDeleteConfirmText("");
+    } catch (err: any) {
+      console.error("Failed to delete media:", err);
+      setDeleteError(err.message || "An unexpected error occurred during deletion.");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -364,11 +397,10 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
                   {filteredItems.map((item) => {
                     const isSelected = selectedItems.some((sel) => sel.id === item.id);
                     return (
-                      <button
+                      <div
                         key={item.id}
-                        type="button"
                         onClick={() => handleSelectItem(item)}
-                        className={`relative aspect-square w-full rounded-xl border overflow-hidden transition-all duration-200 ${
+                        className={`relative group aspect-square w-full rounded-xl border overflow-hidden transition-all duration-200 cursor-pointer ${
                           isSelected
                             ? "border-primary ring-2 ring-primary/40"
                             : "border-border/40 hover:border-primary/50"
@@ -392,12 +424,25 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
                           </div>
                         )}
 
+                        {/* Delete button (only for logged-in admin managing files) */}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeletingItem(item);
+                          }}
+                          className="absolute top-2 left-2 p-1.5 rounded-full bg-destructive/95 hover:bg-destructive text-white shadow-md border border-white/20 transition-all duration-200 opacity-75 hover:opacity-100 z-10"
+                          title="Delete media asset"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+
                         {isSelected && (
-                          <div className="absolute top-2 right-2 p-1 rounded-full bg-primary text-primary-foreground shadow-md border border-white">
+                          <div className="absolute top-2 right-2 p-1 rounded-full bg-primary text-primary-foreground shadow-md border border-white z-10">
                             <Check className="w-3.5 h-3.5 stroke-[3]" />
                           </div>
                         )}
-                      </button>
+                      </div>
                     );
                   })}
                 </div>
@@ -534,6 +579,94 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
           </button>
         </div>
       </div>
+
+      {deletingItem && (
+        <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-card border border-border rounded-2xl w-full max-w-md shadow-2xl relative p-6 space-y-4 text-foreground animate-in zoom-in-95 duration-200">
+            <h4 className="text-lg font-semibold text-destructive flex items-center gap-2">
+              <Trash2 className="w-5 h-5" />
+              Delete Media Asset?
+            </h4>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              This will permanently delete the media file from <span className="font-semibold text-foreground">Cloudinary</span> and remove all references in the database.
+              This action cannot be undone.
+            </p>
+            
+            <div className="flex items-center gap-3 p-3 bg-secondary/20 border border-border/40 rounded-xl">
+              <div className="w-12 h-12 rounded-lg overflow-hidden border border-border bg-secondary/30 relative flex-shrink-0 flex items-center justify-center">
+                {deletingItem.resourceType === "image" ? (
+                  <CloudinaryImage
+                    src={deletingItem.url}
+                    variant="thumbnail"
+                    alt="Preview"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <Film className="w-6 h-6 text-primary" />
+                )}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-medium text-foreground truncate">
+                  {deletingItem.fileName || deletingItem.publicId}
+                </p>
+                <p className="text-[10px] text-muted-foreground uppercase">
+                  {deletingItem.resourceType} &bull; {deletingItem.format || "unknown"}
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-muted-foreground">
+                Type <span className="font-mono text-destructive select-all">delete-media</span> to confirm:
+              </label>
+              <input
+                type="text"
+                placeholder="delete-media"
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                className="w-full px-3 py-2 border border-border bg-secondary/30 text-foreground text-sm rounded-xl focus:outline-none focus:ring-1 focus:ring-destructive"
+                disabled={isDeleting}
+              />
+            </div>
+
+            {deleteError && (
+              <p className="text-xs font-medium text-destructive bg-destructive/10 border border-destructive/20 p-2.5 rounded-lg">
+                {deleteError}
+              </p>
+            )}
+
+            <div className="flex gap-3 justify-end pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setDeletingItem(null);
+                  setDeleteConfirmText("");
+                  setDeleteError("");
+                }}
+                disabled={isDeleting}
+                className="px-4 py-2 border border-border rounded-xl hover:bg-secondary/40 text-foreground text-sm font-medium transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteConfirm}
+                disabled={isDeleting || deleteConfirmText !== "delete-media"}
+                className="px-4 py-2 bg-destructive text-destructive-foreground hover:bg-destructive/95 disabled:bg-muted disabled:text-text-disabled disabled:cursor-not-allowed text-sm font-medium rounded-xl transition-all duration-200 flex items-center gap-1.5"
+              >
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  <span>Delete Permanently</span>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
