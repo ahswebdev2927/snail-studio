@@ -63,10 +63,17 @@ export const sizeProfiles = sqliteTable('size_profiles', {
 
 export const launchSubscribers = sqliteTable('launch_subscribers', {
   id: text('id').primaryKey(), // nanoid
-  email: text('email').notNull().unique(),
+  email: text('email').notNull(),
   name: text('name'),
+  productId: text('product_id').references(() => products.id, { onDelete: 'cascade' }),
+  sent7DayReminder: integer('sent_7_day_reminder', { mode: 'boolean' }).notNull().default(false),
+  sent3DayReminder: integer('sent_3_day_reminder', { mode: 'boolean' }).notNull().default(false),
+  sent1DayReminder: integer('sent_1_day_reminder', { mode: 'boolean' }).notNull().default(false),
+  sentLaunchDayReminder: integer('sent_launch_day_reminder', { mode: 'boolean' }).notNull().default(false),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)
-});
+}, (table) => [
+  uniqueIndex('launch_subscribers_email_product_unique').on(table.email, table.productId)
+]);
 
 export const emailMarketingPreferences = sqliteTable('email_marketing_preferences', {
   id: text('id').primaryKey(), // nanoid
@@ -217,3 +224,24 @@ export const productBundleItems = sqliteTable('product_bundle_items', {
 }, (t) => [
   primaryKey({ columns: [t.bundleId, t.productId] })
 ]);
+
+export const launchBanners = sqliteTable('launch_banners', {
+  id: text('id').primaryKey(),
+  productId: text('product_id').notNull().references(() => products.id, { onDelete: 'cascade' }),
+  title: text('title').notNull(),
+  subtitle: text('subtitle'),
+  backgroundImage: text('background_image'),
+  productImage: text('product_image'),
+  isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
+  sortOrder: integer('sort_order').notNull().default(0),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)
+});
+
+export const launchEvents = sqliteTable('launch_events', {
+  id: text('id').primaryKey(), // nanoid
+  productId: text('product_id').references(() => products.id, { onDelete: 'cascade' }),
+  eventType: text('event_type').notNull(), // 'subscriber_signup' | 'countdown_view' | 'reminder_open' | 'launch_conversion'
+  metadata: text('metadata'), // JSON string payload
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)
+});

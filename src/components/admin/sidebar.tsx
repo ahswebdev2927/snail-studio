@@ -30,7 +30,8 @@ import {
   Mail,
   CreditCard,
   Search,
-  Send
+  Send,
+  Sparkles
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SessionUser } from "@/lib/auth/session";
@@ -135,7 +136,8 @@ export default function Sidebar({ isCollapsed, isMobileOpen, closeMobileSidebar,
       icon: BarChart3,
       subItems: [
         { name: "Store Operations", href: "/admin/analytics/store", icon: BarChart3 },
-        { name: "Traffic & Acquisition (GA4)", href: "/admin/analytics/traffic", icon: Store }
+        { name: "Traffic & Acquisition (GA4)", href: "/admin/analytics/traffic", icon: Store },
+        { name: "Product Launch Insights", href: "/admin/analytics/launches", icon: Sparkles }
       ]
     },
     {

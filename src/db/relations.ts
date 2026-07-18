@@ -108,7 +108,10 @@ export const productsRelations = relations(schema.products, ({ one, many }) => (
   wishlistItems: many(schema.wishlistItems),
   reviews: many(schema.reviews),
   media: many(schema.productMedia),
-  bundles: many(schema.productBundleItems)
+  bundles: many(schema.productBundleItems),
+  launchBanners: many(schema.launchBanners),
+  launchSubscribers: many(schema.launchSubscribers),
+  launchEvents: many(schema.launchEvents)
 }));
 
 export const attributeGroupsRelations = relations(schema.attributeGroups, ({ many }) => ({
@@ -418,5 +421,26 @@ export const orderAddressHistoryRelations = relations(schema.orderAddressHistory
   order: one(schema.orders, {
     fields: [schema.orderAddressHistory.orderId],
     references: [schema.orders.id]
+  })
+}));
+
+export const launchBannersRelations = relations(schema.launchBanners, ({ one }) => ({
+  product: one(schema.products, {
+    fields: [schema.launchBanners.productId],
+    references: [schema.products.id]
+  })
+}));
+
+export const launchSubscribersRelations = relations(schema.launchSubscribers, ({ one }) => ({
+  product: one(schema.products, {
+    fields: [schema.launchSubscribers.productId],
+    references: [schema.products.id]
+  })
+}));
+
+export const launchEventsRelations = relations(schema.launchEvents, ({ one }) => ({
+  product: one(schema.products, {
+    fields: [schema.launchEvents.productId],
+    references: [schema.products.id]
   })
 }));

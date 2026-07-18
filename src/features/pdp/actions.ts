@@ -1,7 +1,20 @@
 "use server";
 
 import { db } from "@/db";
-import { wishlists, wishlistItems, orders, orderItems, productVariants, reviews, media, reviewImages, products, recentlyViewed } from "@/db/schema";
+import { 
+  wishlists, 
+  wishlistItems, 
+  orders, 
+  orderItems, 
+  productVariants, 
+  reviews, 
+  media, 
+  reviewImages, 
+  products, 
+  recentlyViewed,
+  launchSubscribers,
+  launchEvents
+} from "@/db/schema";
 import { eq, and, inArray, sql, desc } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { getSessionUser } from "@/lib/auth/session";
@@ -421,6 +434,22 @@ export async function incrementProductViews(productId: string) {
       .set({ views: sql`${products.views} + 1` })
       .where(eq(products.id, productId));
 
+    // Log launch event view if applicable
+    const product = await db.query.products.findFirst({
+      where: eq(products.id, productId),
+      columns: { status: true },
+    });
+
+    if (product && (product.status === "Coming Soon" || product.status === "Launching Soon")) {
+      await db.insert(launchEvents).values({
+        id: `lev_${nanoid(10)}`,
+        productId,
+        eventType: "view",
+        metadata: JSON.stringify({ referrer: "pdp" }),
+        createdAt: new Date(),
+      });
+    }
+
     // Log to recently_viewed table for authenticated users
     const user = await getAuthUser();
     if (user) {
@@ -454,5 +483,78 @@ export async function incrementProductViews(productId: string) {
   } catch (error) {
     console.error("Error incrementing product views:", error);
     return { success: false };
+  }
+}
+
+/**
+ * Subscribes a user to product launch notifications
+ */
+export async function subscribeToLaunch(productId: string) {
+  try {
+    const user = await getAuthUser();
+    if (!user || !user.email) {
+      return { success: false, error: "guest" };
+    }
+
+    const subscriberId = `lsub_${nanoid(10)}`;
+    const eventId = `lev_${nanoid(10)}`;
+    const now = new Date();
+
+    await db.transaction(async (tx) => {
+      // Check if already subscribed
+      const existing = await tx.query.launchSubscribers.findFirst({
+        where: and(
+          eq(launchSubscribers.email, user.email!),
+          eq(launchSubscribers.productId, productId)
+        )
+      });
+
+      if (!existing) {
+        await tx.insert(launchSubscribers).values({
+          id: subscriberId,
+          email: user.email!,
+          name: user.name || null,
+          productId,
+          createdAt: now,
+        });
+
+        await tx.insert(launchEvents).values({
+          id: eventId,
+          productId,
+          eventType: "subscriber_signup",
+          metadata: JSON.stringify({ email: user.email }),
+          createdAt: now,
+        });
+      }
+    });
+
+    return { success: true, message: "Successfully subscribed to notifications!" };
+  } catch (error: any) {
+    console.error("Error subscribing to launch:", error);
+    return { success: false, error: error.message || String(error) };
+  }
+}
+
+/**
+ * Checks if current user is subscribed to a launch product
+ */
+export async function checkSubscriptionStatus(productId: string) {
+  try {
+    const user = await getAuthUser();
+    if (!user || !user.email) {
+      return { success: true, subscribed: false };
+    }
+
+    const existing = await db.query.launchSubscribers.findFirst({
+      where: and(
+        eq(launchSubscribers.email, user.email!),
+        eq(launchSubscribers.productId, productId)
+      )
+    });
+
+    return { success: true, subscribed: !!existing };
+  } catch (error) {
+    console.error("Error checking subscription status:", error);
+    return { success: false, subscribed: false };
   }
 }

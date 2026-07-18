@@ -38,7 +38,10 @@ const schema = z.object({
   shortDescription: z.string().max(500, "Short description is too long"),
   brandId: z.string().nullable(),
   categoryId: z.string().nullable(),
-  status: z.enum(["Active", "Draft", "Out Of Stock", "Archived"]),
+  status: z.enum(["Active", "Draft", "Out Of Stock", "Archived", "Hidden", "Coming Soon", "Launching Soon"]),
+  launchDate: z.string().nullable().optional(),
+  launchTime: z.string().nullable().optional(),
+  autoPublish: z.boolean().default(false),
   isFeatured: z.boolean(),
   isBestSeller: z.boolean(),
   isNewArrival: z.boolean(),
@@ -136,6 +139,7 @@ export default function ProductForm({ mode, productId, initialData }: ProductFor
 
   // Media picker modal states
   const [showMediaPicker, setShowMediaPicker] = useState(false);
+  const [showHelpModal, setShowHelpModal] = useState(false);
   const [pickerTarget, setPickerTarget] = useState<"featured" | "gallery" | "ogImage">("featured");
 
   // Selected values for variant generator checkboxes
@@ -153,7 +157,7 @@ export default function ProductForm({ mode, productId, initialData }: ProductFor
     reset,
     formState: { errors }
   } = useForm<FormValues>({
-    resolver: zodResolver(schema),
+    resolver: zodResolver(schema) as any,
     defaultValues: {
       name: "",
       slug: "",
@@ -162,6 +166,9 @@ export default function ProductForm({ mode, productId, initialData }: ProductFor
       brandId: null,
       categoryId: null,
       status: "Draft",
+      launchDate: "",
+      launchTime: "",
+      autoPublish: false,
       isFeatured: false,
       isBestSeller: false,
       isNewArrival: false,
@@ -229,6 +236,9 @@ export default function ProductForm({ mode, productId, initialData }: ProductFor
         brandId: initialData.product.brandId,
         categoryId: initialData.product.categoryId,
         status: initialData.product.status,
+        launchDate: initialData.product.launchDate || "",
+        launchTime: initialData.product.launchTime || "",
+        autoPublish: initialData.product.autoPublish || false,
         isFeatured: initialData.product.isFeatured,
         isBestSeller: initialData.product.isBestSeller,
         isNewArrival: initialData.product.isNewArrival || false,
@@ -620,7 +630,7 @@ export default function ProductForm({ mode, productId, initialData }: ProductFor
         </div>
         <div className="flex gap-2.5 relative z-10">
           <button
-            onClick={handleSubmit(onSubmit)}
+            onClick={handleSubmit(onSubmit as any)}
             disabled={submitting}
             className="inline-flex items-center gap-1.5 px-5 py-3 bg-primary text-primary-foreground hover:bg-primary/95 disabled:opacity-50 hover:scale-[1.01] active:scale-[0.99] rounded-xl text-xs font-semibold uppercase tracking-wider transition-all shadow-md shadow-primary/5 cursor-pointer"
           >
@@ -1397,7 +1407,17 @@ export default function ProductForm({ mode, productId, initialData }: ProductFor
 
           {/* Card 7: Visibility & Promotions & Status */}
           <div className="bg-card border border-border/40 rounded-3xl p-6 space-y-4 hover:border-primary/10 transition-all">
-            <h3 className="text-sm font-semibold tracking-wide">Visibility & Promotions</h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold tracking-wide">Visibility & Promotions</h3>
+              <button
+                type="button"
+                onClick={() => setShowHelpModal(true)}
+                className="p-1 text-muted-foreground hover:text-primary transition-all rounded-lg hover:bg-secondary/40 cursor-pointer flex items-center justify-center shrink-0"
+                title="View Status & Promotions Guide"
+              >
+                <HelpCircle className="w-4.5 h-4.5" />
+              </button>
+            </div>
             
             <div className="space-y-3">
               {/* Status input - edit mode */}
@@ -1411,10 +1431,48 @@ export default function ProductForm({ mode, productId, initialData }: ProductFor
                 >
                   <option value="Active">Active (Visible Everywhere)</option>
                   <option value="Draft">Draft (Admin Only)</option>
+                  <option value="Hidden">Hidden (Active, Direct Link Only)</option>
+                  <option value="Coming Soon">Coming Soon (Preview Only - No Scheduler / No Signups)</option>
+                  <option value="Launching Soon">Launching Soon (Scheduled Drop - Countdowns & Signups)</option>
                   <option value="Out Of Stock">Out Of Stock (Storefront View Only)</option>
                   <option value="Archived">Archived (Hidden from Storefront/Search)</option>
                 </select>
               </div>
+
+              {watch("status") === "Launching Soon" && (
+                <div className="mt-3 p-4 border border-border/40 bg-slate-50/50 dark:bg-slate-900/20 rounded-xl space-y-3.5 animate-in fade-in duration-200">
+                  <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#A85328] dark:text-[#E2A882]">Launch Scheduler Settings</h4>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground ml-0.5">Launch Date</label>
+                      <input 
+                        type="date" 
+                        {...register("launchDate")}
+                        className="w-full px-3 py-2 bg-white border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-lg text-xs outline-none transition-all text-foreground"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground ml-0.5">Launch Time</label>
+                      <input 
+                        type="time" 
+                        {...register("launchTime")}
+                        className="w-full px-3 py-2 bg-white border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-lg text-xs outline-none transition-all text-foreground"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 pl-0.5 pt-0.5">
+                    <input 
+                      type="checkbox" 
+                      id="autoPublish" 
+                      {...register("autoPublish")}
+                      className="rounded text-primary focus:ring-primary h-4 w-4"
+                    />
+                    <label htmlFor="autoPublish" className="text-xs text-foreground font-medium select-none cursor-pointer">
+                      Auto Publish at launch time (Asia/Kolkata timezone)
+                    </label>
+                  </div>
+                </div>
+              )}
 
               <div className="border-t border-border/30 my-3"></div>
 
@@ -1490,6 +1548,131 @@ export default function ProductForm({ mode, productId, initialData }: ProductFor
               onClose={() => setShowMediaPicker(false)}
               title="Select Product Media"
             />
+          </div>
+        </div>
+      )}
+      {/* Visibility & Promotions Help Guide Modal */}
+      {showHelpModal && (
+        <div className="fixed inset-0 z-50 bg-foreground/20 backdrop-blur-xs overflow-y-auto flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-card border border-border/40 rounded-3xl w-full max-w-2xl shadow-2xl relative max-h-[85vh] overflow-y-auto p-6 space-y-6 my-auto animate-in zoom-in-95 duration-200 text-foreground">
+            <button
+              onClick={() => setShowHelpModal(false)}
+              className="absolute top-4 right-4 p-2 text-muted-foreground hover:text-foreground rounded-full hover:bg-secondary/50 cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="space-y-1">
+              <h2 className="font-serif text-xl font-normal text-foreground">
+                Visibility & Promotions Guide
+              </h2>
+              <p className="text-xs text-muted-foreground font-light">
+                Learn how product statuses and promotional badges behave on your storefront.
+              </p>
+            </div>
+
+            <div className="space-y-5 divide-y divide-border/20 max-h-[55vh] overflow-y-auto pr-1 scrollbar-thin">
+              {/* Product Statuses Section */}
+              <div className="space-y-3">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-primary">Product Statuses</h3>
+                <div className="grid gap-3 text-left">
+                  {[
+                    {
+                      name: "Active",
+                      desc: "Visible everywhere on the storefront catalog and fully purchasable by customers.",
+                      tag: "Live & Purchasable",
+                      color: "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20"
+                    },
+                    {
+                      name: "Draft",
+                      desc: "Invisible on the storefront. Only viewable and editable by administrators in the backend panel.",
+                      tag: "Admin Only",
+                      color: "text-amber-600 bg-amber-50 dark:bg-amber-950/20"
+                    },
+                    {
+                      name: "Hidden",
+                      desc: "Active and purchasable, but excluded from all catalogs and search results. Accessible only via direct URL (great for VIP lists or private drops).",
+                      tag: "Direct Link Only",
+                      color: "text-indigo-600 bg-indigo-50 dark:bg-indigo-950/20"
+                    },
+                    {
+                      name: "Coming Soon",
+                      desc: "Displays as a static catalog preview. Customers can explore product details but cannot purchase or sign up for alerts. Shows a 'Coming Soon' badge.",
+                      tag: "Static Preview",
+                      color: "text-[#A85328] bg-orange-50 dark:bg-orange-950/20"
+                    },
+                    {
+                      name: "Launching Soon",
+                      desc: "Displays as a scheduled drop campaign. Shows a live countdown timer ticking down to launch. Logged-in users can click 'Notify Me' for email alerts, and the product can auto-publish on launch time.",
+                      tag: "Scheduled Campaign",
+                      color: "text-purple-600 bg-purple-50 dark:bg-purple-950/20"
+                    },
+                    {
+                      name: "Out of Stock",
+                      desc: "Visible on the storefront but purchasing is blocked. The Buy buttons display a disabled 'Out of Stock' message.",
+                      tag: "Visible but Blocked",
+                      color: "text-rose-600 bg-rose-50 dark:bg-rose-950/20"
+                    },
+                    {
+                      name: "Archived",
+                      desc: "Completely hidden from the storefront. Retained internally in your database for historical sales data and bookkeeping.",
+                      tag: "Discontinued",
+                      color: "text-slate-600 bg-slate-50 dark:bg-slate-950/20"
+                    }
+                  ].map((status) => (
+                    <div key={status.name} className="p-3 border border-border/40 bg-secondary/15 rounded-2xl flex flex-col sm:flex-row sm:items-start gap-2 justify-between">
+                      <div className="space-y-0.5">
+                        <span className="text-xs font-semibold text-foreground block">{status.name}</span>
+                        <p className="text-[11px] text-muted-foreground font-light leading-relaxed">{status.desc}</p>
+                      </div>
+                      <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full shrink-0 h-fit ${status.color}`}>
+                        {status.tag}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Promotional Flags Section */}
+              <div className="space-y-3 pt-4">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-primary">Promotional Settings</h3>
+                <div className="grid gap-3 text-left">
+                  {[
+                    {
+                      name: "Featured Product",
+                      desc: "Highlights the set and displays it inside the homepage featured grid sections."
+                    },
+                    {
+                      name: "Best Seller Badge",
+                      desc: "Affixes a premium 'Best Seller' sticker badge over the product image in lists."
+                    },
+                    {
+                      name: "New Arrival",
+                      desc: "Displays a 'New' highlight tag to signal fresh releases to returning visitors."
+                    },
+                    {
+                      name: "Trending Set",
+                      desc: "Shows a high-urgency 'Trending' tag based on recent page views and order volumes."
+                    }
+                  ].map((flag) => (
+                    <div key={flag.name} className="p-3 border border-border/40 bg-secondary/15 rounded-2xl">
+                      <span className="text-xs font-semibold text-foreground block">{flag.name}</span>
+                      <p className="text-[11px] text-muted-foreground font-light leading-relaxed">{flag.desc}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-4 border-t border-border/20 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowHelpModal(false)}
+                className="px-6 py-2.5 bg-primary text-primary-foreground hover:bg-primary/95 rounded-xl text-xs font-semibold transition-all cursor-pointer shadow-sm"
+              >
+                Close Guide
+              </button>
+            </div>
           </div>
         </div>
       )}

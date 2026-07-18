@@ -17,6 +17,7 @@ export interface ProductCardProps {
     shortDescription?: string | null;
     priceMin: number; // Stored in paise
     priceMax: number; // Stored in paise
+    status?: string;
     isBestSeller?: boolean;
     isNewArrival?: boolean;
     isTrending?: boolean;
@@ -147,6 +148,17 @@ export function ProductCard({ product }: ProductCardProps) {
 
   // Determine active badges based on flags (matching store theme)
   const activeBadges: { text: string; classes: string; icon?: React.ReactNode }[] = [];
+  if (product.status === "Coming Soon") {
+    activeBadges.push({
+      text: "Coming Soon",
+      classes: "bg-orange-500/10 text-orange-600 border-orange-500/20 dark:bg-orange-500/20 dark:text-orange-400 dark:border-orange-500/30",
+    });
+  } else if (product.status === "Launching Soon") {
+    activeBadges.push({
+      text: "Launching Soon",
+      classes: "bg-primary/10 text-primary border-primary/20 dark:bg-primary/20 dark:text-primary-foreground dark:border-primary/30",
+    });
+  }
   if (product.isBestSeller) {
     activeBadges.push({
       text: "Best Seller",
@@ -218,7 +230,19 @@ export function ProductCard({ product }: ProductCardProps) {
         </button>
 
         {/* Quantity adjust group overlay or Quick Buy button overlay */}
-        {isInCart && cartItem ? (
+        {product.status === "Coming Soon" || product.status === "Launching Soon" ? (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              router.push(`/products/${product.slug}`);
+            }}
+            className="absolute bottom-4 left-4 right-4 py-2.5 bg-white text-[#3A2E2A] hover:bg-[#3A2E2A] hover:text-white dark:bg-card dark:text-foreground dark:hover:bg-primary dark:hover:text-primary-foreground border border-border/10 shadow-md text-[10px] font-bold uppercase tracking-wider rounded-sm z-30 cursor-pointer text-center transition-all duration-300 md:opacity-0 md:translate-y-2 md:pointer-events-none md:group-hover:opacity-100 md:group-hover:translate-y-0 md:group-hover:pointer-events-auto"
+          >
+            {product.status === "Coming Soon" ? "Coming Soon" : "Notify Me"}
+          </button>
+        ) : isInCart && cartItem ? (
           <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between bg-white text-[#3A2E2A] dark:bg-card dark:text-foreground border border-border/10 shadow-md rounded-sm h-[38px] z-30 select-none overflow-hidden animate-fade-in transition-all duration-300 md:opacity-0 md:translate-y-2 md:pointer-events-none md:group-hover:opacity-100 md:group-hover:translate-y-0 md:group-hover:pointer-events-auto">
             <button
               type="button"

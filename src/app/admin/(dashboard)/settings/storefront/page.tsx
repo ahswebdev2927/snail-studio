@@ -2,14 +2,15 @@
 
 import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Image as ImageIcon, Megaphone, Ruler, Scale, LayoutGrid } from "lucide-react";
+import { Image as ImageIcon, Megaphone, Ruler, Scale, LayoutGrid, Sparkles } from "lucide-react";
 import HeroBannersTab from "@/components/admin/settings/hero-banners-tab";
 import AnnouncementsTab from "@/components/admin/settings/announcements-tab";
 import SizeProfilesTab from "@/components/admin/settings/size-profiles-tab";
 import LengthChartTab from "@/components/admin/settings/length-chart-tab";
 import ShopDropdownTab from "@/components/admin/settings/shop-dropdown-tab";
+import LaunchBannersTab from "@/components/admin/settings/launch-banners-tab";
 
-type TabName = "banners" | "announcements" | "sizing" | "length-chart" | "shop-dropdown";
+type TabName = "banners" | "announcements" | "sizing" | "length-chart" | "shop-dropdown" | "launch-banners";
 
 function StorefrontSettingsContent() {
   const searchParams = useSearchParams();
@@ -17,7 +18,7 @@ function StorefrontSettingsContent() {
 
   // Determine starting tab based on URL query parameter
   const tabParam = searchParams.get("tab") as TabName;
-  const initialTab: TabName = ["banners", "announcements", "sizing", "length-chart", "shop-dropdown"].includes(tabParam)
+  const initialTab: TabName = ["banners", "announcements", "sizing", "length-chart", "shop-dropdown", "launch-banners"].includes(tabParam)
     ? tabParam
     : "banners";
 
@@ -26,7 +27,7 @@ function StorefrontSettingsContent() {
   // Sync tab state if query parameter changes
   useEffect(() => {
     const currentTab = searchParams.get("tab") as TabName;
-    if (currentTab && ["banners", "announcements", "sizing", "length-chart", "shop-dropdown"].includes(currentTab)) {
+    if (currentTab && ["banners", "announcements", "sizing", "length-chart", "shop-dropdown", "launch-banners"].includes(currentTab)) {
       setActiveTab(currentTab);
     }
   }, [searchParams]);
@@ -80,6 +81,10 @@ function StorefrontSettingsContent() {
           <LayoutGrid className="w-4 h-4" />
           Shop Dropdown
         </button>
+        <button type="button" onClick={() => handleTabChange("launch-banners")} className={tabClasses("launch-banners")}>
+          <Sparkles className="w-4 h-4" />
+          Launch Banners
+        </button>
       </div>
 
       {/* Active Tab Panel Widget */}
@@ -89,6 +94,7 @@ function StorefrontSettingsContent() {
         {activeTab === "sizing" && <SizeProfilesTab />}
         {activeTab === "length-chart" && <LengthChartTab />}
         {activeTab === "shop-dropdown" && <ShopDropdownTab />}
+        {activeTab === "launch-banners" && <LaunchBannersTab />}
       </div>
     </div>
   );

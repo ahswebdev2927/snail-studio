@@ -20,7 +20,11 @@ const updateProductSchema = z.object({
   shortDescription: z.string().max(500, "Short description is too long").optional().nullable(),
   brandId: z.string().optional().nullable(),
   categoryId: z.string().optional().nullable(),
-  status: z.enum(["Active", "Draft", "Out Of Stock", "Archived"]),
+  status: z.enum(["Active", "Draft", "Out Of Stock", "Archived", "Hidden", "Coming Soon", "Launching Soon"]),
+  launchDate: z.string().optional().nullable(),
+  launchTime: z.string().optional().nullable(),
+  launchTimeZone: z.string().default("Asia/Kolkata"),
+  autoPublish: z.boolean().default(false),
   isFeatured: z.boolean(),
   isBestSeller: z.boolean(),
   isNewArrival: z.boolean().default(false),
@@ -88,6 +92,10 @@ export async function GET(
         brandId: productData.brandId,
         categoryId: productData.categoryId,
         status: productData.status,
+        launchDate: productData.launchDate,
+        launchTime: productData.launchTime,
+        launchTimeZone: productData.launchTimeZone,
+        autoPublish: productData.autoPublish,
         isActive: productData.isActive,
         isFeatured: productData.isFeatured,
         isBestSeller: productData.isBestSeller,
@@ -221,7 +229,11 @@ export async function PATCH(
     }
 
     // Basic fields changes
-    const basicFields = ["name", "slug", "description", "shortDescription", "brandId", "categoryId", "isFeatured", "isBestSeller", "isNewArrival", "isTrending"];
+    const basicFields = [
+      "name", "slug", "description", "shortDescription", "brandId", "categoryId",
+      "isFeatured", "isBestSeller", "isNewArrival", "isTrending",
+      "launchDate", "launchTime", "launchTimeZone", "autoPublish"
+    ];
     const basicChanges: Record<string, any> = {};
     basicFields.forEach(field => {
       const oldVal = (oldProduct as any)[field];
@@ -249,7 +261,11 @@ export async function PATCH(
           brandId: data.brandId || null,
           categoryId: data.categoryId || null,
           status: data.status,
-          isActive: data.status === "Active",
+          isActive: data.status !== "Draft" && data.status !== "Archived",
+          launchDate: data.launchDate || null,
+          launchTime: data.launchTime || null,
+          launchTimeZone: data.launchTimeZone || "Asia/Kolkata",
+          autoPublish: data.autoPublish,
           isFeatured: data.isFeatured,
           isBestSeller: data.isBestSeller,
           isNewArrival: data.isNewArrival,

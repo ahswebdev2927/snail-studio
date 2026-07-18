@@ -4,7 +4,7 @@ import * as schema from "./schema";
 
 const provider = process.env.DB_PROVIDER || "sqlite";
 const url = provider === "sqlite" 
-  ? process.env.SQLITE_DATABASE_URL || "file:./database/local.db" 
+  ? process.env.SQLITE_DATABASE_URL || "file:./database/local-dev.db" 
   : process.env.TURSO_DATABASE_URL;
 const authToken = provider === "sqlite" ? undefined : process.env.TURSO_AUTH_TOKEN;
 

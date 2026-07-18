@@ -6,9 +6,10 @@ import {
   Star,
 } from "lucide-react";
 import { db } from "@/db";
-import { heroBanners, products, sizeProfiles } from "@/db/schema";
+import { heroBanners, products, sizeProfiles, launchBanners } from "@/db/schema";
 import { eq, and, asc, desc, sql, inArray } from "drizzle-orm";
 import { HeroCarousel } from "@/components/storefront/hero-carousel";
+import { LaunchCarousel } from "@/components/storefront/launch-carousel";
 import { FeaturedCategories } from "@/components/storefront/featured-categories";
 import { FeaturedCollections } from "@/components/storefront/featured-collections";
 import { ProductCard } from "@/components/storefront/product-card";
@@ -93,10 +94,17 @@ export default async function Home() {
   const bestsellerIds = bestsellerProductIds.map((p) => p.id);
 
   // Fetch hero banners, dynamic product rows, and size profiles in parallel
-  const [activeBanners, unsortedBestsellers, newArrivals, unsortedTrending, activeSizes] = await Promise.all([
+  const [activeBanners, activeLaunchBanners, unsortedBestsellers, newArrivals, unsortedTrending, activeSizes] = await Promise.all([
     db.query.heroBanners.findMany({
       where: eq(heroBanners.isActive, true),
       orderBy: asc(heroBanners.sortOrder),
+    }),
+    db.query.launchBanners.findMany({
+      where: eq(launchBanners.isActive, true),
+      orderBy: asc(launchBanners.sortOrder),
+      with: {
+        product: true,
+      },
     }),
     bestsellerIds.length > 0
       ? db.query.products.findMany({
@@ -136,6 +144,11 @@ export default async function Home() {
     <div className="flex-1 flex flex-col bg-background text-foreground transition-colors duration-300">
       {/* Hero Banner Carousel (Admin Managed) */}
       <HeroCarousel banners={activeBanners} />
+
+      {/* Launch Banner Carousel */}
+      {activeLaunchBanners.length > 0 && (
+        <LaunchCarousel banners={activeLaunchBanners} />
+      )}
 
       {/* Featured Categories Grid */}
       <FeaturedCategories />

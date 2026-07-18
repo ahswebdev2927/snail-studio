@@ -592,6 +592,9 @@ export default async function ProductPage({
                 productName={product.name}
                 productImageUrl={primaryImageUrl}
                 variants={fullVariants}
+                productStatus={product.status}
+                launchDate={product.launchDate}
+                launchTime={product.launchTime}
               />
             </div>
           </div>

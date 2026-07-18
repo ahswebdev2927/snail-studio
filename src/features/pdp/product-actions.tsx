@@ -28,7 +28,8 @@ import {
 import { useCartStore } from "@/lib/hooks/use-cart-store";
 import { formatPrice } from "@/lib/utils";
 import { cn } from "@/lib/utils";
-import { syncWishlistDb } from "./actions";
+import { syncWishlistDb, subscribeToLaunch, checkSubscriptionStatus } from "./actions";
+import CountdownTimer from "@/components/storefront/countdown-timer";
 
 /* -----------------------------------------------------------------------
  * Types
@@ -59,6 +60,9 @@ export interface ProductActionsProps {
   productName: string;
   productImageUrl?: string;
   variants: ProductVariantFull[];
+  productStatus?: string;
+  launchDate?: string | null;
+  launchTime?: string | null;
 }
 
 /* -----------------------------------------------------------------------
@@ -145,9 +149,43 @@ export function ProductActions({
   productName,
   productImageUrl,
   variants,
+  productStatus = "Active",
+  launchDate = null,
+  launchTime = null,
 }: ProductActionsProps) {
   const router = useRouter();
   const addToCart    = useCartStore((s) => s.addToCart);
+
+  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [submittingSub, setSubmittingSub] = useState(false);
+
+  useEffect(() => {
+    async function checkSub() {
+      if (productStatus === "Launching Soon") {
+        const res = await checkSubscriptionStatus(productId);
+        if (res?.success) {
+          setIsSubscribed(res.subscribed);
+        }
+      }
+    }
+    checkSub();
+  }, [productId, productStatus]);
+
+  const handleSubscribe = async () => {
+    setSubmittingSub(true);
+    try {
+      const res = await subscribeToLaunch(productId);
+      if (res?.success) {
+        setIsSubscribed(true);
+      } else if (res?.error === "guest") {
+        router.push(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSubmittingSub(false);
+    }
+  };
   const setCartOpen  = useCartStore((s) => s.setCartOpen);
   const toggleWishlist = useCartStore((s) => s.toggleWishlist);
   const wishlist       = useCartStore((s) => s.wishlist);
@@ -628,123 +666,184 @@ export function ProductActions({
         </div>
       )}
 
-      {/* ---- SF-5.4: Quantity Selector ---- */}
-      {allGroupsSelected && (
-        <div className="space-y-2.5">
-          <div className="flex items-center justify-between">
-            <label className="text-[11px] font-bold uppercase tracking-wider text-foreground">
-              Quantity
-            </label>
-            {isLowStock && selectedVariant && (
-              <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400">
-                Only {maxStock} remaining
-              </span>
-            )}
-          </div>
-          <div className="flex items-center">
-            {/* Decrement */}
-            <button
-              type="button"
-              id="pdp-qty-dec"
-              onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-              disabled={quantity <= 1 || isOutOfStock}
-              aria-label="Decrease quantity"
-              className="w-11 h-11 flex items-center justify-center rounded-l-xl border border-border bg-card hover:bg-secondary disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
-            >
-              <Minus className="w-3.5 h-3.5" />
-            </button>
-
-            {/* Display */}
-            <div
-              className="w-16 h-11 flex items-center justify-center border-y border-border bg-card text-sm font-semibold tabular-nums"
-              aria-live="polite"
-              aria-label={`Quantity: ${isOutOfStock ? 0 : quantity}`}
-            >
-              {isOutOfStock ? 0 : quantity}
-            </div>
-
-            {/* Increment */}
-            <button
-              type="button"
-              id="pdp-qty-inc"
-              onClick={() => setQuantity((q) => Math.min(maxStock, q + 1))}
-              disabled={quantity >= maxStock || isOutOfStock}
-              aria-label="Increase quantity"
-              className="w-11 h-11 flex items-center justify-center rounded-r-xl border border-border bg-card hover:bg-secondary disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
-            >
-              <Plus className="w-3.5 h-3.5" />
-            </button>
-          </div>
+      {/* Launch/Preview Actions or Standard Checkout Actions */}
+      {productStatus === "Coming Soon" ? (
+        <div className="p-5 border border-border/40 bg-secondary/15 rounded-3xl text-center space-y-2">
+          <span className="inline-block text-[10px] font-bold uppercase tracking-widest text-[#A85328] bg-orange-500/10 px-3.5 py-1 rounded-full">
+            Coming Soon
+          </span>
+          <p className="text-xs text-muted-foreground font-light pt-1.5 leading-relaxed">
+            This handcrafted nail set is in production and will be previewed soon. Stay tuned for collection release updates!
+          </p>
         </div>
+      ) : productStatus === "Launching Soon" ? (
+        <div className="p-6 border border-border/40 bg-secondary/15 rounded-3xl space-y-5">
+          <div className="text-center space-y-1">
+            <span className="inline-block text-[10px] font-bold uppercase tracking-widest text-primary bg-primary/10 px-3.5 py-1 rounded-full">
+              Launching Soon
+            </span>
+            <p className="text-xs text-muted-foreground font-light pt-1.5">
+              Handcrafted drop launches in:
+            </p>
+          </div>
+
+          {launchDate && launchTime && (
+            <div className="flex justify-center">
+              <CountdownTimer launchDate={launchDate} launchTime={launchTime} size="md" />
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={handleSubscribe}
+            disabled={submittingSub || isSubscribed}
+            className={cn(
+              "w-full py-4 rounded-full text-xs font-semibold uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer shadow-xs",
+              isSubscribed
+                ? "bg-success/15 border border-success/35 text-success hover:bg-success/20"
+                : "bg-primary text-primary-foreground hover:bg-primary/95 active:scale-[0.99]"
+            )}
+          >
+            {submittingSub ? (
+              <>
+                <span className="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin" />
+                Subscribing...
+              </>
+            ) : isSubscribed ? (
+              <>
+                <CheckCircle2 className="w-4 h-4" />
+                Subscribed for Drop alerts
+              </>
+            ) : (
+              <>
+                <ShoppingBag className="w-4 h-4" />
+                Notify Me
+              </>
+            )}
+          </button>
+        </div>
+      ) : (
+        <>
+          {/* ---- SF-5.4: Quantity Selector ---- */}
+          {allGroupsSelected && (
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-foreground">
+                  Quantity
+                </label>
+                {isLowStock && selectedVariant && (
+                  <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400">
+                    Only {maxStock} remaining
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center">
+                {/* Decrement */}
+                <button
+                  type="button"
+                  id="pdp-qty-dec"
+                  onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                  disabled={quantity <= 1 || isOutOfStock}
+                  aria-label="Decrease quantity"
+                  className="w-11 h-11 flex items-center justify-center rounded-l-xl border border-border bg-card hover:bg-secondary disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                >
+                  <Minus className="w-3.5 h-3.5" />
+                </button>
+
+                {/* Display */}
+                <div
+                  className="w-14 h-11 flex items-center justify-center border-y border-border bg-card text-xs font-semibold text-foreground select-none"
+                  aria-live="polite"
+                  aria-label={`Quantity: ${isOutOfStock ? 0 : quantity}`}
+                >
+                  {isOutOfStock ? 0 : quantity}
+                </div>
+
+                {/* Increment */}
+                <button
+                  type="button"
+                  id="pdp-qty-inc"
+                  onClick={() => setQuantity((q) => Math.min(maxStock, q + 1))}
+                  disabled={quantity >= maxStock || isOutOfStock}
+                  aria-label="Increase quantity"
+                  className="w-11 h-11 flex items-center justify-center rounded-r-xl border border-border bg-card hover:bg-secondary disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ---- SF-5.5 / SF-5.6: CTA Buttons ---- */}
+          <div className="flex flex-col gap-3">
+            {/* Add to Cart */}
+            <button
+              type="button"
+              id="pdp-add-to-cart"
+              onClick={handleAddToCart}
+              disabled={!canAddToCart}
+              aria-label={
+                selectionHint
+                  ? selectionHint
+                  : isOutOfStock
+                  ? "Out of stock"
+                  : isAdding
+                  ? "Adding to cart"
+                  : justAdded
+                  ? "Added to cart"
+                  : "Add to cart"
+              }
+              className={cn(
+                "w-full py-4 rounded-full text-sm font-semibold uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2",
+                justAdded
+                  ? "bg-success text-foreground cursor-default font-semibold"
+                  : canAddToCart
+                  ? "bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-lg hover:shadow-primary/20 active:scale-[0.98] cursor-pointer"
+                  : "bg-muted text-muted-foreground cursor-not-allowed border border-border"
+              )}
+            >
+              {isAdding ? (
+                <>
+                  <span className="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin" />
+                  Adding…
+                </>
+              ) : justAdded ? (
+                <>
+                  <CheckCircle2 className="w-4 h-4" />
+                  Added to Cart!
+                </>
+              ) : (
+                <>
+                  <ShoppingBag className="w-4 h-4" />
+                  {selectionHint ?? (isOutOfStock ? "Out of Stock" : "Add to Cart")}
+                </>
+              )}
+            </button>
+
+            {/* Buy Now */}
+            <button
+              type="button"
+              id="pdp-buy-now"
+              onClick={handleBuyNow}
+              disabled={!canAddToCart || isBuyingNow}
+              aria-label="Buy now — proceed directly to checkout"
+              className={cn(
+                "w-full py-4 rounded-full text-sm font-semibold uppercase tracking-widest border transition-all duration-300 flex items-center justify-center gap-2",
+                canAddToCart && !isBuyingNow
+                  ? "bg-transparent text-foreground border-foreground/30 hover:bg-foreground hover:text-background hover:border-transparent active:scale-[0.98] cursor-pointer"
+                  : "bg-transparent text-muted-foreground border-border cursor-not-allowed"
+              )}
+            >
+              {isBuyingNow ? (
+                <span className="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin" />
+              ) : (
+                <Zap className="w-4 h-4" />
+              )}
+              {isBuyingNow ? "Redirecting…" : "Buy Now"}
+            </button>
+          </div>
+        </>
       )}
-
-      {/* ---- SF-5.5 / SF-5.6: CTA Buttons ---- */}
-      <div className="flex flex-col gap-3">
-        {/* Add to Cart */}
-        <button
-          type="button"
-          id="pdp-add-to-cart"
-          onClick={handleAddToCart}
-          disabled={!canAddToCart}
-          aria-label={
-            selectionHint
-              ? selectionHint
-              : isOutOfStock
-              ? "Out of stock"
-              : isAdding
-              ? "Adding to cart"
-              : justAdded
-              ? "Added to cart"
-              : "Add to cart"
-          }
-          className={cn(
-            "w-full py-4 rounded-full text-sm font-semibold uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2",
-            justAdded
-              ? "bg-success text-foreground cursor-default font-semibold"
-              : canAddToCart
-              ? "bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-lg hover:shadow-primary/20 active:scale-[0.98] cursor-pointer"
-              : "bg-muted text-muted-foreground cursor-not-allowed border border-border"
-          )}
-        >
-          {isAdding ? (
-            <>
-              <span className="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin" />
-              Adding…
-            </>
-          ) : justAdded ? (
-            <>
-              <CheckCircle2 className="w-4 h-4" />
-              Added to Cart!
-            </>
-          ) : (
-            <>
-              <ShoppingBag className="w-4 h-4" />
-              {selectionHint ?? (isOutOfStock ? "Out of Stock" : "Add to Cart")}
-            </>
-          )}
-        </button>
-
-        {/* Buy Now */}
-        <button
-          type="button"
-          id="pdp-buy-now"
-          onClick={handleBuyNow}
-          disabled={!canAddToCart || isBuyingNow}
-          aria-label="Buy now — proceed directly to checkout"
-          className={cn(
-            "w-full py-4 rounded-full text-sm font-semibold uppercase tracking-widest border transition-all duration-300 flex items-center justify-center gap-2",
-            canAddToCart && !isBuyingNow
-              ? "bg-transparent text-foreground border-foreground/30 hover:bg-foreground hover:text-background hover:border-transparent active:scale-[0.98] cursor-pointer"
-              : "bg-transparent text-muted-foreground border-border cursor-not-allowed"
-          )}
-        >
-          {isBuyingNow ? (
-            <span className="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin" />
-          ) : (
-            <Zap className="w-4 h-4" />
-          )}
-          {isBuyingNow ? "Redirecting…" : "Buy Now"}
-        </button>
 
         {/* Wishlist + Share row */}
         <div className="flex gap-3">
@@ -777,7 +876,6 @@ export function ProductActions({
             {copied ? "Copied!" : "Share"}
           </button>
         </div>
-      </div>
 
       <div className="border-t border-border/30" />
 
