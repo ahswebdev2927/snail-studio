@@ -14,6 +14,7 @@ export const users = sqliteTable('users', {
   phoneVerified: integer('phone_verified', { mode: 'boolean' }).notNull().default(false),
   marketingConsent: integer('marketing_consent', { mode: 'boolean' }).notNull().default(false),
   isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
+  isStoreOwner: integer('is_store_owner', { mode: 'boolean' }).notNull().default(false), // Store Owner Protection Flag
   lastLoginAt: integer('last_login_at', { mode: 'timestamp' }),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)
@@ -84,3 +85,32 @@ export const userAuditLogs = sqliteTable('user_audit_logs', {
   index('user_audit_logs_user_id_idx').on(table.userId),
   index('user_audit_logs_created_at_idx').on(table.createdAt)
 ]);
+
+export const adminAuditLogs = sqliteTable('admin_audit_logs', {
+  id: text('id').primaryKey(),
+  adminId: text('admin_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  adminName: text('admin_name').notNull(),
+  action: text('action').notNull(),
+  targetUserId: text('target_user_id').references(() => users.id, { onDelete: 'set null' }),
+  previousRole: text('previous_role'),
+  newRole: text('new_role'),
+  ipAddress: text('ip_address'),
+  browser: text('browser'),
+  timestamp: integer('timestamp', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
+  verificationMethod: text('verification_method').notNull().default('email_otp'),
+  verificationStatus: text('verification_status').notNull(), // 'verified' | 'failed' | 'pending'
+}, (table) => [
+  index('admin_audit_logs_admin_id_idx').on(table.adminId),
+  index('admin_audit_logs_timestamp_idx').on(table.timestamp)
+]);
+
+export const securityOtps = sqliteTable('security_otps', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  otp: text('otp').notNull(),
+  expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)
+}, (table) => [
+  index('security_otps_user_id_idx').on(table.userId)
+]);
+

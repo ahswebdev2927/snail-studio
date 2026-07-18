@@ -61,9 +61,33 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Settings object is required" }, { status: 400 });
     }
 
+    // Determine if any keys are sensitive settings
+    const bodyKeys = Object.keys(body);
+    let sensitiveAction: string | null = null;
+    let actionFriendlyName = "";
+    
+    if (bodyKeys.some(k => ["smtp_host", "smtp_port", "smtp_user", "smtp_password"].includes(k))) {
+      sensitiveAction = "change_smtp_configuration";
+      actionFriendlyName = "Change SMTP Mailer Configuration";
+    } else if (bodyKeys.some(k => ["razorpay_key_id", "razorpay_key_secret"].includes(k))) {
+      sensitiveAction = "change_payment_keys";
+      actionFriendlyName = "Change Payment Gateway Keys";
+    } else if (bodyKeys.some(k => ["store_name", "store_slug", "store_email", "store_phone", "shipping_standard_fee", "shipping_free_threshold", "shipping_express_fee", "security_verification_timeout_minutes"].includes(k))) {
+      sensitiveAction = "change_store_settings";
+      actionFriendlyName = "Change Store Settings";
+    }
+
+    if (sensitiveAction) {
+      const { verifySensitiveAction } = await import("@/lib/auth/security");
+      const securityCheck = await verifySensitiveAction(req, auth.user!, sensitiveAction, null);
+      if (!securityCheck.verified) {
+        return securityCheck.errorResponse!;
+      }
+    }
+
     // Process each key-value pair
     for (const [key, value] of Object.entries(body)) {
-      if (typeof value !== "string" && typeof value !== "number") {
+      if (typeof value !== "string" && typeof value !== "number" && typeof value !== "boolean") {
         continue;
       }
 
@@ -94,6 +118,42 @@ export async function POST(req: NextRequest) {
           key,
           value: stringValue,
           updatedAt: new Date(),
+        });
+      }
+    }
+
+    // Log verified audit trail and notify admin if action was sensitive
+    if (sensitiveAction) {
+      const ipAddress = req.headers.get("x-forwarded-for") || "127.0.0.1";
+      const browser = req.headers.get("user-agent") || "Unknown";
+      
+      const { logAdminAudit } = await import("@/lib/auth/security");
+      await logAdminAudit({
+        adminId: auth.user!.id,
+        adminName: auth.user!.name || auth.user!.phoneNumber,
+        action: sensitiveAction,
+        targetUserId: null,
+        verificationStatus: "verified",
+        ipAddress,
+        browser,
+      });
+
+      const { sendMail } = await import("@/services/email/email.service");
+      const { getPrivilegedActionEmailTemplate } = await import("@/services/email/templates/security.template");
+
+      if (auth.user!.email) {
+        const adminEmailHtml = getPrivilegedActionEmailTemplate(
+          auth.user!.name || "Administrator",
+          actionFriendlyName,
+          `Keys updated: ${bodyKeys.filter(k => !SENSITIVE_KEYS.includes(k) || body[k] !== MASK_VALUE).join(", ")}`,
+          ipAddress,
+          browser
+        );
+        await sendMail({
+          to: auth.user!.email,
+          subject: `[Security Alert] Successful Privileged Action - Snail Studio`,
+          html: adminEmailHtml,
+          templateName: "admin_privileged_action",
         });
       }
     }

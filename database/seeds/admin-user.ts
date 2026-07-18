@@ -21,6 +21,7 @@ export async function seedAdminUser() {
         email: "admin@snailstudio.com",
         role: "admin",
         phoneVerified: true,
+        isStoreOwner: true,
         isActive: true,
       });
       console.log("Admin user seeded successfully!");

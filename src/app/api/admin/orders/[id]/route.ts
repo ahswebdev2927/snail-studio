@@ -112,8 +112,59 @@ export async function PATCH(
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
 
+    // Sensitive Action Re-Authentication Check (Only for cancellation / refunding)
+    if (status === "cancelled" || status === "refunded") {
+      const { verifySensitiveAction } = await import("@/lib/auth/security");
+      const securityCheck = await verifySensitiveAction(
+        req,
+        auth.user!,
+        status === "cancelled" ? "cancel_order" : "refund_order",
+        null
+      );
+      if (!securityCheck.verified) {
+        return securityCheck.errorResponse!;
+      }
+    }
+
     // Update status and write status history log
     await updateOrderStatus(orderId, status, notes || undefined);
+
+    const ipAddress = req.headers.get("x-forwarded-for") || "127.0.0.1";
+    const browser = req.headers.get("user-agent") || "Unknown";
+
+    // Log to admin audit logs if sensitive status
+    if (status === "cancelled" || status === "refunded") {
+      const { logAdminAudit } = await import("@/lib/auth/security");
+      await logAdminAudit({
+        adminId: auth.user!.id,
+        adminName: auth.user!.name || auth.user!.phoneNumber,
+        action: status === "cancelled" ? "cancel_order" : "refund_order",
+        targetUserId: order.userId,
+        verificationStatus: "verified",
+        ipAddress,
+        browser,
+      });
+
+      // Send confirmation email
+      const { sendMail } = await import("@/services/email/email.service");
+      const { getPrivilegedActionEmailTemplate } = await import("@/services/email/templates/security.template");
+
+      if (auth.user!.email) {
+        const adminEmailHtml = getPrivilegedActionEmailTemplate(
+          auth.user!.name || "Administrator",
+          status === "cancelled" ? "Cancel Order" : "Refund Order",
+          `Order ID: ${orderId}`,
+          ipAddress,
+          browser
+        );
+        await sendMail({
+          to: auth.user!.email,
+          subject: `[Security Alert] Successful Privileged Action - Snail Studio`,
+          html: adminEmailHtml,
+          templateName: "admin_privileged_action",
+        });
+      }
+    }
 
     return NextResponse.json({
       success: true,

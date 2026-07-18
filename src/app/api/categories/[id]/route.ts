@@ -190,8 +190,7 @@ export async function PUT(
     );
   }
 }
-
-// DELETE /api/categories/[id] - delete category (Admin only)
+// DELETE /api/categories/[id] - delete category (Admin only, requires OTP)
 export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -214,8 +213,49 @@ export async function DELETE(
       return NextResponse.json({ error: "Category not found" }, { status: 404 });
     }
 
-    // 3. Delete category (child subcategories will have parent_id set to null via foreign key action onDelete 'set null')
+    // 3. Sensitive Action Re-Authentication Check
+    const { verifySensitiveAction, logAdminAudit } = await import("@/lib/auth/security");
+    const securityCheck = await verifySensitiveAction(req, auth.user!, "delete_category", id);
+    if (!securityCheck.verified) {
+      return securityCheck.errorResponse!;
+    }
+
+    // 4. Delete category (child subcategories will have parent_id set to null via foreign key action onDelete 'set null')
     await db.delete(categories).where(eq(categories.id, id));
+
+    const ipAddress = req.headers.get("x-forwarded-for") || "127.0.0.1";
+    const browser = req.headers.get("user-agent") || "Unknown";
+
+    // 5. Write to audit logs
+    await logAdminAudit({
+      adminId: auth.user!.id,
+      adminName: auth.user!.name || auth.user!.phoneNumber,
+      action: "delete_category",
+      targetUserId: null,
+      verificationStatus: "verified",
+      ipAddress,
+      browser,
+    });
+
+    // 6. Send confirmation email to acting admin
+    const { sendMail } = await import("@/services/email/email.service");
+    const { getPrivilegedActionEmailTemplate } = await import("@/services/email/templates/security.template");
+    
+    if (auth.user!.email) {
+      const adminEmailHtml = getPrivilegedActionEmailTemplate(
+        auth.user!.name || "Administrator",
+        "Delete Category",
+        existingCategory.name || `Category ID: ${id}`,
+        ipAddress,
+        browser
+      );
+      await sendMail({
+        to: auth.user!.email,
+        subject: `[Security Alert] Successful Privileged Action - Snail Studio`,
+        html: adminEmailHtml,
+        templateName: "admin_privileged_action",
+      });
+    }
 
     return NextResponse.json({ success: true, message: "Category deleted successfully" });
   } catch (error: unknown) {

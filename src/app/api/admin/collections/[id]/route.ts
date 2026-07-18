@@ -237,8 +237,49 @@ export async function DELETE(
       return NextResponse.json({ error: "Collection not found" }, { status: 404 });
     }
 
+    // Sensitive Action Re-Authentication Check
+    const { verifySensitiveAction, logAdminAudit } = await import("@/lib/auth/security");
+    const securityCheck = await verifySensitiveAction(req, auth.user!, "delete_collection", id);
+    if (!securityCheck.verified) {
+      return securityCheck.errorResponse!;
+    }
+
     // Deletes collection; cascaded foreign keys will automatically delete rules and product collections
     await db.delete(collections).where(eq(collections.id, id));
+
+    const ipAddress = req.headers.get("x-forwarded-for") || "127.0.0.1";
+    const browser = req.headers.get("user-agent") || "Unknown";
+
+    // Write to audit logs
+    await logAdminAudit({
+      adminId: auth.user!.id,
+      adminName: auth.user!.name || auth.user!.phoneNumber,
+      action: "delete_collection",
+      targetUserId: null,
+      verificationStatus: "verified",
+      ipAddress,
+      browser,
+    });
+
+    // Send confirmation email
+    const { sendMail } = await import("@/services/email/email.service");
+    const { getPrivilegedActionEmailTemplate } = await import("@/services/email/templates/security.template");
+
+    if (auth.user!.email) {
+      const adminEmailHtml = getPrivilegedActionEmailTemplate(
+        auth.user!.name || "Administrator",
+        "Delete Collection",
+        existingCollection.name || `Collection ID: ${id}`,
+        ipAddress,
+        browser
+      );
+      await sendMail({
+        to: auth.user!.email,
+        subject: `[Security Alert] Successful Privileged Action - Snail Studio`,
+        html: adminEmailHtml,
+        templateName: "admin_privileged_action",
+      });
+    }
 
     return NextResponse.json({ success: true, message: "Collection deleted successfully" });
   } catch (error: unknown) {

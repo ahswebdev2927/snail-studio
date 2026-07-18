@@ -31,7 +31,8 @@ import {
   CreditCard,
   Search,
   Send,
-  Sparkles
+  Sparkles,
+  Shield
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SessionUser } from "@/lib/auth/session";
@@ -200,7 +201,8 @@ export default function Sidebar({ isCollapsed, isMobileOpen, closeMobileSidebar,
         { name: "Shipping", href: "/admin/settings/shipping", icon: Truck },
         { name: "SMTP Mailer", href: "/admin/settings/smtp", icon: Mail },
         { name: "Payments", href: "/admin/settings/payments", icon: CreditCard },
-        { name: "Search Sync", href: "/admin/settings/search", icon: Search }
+        { name: "Search Sync", href: "/admin/settings/search", icon: Search },
+        { name: "Security & Roles", href: "/admin/settings/security", icon: Shield }
       ]
     }
   ];

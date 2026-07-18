@@ -40,6 +40,13 @@ export async function POST(
       return NextResponse.json({ error: "This shipping difference has already been refunded." }, { status: 400 });
     }
 
+    // Sensitive Action Re-Authentication Check
+    const { verifySensitiveAction, logAdminAudit } = await import("@/lib/auth/security");
+    const securityCheck = await verifySensitiveAction(req, auth.user, "refund_difference", null);
+    if (!securityCheck.verified) {
+      return securityCheck.errorResponse!;
+    }
+
     const refundAmount = Math.abs(order.shippingDifference);
 
     // Locate successful payment
@@ -114,6 +121,40 @@ export async function POST(
       status: order.status,
       notes: `Shipping refund of ₹${(refundAmount / 100).toFixed(2)} processed successfully by Admin (${auth.user.name}).`,
     });
+
+    const ipAddress = req.headers.get("x-forwarded-for") || "127.0.0.1";
+    const browser = req.headers.get("user-agent") || "Unknown";
+
+    // Write to audit trail
+    await logAdminAudit({
+      adminId: auth.user!.id,
+      adminName: auth.user!.name || auth.user!.phoneNumber,
+      action: "refund_difference",
+      targetUserId: order.userId,
+      verificationStatus: "verified",
+      ipAddress,
+      browser,
+    });
+
+    // Send confirmation email
+    const { sendMail } = await import("@/services/email/email.service");
+    const { getPrivilegedActionEmailTemplate } = await import("@/services/email/templates/security.template");
+
+    if (auth.user!.email) {
+      const adminEmailHtml = getPrivilegedActionEmailTemplate(
+        auth.user!.name || "Administrator",
+        "Refund Order Difference",
+        `Order ID: ${orderId}, Amount: ₹${(refundAmount / 100).toFixed(2)}`,
+        ipAddress,
+        browser
+      );
+      await sendMail({
+        to: auth.user!.email,
+        subject: `[Security Alert] Successful Privileged Action - Snail Studio`,
+        html: adminEmailHtml,
+        templateName: "admin_privileged_action",
+      });
+    }
 
     return NextResponse.json({
       success: true,

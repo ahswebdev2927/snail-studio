@@ -12,6 +12,10 @@ import { eq, inArray } from "drizzle-orm";
 import { authorize } from "@/middleware/auth";
 
 // DELETE /api/products/[id] - Delete a product if it has no sales or inventory history (Admin only)
+import { verifySensitiveAction, logAdminAudit } from "@/lib/auth/security";
+import { sendMail } from "@/services/email/email.service";
+import { getPrivilegedActionEmailTemplate } from "@/services/email/templates/security.template";
+
 export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -37,7 +41,13 @@ export async function DELETE(
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
-    // 2. Fetch variants & inventory items associated with this product
+    // 2. Sensitive Action Re-Authentication Check
+    const securityCheck = await verifySensitiveAction(req, auth.user!, "delete_product", productId);
+    if (!securityCheck.verified) {
+      return securityCheck.errorResponse!;
+    }
+
+    // 3. Fetch variants & inventory items associated with this product
     const variantsList = await db.query.productVariants.findMany({
       where: eq(productVariants.productId, productId),
     });
@@ -50,7 +60,7 @@ export async function DELETE(
       : [];
     const inventoryItemIds = inventoryList.map(inv => inv.id);
 
-    // 3. Perform existence checks for orders, reviews, and inventory transactions
+    // 4. Perform existence checks for orders, reviews, and inventory transactions
     let blockReason = "";
 
     // A. Check reviews
@@ -88,8 +98,39 @@ export async function DELETE(
       }, { status: 400 });
     }
 
-    // 4. Cascade delete is handled at SQLite DB schema foreign key level
+    // 5. Cascade delete is handled at SQLite DB schema foreign key level
     await db.delete(products).where(eq(products.id, productId));
+
+    const ipAddress = req.headers.get("x-forwarded-for") || "127.0.0.1";
+    const browser = req.headers.get("user-agent") || "Unknown";
+
+    // Write to audit trail
+    await logAdminAudit({
+      adminId: auth.user!.id,
+      adminName: auth.user!.name || auth.user!.phoneNumber,
+      action: "delete_product",
+      targetUserId: null,
+      verificationStatus: "verified",
+      ipAddress,
+      browser,
+    });
+
+    // Send confirmation email
+    if (auth.user!.email) {
+      const adminEmailHtml = getPrivilegedActionEmailTemplate(
+        auth.user!.name || "Administrator",
+        "Delete Product",
+        product.name || `Product ID: ${productId}`,
+        ipAddress,
+        browser
+      );
+      await sendMail({
+        to: auth.user!.email,
+        subject: `[Security Alert] Successful Privileged Action - Snail Studio`,
+        html: adminEmailHtml,
+        templateName: "admin_privileged_action",
+      });
+    }
 
     return NextResponse.json({
       success: true,

@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Sidebar from "./sidebar";
 import Header from "./header";
 import { SessionUser } from "@/lib/auth/session";
+import OtpVerificationModal from "./otp-verification-modal";
 
 interface AdminShellProps {
   user: SessionUser;
@@ -14,6 +15,12 @@ export default function AdminShell({ user, children }: AdminShellProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">("light");
+
+  // OTP Verification Modal states
+  const [showOtpModal, setShowOtpModal] = useState(false);
+  const [otpActionName, setOtpActionName] = useState("");
+  const [otpDevCode, setOtpDevCode] = useState<string | undefined>(undefined);
+  const resolveVerificationRef = useRef<((value: boolean) => void) | null>(null);
 
   useEffect(() => {
     const savedTheme = localStorage.getItem("admin-theme");
@@ -30,7 +37,7 @@ export default function AdminShell({ user, children }: AdminShellProps) {
     }
   }, []);
 
-  // Set up transparent token refresh on 401 Unauthorized errors
+  // Set up transparent token refresh on 401, and OTP verification on 403
   useEffect(() => {
     const originalFetch = window.fetch;
     window.fetch = async function (input, init) {
@@ -64,6 +71,31 @@ export default function AdminShell({ user, children }: AdminShellProps) {
           console.error("Transparent session refresh failed:", err);
           window.location.href = "/admin/login";
         }
+      } else if (response.status === 403) {
+        // Intercept 403 and check if security verification is required
+        try {
+          const clonedRes = response.clone();
+          const data = await clonedRes.json();
+          if (data && data.verificationRequired) {
+            setOtpActionName(data.action || "sensitive_action");
+            setOtpDevCode(data.devOtp);
+            setShowOtpModal(true);
+
+            // Wait for user to verify OTP in modal
+            const verified = await new Promise<boolean>((resolve) => {
+              resolveVerificationRef.current = resolve;
+            });
+
+            setShowOtpModal(false);
+
+            if (verified) {
+              // Retry original request (which will now send the newly set securitySession cookie)
+              return await originalFetch(input, init);
+            }
+          }
+        } catch (err) {
+          console.warn("Non-JSON or unhandled 403 Forbidden response:", err);
+        }
       }
 
       return response;
@@ -73,6 +105,19 @@ export default function AdminShell({ user, children }: AdminShellProps) {
       window.fetch = originalFetch;
     };
   }, []);
+
+  const handleOtpSuccess = () => {
+    if (resolveVerificationRef.current) {
+      resolveVerificationRef.current(true);
+    }
+  };
+
+  const handleOtpClose = () => {
+    if (resolveVerificationRef.current) {
+      resolveVerificationRef.current(false);
+    }
+  };
+
 
   const toggleTheme = () => {
     const nextTheme = theme === "light" ? "dark" : "light";
@@ -130,6 +175,14 @@ export default function AdminShell({ user, children }: AdminShellProps) {
           </div>
         </main>
       </div>
+
+      <OtpVerificationModal
+        isOpen={showOtpModal}
+        actionName={otpActionName}
+        devOtp={otpDevCode}
+        onClose={handleOtpClose}
+        onSuccess={handleOtpSuccess}
+      />
     </div>
   );
 }
