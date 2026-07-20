@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
     } else if (bodyKeys.some(k => ["razorpay_key_id", "razorpay_key_secret"].includes(k))) {
       sensitiveAction = "change_payment_keys";
       actionFriendlyName = "Change Payment Gateway Keys";
-    } else if (bodyKeys.some(k => ["store_name", "store_slug", "store_email", "store_phone", "shipping_standard_fee", "shipping_free_threshold", "shipping_express_fee", "security_verification_timeout_minutes"].includes(k))) {
+    } else if (bodyKeys.some(k => ["store_name", "store_slug", "store_email", "store_phone", "store_address", "shipping_standard_fee", "shipping_free_threshold", "shipping_express_fee", "security_verification_timeout_minutes"].includes(k))) {
       sensitiveAction = "change_store_settings";
       actionFriendlyName = "Change Store Settings";
     }

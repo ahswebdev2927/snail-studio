@@ -13,6 +13,7 @@ export default function AdminGeneralSettingsPage() {
   const [storeSlug, setStoreSlug] = useState("snail-studio");
   const [storeEmail, setStoreEmail] = useState("hello@snailstudio.com");
   const [storePhone, setStorePhone] = useState("+91 99999 99999");
+  const [storeAddress, setStoreAddress] = useState("Snail Studio, Luxury Craft Center\nNew Delhi, DL 110001, India");
 
   // Shipping Configuration State
   const [shippingStandardFee, setShippingStandardFee] = useState("99");
@@ -43,6 +44,7 @@ export default function AdminGeneralSettingsPage() {
         if (data.store_logo_collapsed) setStoreLogoCollapsed(data.store_logo_collapsed);
         if (data.store_email) setStoreEmail(data.store_email);
         if (data.store_phone) setStorePhone(data.store_phone);
+        if (data.store_address) setStoreAddress(data.store_address);
         if (data.shipping_standard_fee) setShippingStandardFee(data.shipping_standard_fee);
         if (data.shipping_free_threshold) setShippingFreeThreshold(data.shipping_free_threshold);
         if (data.shipping_express_fee) setShippingExpressFee(data.shipping_express_fee);
@@ -77,6 +79,7 @@ export default function AdminGeneralSettingsPage() {
           store_slug: storeSlug,
           store_email: storeEmail,
           store_phone: storePhone,
+          store_address: storeAddress,
           store_logo: storeLogo,
           store_logo_collapsed: storeLogoCollapsed,
           shipping_standard_fee: shippingStandardFee,
@@ -303,6 +306,19 @@ export default function AdminGeneralSettingsPage() {
                 onChange={(e) => setStorePhone(e.target.value)}
                 placeholder="+91 99999 99999"
                 className="w-full px-4 py-2.5 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none transition-all text-foreground"
+              />
+            </div>
+            <div className="space-y-1.5 md:col-span-2">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                Store Address
+              </label>
+              <textarea
+                required
+                value={storeAddress}
+                onChange={(e) => setStoreAddress(e.target.value)}
+                placeholder="Enter store physical address..."
+                rows={3}
+                className="w-full px-4 py-2.5 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none transition-all text-foreground resize-none"
               />
             </div>
           </div>

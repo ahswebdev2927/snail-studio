@@ -374,7 +374,7 @@ export function Header({ navigationData, storeLogo = "", storeName = "Snail Stud
             {/* Dynamic Parent Categories (e.g. Care & Accessories) */}
             {nav?.categories?.map((cat) => {
               // Press On Nails is already represented by the main Shop menu dropdown
-              if (cat.slug === "press-on-nails") return null;
+              if (cat.slug === "press-on-nails" || cat.slug === "care-and-accessories") return null;
 
               if (cat.children && cat.children.length > 0) {
                 return (
@@ -417,6 +417,14 @@ export function Header({ navigationData, storeLogo = "", storeName = "Snail Stud
               className="px-4 py-2.5 rounded-full hover:text-primary transition-all"
             >
               Sizing
+            </Link>
+
+            {/* Contact */}
+            <Link
+              href="/contact"
+              className="px-4 py-2.5 rounded-full hover:text-primary transition-all"
+            >
+              Contact
             </Link>
           </nav>
 
@@ -680,7 +688,7 @@ export function Header({ navigationData, storeLogo = "", storeName = "Snail Stud
 
               {/* Dynamic Accordions for other parent categories (e.g. Care & Accessories) */}
               {nav?.categories?.map((cat) => {
-                if (cat.slug === "press-on-nails") return null;
+                if (cat.slug === "press-on-nails" || cat.slug === "care-and-accessories") return null;
 
                 if (cat.children && cat.children.length > 0) {
                   return (
@@ -709,7 +717,7 @@ export function Header({ navigationData, storeLogo = "", storeName = "Snail Stud
 
             {/* Flat categories menu items (no children) */}
             {nav?.categories?.map((cat) => {
-              if (cat.slug === "press-on-nails") return null;
+              if (cat.slug === "press-on-nails" || cat.slug === "care-and-accessories") return null;
               if (cat.children && cat.children.length > 0) return null;
 
               return (
@@ -735,6 +743,13 @@ export function Header({ navigationData, storeLogo = "", storeName = "Snail Stud
               className="w-full text-left font-inter text-sm font-medium text-foreground hover:text-primary transition-colors py-2 border-b border-border/10 cursor-pointer"
             >
               Find Your Size
+            </button>
+
+            <button
+              onClick={() => handleMobileNav("/contact")}
+              className="w-full text-left font-inter text-sm font-medium text-foreground hover:text-primary transition-colors py-2 border-b border-border/10 cursor-pointer"
+            >
+              Contact
             </button>
 
             {currentUser ? (
