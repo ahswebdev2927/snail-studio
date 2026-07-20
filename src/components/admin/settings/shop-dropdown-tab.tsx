@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { customAlert } from "@/components/ui/alert-dialog-provider";
 import { 
   Save, 
   RefreshCw, 
@@ -120,14 +121,14 @@ export default function ShopDropdownTab() {
       });
 
       if (res.ok) {
-        alert("Shop dropdown settings saved successfully!");
+        await customAlert("Success", "Shop dropdown settings saved successfully!");
       } else {
         const err = await res.json();
-        alert(`Failed to save settings: ${err.error || "Server error"}`);
+        await customAlert("Error", `Failed to save settings: ${err.error || "Server error"}`);
       }
     } catch (err) {
       console.error("Error saving dropdown settings:", err);
-      alert("An unexpected error occurred.");
+      await customAlert("Error", "An unexpected error occurred.");
     } finally {
       setIsSaving(false);
     }

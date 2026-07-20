@@ -24,6 +24,15 @@ import {
   Search
 } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+} from "recharts";
 
 // Types for Revenue Analytics
 interface SummaryData {
@@ -346,34 +355,19 @@ export default function AnalyticsPage() {
     if (!revenueData) return null;
     const { summary, salesHistory } = revenueData;
 
-    // SVG Area Chart Configurations
-    const chartWidth = 600;
-    const chartHeight = 220;
-    const paddingLeft = 55;
-    const paddingRight = 20;
-    const paddingTop = 20;
-    const paddingBottom = 35;
-
-    const graphWidth = chartWidth - paddingLeft - paddingRight;
-    const graphHeight = chartHeight - paddingTop - paddingBottom;
-
-    const maxAmount = Math.max(...salesHistory.map(h => h.amount), 50000); // min scale to 500 INR to prevent flatline
-
-    const points = salesHistory.map((h, idx) => {
-      const x = paddingLeft + (idx / Math.max(salesHistory.length - 1, 1)) * graphWidth;
-      const y = chartHeight - paddingBottom - (h.amount / maxAmount) * graphHeight;
-      return { x, y, date: h.date, amount: h.amount, count: h.count };
-    });
-
-    const chartPointsStr = points.map(p => `${p.x},${p.y}`).join(" ");
-    const chartFillPointsStr = `${paddingLeft},${chartHeight - paddingBottom} ${chartPointsStr} ${chartWidth - paddingRight},${chartHeight - paddingBottom}`;
-
-    // Y-axis gridlines (0%, 25%, 50%, 75%, 100%)
-    const yGridLines = [0, 0.25, 0.5, 0.75, 1].map(pct => {
-      const y = chartHeight - paddingBottom - pct * graphHeight;
-      const value = pct * maxAmount;
-      return { y, value };
-    });
+    const RevenueTooltip = ({ active, payload }: any) => {
+      if (active && payload && payload.length) {
+        const data = payload[0].payload;
+        return (
+          <div className="bg-card/95 backdrop-blur-md border border-border/40 px-3 py-2 rounded-2xl shadow-xl flex flex-col gap-0.5 text-xs font-light">
+            <p className="font-medium text-foreground">{formatDateLabel(data.date)}</p>
+            <p className="font-bold text-primary">{formatPriceDecimal(data.amount)}</p>
+            <p className="text-muted-foreground text-[10px] font-light">({data.count} orders)</p>
+          </div>
+        );
+      }
+      return null;
+    };
 
     return (
       <div className="space-y-6">
@@ -462,87 +456,58 @@ export default function AnalyticsPage() {
             )}
           </div>
 
-          <div className="relative h-64 w-full flex items-end pt-4">
-            <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="w-full h-full" preserveAspectRatio="none">
-              <defs>
-                <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.25" />
-                  <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0.00" />
-                </linearGradient>
-              </defs>
-
-              {yGridLines.map((line, idx) => (
-                <g key={idx}>
-                  <line 
-                    x1={paddingLeft} 
-                    y1={line.y} 
-                    x2={chartWidth - paddingRight} 
-                    y2={line.y} 
-                    stroke="currentColor" 
-                    className="text-border/20 dark:text-border/10" 
-                    strokeWidth="0.5" 
-                    strokeDasharray={idx === 0 ? "0" : "4 4"} 
-                  />
-                  <text 
-                    x={paddingLeft - 10} 
-                    y={line.y + 4} 
-                    textAnchor="end" 
-                    className="text-[9px] font-mono fill-muted-foreground"
-                  >
-                    {formatPrice(line.value)}
-                  </text>
-                </g>
-              ))}
-
-              <polygon points={chartFillPointsStr} fill="url(#chartGradient)" />
-
-              <polyline
-                fill="none"
-                stroke="hsl(var(--primary))"
-                strokeWidth="2.5"
-                points={chartPointsStr}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-
-              {points.map((p, idx) => {
-                const isHovered = activeRevenuePoint?.date === p.date;
-                return (
-                  <g key={idx}>
-                    <circle
-                      cx={p.x}
-                      cy={p.y}
-                      r={isHovered ? "6" : "3.5"}
-                      fill="hsl(var(--background))"
-                      stroke={isHovered ? "hsl(var(--accent))" : "hsl(var(--primary))"}
-                      strokeWidth="2.5"
-                      className="transition-all duration-150"
-                    />
-                    <rect
-                      x={p.x - 15}
-                      y={paddingTop}
-                      width="30"
-                      height={graphHeight}
-                      fill="transparent"
-                      className="cursor-pointer"
-                      onMouseEnter={() => setActiveRevenuePoint(p)}
-                      onMouseLeave={() => setActiveRevenuePoint(null)}
-                    />
-                  </g>
-                );
-              })}
-            </svg>
-          </div>
-
-          <div className="flex justify-between text-[9px] text-muted-foreground font-light px-1 font-mono pl-[55px]">
-            {salesHistory.filter((_, idx) => {
-              const count = salesHistory.length;
-              if (count <= 7) return true;
-              if (count <= 31) return idx % 5 === 0 || idx === count - 1;
-              return idx % 30 === 0 || idx === count - 1;
-            }).map((h) => (
-              <span key={h.date}>{h.date.substring(5)}</span>
-            ))}
+          <div className="h-64 w-full pt-4">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart
+                data={salesHistory}
+                margin={{ top: 10, right: 10, left: 10, bottom: 0 }}
+                onMouseMove={(e: any) => {
+                  if (e.activePayload && e.activePayload.length) {
+                    setActiveRevenuePoint(e.activePayload[0].payload);
+                  }
+                }}
+                onMouseLeave={() => setActiveRevenuePoint(null)}
+              >
+                <defs>
+                  <linearGradient id="revenueChartGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.25} />
+                    <stop offset="95%" stopColor="var(--primary)" stopOpacity={0.00} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid 
+                  strokeDasharray="4 4" 
+                  vertical={false} 
+                  stroke="var(--border)" 
+                  opacity={0.15}
+                />
+                <XAxis 
+                  dataKey="date" 
+                  tickLine={false}
+                  axisLine={false}
+                  tickFormatter={(str) => formatDateLabel(str)}
+                  tick={{ fill: "var(--muted-foreground)", fontSize: 9, fontFamily: "monospace" }}
+                  dy={10}
+                />
+                <YAxis 
+                  tickLine={false}
+                  axisLine={false}
+                  tickFormatter={(val) => formatPrice(val)}
+                  tick={{ fill: "var(--muted-foreground)", fontSize: 9, fontFamily: "monospace" }}
+                  dx={-5}
+                />
+                <Tooltip content={<RevenueTooltip />} />
+                <Area 
+                  type="monotone" 
+                  dataKey="amount" 
+                  stroke="var(--primary)" 
+                  strokeWidth={2.5}
+                  fillOpacity={1} 
+                  fill="url(#revenueChartGradient)"
+                  activeDot={{ r: 6, fill: "var(--background)", stroke: "var(--primary)", strokeWidth: 2.5 }}
+                  dot={{ r: 3.5, fill: "var(--background)", stroke: "var(--primary)", strokeWidth: 2 }}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
@@ -592,34 +557,18 @@ export default function AnalyticsPage() {
     if (!ordersData) return null;
     const { summary, ordersHistory } = ordersData;
 
-    // SVG Area Chart Configurations
-    const chartWidth = 600;
-    const chartHeight = 220;
-    const paddingLeft = 40;
-    const paddingRight = 20;
-    const paddingTop = 20;
-    const paddingBottom = 35;
-
-    const graphWidth = chartWidth - paddingLeft - paddingRight;
-    const graphHeight = chartHeight - paddingTop - paddingBottom;
-
-    const maxCount = Math.max(...ordersHistory.map(h => h.count), 5); // min scale to 5 orders to prevent flatline
-
-    const points = ordersHistory.map((h, idx) => {
-      const x = paddingLeft + (idx / Math.max(ordersHistory.length - 1, 1)) * graphWidth;
-      const y = chartHeight - paddingBottom - (h.count / maxCount) * graphHeight;
-      return { x, y, date: h.date, count: h.count };
-    });
-
-    const chartPointsStr = points.map(p => `${p.x},${p.y}`).join(" ");
-    const chartFillPointsStr = `${paddingLeft},${chartHeight - paddingBottom} ${chartPointsStr} ${chartWidth - paddingRight},${chartHeight - paddingBottom}`;
-
-    // Y-axis gridlines
-    const yGridLines = [0, 0.25, 0.5, 0.75, 1].map(pct => {
-      const y = chartHeight - paddingBottom - pct * graphHeight;
-      const value = Math.round(pct * maxCount);
-      return { y, value };
-    });
+    const OrdersTooltip = ({ active, payload }: any) => {
+      if (active && payload && payload.length) {
+        const data = payload[0].payload;
+        return (
+          <div className="bg-card/95 backdrop-blur-md border border-border/40 px-3 py-2 rounded-2xl shadow-xl flex flex-col gap-0.5 text-xs font-light">
+            <p className="font-medium text-foreground">{formatDateLabel(data.date)}</p>
+            <p className="font-bold text-primary">{data.count} Orders</p>
+          </div>
+        );
+      }
+      return null;
+    };
 
     // Formatting helper for duration hours
     const formatFulfillmentHours = (hours: number) => {
@@ -739,87 +688,58 @@ export default function AnalyticsPage() {
               )}
             </div>
 
-            <div className="relative h-56 w-full flex items-end pt-4">
-              <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="w-full h-full" preserveAspectRatio="none">
-                <defs>
-                  <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.25" />
-                    <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0.00" />
-                  </linearGradient>
-                </defs>
-
-                {yGridLines.map((line, idx) => (
-                  <g key={idx}>
-                    <line 
-                      x1={paddingLeft} 
-                      y1={line.y} 
-                      x2={chartWidth - paddingRight} 
-                      y2={line.y} 
-                      stroke="currentColor" 
-                      className="text-border/20 dark:text-border/10" 
-                      strokeWidth="0.5" 
-                      strokeDasharray={idx === 0 ? "0" : "4 4"} 
-                    />
-                    <text 
-                      x={paddingLeft - 8} 
-                      y={line.y + 4} 
-                      textAnchor="end" 
-                      className="text-[9px] font-mono fill-muted-foreground"
-                    >
-                      {line.value}
-                    </text>
-                  </g>
-                ))}
-
-                <polygon points={chartFillPointsStr} fill="url(#chartGradient)" />
-
-                <polyline
-                  fill="none"
-                  stroke="hsl(var(--primary))"
-                  strokeWidth="2.5"
-                  points={chartPointsStr}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-
-                {points.map((p, idx) => {
-                  const isHovered = activeOrderPoint?.date === p.date;
-                  return (
-                    <g key={idx}>
-                      <circle
-                        cx={p.x}
-                        cy={p.y}
-                        r={isHovered ? "6" : "3.5"}
-                        fill="hsl(var(--background))"
-                        stroke={isHovered ? "hsl(var(--accent))" : "hsl(var(--primary))"}
-                        strokeWidth="2.5"
-                        className="transition-all duration-150"
-                      />
-                      <rect
-                        x={p.x - 15}
-                        y={paddingTop}
-                        width="30"
-                        height={graphHeight}
-                        fill="transparent"
-                        className="cursor-pointer"
-                        onMouseEnter={() => setActiveOrderPoint(p)}
-                        onMouseLeave={() => setActiveOrderPoint(null)}
-                      />
-                    </g>
-                  );
-                })}
-              </svg>
-            </div>
-
-            <div className="flex justify-between text-[9px] text-muted-foreground font-light px-1 font-mono pl-[40px]">
-              {ordersHistory.filter((_, idx) => {
-                const count = ordersHistory.length;
-                if (count <= 7) return true;
-                if (count <= 31) return idx % 5 === 0 || idx === count - 1;
-                return idx % 30 === 0 || idx === count - 1;
-              }).map((h) => (
-                <span key={h.date}>{h.date.substring(5)}</span>
-              ))}
+            <div className="h-56 w-full pt-4">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart
+                  data={ordersHistory}
+                  margin={{ top: 10, right: 10, left: 10, bottom: 0 }}
+                  onMouseMove={(e: any) => {
+                    if (e.activePayload && e.activePayload.length) {
+                      setActiveOrderPoint(e.activePayload[0].payload);
+                    }
+                  }}
+                  onMouseLeave={() => setActiveOrderPoint(null)}
+                >
+                  <defs>
+                    <linearGradient id="ordersChartGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.25} />
+                      <stop offset="95%" stopColor="var(--primary)" stopOpacity={0.00} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid 
+                    strokeDasharray="4 4" 
+                    vertical={false} 
+                    stroke="var(--border)" 
+                    opacity={0.15}
+                  />
+                  <XAxis 
+                    dataKey="date" 
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(str) => formatDateLabel(str)}
+                    tick={{ fill: "var(--muted-foreground)", fontSize: 9, fontFamily: "monospace" }}
+                    dy={10}
+                  />
+                  <YAxis 
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(val) => Math.round(val).toString()}
+                    tick={{ fill: "var(--muted-foreground)", fontSize: 9, fontFamily: "monospace" }}
+                    dx={-5}
+                  />
+                  <Tooltip content={<OrdersTooltip />} />
+                  <Area 
+                    type="monotone" 
+                    dataKey="count" 
+                    stroke="var(--primary)" 
+                    strokeWidth={2.5}
+                    fillOpacity={1} 
+                    fill="url(#ordersChartGradient)"
+                    activeDot={{ r: 6, fill: "var(--background)", stroke: "var(--primary)", strokeWidth: 2.5 }}
+                    dot={{ r: 3.5, fill: "var(--background)", stroke: "var(--primary)", strokeWidth: 2 }}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
             </div>
           </div>
 
@@ -1267,34 +1187,18 @@ export default function AnalyticsPage() {
     if (!wishlistData) return null;
     const { summary, wishlistHistory, topWishlisted } = wishlistData;
 
-    // SVG Area/Line Chart Configurations
-    const chartWidth = 600;
-    const chartHeight = 220;
-    const paddingLeft = 40;
-    const paddingRight = 20;
-    const paddingTop = 20;
-    const paddingBottom = 35;
-
-    const graphWidth = chartWidth - paddingLeft - paddingRight;
-    const graphHeight = chartHeight - paddingTop - paddingBottom;
-
-    const maxAdds = Math.max(...wishlistHistory.map(h => h.count), 5); // min scale to 5 to prevent flatline
-
-    const points = wishlistHistory.map((h, idx) => {
-      const x = paddingLeft + (idx / Math.max(wishlistHistory.length - 1, 1)) * graphWidth;
-      const y = chartHeight - paddingBottom - (h.count / maxAdds) * graphHeight;
-      return { x, y, date: h.date, count: h.count };
-    });
-
-    const chartPointsStr = points.map(p => `${p.x},${p.y}`).join(" ");
-    const chartFillPointsStr = `${paddingLeft},${chartHeight - paddingBottom} ${chartPointsStr} ${chartWidth - paddingRight},${chartHeight - paddingBottom}`;
-
-    // Y-axis gridlines
-    const yGridLines = [0, 0.25, 0.5, 0.75, 1].map(pct => {
-      const y = chartHeight - paddingBottom - pct * graphHeight;
-      const value = Math.round(pct * maxAdds);
-      return { y, value };
-    });
+    const WishlistTooltip = ({ active, payload }: any) => {
+      if (active && payload && payload.length) {
+        const data = payload[0].payload;
+        return (
+          <div className="bg-card/95 backdrop-blur-md border border-border/40 px-3 py-2 rounded-2xl shadow-xl flex flex-col gap-0.5 text-xs font-light">
+            <p className="font-medium text-foreground">{formatDateLabel(data.date)}</p>
+            <p className="font-bold text-primary">{data.count} wishlist adds</p>
+          </div>
+        );
+      }
+      return null;
+    };
 
     return (
       <div className="space-y-6">
@@ -1359,115 +1263,52 @@ export default function AnalyticsPage() {
             <p className="text-[10px] text-muted-foreground font-light font-sans">Daily wishlist addition counts showing customer purchase intent.</p>
           </div>
 
-          <div className="relative pt-4">
-            <svg 
-              viewBox={`0 0 ${chartWidth} ${chartHeight}`} 
-              className="w-full h-auto select-none overflow-visible"
-            >
-              {/* Gridlines */}
-              {yGridLines.map((line, idx) => (
-                <g key={idx} className="opacity-40">
-                  <line 
-                    x1={paddingLeft} 
-                    y1={line.y} 
-                    x2={chartWidth - paddingRight} 
-                    y2={line.y} 
-                    stroke="currentColor" 
-                    strokeWidth="0.5" 
-                    className="text-border/40"
-                    strokeDasharray="4 4"
-                  />
-                  <text 
-                    x={paddingLeft - 8} 
-                    y={line.y + 3} 
-                    textAnchor="end" 
-                    className="text-[9px] fill-muted-foreground font-mono"
-                  >
-                    {line.value}
-                  </text>
-                </g>
-              ))}
-
-              {/* Area Under the Line */}
-              {points.length > 1 && (
-                <polygon 
-                  points={chartFillPointsStr} 
-                  className="fill-primary/5 dark:fill-primary/10"
-                />
-              )}
-
-              {/* Line Path */}
-              {points.length > 1 && (
-                <polyline 
-                  fill="none" 
-                  stroke="currentColor" 
-                  strokeWidth="2" 
-                  points={chartPointsStr} 
-                  className="text-primary"
-                />
-              )}
-
-              {/* Points & Interactive Nodes */}
-              {points.map((p, idx) => {
-                const isHovered = activeWishlistPoint?.idx === idx;
-                return (
-                  <g key={idx}>
-                    <circle 
-                      cx={p.x} 
-                      cy={p.y} 
-                      r={isHovered ? 4.5 : 2.5} 
-                      className={`fill-card stroke-primary transition-all duration-150 ${isHovered ? "stroke-[2.5]" : "stroke-[1.5]"}`} 
-                    />
-                    {/* Transparent touch area for hover */}
-                    <rect 
-                      x={p.x - 12} 
-                      y={paddingTop} 
-                      width={24} 
-                      height={graphHeight} 
-                      className="fill-transparent cursor-pointer"
-                      onMouseEnter={() => setActiveWishlistPoint({ idx, ...p })}
-                      onMouseLeave={() => setActiveWishlistPoint(null)}
-                    />
-                  </g>
-                );
-              })}
-
-              {/* Dates labels on X axis */}
-              {points.map((p, idx) => {
-                const shouldRender = idx === 0 || idx === points.length - 1 || (points.length > 5 && idx === Math.round(points.length / 2));
-                if (!shouldRender) return null;
-                return (
-                  <text 
-                    key={idx}
-                    x={p.x} 
-                    y={chartHeight - paddingBottom + 16} 
-                    textAnchor="middle" 
-                    className="text-[8px] fill-muted-foreground font-light font-mono"
-                  >
-                    {formatDateLabel(p.date)}
-                  </text>
-                );
-              })}
-            </svg>
-
-            {/* Hover Tooltip display */}
-            {activeWishlistPoint && (
-              <div 
-                className="absolute bg-popover/90 backdrop-blur-md border border-border/80 px-3 py-2 rounded-2xl shadow-xl pointer-events-none transition-all duration-100 flex flex-col gap-0.5"
-                style={{ 
-                  left: `${(activeWishlistPoint.x / chartWidth) * 100}%`,
-                  top: `${(activeWishlistPoint.y / chartHeight) * 100 - 15}%`,
-                  transform: "translate(-50%, -100%)"
-                }}
+          <div className="h-56 w-full pt-4">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart
+                data={wishlistHistory}
+                margin={{ top: 10, right: 10, left: 10, bottom: 0 }}
               >
-                <span className="text-[8px] text-muted-foreground font-mono font-light">
-                  {formatDateLabel(activeWishlistPoint.date)}
-                </span>
-                <span className="text-xs font-bold text-foreground">
-                  {activeWishlistPoint.count} wishlist adds
-                </span>
-              </div>
-            )}
+                <defs>
+                  <linearGradient id="wishlistChartGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.25} />
+                    <stop offset="95%" stopColor="var(--primary)" stopOpacity={0.00} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid 
+                  strokeDasharray="4 4" 
+                  vertical={false} 
+                  stroke="var(--border)" 
+                  opacity={0.15}
+                />
+                <XAxis 
+                  dataKey="date" 
+                  tickLine={false}
+                  axisLine={false}
+                  tickFormatter={(str) => formatDateLabel(str)}
+                  tick={{ fill: "var(--muted-foreground)", fontSize: 9, fontFamily: "monospace" }}
+                  dy={10}
+                />
+                <YAxis 
+                  tickLine={false}
+                  axisLine={false}
+                  tickFormatter={(val) => Math.round(val).toString()}
+                  tick={{ fill: "var(--muted-foreground)", fontSize: 9, fontFamily: "monospace" }}
+                  dx={-5}
+                />
+                <Tooltip content={<WishlistTooltip />} />
+                <Area 
+                  type="monotone" 
+                  dataKey="count" 
+                  stroke="var(--primary)" 
+                  strokeWidth={2.5}
+                  fillOpacity={1} 
+                  fill="url(#wishlistChartGradient)"
+                  activeDot={{ r: 6, fill: "var(--background)", stroke: "var(--primary)", strokeWidth: 2.5 }}
+                  dot={{ r: 3.5, fill: "var(--background)", stroke: "var(--primary)", strokeWidth: 2 }}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
@@ -1533,34 +1374,18 @@ export default function AnalyticsPage() {
     if (!customerData) return null;
     const { summary, acquisitionHistory, topSpenders } = customerData;
 
-    // SVG Area/Line Chart Configurations
-    const chartWidth = 600;
-    const chartHeight = 220;
-    const paddingLeft = 40;
-    const paddingRight = 20;
-    const paddingTop = 20;
-    const paddingBottom = 35;
-
-    const graphWidth = chartWidth - paddingLeft - paddingRight;
-    const graphHeight = chartHeight - paddingTop - paddingBottom;
-
-    const maxAcquisitions = Math.max(...acquisitionHistory.map(h => h.count), 5); // min scale to 5 to prevent flatline
-
-    const points = acquisitionHistory.map((h, idx) => {
-      const x = paddingLeft + (idx / Math.max(acquisitionHistory.length - 1, 1)) * graphWidth;
-      const y = chartHeight - paddingBottom - (h.count / maxAcquisitions) * graphHeight;
-      return { x, y, date: h.date, count: h.count };
-    });
-
-    const chartPointsStr = points.map(p => `${p.x},${p.y}`).join(" ");
-    const chartFillPointsStr = `${paddingLeft},${chartHeight - paddingBottom} ${chartPointsStr} ${chartWidth - paddingRight},${chartHeight - paddingBottom}`;
-
-    // Y-axis gridlines
-    const yGridLines = [0, 0.25, 0.5, 0.75, 1].map(pct => {
-      const y = chartHeight - paddingBottom - pct * graphHeight;
-      const value = Math.round(pct * maxAcquisitions);
-      return { y, value };
-    });
+    const CustomersTooltip = ({ active, payload }: any) => {
+      if (active && payload && payload.length) {
+        const data = payload[0].payload;
+        return (
+          <div className="bg-card/95 backdrop-blur-md border border-border/40 px-3 py-2 rounded-2xl shadow-xl flex flex-col gap-0.5 text-xs font-light">
+            <p className="font-medium text-foreground">{formatDateLabel(data.date)}</p>
+            <p className="font-bold text-primary">{data.count} signups</p>
+          </div>
+        );
+      }
+      return null;
+    };
 
     return (
       <div className="space-y-6 animate-fade-in">
@@ -1644,115 +1469,52 @@ export default function AnalyticsPage() {
             <p className="text-[10px] text-muted-foreground font-light font-sans">Daily curve of new customer sign-ups over the active period.</p>
           </div>
 
-          <div className="relative pt-4">
-            <svg 
-              viewBox={`0 0 ${chartWidth} ${chartHeight}`} 
-              className="w-full h-auto select-none overflow-visible"
-            >
-              {/* Gridlines */}
-              {yGridLines.map((line, idx) => (
-                <g key={idx} className="opacity-40">
-                  <line 
-                    x1={paddingLeft} 
-                    y1={line.y} 
-                    x2={chartWidth - paddingRight} 
-                    y2={line.y} 
-                    stroke="currentColor" 
-                    strokeWidth="0.5" 
-                    className="text-border/40"
-                    strokeDasharray="4 4"
-                  />
-                  <text 
-                    x={paddingLeft - 8} 
-                    y={line.y + 3} 
-                    textAnchor="end" 
-                    className="text-[9px] fill-muted-foreground font-mono"
-                  >
-                    {line.value}
-                  </text>
-                </g>
-              ))}
-
-              {/* Area Under the Line */}
-              {points.length > 1 && (
-                <polygon 
-                  points={chartFillPointsStr} 
-                  className="fill-primary/5 dark:fill-primary/10"
-                />
-              )}
-
-              {/* Line Path */}
-              {points.length > 1 && (
-                <polyline 
-                  fill="none" 
-                  stroke="currentColor" 
-                  strokeWidth="2" 
-                  points={chartPointsStr} 
-                  className="text-primary"
-                />
-              )}
-
-              {/* Points & Interactive Nodes */}
-              {points.map((p, idx) => {
-                const isHovered = activeCustomerPoint?.idx === idx;
-                return (
-                  <g key={idx}>
-                    <circle 
-                      cx={p.x} 
-                      cy={p.y} 
-                      r={isHovered ? 4.5 : 2.5} 
-                      className={`fill-card stroke-primary transition-all duration-150 ${isHovered ? "stroke-[2.5]" : "stroke-[1.5]"}`} 
-                    />
-                    {/* Transparent touch area for hover */}
-                    <rect 
-                      x={p.x - 12} 
-                      y={paddingTop} 
-                      width={24} 
-                      height={graphHeight} 
-                      className="fill-transparent cursor-pointer"
-                      onMouseEnter={() => setActiveCustomerPoint({ idx, ...p })}
-                      onMouseLeave={() => setActiveCustomerPoint(null)}
-                    />
-                  </g>
-                );
-              })}
-
-              {/* Dates labels on X axis */}
-              {points.map((p, idx) => {
-                const shouldRender = idx === 0 || idx === points.length - 1 || (points.length > 5 && idx === Math.round(points.length / 2));
-                if (!shouldRender) return null;
-                return (
-                  <text 
-                    key={idx}
-                    x={p.x} 
-                    y={chartHeight - paddingBottom + 16} 
-                    textAnchor="middle" 
-                    className="text-[8px] fill-muted-foreground font-light font-mono"
-                  >
-                    {formatDateLabel(p.date)}
-                  </text>
-                );
-              })}
-            </svg>
-
-            {/* Hover Tooltip display */}
-            {activeCustomerPoint && (
-              <div 
-                className="absolute bg-popover/90 backdrop-blur-md border border-border/80 px-3 py-2 rounded-2xl shadow-xl pointer-events-none transition-all duration-100 flex flex-col gap-0.5"
-                style={{ 
-                  left: `${(activeCustomerPoint.x / chartWidth) * 100}%`,
-                  top: `${(activeCustomerPoint.y / chartHeight) * 100 - 15}%`,
-                  transform: "translate(-50%, -100%)"
-                }}
+          <div className="h-56 w-full pt-4">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart
+                data={acquisitionHistory}
+                margin={{ top: 10, right: 10, left: 10, bottom: 0 }}
               >
-                <span className="text-[8px] text-muted-foreground font-mono font-light">
-                  {formatDateLabel(activeCustomerPoint.date)}
-                </span>
-                <span className="text-xs font-bold text-foreground">
-                  {activeCustomerPoint.count} signups
-                </span>
-              </div>
-            )}
+                <defs>
+                  <linearGradient id="customersChartGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.25} />
+                    <stop offset="95%" stopColor="var(--primary)" stopOpacity={0.00} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid 
+                  strokeDasharray="4 4" 
+                  vertical={false} 
+                  stroke="var(--border)" 
+                  opacity={0.15}
+                />
+                <XAxis 
+                  dataKey="date" 
+                  tickLine={false}
+                  axisLine={false}
+                  tickFormatter={(str) => formatDateLabel(str)}
+                  tick={{ fill: "var(--muted-foreground)", fontSize: 9, fontFamily: "monospace" }}
+                  dy={10}
+                />
+                <YAxis 
+                  tickLine={false}
+                  axisLine={false}
+                  tickFormatter={(val) => Math.round(val).toString()}
+                  tick={{ fill: "var(--muted-foreground)", fontSize: 9, fontFamily: "monospace" }}
+                  dx={-5}
+                />
+                <Tooltip content={<CustomersTooltip />} />
+                <Area 
+                  type="monotone" 
+                  dataKey="count" 
+                  stroke="var(--primary)" 
+                  strokeWidth={2.5}
+                  fillOpacity={1} 
+                  fill="url(#customersChartGradient)"
+                  activeDot={{ r: 6, fill: "var(--background)", stroke: "var(--primary)", strokeWidth: 2.5 }}
+                  dot={{ r: 3.5, fill: "var(--background)", stroke: "var(--primary)", strokeWidth: 2 }}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         </div>
 

@@ -16,6 +16,15 @@ import {
   Loader2
 } from "lucide-react";
 import Link from "next/link";
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+} from "recharts";
 
 interface DashboardStats {
   totalSales: number;
@@ -96,12 +105,27 @@ export default function AdminDashboardPage() {
     });
   };
 
-  // SVG Chart Coordinates calculation
-  const maxAmount = Math.max(...stats.salesHistory.map(h => h.amount), 500000); // scaled to at least ₹5,000 to prevent zero flatness
-  const chartPoints = stats.salesHistory
-    .map((h, idx) => `${10 + idx * 60},${140 - (h.amount / maxAmount) * 120}`)
-    .join(" ");
-  const chartFillPoints = `10,160 ${chartPoints} 370,160`;
+  // Custom tooltip for Recharts
+  const CustomTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload;
+      return (
+        <div className="bg-card/90 backdrop-blur-md border border-border/40 px-3 py-2 rounded-2xl shadow-xl flex flex-col gap-0.5 text-xs font-light">
+          <p className="font-medium text-foreground">
+            {new Date(data.date).toLocaleDateString("en-IN", {
+              weekday: "short",
+              month: "short",
+              day: "numeric",
+            })}
+          </p>
+          <p className="font-bold text-primary">
+            {formatPriceDecimal(data.amount)}
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
 
   // Get status color badges for orders
   const getStatusBadge = (status: string) => {
@@ -239,55 +263,53 @@ export default function AdminDashboardPage() {
             </span>
           </div>
 
-          {/* SVG Custom Area Chart */}
-          <div className="h-56 w-full flex items-end pt-4">
-            <svg viewBox="0 0 380 160" className="w-full h-full" preserveAspectRatio="none">
-              <defs>
-                <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.25" />
-                  <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0.00" />
-                </linearGradient>
-              </defs>
-              {/* Horizontal Grid lines */}
-              <line x1="0" y1="20" x2="380" y2="20" stroke="currentColor" className="text-border/20" strokeWidth="0.5" strokeDasharray="4 4" />
-              <line x1="0" y1="55" x2="380" y2="55" stroke="currentColor" className="text-border/20" strokeWidth="0.5" strokeDasharray="4 4" />
-              <line x1="0" y1="90" x2="380" y2="90" stroke="currentColor" className="text-border/20" strokeWidth="0.5" strokeDasharray="4 4" />
-              <line x1="0" y1="125" x2="380" y2="125" stroke="currentColor" className="text-border/20" strokeWidth="0.5" strokeDasharray="4 4" />
-              <line x1="0" y1="160" x2="380" y2="160" stroke="currentColor" className="text-border/40" strokeWidth="0.5" />
-
-              {/* Gradient Area Fill */}
-              <polygon points={chartFillPoints} fill="url(#chartGradient)" />
-
-              {/* Line Stroke */}
-              <polyline
-                fill="none"
-                stroke="hsl(var(--primary))"
-                strokeWidth="2.5"
-                points={chartPoints}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-
-              {/* Data points */}
-              {stats.salesHistory.map((h, idx) => (
-                <circle 
-                  key={idx}
-                  cx={10 + idx * 60} 
-                  cy={140 - (h.amount / maxAmount) * 120} 
-                  r="3.5" 
-                  fill="hsl(var(--background))" 
-                  stroke="hsl(var(--primary))" 
-                  strokeWidth="2" 
+          {/* Recharts Area Chart */}
+          <div className="h-56 w-full pt-4">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart
+                data={stats.salesHistory}
+                margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+              >
+                <defs>
+                  <linearGradient id="dashboardChartGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.25} />
+                    <stop offset="95%" stopColor="var(--primary)" stopOpacity={0.00} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid 
+                  strokeDasharray="4 4" 
+                  vertical={false} 
+                  stroke="var(--border)" 
+                  opacity={0.2}
                 />
-              ))}
-            </svg>
-          </div>
-          {/* X Axis Labels */}
-          <div className="flex justify-between text-[9px] text-muted-foreground font-light px-1 font-mono">
-            {stats.salesHistory.map((h) => {
-              const label = new Date(h.date).toLocaleDateString(undefined, { weekday: "short" });
-              return <span key={h.date}>{label}</span>;
-            })}
+                <XAxis 
+                  dataKey="date" 
+                  tickLine={false}
+                  axisLine={false}
+                  tickFormatter={(str) => new Date(str).toLocaleDateString("en-IN", { weekday: "short" })}
+                  tick={{ fill: "var(--muted-foreground)", fontSize: 9, fontFamily: "monospace" }}
+                  dy={10}
+                />
+                <YAxis 
+                  tickLine={false}
+                  axisLine={false}
+                  tickFormatter={(val) => formatPrice(val)}
+                  tick={{ fill: "var(--muted-foreground)", fontSize: 9, fontFamily: "monospace" }}
+                  dx={-5}
+                />
+                <Tooltip content={<CustomTooltip />} />
+                <Area 
+                  type="monotone" 
+                  dataKey="amount" 
+                  stroke="var(--primary)" 
+                  strokeWidth={2.5}
+                  fillOpacity={1} 
+                  fill="url(#dashboardChartGradient)"
+                  activeDot={{ r: 6, fill: "var(--background)", stroke: "var(--primary)", strokeWidth: 2.5 }}
+                  dot={{ r: 3.5, fill: "var(--background)", stroke: "var(--primary)", strokeWidth: 2 }}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
