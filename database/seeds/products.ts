@@ -261,6 +261,48 @@ export async function seedProducts() {
       isTrending: true,
       imageUrl: "/luxury_nails_hero.png",
       attributes: {}
+    },
+    {
+      name: "Velvet Wine Stiletto Set",
+      slug: "velvet-wine-stiletto-set",
+      description: "A gorgeous and rich velvet wine red stiletto set, hand-crafted with luxury salon-quality builder gel and a glossy finish.",
+      shortDescription: "Rich velvet wine red stiletto set.",
+      categorySlug: "nail-art",
+      price: 2699, // INR
+      compareAtPrice: 3199, // INR
+      isFeatured: true,
+      isBestSeller: false,
+      isNewArrival: true,
+      isTrending: true,
+      imageUrl: "/luxury_nails_hero.png",
+      attributes: {
+        shape: "stiletto",
+        length: "long",
+        texture: "glossy",
+        style: "classic",
+        occasion: "party"
+      }
+    },
+    {
+      name: "Pastel Lavender Square Set",
+      slug: "pastel-lavender-square-set",
+      description: "Soft, chic pastel lavender shade in standard square shape with clean edges and a high-gloss protective topcoat.",
+      shortDescription: "Soft chic pastel lavender square set.",
+      categorySlug: "solid-colors",
+      price: 1799, // INR
+      compareAtPrice: 1999, // INR
+      isFeatured: false,
+      isBestSeller: true,
+      isNewArrival: true,
+      isTrending: false,
+      imageUrl: "/emerald_nails_set.png",
+      attributes: {
+        shape: "square",
+        length: "short",
+        texture: "glossy",
+        style: "minimalist",
+        occasion: "casual"
+      }
     }
   ];
 
@@ -283,6 +325,7 @@ export async function seedProducts() {
       // 1. Insert product
       await tx.insert(products).values({
         id: productId,
+        brandId: "brd_snail_studio",
         categoryId: getCatIdBySlug(p.categorySlug),
         name: p.name,
         slug: p.slug,
