@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import { customAlert } from "@/components/ui/alert-dialog-provider";
 import { 
   Boxes, 
   History, 
@@ -158,8 +159,7 @@ export default function AdminInventoryPage() {
           )
         );
         setEditingId(null);
-      } else {
-        alert("Failed to save threshold");
+        await customAlert("Error", "Failed to save threshold");
       }
     } catch (error) {
       console.error("Error updating threshold:", error);

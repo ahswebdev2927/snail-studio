@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { customConfirm, customAlert } from "@/components/ui/alert-dialog-provider";
 import {
   Layers,
   Plus,
@@ -159,8 +160,7 @@ export default function AdminBundlesPage() {
         setBundles(prev =>
           prev.map(b => (b.id === bundleId ? { ...b, isActive: !currentStatus } : b))
         );
-      } else {
-        alert("Failed to update status");
+        await customAlert("Error", "Failed to update status");
       }
     } catch (error) {
       console.error("Error toggling status:", error);
@@ -169,9 +169,8 @@ export default function AdminBundlesPage() {
     }
   };
 
-  // Delete Bundle
   const handleDeleteBundle = async (bundleId: string, bundleName: string) => {
-    const confirmed = window.confirm(`Are you sure you want to permanently delete the bundle "${bundleName}"?`);
+    const confirmed = await customConfirm("Delete Bundle", `Are you sure you want to permanently delete the bundle "${bundleName}"?`);
     if (!confirmed) return;
 
     setIsActionId(bundleId);
@@ -182,8 +181,7 @@ export default function AdminBundlesPage() {
 
       if (res.ok) {
         setBundles(prev => prev.filter(b => b.id !== bundleId));
-      } else {
-        alert("Failed to delete bundle");
+        await customAlert("Error", "Failed to delete bundle");
       }
     } catch (error) {
       console.error("Error deleting bundle:", error);

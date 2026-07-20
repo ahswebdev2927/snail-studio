@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
+import { customConfirm, customAlert } from "@/components/ui/alert-dialog-provider";
 import { 
   MapPin, 
   Plus, 
@@ -98,9 +99,9 @@ export function AddressClient({ initialAddresses }: AddressClientProps) {
     setFormError("");
   };
 
-  const openAddModal = () => {
+  const openAddModal = async () => {
     if (initialAddresses.length >= 5) {
-      alert("You cannot add more than 5 addresses. Please delete an address to add a new one.");
+      await customAlert("Limit Reached", "You cannot add more than 5 addresses. Please delete an address to add a new one.");
       return;
     }
     resetForm();
@@ -183,18 +184,18 @@ export function AddressClient({ initialAddresses }: AddressClientProps) {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this address?")) return;
+    if (!await customConfirm("Delete Address", "Are you sure you want to delete this address?")) return;
     setActionLoadingId(id);
     try {
       const res = await deleteUserAddress(id);
       if (res.success) {
         router.refresh();
       } else {
-        alert(res.error || "Failed to delete address.");
+        await customAlert("Error", res.error || "Failed to delete address.");
       }
     } catch (err) {
       console.error(err);
-      alert("Failed to delete address.");
+      await customAlert("Error", "Failed to delete address.");
     } finally {
       setActionLoadingId(null);
     }
@@ -207,11 +208,11 @@ export function AddressClient({ initialAddresses }: AddressClientProps) {
       if (res.success) {
         router.refresh();
       } else {
-        alert(res.error || "Failed to set default address.");
+        await customAlert("Error", res.error || "Failed to set default address.");
       }
     } catch (err) {
       console.error(err);
-      alert("Failed to set default address.");
+      await customAlert("Error", "Failed to set default address.");
     } finally {
       setActionLoadingId(null);
     }

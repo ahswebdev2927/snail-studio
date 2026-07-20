@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
+import { customConfirm } from "@/components/ui/alert-dialog-provider";
 import Link from "next/link";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -512,7 +513,7 @@ export default function ProductForm({ mode, productId, initialData }: ProductFor
     const confirmationText = newStatus === "Archived"
       ? `Are you sure you want to archive variant "${variant.sku}"?`
       : `Are you sure you want to disable variant "${variant.sku}"?`;
-    if (!window.confirm(confirmationText)) return;
+    if (!await customConfirm("Modify Variant Status", confirmationText)) return;
 
     setGlobalError(null);
     setGlobalSuccess(null);

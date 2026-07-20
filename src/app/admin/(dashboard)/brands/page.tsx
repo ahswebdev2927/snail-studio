@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { customConfirm, customAlert } from "@/components/ui/alert-dialog-provider";
 import { 
   Plus, 
   Trash2, 
@@ -113,11 +114,11 @@ export default function AdminBrandsPage() {
         await loadBrands();
       } else {
         const data = await res.json();
-        alert(`Failed to save brand: ${data.error || "Server error"}`);
+        await customAlert("Error", `Failed to save brand: ${data.error || "Server error"}`);
       }
     } catch (error) {
       console.error("Error saving brand:", error);
-      alert("An unexpected error occurred.");
+      await customAlert("Error", "An unexpected error occurred.");
     } finally {
       setIsSubmitting(false);
     }
@@ -125,7 +126,7 @@ export default function AdminBrandsPage() {
 
   // Delete Brand
   const handleDeleteBrand = async (id: string, name: string) => {
-    if (!confirm(`Are you sure you want to permanently delete the brand "${name}"?`)) {
+    if (!await customConfirm("Delete Brand", `Are you sure you want to permanently delete the brand "${name}"?`)) {
       return;
     }
 
@@ -138,7 +139,7 @@ export default function AdminBrandsPage() {
         await loadBrands();
       } else {
         const data = await res.json();
-        alert(`Failed to delete brand: ${data.error || "Server error"}`);
+        await customAlert("Error", `Failed to delete brand: ${data.error || "Server error"}`);
       }
     } catch (error) {
       console.error("Error deleting brand:", error);

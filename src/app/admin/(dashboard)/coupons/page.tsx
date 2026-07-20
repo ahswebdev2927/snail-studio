@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { customConfirm, customAlert } from "@/components/ui/alert-dialog-provider";
 import { 
   Ticket, 
   Plus, 
@@ -107,8 +108,7 @@ export default function AdminCouponsPage() {
         setCoupons(prev =>
           prev.map(c => (c.id === couponId ? { ...c, isActive: !currentStatus } : c))
         );
-      } else {
-        alert("Failed to update status");
+        await customAlert("Error", "Failed to update status");
       }
     } catch (error) {
       console.error("Error toggling status:", error);
@@ -117,9 +117,8 @@ export default function AdminCouponsPage() {
     }
   };
 
-  // Delete Coupon
   const handleDeleteCoupon = async (couponId: string, couponCode: string) => {
-    const confirmed = window.confirm(`Are you sure you want to permanently delete the coupon "${couponCode}"?`);
+    const confirmed = await customConfirm("Delete Coupon", `Are you sure you want to permanently delete the coupon "${couponCode}"?`);
     if (!confirmed) return;
 
     setIsActionId(couponId);
@@ -130,8 +129,7 @@ export default function AdminCouponsPage() {
 
       if (res.ok) {
         setCoupons(prev => prev.filter(c => c.id !== couponId));
-      } else {
-        alert("Failed to delete coupon");
+        await customAlert("Error", "Failed to delete coupon");
       }
     } catch (error) {
       console.error("Error deleting coupon:", error);

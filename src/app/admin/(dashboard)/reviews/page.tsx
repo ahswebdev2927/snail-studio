@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { customConfirm, customAlert } from "@/components/ui/alert-dialog-provider";
 import { 
   Star, 
   ShieldAlert, 
@@ -101,8 +102,7 @@ export default function AdminReviewsPage() {
         setReviews(prev =>
           prev.map(r => r.id === id ? { ...r, isApproved: !currentApprovedStatus } : r)
         );
-      } else {
-        alert("Failed to update review status.");
+        await customAlert("Error", "Failed to update review status.");
       }
     } catch (error) {
       console.error("Error toggling approval:", error);
@@ -112,7 +112,7 @@ export default function AdminReviewsPage() {
   };
 
   const handleDeleteReview = async (id: string) => {
-    if (!confirm("Are you sure you want to permanently delete this product review? This cannot be undone.")) {
+    if (!await customConfirm("Delete Review", "Are you sure you want to permanently delete this product review? This cannot be undone.")) {
       return;
     }
 
@@ -124,8 +124,7 @@ export default function AdminReviewsPage() {
 
       if (res.ok) {
         setReviews(prev => prev.filter(r => r.id !== id));
-      } else {
-        alert("Failed to delete review.");
+        await customAlert("Error", "Failed to delete review.");
       }
     } catch (error) {
       console.error("Error deleting review:", error);

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { customConfirm } from "@/components/ui/alert-dialog-provider";
 import { 
   Plus, 
   Edit, 
@@ -130,7 +131,7 @@ export default function HeroBannersTab() {
   };
 
   const handleDeleteBanner = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this banner?")) return;
+    if (!await customConfirm("Delete Banner", "Are you sure you want to delete this banner?")) return;
     try {
       const res = await fetch(`/api/admin/hero-banners/${id}`, {
         method: "DELETE",

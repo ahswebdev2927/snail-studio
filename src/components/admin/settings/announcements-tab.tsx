@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { customConfirm } from "@/components/ui/alert-dialog-provider";
 import {
   Plus,
   Edit,
@@ -199,7 +200,7 @@ export default function AnnouncementsTab() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this announcement?")) return;
+    if (!await customConfirm("Delete Announcement", "Are you sure you want to delete this announcement?")) return;
     try {
       const res = await fetch(`/api/admin/announcements/${id}`, {
         method: "DELETE",

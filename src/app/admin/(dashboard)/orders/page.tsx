@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { customConfirm, customAlert } from "@/components/ui/alert-dialog-provider";
 import { createPortal } from "react-dom";
 import { 
   ClipboardList, 
@@ -298,11 +299,11 @@ export default function AdminOrdersPage() {
         await loadOrders();
       } else {
         const err = await res.json();
-        alert(`Failed to update status: ${err.error || "Server error"}`);
+        await customAlert("Error", `Failed to update status: ${err.error || "Server error"}`);
       }
     } catch (error) {
       console.error("Error updating status:", error);
-      alert("An unexpected error occurred.");
+      await customAlert("Error", "An unexpected error occurred.");
     } finally {
       setIsUpdatingStatus(false);
     }
@@ -335,11 +336,11 @@ export default function AdminOrdersPage() {
         await loadOrders();
       } else {
         const err = await res.json();
-        alert(`Failed to save address: ${err.error || "Server error"}`);
+        await customAlert("Error", `Failed to save address: ${err.error || "Server error"}`);
       }
     } catch (err) {
       console.error(err);
-      alert("An unexpected error occurred while saving address.");
+      await customAlert("Error", "An unexpected error occurred while saving address.");
     } finally {
       setIsSavingAddress(false);
     }
@@ -347,7 +348,7 @@ export default function AdminOrdersPage() {
 
   const handleWaiveDifference = async () => {
     if (!selectedOrderId) return;
-    if (!confirm("Are you sure you want to waive this shipping difference payment?")) return;
+    if (!await customConfirm("Waive Shipping Difference", "Are you sure you want to waive this shipping difference payment?")) return;
     setIsWaivingDifference(true);
     try {
       const res = await fetch(`/api/admin/orders/${selectedOrderId}/waive-difference`, {
@@ -357,8 +358,8 @@ export default function AdminOrdersPage() {
         await loadOrderDetail(selectedOrderId);
         await loadOrders();
       } else {
-        const err = await res.json();
-        alert(`Failed to waive difference: ${err.error || "Server error"}`);
+        const data = await res.json();
+        await customAlert("Error", `Failed to waive difference: ${data.error || "Server error"}`);
       }
     } catch (err) {
       console.error(err);
@@ -369,7 +370,7 @@ export default function AdminOrdersPage() {
 
   const handleRefundDifference = async () => {
     if (!selectedOrderId) return;
-    if (!confirm("Are you sure you want to refund this shipping charge difference?")) return;
+    if (!await customConfirm("Refund Shipping Difference", "Are you sure you want to refund this shipping charge difference?")) return;
     setIsRefundingDifference(true);
     try {
       const res = await fetch(`/api/admin/orders/${selectedOrderId}/refund-difference`, {
@@ -379,8 +380,8 @@ export default function AdminOrdersPage() {
         await loadOrderDetail(selectedOrderId);
         await loadOrders();
       } else {
-        const err = await res.json();
-        alert(`Failed to process refund: ${err.error || "Server error"}`);
+        const data = await res.json();
+        await customAlert("Error", `Failed to process refund: ${data.error || "Server error"}`);
       }
     } catch (err) {
       console.error(err);
@@ -391,7 +392,7 @@ export default function AdminOrdersPage() {
 
   const handleRegenerateAwb = async () => {
     if (!selectedOrderId) return;
-    if (!confirm("Are you sure you want to cancel the active shipment and regenerate the AWB?")) return;
+    if (!await customConfirm("Regenerate AWB", "Are you sure you want to cancel the active shipment and regenerate the AWB?")) return;
     setIsRegeneratingAwb(true);
     try {
       const res = await fetch(`/api/admin/orders/${selectedOrderId}/regenerate-awb`, {
@@ -399,12 +400,12 @@ export default function AdminOrdersPage() {
       });
       if (res.ok) {
         const data = await res.json();
-        alert(`New AWB generated successfully: ${data.trackingNumber}`);
+        await customAlert("Success", `New AWB generated successfully: ${data.trackingNumber}`);
         await loadOrderDetail(selectedOrderId);
         await loadOrders();
       } else {
-        const err = await res.json();
-        alert(`Failed to regenerate AWB: ${err.error || "Server error"}`);
+        const data = await res.json();
+        await customAlert("Error", `Failed to regenerate AWB: ${data.error || "Server error"}`);
       }
     } catch (err) {
       console.error(err);
@@ -437,11 +438,11 @@ export default function AdminOrdersPage() {
         await loadOrders();
       } else {
         const err = await res.json();
-        alert(`Failed to generate shipment: ${err.error || "Server error"}`);
+        await customAlert("Error", `Failed to generate shipment: ${err.error || "Server error"}`);
       }
     } catch (error) {
       console.error("Error creating shipment:", error);
-      alert("An unexpected error occurred.");
+      await customAlert("Error", "An unexpected error occurred.");
     } finally {
       setIsCreatingShipment(false);
     }
@@ -470,11 +471,11 @@ export default function AdminOrdersPage() {
         await loadOrders();
       } else {
         const err = await res.json();
-        alert(`Failed to update shipment: ${err.error || "Server error"}`);
+        await customAlert("Error", `Failed to update shipment: ${err.error || "Server error"}`);
       }
     } catch (error) {
       console.error("Error updating shipment status:", error);
-      alert("An unexpected error occurred.");
+      await customAlert("Error", "An unexpected error occurred.");
     } finally {
       setIsUpdatingShipment(false);
     }
@@ -482,7 +483,7 @@ export default function AdminOrdersPage() {
 
   const handleCancelShipment = async () => {
     if (!selectedOrderId) return;
-    if (!confirm("Are you sure you want to cancel and delete this parcel shipment? This reverts the order state and cancels delivery.")) return;
+    if (!await customConfirm("Cancel Shipment", "Are you sure you want to cancel and delete this parcel shipment? This reverts the order state and cancels delivery.")) return;
 
     setIsCancellingShipment(true);
     try {
@@ -494,12 +495,12 @@ export default function AdminOrdersPage() {
         await loadOrderDetail(selectedOrderId);
         await loadOrders();
       } else {
-        const err = await res.json();
-        alert(`Failed to cancel shipment: ${err.error || "Server error"}`);
+        const data = await res.json();
+        await customAlert("Error", `Failed to cancel shipment: ${data.error || "Server error"}`);
       }
     } catch (error) {
       console.error("Error cancelling shipment:", error);
-      alert("An unexpected error occurred.");
+      await customAlert("Error", "An unexpected error occurred.");
     } finally {
       setIsCancellingShipment(false);
     }
@@ -983,7 +984,7 @@ export default function AdminOrdersPage() {
                                     onClick={() => {
                                       const mockLink = `${window.location.origin}/account/orders/${orderDetail.id}`;
                                       navigator.clipboard.writeText(mockLink);
-                                      alert(`Payment notification link copied to clipboard: ${mockLink}`);
+                                      customAlert("Link Copied", `Payment notification link copied to clipboard: ${mockLink}`);
                                     }}
                                     className="px-2 py-0.5 bg-primary text-primary-foreground hover:bg-primary/95 rounded text-[8px] font-bold uppercase transition-all cursor-pointer"
                                   >

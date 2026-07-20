@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { customAlert } from "@/components/ui/alert-dialog-provider";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { 
@@ -347,10 +348,10 @@ export default function CustomerProfile360Page() {
         setIsCustomCampaignModalOpen(false);
         loadTimelineData(timelinePage, timelineLimit, timelineType);
       } else {
-        alert(`Error: ${res.error || "Failed to send"}`);
+        await customAlert("Error", `Error: ${res.error || "Failed to send"}`);
       }
     } catch (err: any) {
-      alert(`Exception: ${err.message || String(err)}`);
+      await customAlert("Error", `Exception: ${err.message || String(err)}`);
     } finally {
       setIsWishlistSending(false);
       setTimeout(() => setWishlistTriggerMessage(""), 5000);
@@ -373,10 +374,10 @@ export default function CustomerProfile360Page() {
         setIsCustomCampaignModalOpen(false);
         loadTimelineData(timelinePage, timelineLimit, timelineType);
       } else {
-        alert(`Error: ${res.error || "Failed to send"}`);
+        await customAlert("Error", `Error: ${res.error || "Failed to send"}`);
       }
     } catch (err: any) {
-      alert(`Exception: ${err.message || String(err)}`);
+      await customAlert("Error", `Exception: ${err.message || String(err)}`);
     } finally {
       setIsCartSending(false);
       setTimeout(() => setCartTriggerMessage(""), 5000);

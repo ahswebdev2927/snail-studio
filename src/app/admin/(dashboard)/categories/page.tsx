@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { customConfirm, customAlert } from "@/components/ui/alert-dialog-provider";
 import { 
   FolderHeart, 
   Plus, 
@@ -140,19 +141,18 @@ export default function AdminCategoriesPage() {
         await loadCategories();
       } else {
         const data = await res.json();
-        alert(`Failed to save category: ${data.error || "Server error"}`);
+        await customAlert("Error", `Failed to save category: ${data.error || "Server error"}`);
       }
     } catch (error) {
       console.error("Error saving category:", error);
-      alert("An unexpected error occurred.");
+      await customAlert("Error", "An unexpected error occurred.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Delete Category
   const handleDeleteCategory = async (id: string, name: string) => {
-    if (!confirm(`Are you sure you want to permanently delete the category "${name}"? Product links will remain but their category will be unassigned.`)) {
+    if (!await customConfirm("Delete Category", `Are you sure you want to permanently delete the category "${name}"? Product links will remain but their category will be unassigned.`)) {
       return;
     }
 
@@ -165,7 +165,7 @@ export default function AdminCategoriesPage() {
         await loadCategories();
       } else {
         const data = await res.json();
-        alert(`Failed to delete category: ${data.error || "Server error"}`);
+        await customAlert("Error", `Failed to delete category: ${data.error || "Server error"}`);
       }
     } catch (error) {
       console.error("Error deleting category:", error);

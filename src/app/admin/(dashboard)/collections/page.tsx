@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { customConfirm, customAlert } from "@/components/ui/alert-dialog-provider";
 import { 
   FolderHeart, 
   Plus, 
@@ -174,18 +175,18 @@ export default function AdminCollectionsPage() {
         await loadData();
       } else {
         const data = await res.json();
-        alert(`Failed to save collection: ${data.error || "Server error"}`);
+        await customAlert("Error", `Failed to save collection: ${data.error || "Server error"}`);
       }
     } catch (error) {
       console.error("Error saving collection:", error);
-      alert("An unexpected error occurred.");
+      await customAlert("Error", "An unexpected error occurred.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleDeleteCollection = async (id: string, colName: string) => {
-    if (!confirm(`Are you sure you want to permanently delete the collection "${colName}"?`)) {
+    if (!await customConfirm("Delete Collection", `Are you sure you want to permanently delete the collection "${colName}"?`)) {
       return;
     }
 
@@ -198,7 +199,7 @@ export default function AdminCollectionsPage() {
         await loadData();
       } else {
         const data = await res.json();
-        alert(`Failed to delete collection: ${data.error || "Server error"}`);
+        await customAlert("Error", `Failed to delete collection: ${data.error || "Server error"}`);
       }
     } catch (error) {
       console.error("Error deleting collection:", error);

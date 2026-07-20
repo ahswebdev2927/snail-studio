@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { customConfirm, customAlert } from "@/components/ui/alert-dialog-provider";
 import { 
   Plus, 
   Search, 
@@ -107,7 +108,7 @@ export default function AdminProductsPage() {
 
   // Handle Product Deletion
   const handleDeleteProduct = async (productId: string, productName: string) => {
-    const confirmed = window.confirm(`Are you sure you want to permanently delete "${productName}"? This will delete all its variants, image mappings, and transaction associations.`);
+    const confirmed = await customConfirm("Delete Product", `Are you sure you want to permanently delete "${productName}"? This will delete all its variants, image mappings, and transaction associations.`);
     if (!confirmed) return;
 
     setIsDeletingId(productId);
@@ -120,11 +121,11 @@ export default function AdminProductsPage() {
         setProducts(prev => prev.filter(p => p.id !== productId));
       } else {
         const errData = await res.json();
-        alert(errData.error || "Failed to delete product.");
+        await customAlert("Error", errData.error || "Failed to delete product.");
       }
     } catch (error: any) {
       console.error("Error deleting product:", error);
-      alert(error.message || "An error occurred while deleting the product.");
+      await customAlert("Error", error.message || "An error occurred while deleting the product.");
     } finally {
       setIsDeletingId(null);
     }
@@ -132,7 +133,7 @@ export default function AdminProductsPage() {
 
   // Handle Product Archiving
   const handleArchiveProduct = async (productId: string, productName: string) => {
-    const confirmed = window.confirm(`Are you sure you want to archive "${productName}"? This will hide it from future storefront listings, search, and collections.`);
+    const confirmed = await customConfirm("Archive Product", `Are you sure you want to archive "${productName}"? This will hide it from future storefront listings, search, and collections.`);
     if (!confirmed) return;
 
     setArchivingId(productId);
@@ -145,11 +146,11 @@ export default function AdminProductsPage() {
         setProducts(prev => prev.map(p => p.id === productId ? { ...p, status: "Archived", isActive: false } : p));
       } else {
         const errData = await res.json();
-        alert(errData.error || "Failed to archive product.");
+        await customAlert("Error", errData.error || "Failed to archive product.");
       }
     } catch (error: any) {
       console.error("Error archiving product:", error);
-      alert(error.message || "An error occurred while archiving the product.");
+      await customAlert("Error", error.message || "An error occurred while archiving the product.");
     } finally {
       setArchivingId(null);
     }

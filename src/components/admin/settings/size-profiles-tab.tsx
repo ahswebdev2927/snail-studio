@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { customConfirm } from "@/components/ui/alert-dialog-provider";
 import { 
   Plus, 
   Edit, 
@@ -91,7 +92,7 @@ export default function SizeProfilesTab() {
   };
 
   const handleDeleteProfile = async (id: string, name: string) => {
-    if (!confirm(`Are you sure you want to delete size profile "${name}"? This will affect calculator logic for this standard.`)) return;
+    if (!await customConfirm("Delete Size Profile", `Are you sure you want to delete size profile "${name}"? This will affect calculator logic for this standard.`)) return;
     try {
       const res = await fetch(`/api/admin/size-profiles/${id}`, {
         method: "DELETE",

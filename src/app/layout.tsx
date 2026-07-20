@@ -6,6 +6,7 @@ import "./globals.css";
 import { getSiteUrl, getOrganizationJsonLd, getWebsiteJsonLd } from "@/lib/seo";
 import { GA_MEASUREMENT_ID } from "@/lib/analytics";
 import { AnalyticsTracker } from "@/components/analytics-tracker";
+import { AlertDialogProvider } from "@/components/ui/alert-dialog-provider";
 
 const manrope = Manrope({
   variable: "--font-manrope",
@@ -111,7 +112,9 @@ export default function RootLayout({
             `,
           }}
         />
-        {children}
+        <AlertDialogProvider>
+          {children}
+        </AlertDialogProvider>
       </body>
     </html>
   );

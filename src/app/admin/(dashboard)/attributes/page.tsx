@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
+import { customConfirm, customAlert } from "@/components/ui/alert-dialog-provider";
 import { 
   FolderHeart, 
   Plus, 
@@ -168,7 +169,7 @@ export default function AdminAttributesPage() {
         await loadAttributes();
       } else {
         const err = await res.json();
-        alert(`Failed to create attribute group: ${err.error || "Server error"}`);
+        await customAlert("Error", `Failed to create attribute group: ${err.error || "Server error"}`);
       }
     } catch (error) {
       console.error("Error creating group:", error);
@@ -204,7 +205,7 @@ export default function AdminAttributesPage() {
         await loadAttributes();
       } else {
         const err = await res.json();
-        alert(`Failed to update group: ${err.error || "Server error"}`);
+        await customAlert("Error", `Failed to update group: ${err.error || "Server error"}`);
       }
     } catch (error) {
       console.error("Error editing group:", error);
@@ -215,7 +216,7 @@ export default function AdminAttributesPage() {
 
   // Handle Group Delete
   const handleDeleteGroup = async (id: string, name: string) => {
-    if (!confirm(`Are you sure you want to permanently delete the attribute group "${name}"? All nested values/labels and their product variants links will be deleted. This cannot be undone.`)) {
+    if (!await customConfirm("Delete Attribute Group", `Are you sure you want to permanently delete the attribute group "${name}"? All nested values/labels and their product variants links will be deleted. This cannot be undone.`)) {
       return;
     }
 
@@ -230,7 +231,7 @@ export default function AdminAttributesPage() {
         await loadAttributes();
       } else {
         const err = await res.json();
-        alert(`Failed to delete group: ${err.error || "Server error"}`);
+        await customAlert("Error", `Failed to delete group: ${err.error || "Server error"}`);
       }
     } catch (error) {
       console.error("Error deleting group:", error);
@@ -259,7 +260,7 @@ export default function AdminAttributesPage() {
         await loadAttributes();
       } else {
         const err = await res.json();
-        alert(`Failed to add value: ${err.error || "Server error"}`);
+        await customAlert("Error", `Failed to add value: ${err.error || "Server error"}`);
       }
     } catch (error) {
       console.error("Error adding value:", error);
@@ -289,7 +290,7 @@ export default function AdminAttributesPage() {
         await loadAttributes();
       } else {
         const err = await res.json();
-        alert(`Failed to update value: ${err.error || "Server error"}`);
+        await customAlert("Error", `Failed to update value: ${err.error || "Server error"}`);
       }
     } catch (error) {
       console.error("Error updating label:", error);
@@ -300,7 +301,7 @@ export default function AdminAttributesPage() {
 
   // Handle Label Delete
   const handleDeleteLabel = async (groupId: string, valId: string, value: string) => {
-    if (!confirm(`Are you sure you want to permanently delete the value "${value}"? Product/variant links mapped to this value will be removed.`)) {
+    if (!await customConfirm("Delete Attribute Value", `Are you sure you want to permanently delete the value "${value}"? Product/variant links mapped to this value will be removed.`)) {
       return;
     }
 
@@ -314,7 +315,7 @@ export default function AdminAttributesPage() {
         await loadAttributes();
       } else {
         const err = await res.json();
-        alert(`Failed to delete value: ${err.error || "Server error"}`);
+        await customAlert("Error", `Failed to delete value: ${err.error || "Server error"}`);
       }
     } catch (error) {
       console.error("Error deleting value:", error);

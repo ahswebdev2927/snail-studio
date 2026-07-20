@@ -1,13 +1,13 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { customConfirm } from "@/components/ui/alert-dialog-provider";
 import { 
   ShieldCheck, 
   Users, 
   History, 
   SlidersHorizontal, 
   Search, 
-  Download, 
   UserCheck, 
   UserMinus, 
   Loader2, 
@@ -119,7 +119,7 @@ export default function AdminSecuritySettingsPage() {
       ? "Are you sure you want to demote this user? They will lose all access to the administrative dashboard."
       : "Are you sure you want to promote this user to Admin? They will have full read/write access to settings, catalog, and customer records.";
       
-    if (!confirm(confirmMsg)) return;
+    if (!await customConfirm("Modify User Role", confirmMsg)) return;
 
     setActionUserId(userId);
     showStatus("success", "OTP Verification triggered. Please check your email.");
@@ -172,32 +172,7 @@ export default function AdminSecuritySettingsPage() {
     }
   };
 
-  const handleExport = async (type: "customers" | "logs") => {
-    showStatus("success", `Exporting ${type}... Complete OTP verification if prompted.`);
-    try {
-      const res = await fetch(`/api/admin/export?type=${type}`);
-      if (res.ok) {
-        const data = await res.json();
-        const jsonStr = JSON.stringify(data, null, 2);
-        const blob = new Blob([jsonStr], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `snail_studio_${type}_export_${new Date().toISOString().split("T")[0]}.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        showStatus("success", "Data successfully exported.");
-      } else {
-        const data = await res.json();
-        showStatus("error", data.error || "Failed to export data.");
-      }
-    } catch (err) {
-      console.error(err);
-      showStatus("error", "An error occurred during export.");
-    }
-  };
+
 
   const getActionBadgeStyle = (action: string) => {
     if (action.includes("promote")) return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 border-green-200 dark:border-green-800/30";
@@ -218,24 +193,6 @@ export default function AdminSecuritySettingsPage() {
           <p className="text-xs text-muted-foreground font-light leading-relaxed mt-1">
             Manage administrative personnel roles, monitor system audit logs, and configure security parameters.
           </p>
-        </div>
-        
-        {/* Export Data buttons */}
-        <div className="flex flex-wrap gap-2.5">
-          <button
-            onClick={() => handleExport("customers")}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-semibold uppercase tracking-wider bg-secondary text-secondary-foreground border border-secondary hover:bg-secondary/95 cursor-pointer shadow-sm transition-all"
-          >
-            <Download className="w-4 h-4" />
-            Export Customers
-          </button>
-          <button
-            onClick={() => handleExport("logs")}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-semibold uppercase tracking-wider bg-secondary text-secondary-foreground border border-secondary hover:bg-secondary/95 cursor-pointer shadow-sm transition-all"
-          >
-            <Download className="w-4 h-4" />
-            Export Audit Logs
-          </button>
         </div>
       </div>
 

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { customConfirm } from "@/components/ui/alert-dialog-provider";
 import {
   Plus,
   Edit,
@@ -107,7 +108,7 @@ export default function LaunchBannersTab() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this launch banner?")) return;
+    if (!await customConfirm("Delete Launch Banner", "Are you sure you want to delete this launch banner?")) return;
     try {
       const res = await fetch(`/api/admin/launch-banners/${id}`, { method: "DELETE" });
       if (res.ok) {

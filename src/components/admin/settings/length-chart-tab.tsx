@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
+import { customConfirm } from "@/components/ui/alert-dialog-provider";
 import {
   Plus,
   Edit,
@@ -102,7 +103,7 @@ export default function LengthChartTab() {
   };
 
   const handleDeleteRow = async (id: string, shape: string) => {
-    if (!confirm(`Are you sure you want to delete the length configuration for shape "${shape}"?`)) return;
+    if (!await customConfirm("Delete Length Configuration", `Are you sure you want to delete the length configuration for shape "${shape}"?`)) return;
     
     const updatedRows = rows.filter((r) => r.id !== id);
     setRows(updatedRows);
