@@ -195,7 +195,9 @@ export async function POST(
         .where(eq(orderAddresses.id, oldShippingAddress.id));
 
       // 9. Update order totals and shipping stats
-      const originalShipping = order.shippingChargePaid > 0 ? order.shippingChargePaid : order.shippingAmount;
+      const originalShipping = order.shippingCalculatedAt !== null
+        ? (order.currentShippingCharge - order.shippingDifference)
+        : (order.shippingChargePaid > 0 ? order.shippingChargePaid : order.shippingAmount);
       const newTotalAmount = Math.max(0, order.totalAmount + recalculation.totalAmountAdjustment);
 
       await tx.update(orders)

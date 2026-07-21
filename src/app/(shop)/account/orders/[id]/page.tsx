@@ -381,7 +381,13 @@ export default async function OrderDetailsPage({ params }: PageProps) {
               postalCode: shippingAddress.postalCode,
               country: shippingAddress.country
             } : null}
-            shippingAmountPaid={orderRecord.shippingChargePaid > 0 ? orderRecord.shippingChargePaid : orderRecord.shippingAmount}
+            shippingAmountPaid={
+              orderRecord.shippingCalculatedAt !== null
+                ? orderRecord.currentShippingCharge - orderRecord.shippingDifference
+                : orderRecord.shippingChargePaid > 0
+                ? orderRecord.shippingChargePaid
+                : orderRecord.shippingAmount
+            }
             currentShippingCharge={orderRecord.currentShippingCharge || orderRecord.shippingAmount}
             shippingDifference={orderRecord.shippingDifference}
             shippingDifferenceStatus={orderRecord.shippingDifferenceStatus}

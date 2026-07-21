@@ -348,7 +348,7 @@ export default function AdminOrdersPage() {
 
   const handleWaiveDifference = async () => {
     if (!selectedOrderId) return;
-    if (!await customConfirm("Waive Shipping Difference", "Are you sure you want to waive this shipping difference payment?")) return;
+    if (!await customConfirm("Cancel/Waive Off Shipping Difference", "Are you sure you want to waive off / cancel this shipping difference payment?")) return;
     setIsWaivingDifference(true);
     try {
       const res = await fetch(`/api/admin/orders/${selectedOrderId}/waive-difference`, {
@@ -359,7 +359,7 @@ export default function AdminOrdersPage() {
         await loadOrders();
       } else {
         const data = await res.json();
-        await customAlert("Error", `Failed to waive difference: ${data.error || "Server error"}`);
+        await customAlert("Error", `Failed to cancel / waive off difference: ${data.error || "Server error"}`);
       }
     } catch (err) {
       console.error(err);
@@ -949,7 +949,15 @@ export default function AdminOrdersPage() {
                       <div className="text-xs space-y-1.5 font-light text-foreground">
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Original Shipping paid:</span>
-                          <span className="font-medium">{formatPrice(orderDetail.shippingChargePaid > 0 ? orderDetail.shippingChargePaid : orderDetail.shippingAmount)}</span>
+                          <span className="font-medium">
+                            {formatPrice(
+                              orderDetail.shippingCalculatedAt !== null
+                                ? orderDetail.currentShippingCharge - orderDetail.shippingDifference
+                                : orderDetail.shippingChargePaid > 0
+                                ? orderDetail.shippingChargePaid
+                                : orderDetail.shippingAmount
+                            )}
+                          </span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Current Shipping rate:</span>
@@ -971,7 +979,7 @@ export default function AdminOrdersPage() {
                             
                             <p className="text-[10px] text-muted-foreground leading-normal">
                               {orderDetail.shippingDifferenceStatus === "pending" && "Waiting for customer to pay the remaining balance."}
-                              {orderDetail.shippingDifferenceStatus === "waived" && "Difference was within ignore threshold or waived by admin."}
+                              {orderDetail.shippingDifferenceStatus === "waived" && "Difference was within ignore threshold or waived off / cancelled by admin."}
                               {orderDetail.shippingDifferenceStatus === "paid" && "Shipping adjustment paid by customer."}
                               {orderDetail.shippingDifferenceStatus === "refunded" && "Price difference credited back to original source."}
                             </p>
@@ -996,7 +1004,7 @@ export default function AdminOrdersPage() {
                                     onClick={handleWaiveDifference}
                                     className="px-2 py-0.5 bg-transparent hover:bg-secondary/15 text-foreground border border-border rounded text-[8px] font-bold uppercase transition-all cursor-pointer"
                                   >
-                                    {isWaivingDifference ? "Waiving..." : "Waive"}
+                                    {isWaivingDifference ? "Cancelling..." : "Waive Off / Cancel"}
                                   </button>
                                 </>
                               )}

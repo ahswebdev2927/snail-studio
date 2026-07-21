@@ -157,7 +157,7 @@ export default function CustomerOrderActions({
 
             {shippingDifferenceStatus === "waived" && (
               <p className="text-[10px] text-muted-foreground leading-normal">
-                Outstanding difference absorbed/waived by the store. No payment is required.
+                Outstanding difference cancelled / waived off by the store. No payment is required.
               </p>
             )}
 

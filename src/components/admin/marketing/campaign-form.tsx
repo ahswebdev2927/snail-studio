@@ -267,6 +267,17 @@ export default function CampaignForm({ coupons, products }: CampaignFormProps) {
     setSubject(preset.subject);
     setBodyHtml(preset.html);
 
+    // Auto-generate campaign name
+    const typeLabels: Record<string, string> = {
+      newsletter: "Newsletter Campaign",
+      promotion: "Promo Blast Campaign",
+      wishlist_reminder: "Wishlist Reminder Campaign",
+      cart_recovery: "Cart Recovery Campaign",
+      custom: "Custom Campaign"
+    };
+    const dateStr = new Date().toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+    setName(`${typeLabels[type] || "Campaign"} - ${dateStr}`);
+
     // Suggested audience mapping
     if (type === "wishlist_reminder") {
       setSegmentType("wishlist");
@@ -367,6 +378,11 @@ export default function CampaignForm({ coupons, products }: CampaignFormProps) {
 
   const handleSend = () => {
     setErrorMessage("");
+
+    if (!name.trim()) {
+      setErrorMessage("Campaign Name is required. Please go back to step 3 and enter a name.");
+      return;
+    }
 
     let scheduledAtString: string | undefined = undefined;
     if (scheduleType === "scheduled") {
@@ -859,7 +875,14 @@ export default function CampaignForm({ coupons, products }: CampaignFormProps) {
             </button>
             <button
               type="button"
-              onClick={() => setCurrentStep(4)}
+              onClick={() => {
+                if (!name.trim()) {
+                  setErrorMessage("Campaign Name is required. Please enter an Internal Campaign Name.");
+                  return;
+                }
+                setErrorMessage("");
+                setCurrentStep(4);
+              }}
               className="px-5 py-2.5 rounded-xl bg-primary text-primary-foreground hover:bg-primary/95 text-sm font-semibold flex items-center gap-2"
             >
               Continue <ArrowRight size={16} />
@@ -1018,7 +1041,7 @@ export default function CampaignForm({ coupons, products }: CampaignFormProps) {
             </button>
             <button
               type="button"
-              disabled={isPending || !name}
+              disabled={isPending}
               onClick={handleSend}
               className="px-6 py-3 rounded-xl bg-primary text-primary-foreground hover:bg-primary/95 text-sm font-bold flex items-center gap-2 shadow-md shadow-primary/25 disabled:opacity-50 transition-all"
             >

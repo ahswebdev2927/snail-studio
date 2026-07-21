@@ -176,6 +176,7 @@ export async function seedPresentationData() {
         totalAmount,
         taxAmount,
         shippingAmount,
+        shippingChargePaid: (status !== "pending" && status !== "cancelled") ? shippingAmount : 0,
         discountAmount,
         couponCode: hasDiscount ? (discountAmount === 20000 ? "WELCOME200" : "SNAIL500") : null,
         notes: "Client presentation demo order.",

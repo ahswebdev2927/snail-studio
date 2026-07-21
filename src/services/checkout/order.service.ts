@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { orders, orderItems, orderAddresses, orderStatusHistory, users } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { sendMail } from "@/services/email/email.service";
 import { getOrderConfirmationTemplate } from "@/services/email/templates/order-confirmation.template";
@@ -194,12 +194,18 @@ export async function getOrderById(orderId: string, tx?: any) {
 export async function updateOrderStatus(orderId: string, status: string, notes?: string, tx?: any) {
   const client = tx || db;
 
+  const updateData: any = {
+    status: status as any,
+    updatedAt: new Date(),
+  };
+
+  if (status === "paid") {
+    updateData.shippingChargePaid = sql`shipping_amount`;
+  }
+
   await client
     .update(orders)
-    .set({
-      status: status as any,
-      updatedAt: new Date(),
-    })
+    .set(updateData)
     .where(eq(orders.id, orderId));
 
   await client.insert(orderStatusHistory).values({

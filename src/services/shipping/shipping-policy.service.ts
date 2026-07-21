@@ -162,7 +162,9 @@ export async function recalculateShippingForOrder(
 
   // Calculate new shipping rate
   const currentShippingCharge = await calculateShippingRate(updatedAddress, isCod, settings);
-  const originalShipping = order.shippingChargePaid > 0 ? order.shippingChargePaid : order.shippingAmount;
+  const originalShipping = order.shippingCalculatedAt !== null
+    ? (order.currentShippingCharge - order.shippingDifference)
+    : (order.shippingChargePaid > 0 ? order.shippingChargePaid : order.shippingAmount);
 
   const difference = currentShippingCharge - originalShipping;
 
