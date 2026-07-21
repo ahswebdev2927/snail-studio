@@ -371,6 +371,17 @@ export function Header({ navigationData, storeLogo = "", storeName = "Snail Stud
               </div>
             </div>
 
+            {/* Navbar Collections directly after Shop */}
+            {nav?.navbarCollections?.map((col) => (
+              <Link
+                key={col.slug}
+                href={col.url}
+                className="px-4 py-2.5 rounded-full hover:text-primary transition-all whitespace-nowrap"
+              >
+                {col.name}
+              </Link>
+            ))}
+
             {/* Dynamic Parent Categories (e.g. Care & Accessories) */}
             {nav?.categories?.map((cat) => {
               // Press On Nails is already represented by the main Shop menu dropdown
@@ -714,6 +725,17 @@ export function Header({ navigationData, storeLogo = "", storeName = "Snail Stud
                 return null;
               })}
             </Accordion>
+
+            {/* Navbar Collections directly on mobile nav list */}
+            {nav?.navbarCollections?.map((col) => (
+              <button
+                key={col.slug}
+                onClick={() => handleMobileNav(col.url)}
+                className="w-full text-left font-inter text-sm font-medium text-foreground hover:text-primary transition-colors py-2 border-b border-border/10 cursor-pointer"
+              >
+                {col.name}
+              </button>
+            ))}
 
             {/* Flat categories menu items (no children) */}
             {nav?.categories?.map((cat) => {

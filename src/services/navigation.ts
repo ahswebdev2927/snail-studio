@@ -35,6 +35,7 @@ export interface StorefrontNavigation {
     collections: NavigationItem[];
     categories: NavigationItem[];
   };
+  navbarCollections: NavigationItem[];
   categories: NavigationCategory[];
   promoBanner: PromoBanner | null;
 }
@@ -126,6 +127,15 @@ export async function getStorefrontNavigation(): Promise<StorefrontNavigation> {
         url: `/shop?collection=${encodeURIComponent(col.slug)}`,
       }));
 
+    // Format collections configured for main navbar
+    const navbarCollections = activeCollectionsList
+      .filter((col) => col.showInNavbar)
+      .map((col) => ({
+        name: col.name,
+        slug: col.slug,
+        url: `/shop?collection=${encodeURIComponent(col.slug)}`,
+      }));
+
     // Format dynamic categories in dropdown
     const shopCategories = allCategoriesList
       .filter((cat) => cat.showInDropdown)
@@ -177,6 +187,7 @@ export async function getStorefrontNavigation(): Promise<StorefrontNavigation> {
         collections: shopCollections,
         categories: shopCategories,
       },
+      navbarCollections,
       categories: categoriesTree,
       promoBanner,
     };
@@ -189,6 +200,7 @@ export async function getStorefrontNavigation(): Promise<StorefrontNavigation> {
         collections: [],
         categories: [],
       },
+      navbarCollections: [],
       categories: [],
       promoBanner: null,
     };

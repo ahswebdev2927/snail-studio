@@ -21,6 +21,7 @@ const createCollectionSchema = z.object({
   isActive: z.boolean().optional(),
   showOnHomepage: z.boolean().optional(),
   showInDropdown: z.boolean().optional(),
+  showInNavbar: z.boolean().optional(),
   sortOrder: z.number().int().optional(),
   productIds: z.array(z.string()).optional(), // for manual type
   rules: z
@@ -91,6 +92,7 @@ export async function POST(req: NextRequest) {
       isActive = true,
       showOnHomepage = false,
       showInDropdown = false,
+      showInNavbar = false,
       sortOrder = 0,
       productIds = [],
       rules = [],
@@ -132,6 +134,7 @@ export async function POST(req: NextRequest) {
         isActive,
         showOnHomepage,
         showInDropdown,
+        showInNavbar,
         sortOrder,
       });
 

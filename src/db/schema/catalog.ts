@@ -120,6 +120,7 @@ export const collections = sqliteTable('collections', {
   isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
   showOnHomepage: integer('show_on_homepage', { mode: 'boolean' }).notNull().default(false),
   showInDropdown: integer('show_in_dropdown', { mode: 'boolean' }).notNull().default(false),
+  showInNavbar: integer('show_in_navbar', { mode: 'boolean' }).notNull().default(false),
   sortOrder: integer('sort_order').notNull().default(0),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)

@@ -1,0 +1,1 @@
+ALTER TABLE `collections` ADD `show_in_navbar` integer DEFAULT false NOT NULL;

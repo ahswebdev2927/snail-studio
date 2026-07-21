@@ -33,6 +33,7 @@ interface Collection {
   isActive: boolean;
   showOnHomepage: boolean;
   showInDropdown: boolean;
+  showInNavbar: boolean;
   sortOrder: number;
   createdAt: string;
   rules?: Rule[];
@@ -77,6 +78,7 @@ export default function AdminCollectionsPage() {
   const [isActive, setIsActive] = useState(true);
   const [showOnHomepage, setShowOnHomepage] = useState(false);
   const [showInDropdown, setShowInDropdown] = useState(false);
+  const [showInNavbar, setShowInNavbar] = useState(false);
   const [sortOrder, setSortOrder] = useState(0);
   const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
   const [rules, setRules] = useState<Rule[]>([]);
@@ -121,6 +123,7 @@ export default function AdminCollectionsPage() {
     setIsActive(true);
     setShowOnHomepage(false);
     setShowInDropdown(false);
+    setShowInNavbar(false);
     setSortOrder(0);
     setSelectedProductIds([]);
     setRules([]);
@@ -136,6 +139,7 @@ export default function AdminCollectionsPage() {
     setIsActive(col.isActive);
     setShowOnHomepage(col.showOnHomepage);
     setShowInDropdown(col.showInDropdown || false);
+    setShowInNavbar(col.showInNavbar || false);
     setSortOrder(col.sortOrder);
     setSelectedProductIds((col.products || []).map(p => p.productId));
     setRules(col.rules || []);
@@ -161,9 +165,10 @@ export default function AdminCollectionsPage() {
           slug: slug.trim() || undefined,
           description: description.trim() || null,
           type,
-          isActive,
+           isActive,
           showOnHomepage,
           showInDropdown,
+          showInNavbar,
           sortOrder: Number(sortOrder),
           productIds: type === "manual" ? selectedProductIds : [],
           rules: type === "dynamic" ? rules.map(({ column, relation, value }) => ({ column, relation, value })) : [],
@@ -452,6 +457,16 @@ export default function AdminCollectionsPage() {
                       />
                       <span className="text-xs text-foreground">Show in Shop Dropdown</span>
                     </label>
+
+                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                      <input 
+                        type="checkbox"
+                        checked={showInNavbar}
+                        onChange={(e) => setShowInNavbar(e.target.checked)}
+                        className="w-4 h-4 rounded text-primary focus:ring-primary border-border"
+                      />
+                      <span className="text-xs text-foreground">Show in Main Navbar</span>
+                    </label>
                   </div>
 
                   <div className="space-y-3">
@@ -466,7 +481,7 @@ export default function AdminCollectionsPage() {
                       <span className="text-xs text-foreground">Show on Homepage</span>
                     </label>
 
-                    {(showOnHomepage || showInDropdown) && (
+                    {(showOnHomepage || showInDropdown || showInNavbar) && (
                       <div className="space-y-1.5 animate-in fade-in slide-in-from-top-1 duration-150">
                         <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Sort Order</label>
                         <input
