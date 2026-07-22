@@ -207,10 +207,10 @@ export function SecurityClient({ initialSessions }: SecurityClientProps) {
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-300">
+    <div className="space-y-8 w-full">
       
       {/* Header */}
-      <div className="space-y-1">
+      <div className="space-y-1 pb-4 border-b border-border/20">
         <h2 className="font-serif text-2xl font-semibold text-foreground tracking-wide flex items-center gap-2">
           Security Settings
         </h2>

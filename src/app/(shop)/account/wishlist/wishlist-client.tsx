@@ -48,9 +48,9 @@ export function AccountWishlistClient() {
   // Loading State with Skeleton Shimmers
   if (loading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-8 w-full">
         <div className="space-y-1 pb-4 border-b border-border/20">
-          <div className="h-6 w-36 bg-secondary/40 rounded-md animate-pulse" />
+          <div className="h-7 w-44 bg-secondary/40 rounded-md animate-pulse" />
           <div className="h-4 w-60 bg-secondary/40 rounded-md animate-pulse mt-1" />
         </div>
 
@@ -78,25 +78,25 @@ export function AccountWishlistClient() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 w-full">
       {/* Header Row */}
-      <div className="flex justify-between items-center pb-4 border-b border-border/20">
-        <div className="space-y-0.5">
-          <h2 className="font-serif text-lg font-semibold text-foreground flex items-center gap-2">
-            <Heart className="w-4.5 h-4.5 text-accent shrink-0" />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/20">
+        <div className="space-y-1">
+          <h2 className="font-serif text-2xl font-semibold text-foreground tracking-wide flex items-center gap-2">
+            <Heart className="w-5 h-5 text-accent shrink-0" />
             My Wishlist
             {products.length > 0 && (
-              <span className="font-sans font-light text-muted-foreground text-sm">
+              <span className="font-sans font-light text-muted-foreground text-base">
                 ({products.length})
               </span>
             )}
           </h2>
-          <p className="text-[10px] text-muted-foreground font-light">
+          <p className="text-xs text-muted-foreground font-light">
             Manage your curated premium press-on styles.
           </p>
         </div>
         {isSyncing && (
-          <span className="text-[10px] text-muted-foreground flex items-center gap-1.5 animate-pulse font-sans">
+          <span className="text-xs text-muted-foreground flex items-center gap-1.5 animate-pulse font-sans self-start sm:self-auto">
             <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" /> Updating...
           </span>
         )}

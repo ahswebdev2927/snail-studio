@@ -72,13 +72,14 @@ export default async function OrderHistoryPage() {
   };
 
   return (
-    <div className="space-y-8 font-sans">
+    <div className="space-y-8 w-full font-sans">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/20">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <Link 
               href="/account"
+              scroll={false}
               className="p-1.5 rounded-lg text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-colors md:hidden"
             >
               <ArrowLeft className="w-4 h-4" />

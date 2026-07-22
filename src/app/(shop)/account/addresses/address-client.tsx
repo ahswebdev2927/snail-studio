@@ -237,23 +237,23 @@ export function AddressClient({ initialAddresses }: AddressClientProps) {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 w-full">
       {/* Action Header */}
-      <div className="flex justify-between items-center pb-4 border-b border-border/20">
-        <div className="space-y-0.5">
-          <h2 className="font-serif text-lg font-semibold text-foreground flex items-center gap-2">
-            <MapPin className="w-4.5 h-4.5 text-primary shrink-0" />
-            Manage Addresses
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/20">
+        <div className="space-y-1">
+          <h2 className="font-serif text-2xl font-semibold text-foreground tracking-wide flex items-center gap-2">
+            <MapPin className="w-5 h-5 text-primary shrink-0" />
+            Address Book
           </h2>
-          <p className="text-[10px] text-muted-foreground font-light">
-            You can save up to 5 shipping or billing addresses ({initialAddresses.length}/5)
+          <p className="text-xs text-muted-foreground font-light">
+            Manage your saved shipping and billing addresses ({initialAddresses.length}/5 saved).
           </p>
         </div>
         <Button
           onClick={openAddModal}
           disabled={initialAddresses.length >= 5}
           size="sm"
-          className="text-xs font-semibold uppercase tracking-wider rounded-xl cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+          className="text-xs font-semibold uppercase tracking-wider rounded-xl cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed self-start sm:self-auto"
         >
           <Plus className="w-3.5 h-3.5 mr-1" />
           Add Address

@@ -49,13 +49,13 @@ export default async function AccountPage() {
   };
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-8 w-full">
       {/* 1. Welcoming Banner */}
-      <div className="space-y-1">
-        <h2 className="font-serif text-2xl md:text-3xl font-semibold text-foreground tracking-wide flex items-center gap-2">
+      <div className="space-y-1 pb-4 border-b border-border/20">
+        <h2 className="font-serif text-2xl font-semibold text-foreground tracking-wide flex items-center gap-2">
           My Account
         </h2>
-        <p className="text-xs md:text-sm text-muted-foreground font-light">
+        <p className="text-xs text-muted-foreground font-light">
           Here is a quick overview of your recent account activity.
         </p>
       </div>
@@ -65,6 +65,7 @@ export default async function AccountPage() {
         {/* Total Orders Card */}
         <Link 
           href="/account/orders"
+          scroll={false}
           className="bg-card border border-border/30 rounded-2xl p-5 hover:border-primary/30 transition-all group flex flex-col justify-between h-32"
         >
           <div className="flex items-center justify-between">
@@ -84,6 +85,7 @@ export default async function AccountPage() {
         {/* Wishlist Card */}
         <Link 
           href="/account/wishlist"
+          scroll={false}
           className="bg-card border border-border/30 rounded-2xl p-5 hover:border-primary/30 transition-all group flex flex-col justify-between h-32"
         >
           <div className="flex items-center justify-between">
@@ -103,6 +105,7 @@ export default async function AccountPage() {
         {/* Default Shipping Card */}
         <Link 
           href="/account/addresses"
+          scroll={false}
           className="bg-card border border-border/30 rounded-2xl p-5 hover:border-primary/30 transition-all group flex flex-col justify-between h-32"
         >
           <div className="flex items-center justify-between">
@@ -134,6 +137,7 @@ export default async function AccountPage() {
             {totalOrders > 3 && (
               <Link 
                 href="/account/orders"
+                scroll={false}
                 className="text-[10px] uppercase font-bold tracking-widest text-primary hover:text-accent flex items-center gap-1"
               >
                 All Orders <ArrowRight className="w-3 h-3" />
@@ -264,6 +268,7 @@ export default async function AccountPage() {
               </h3>
               <Link 
                 href="/account/addresses"
+                scroll={false}
                 className="text-[9px] uppercase font-bold tracking-widest text-primary hover:text-accent"
               >
                 Manage
@@ -286,6 +291,7 @@ export default async function AccountPage() {
                 </p>
                 <Link 
                   href="/account/addresses"
+                  scroll={false}
                   className="inline-flex justify-center items-center px-4 py-1.5 rounded-full text-[10px] font-semibold uppercase tracking-wider bg-secondary text-secondary-foreground hover:bg-secondary/95 transition-all border border-secondary"
                 >
                   Add Address
@@ -303,6 +309,7 @@ export default async function AccountPage() {
               </h3>
               <Link 
                 href="/account/wishlist"
+                scroll={false}
                 className="text-[9px] uppercase font-bold tracking-widest text-primary hover:text-accent"
               >
                 View All

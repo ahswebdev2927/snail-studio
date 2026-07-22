@@ -56,15 +56,15 @@ export default async function AccountLayout({
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-16 font-sans">
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
+    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12 font-sans">
+      <div className="flex flex-col md:flex-row items-start gap-8 md:gap-10">
         {/* Sidebar navigation column */}
-        <aside className="col-span-1 md:col-span-4 lg:col-span-3">
+        <aside className="w-full md:w-64 lg:w-72 shrink-0 md:border-r border-border/20 md:pr-8 space-y-6">
           <AccountNav user={user} />
         </aside>
 
         {/* Content column */}
-        <main className="col-span-1 md:col-span-8 lg:col-span-9 bg-card border border-border/40 backdrop-blur-md rounded-3xl p-6 md:p-8 shadow-sm">
+        <main className="flex-1 min-w-0 w-full min-h-[600px] flex flex-col justify-start">
           {children}
         </main>
       </div>

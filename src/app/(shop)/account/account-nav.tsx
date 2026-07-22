@@ -115,32 +115,29 @@ export function AccountNav({ user }: AccountNavProps) {
 
   return (
     <div className="w-full space-y-6">
-      {/* Desktop Profile Card */}
-      <div className="bg-card border border-border/40 rounded-3xl p-6 hidden md:block relative overflow-hidden">
-        {/* Glow */}
-        <div className="absolute -right-8 -bottom-8 w-20 h-20 rounded-full bg-primary/5 blur-xl pointer-events-none" />
-        
-        <div className="flex items-center gap-4">
+      {/* Desktop Profile Header */}
+      <div className="hidden md:block pb-6 border-b border-border/20">
+        <div className="flex items-center gap-3.5">
           <UserAvatar
             image={user.image}
             name={user.name}
             phone={user.phoneNumber}
-            className="w-14 h-14 rounded-2xl"
+            className="w-12 h-12 rounded-2xl"
           />
           <div className="space-y-0.5 min-w-0">
-            <h3 className="font-serif text-base font-semibold text-foreground truncate">
+            <h3 className="font-serif text-sm font-semibold text-foreground truncate">
               {user.name || "Guest Customer"}
             </h3>
             <p className="text-[11px] text-muted-foreground truncate">{user.email || user.phoneNumber}</p>
-            <p className="text-[9px] uppercase tracking-wider font-bold text-accent pt-1">
+            <p className="text-[9px] uppercase tracking-wider font-bold text-primary pt-0.5">
               Member Since {memberSince}
             </p>
           </div>
         </div>
       </div>
 
-      {/* Mobile Toggle & Horizontal Scroll */}
-      <div className="md:hidden flex items-center justify-between bg-card border border-border/40 rounded-2xl p-4">
+      {/* Mobile Toggle & Header */}
+      <div className="md:hidden flex items-center justify-between bg-card border border-border/30 rounded-2xl p-4">
         <div className="flex items-center gap-3">
           <UserAvatar
             image={user.image}
@@ -164,7 +161,7 @@ export function AccountNav({ user }: AccountNavProps) {
       </div>
 
       {/* Desktop Sidebar Nav Links */}
-      <nav className="bg-card border border-border/40 rounded-3xl p-4 hidden md:block space-y-1">
+      <nav className="hidden md:block space-y-1">
         {navItems.map((item) => {
           const isActive = item.exact
             ? pathname === item.href
@@ -175,11 +172,12 @@ export function AccountNav({ user }: AccountNavProps) {
             <Link
               key={item.name}
               href={item.href}
+              scroll={false}
               className={cn(
-                "flex items-center gap-3.5 px-4.5 py-3 rounded-2xl text-xs font-medium tracking-wide transition-all duration-200 group cursor-pointer",
+                "flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium tracking-wide transition-all duration-150 group cursor-pointer",
                 isActive
-                  ? "bg-primary text-primary-foreground shadow-lg shadow-primary/15"
-                  : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
+                  ? "bg-primary text-primary-foreground font-semibold shadow-sm"
+                  : "text-muted-foreground hover:bg-secondary/40 hover:text-foreground"
               )}
             >
               <Icon className={cn(
@@ -195,7 +193,7 @@ export function AccountNav({ user }: AccountNavProps) {
           <button
             onClick={handleLogout}
             disabled={loggingOut}
-            className="w-full flex items-center gap-3.5 px-4.5 py-3 rounded-2xl text-xs font-semibold uppercase tracking-wider text-destructive hover:bg-destructive/10 transition-all cursor-pointer"
+            className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold uppercase tracking-wider text-destructive hover:bg-destructive/10 transition-all cursor-pointer"
           >
             {loggingOut ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -220,9 +218,10 @@ export function AccountNav({ user }: AccountNavProps) {
               <Link
                 key={item.name}
                 href={item.href}
+                scroll={false}
                 onClick={() => setMobileMenuOpen(false)}
                 className={cn(
-                  "flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-medium tracking-wide transition-all cursor-pointer",
+                  "flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-medium tracking-wide transition-colors cursor-pointer",
                   isActive
                     ? "bg-primary text-primary-foreground"
                     : "text-muted-foreground hover:bg-secondary/40 hover:text-foreground"
