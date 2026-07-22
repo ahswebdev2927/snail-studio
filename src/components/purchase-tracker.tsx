@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { trackPurchase } from "@/lib/analytics";
+import { toast } from "sonner";
 
 export interface PurchaseTrackerProps {
   order: {
@@ -55,6 +56,11 @@ export function PurchaseTracker({ order }: PurchaseTrackerProps) {
       shippingAmount,
       order.couponCode || undefined
     );
+
+    toast.success("Order Placed Successfully!", {
+      description: `Order #${order.id} has been confirmed. Thank you for shopping with Snail Studio!`,
+      position: "bottom-right",
+    });
   }, [order]);
 
   return null;

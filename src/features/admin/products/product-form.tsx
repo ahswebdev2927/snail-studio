@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { customConfirm } from "@/components/ui/alert-dialog-provider";
 import Link from "next/link";
+import { toast } from "sonner";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -570,6 +571,11 @@ export default function ProductForm({ mode, productId, initialData }: ProductFor
           throw new Error(errData.error || "Failed to create product");
         }
 
+        toast.success("Product Created Successfully!", {
+          description: `"${data.name}" has been published.`,
+          position: "bottom-right",
+        });
+
         window.location.href = "/admin/products";
       } else {
         // PATCH edit details
@@ -585,11 +591,20 @@ export default function ProductForm({ mode, productId, initialData }: ProductFor
         }
 
         setGlobalSuccess("Product details updated successfully!");
+        toast.success("Product Updated Successfully!", {
+          description: `"${data.name}" details have been saved.`,
+          position: "bottom-right",
+        });
         window.scrollTo({ top: 0, behavior: "smooth" });
       }
     } catch (err: any) {
       console.error(err);
-      setGlobalError(err.message || "An unexpected error occurred while saving the product.");
+      const errMsg = err.message || "An unexpected error occurred while saving the product.";
+      setGlobalError(errMsg);
+      toast.error("Save Failed", {
+        description: errMsg,
+        position: "bottom-right",
+      });
     } finally {
       setSubmitting(false);
     }

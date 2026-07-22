@@ -90,23 +90,23 @@ function AvailabilityBadge({
 }) {
   if (stockLevel <= 0) {
     return (
-      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold bg-destructive/10 text-destructive border border-destructive/20">
-        <XCircle className="w-3.5 h-3.5" />
+      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-rose-500/15 text-rose-800 dark:text-rose-300 border border-rose-500/30">
+        <XCircle className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
         Out of Stock
       </span>
     );
   }
   if (stockLevel <= threshold) {
     return (
-      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-        <AlertTriangle className="w-3.5 h-3.5" />
-        Only {stockLevel} left!
+      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-orange-500/15 text-orange-800 dark:text-orange-300 border border-orange-500/30">
+        <AlertTriangle className="w-3.5 h-3.5 text-orange-600 dark:text-orange-400" />
+        Low Stock (Only {stockLevel} left!)
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold bg-success/15 text-success border border-success/30">
-      <CheckCircle2 className="w-3.5 h-3.5" />
+    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30">
+      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
       In Stock
     </span>
   );
@@ -669,7 +669,7 @@ export function ProductActions({
       {/* Launch/Preview Actions or Standard Checkout Actions */}
       {productStatus === "Coming Soon" ? (
         <div className="p-5 border border-border/40 bg-secondary/15 rounded-3xl text-center space-y-2">
-          <span className="inline-block text-[10px] font-bold uppercase tracking-widest text-[#A85328] bg-orange-500/10 px-3.5 py-1 rounded-full">
+          <span className="inline-block text-[10px] font-bold uppercase tracking-wider bg-orange-500/15 text-orange-800 dark:text-orange-300 border border-orange-500/30 px-3.5 py-1 rounded-full">
             Coming Soon
           </span>
           <p className="text-xs text-muted-foreground font-light pt-1.5 leading-relaxed">
@@ -679,7 +679,7 @@ export function ProductActions({
       ) : productStatus === "Launching Soon" ? (
         <div className="p-6 border border-border/40 bg-secondary/15 rounded-3xl space-y-5">
           <div className="text-center space-y-1">
-            <span className="inline-block text-[10px] font-bold uppercase tracking-widest text-primary bg-primary/10 px-3.5 py-1 rounded-full">
+            <span className="inline-block text-[10px] font-bold uppercase tracking-wider bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-3.5 py-1 rounded-full">
               Launching Soon
             </span>
             <p className="text-xs text-muted-foreground font-light pt-1.5">
@@ -698,9 +698,9 @@ export function ProductActions({
             onClick={handleSubscribe}
             disabled={submittingSub || isSubscribed}
             className={cn(
-              "w-full py-4 rounded-full text-xs font-semibold uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer shadow-xs",
+              "w-full py-4 rounded-full text-xs font-bold uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer shadow-xs",
               isSubscribed
-                ? "bg-success/15 border border-success/35 text-success hover:bg-success/20"
+                ? "bg-emerald-500/15 border border-emerald-500/35 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-500/20"
                 : "bg-primary text-primary-foreground hover:bg-primary/95 active:scale-[0.99]"
             )}
           >

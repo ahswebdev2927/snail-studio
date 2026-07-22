@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { customConfirm, customAlert } from "@/components/ui/alert-dialog-provider";
+import { toast } from "sonner";
 import { 
   Plus, 
   Search, 
@@ -119,6 +120,10 @@ export default function AdminProductsPage() {
 
       if (res.ok) {
         setProducts(prev => prev.filter(p => p.id !== productId));
+        toast.success("Product Deleted", {
+          description: `"${productName}" has been permanently removed.`,
+          position: "bottom-right",
+        });
       } else {
         const errData = await res.json();
         await customAlert("Error", errData.error || "Failed to delete product.");
@@ -144,6 +149,10 @@ export default function AdminProductsPage() {
 
       if (res.ok) {
         setProducts(prev => prev.map(p => p.id === productId ? { ...p, status: "Archived", isActive: false } : p));
+        toast.success("Product Archived", {
+          description: `"${productName}" has been archived.`,
+          position: "bottom-right",
+        });
       } else {
         const errData = await res.json();
         await customAlert("Error", errData.error || "Failed to archive product.");

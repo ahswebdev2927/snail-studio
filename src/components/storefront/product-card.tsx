@@ -151,12 +151,12 @@ export function ProductCard({ product }: ProductCardProps) {
   if (product.status === "Coming Soon") {
     activeBadges.push({
       text: "Coming Soon",
-      classes: "bg-orange-500/10 text-orange-600 border-orange-500/20 dark:bg-orange-500/20 dark:text-orange-400 dark:border-orange-500/30",
+      classes: "bg-orange-500/15 text-orange-800 dark:text-orange-300 border-orange-500/30 font-bold",
     });
   } else if (product.status === "Launching Soon") {
     activeBadges.push({
       text: "Launching Soon",
-      classes: "bg-primary/10 text-primary border-primary/20 dark:bg-primary/20 dark:text-primary-foreground dark:border-primary/30",
+      classes: "bg-amber-500/15 text-amber-800 dark:text-amber-300 border-amber-500/30 font-bold",
     });
   }
   if (product.isBestSeller) {

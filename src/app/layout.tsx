@@ -7,6 +7,7 @@ import { getSiteUrl, getOrganizationJsonLd, getWebsiteJsonLd } from "@/lib/seo";
 import { GA_MEASUREMENT_ID } from "@/lib/analytics";
 import { AnalyticsTracker } from "@/components/analytics-tracker";
 import { AlertDialogProvider } from "@/components/ui/alert-dialog-provider";
+import { Toaster } from "@/components/ui/toaster";
 
 const manrope = Manrope({
   variable: "--font-manrope",
@@ -115,6 +116,7 @@ export default function RootLayout({
         <AlertDialogProvider>
           {children}
         </AlertDialogProvider>
+        <Toaster position="bottom-right" />
       </body>
     </html>
   );

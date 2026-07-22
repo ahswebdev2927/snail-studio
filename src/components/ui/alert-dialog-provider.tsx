@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface AlertDialogConfig {
   title: string;
@@ -207,9 +208,24 @@ export const customConfirm = (
 };
 
 export const customAlert = (title: string, message: string): Promise<void> => {
-  if (globalAlertRef) {
-    return globalAlertRef(title, message);
+  const lowerTitle = title?.toLowerCase() || "";
+  const options = { description: message, position: "bottom-right" as const };
+
+  if (lowerTitle.includes("error") || lowerTitle.includes("fail") || lowerTitle.includes("limit")) {
+    toast.error(title, options);
+  } else if (
+    lowerTitle.includes("success") ||
+    lowerTitle.includes("complete") ||
+    lowerTitle.includes("saved") ||
+    lowerTitle.includes("created") ||
+    lowerTitle.includes("updated")
+  ) {
+    toast.success(title, options);
+  } else if (lowerTitle.includes("warning") || lowerTitle.includes("caution")) {
+    toast.warning(title, options);
+  } else {
+    toast.info(title, options);
   }
-  window.alert(`${title}\n\n${message}`);
+
   return Promise.resolve();
 };
