@@ -89,7 +89,7 @@ export default async function MarketingDashboardPage() {
               <h3 className="font-bold text-base font-serif flex items-center gap-2">
                 <Mail size={18} className="text-primary" /> Active Marketing Campaigns
               </h3>
-              <span className="text-[11px] bg-secondary border border-border/50 text-foreground px-2 py-0.5 rounded-full font-bold">
+              <span className="text-[11px] bg-primary/10 border border-primary/20 text-primary px-2.5 py-0.5 rounded-full font-bold">
                 {campaignsList.length} Total
               </span>
             </div>

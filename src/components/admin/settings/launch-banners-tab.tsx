@@ -273,13 +273,13 @@ export default function LaunchBannersTab() {
                   <h4 className="text-xs font-semibold truncate text-foreground">{banner.title}</h4>
                   {banner.subtitle && <p className="text-[11px] text-muted-foreground truncate font-light mt-0.5">{banner.subtitle}</p>}
                   <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
-                    <span className="text-[9px] bg-secondary/80 text-muted-foreground px-2 py-0.5 rounded-full font-medium">
+                    <span className="text-[10px] bg-secondary/30 text-foreground border border-border/60 px-2.5 py-0.5 rounded-full font-medium">
                       Product: {getProductName(banner.productId)}
                     </span>
-                    <span className="text-[9px] bg-secondary/80 text-muted-foreground px-2 py-0.5 rounded-full font-medium capitalize">
+                    <span className="text-[10px] bg-secondary/30 text-foreground border border-border/60 px-2.5 py-0.5 rounded-full font-medium capitalize">
                       Align: {banner.contentAlignment || "center"}
                     </span>
-                    <span className="text-[9px] bg-secondary/80 text-muted-foreground px-2 py-0.5 rounded-full font-medium capitalize">
+                    <span className="text-[10px] bg-secondary/30 text-foreground border border-border/60 px-2.5 py-0.5 rounded-full font-medium capitalize">
                       Spacing: {banner.lineSpacing || "normal"}
                     </span>
                     <span
@@ -503,7 +503,7 @@ export default function LaunchBannersTab() {
                   <button
                     type="button"
                     onClick={() => setMediaPickerConfig({ isOpen: true, field: "backgroundImage" })}
-                    className="px-4 py-2.5 bg-secondary hover:bg-secondary/90 border border-secondary text-xs rounded-xl cursor-pointer"
+                    className="px-4 py-2.5 bg-primary text-white font-semibold hover:bg-primary/95 text-xs rounded-xl transition-all cursor-pointer shadow-xs"
                   >
                     Pick
                   </button>
@@ -526,7 +526,7 @@ export default function LaunchBannersTab() {
                   <button
                     type="button"
                     onClick={() => setMediaPickerConfig({ isOpen: true, field: "productImage" })}
-                    className="px-4 py-2.5 bg-secondary hover:bg-secondary/90 border border-secondary text-xs rounded-xl cursor-pointer"
+                    className="px-4 py-2.5 bg-primary text-white font-semibold hover:bg-primary/95 text-xs rounded-xl transition-all cursor-pointer shadow-xs"
                   >
                     Pick
                   </button>

@@ -65,7 +65,9 @@ export default function Sidebar({ isCollapsed, isMobileOpen, closeMobileSidebar,
     item: MenuItem;
     rect: DOMRect;
   } | null>(null);
+  const [pinnedItem, setPinnedItem] = useState<string | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const popupRef = useRef<HTMLDivElement | null>(null);
 
   const handleMouseEnter = (item: MenuItem, event: React.MouseEvent<HTMLElement>) => {
     const shouldShow = isCollapsed || (item.subItems && item.subItems.length > 0);
@@ -76,9 +78,28 @@ export default function Sidebar({ isCollapsed, isMobileOpen, closeMobileSidebar,
   };
 
   const handleMouseLeave = () => {
+    // If current dropdown is pinned open via click, keep it open on mouse leave
+    if (activeHover && pinnedItem === activeHover.item.name) {
+      return;
+    }
     timeoutRef.current = setTimeout(() => {
       setActiveHover(null);
     }, 150);
+  };
+
+  const handleParentClick = (item: MenuItem, event: React.MouseEvent<HTMLElement>) => {
+    const shouldShow = isCollapsed || (item.subItems && item.subItems.length > 0);
+    if (!shouldShow) return;
+
+    const rect = event.currentTarget.getBoundingClientRect();
+    if (pinnedItem === item.name) {
+      setPinnedItem(null);
+      setActiveHover(null);
+    } else {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      setPinnedItem(item.name);
+      setActiveHover({ item, rect });
+    }
   };
 
   const handlePopupMouseEnter = () => {
@@ -89,13 +110,32 @@ export default function Sidebar({ isCollapsed, isMobileOpen, closeMobileSidebar,
     handleMouseLeave();
   };
 
-  // Clear hovering when sidebar state is toggled
+  // Close pinned dropdown when clicking outside
   useEffect(() => {
-    const handle = setTimeout(() => {
-      setActiveHover(null);
-    }, 0);
-    return () => clearTimeout(handle);
-  }, [isCollapsed]);
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!pinnedItem) return;
+      const target = event.target as Node;
+      if (
+        popupRef.current &&
+        !popupRef.current.contains(target) &&
+        !(target instanceof Element && target.closest("[data-sidebar-parent]"))
+      ) {
+        setPinnedItem(null);
+        setActiveHover(null);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [pinnedItem]);
+
+  // Clear hovering/pinning when sidebar state or pathname is toggled
+  useEffect(() => {
+    setPinnedItem(null);
+    setActiveHover(null);
+  }, [isCollapsed, pathname]);
 
   // Clean up timers on unmount
   useEffect(() => {
@@ -220,25 +260,28 @@ export default function Sidebar({ isCollapsed, isMobileOpen, closeMobileSidebar,
       return (
         <div key={item.name} className="space-y-1">
           <button
+            data-sidebar-parent={item.name}
+            onClick={(e) => handleParentClick(item, e)}
             onMouseEnter={(e) => handleMouseEnter(item, e)}
             onMouseLeave={handleMouseLeave}
             className={cn(
               "w-full flex items-center justify-between px-4 py-3 rounded-2xl text-sm font-medium tracking-wide transition-all duration-200 group text-left cursor-pointer",
-              isActive
-                ? "bg-primary/10 text-primary"
+              isActive || pinnedItem === item.name
+                ? "bg-primary/10 text-primary font-semibold"
                 : "text-muted-foreground hover:bg-secondary/40 hover:text-foreground"
             )}
           >
             <div className="flex items-center gap-3">
               <Icon className={cn("w-5 h-5 shrink-0 transition-transform duration-300",
-                isActive ? "text-primary" : "text-muted-foreground/80 group-hover:scale-110"
+                isActive || pinnedItem === item.name ? "text-primary" : "text-muted-foreground/80 group-hover:scale-110"
               )} />
               {!isCollapsed && <span>{item.name}</span>}
             </div>
             {!isCollapsed && (
               <ChevronRight
                 className={cn(
-                  "w-4 h-4 text-muted-foreground/60 transition-transform duration-300 group-hover:translate-x-0.5"
+                  "w-4 h-4 text-muted-foreground/60 transition-transform duration-300 group-hover:translate-x-0.5",
+                  pinnedItem === item.name && "rotate-90 text-primary"
                 )}
               />
             )}
@@ -251,7 +294,11 @@ export default function Sidebar({ isCollapsed, isMobileOpen, closeMobileSidebar,
       <Link
         key={item.name}
         href={item.href || "#"}
-        onClick={closeMobileSidebar}
+        onClick={() => {
+          closeMobileSidebar();
+          setPinnedItem(null);
+          setActiveHover(null);
+        }}
         onMouseEnter={(e) => handleMouseEnter(item, e)}
         onMouseLeave={handleMouseLeave}
         className={cn(
@@ -326,6 +373,7 @@ export default function Sidebar({ isCollapsed, isMobileOpen, closeMobileSidebar,
       {/* Hover Tooltip/Dropdown Popover */}
       {activeHover && (isCollapsed || (activeHover.item.subItems && activeHover.item.subItems.length > 0)) && (
         <div
+          ref={popupRef}
           style={{
             position: "fixed",
             top: (() => {
@@ -366,6 +414,7 @@ export default function Sidebar({ isCollapsed, isMobileOpen, closeMobileSidebar,
                       href={sub.href}
                       onClick={() => {
                         closeMobileSidebar();
+                        setPinnedItem(null);
                         setActiveHover(null);
                       }}
                       className={cn(
