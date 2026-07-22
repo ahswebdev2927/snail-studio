@@ -587,13 +587,13 @@ export default function AnalyticsPage() {
 
     // Status label map with descriptions & icons & color classes
     const statuses = [
-      { key: "delivered", label: "Delivered", count: summary.statusBreakdown.delivered, bg: "bg-emerald-500", text: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20" },
-      { key: "shipped", label: "Shipped", count: summary.statusBreakdown.shipped, bg: "bg-blue-500", text: "text-blue-500 bg-blue-500/10 border-blue-500/20" },
-      { key: "processing", label: "Processing", count: summary.statusBreakdown.processing, bg: "bg-primary", text: "text-primary bg-primary/10 border-primary/20" },
-      { key: "paid", label: "Paid Checkouts", count: summary.statusBreakdown.paid, bg: "bg-teal-500", text: "text-teal-500 bg-teal-500/10 border-teal-500/20" },
-      { key: "pending", label: "Pending Payment", count: summary.statusBreakdown.pending, bg: "bg-amber-500", text: "text-amber-500 bg-amber-500/10 border-amber-500/20" },
-      { key: "refunded", label: "Refunded", count: summary.statusBreakdown.refunded, bg: "bg-cyan-500", text: "text-cyan-500 bg-cyan-500/10 border-cyan-500/20" },
-      { key: "cancelled", label: "Cancelled", count: summary.statusBreakdown.cancelled, bg: "bg-rose-500", text: "text-rose-500 bg-rose-500/10 border-rose-500/20" }
+      { key: "delivered", label: "Delivered", count: summary.statusBreakdown.delivered, bg: "bg-emerald-500", text: "text-emerald-800 dark:text-emerald-300 bg-emerald-500/15 border-emerald-500/30" },
+      { key: "shipped", label: "Shipped", count: summary.statusBreakdown.shipped, bg: "bg-sky-500", text: "text-sky-800 dark:text-sky-300 bg-sky-500/15 border-sky-500/30" },
+      { key: "processing", label: "Processing", count: summary.statusBreakdown.processing, bg: "bg-orange-500", text: "text-orange-800 dark:text-orange-300 bg-orange-500/15 border-orange-500/30" },
+      { key: "paid", label: "Paid Checkouts", count: summary.statusBreakdown.paid, bg: "bg-emerald-500", text: "text-emerald-800 dark:text-emerald-300 bg-emerald-500/15 border-emerald-500/30" },
+      { key: "pending", label: "Pending Payment", count: summary.statusBreakdown.pending, bg: "bg-amber-500", text: "text-amber-800 dark:text-amber-300 bg-amber-500/15 border-amber-500/30" },
+      { key: "refunded", label: "Refunded", count: summary.statusBreakdown.refunded, bg: "bg-purple-500", text: "text-purple-800 dark:text-purple-300 bg-purple-500/15 border-purple-500/30" },
+      { key: "cancelled", label: "Cancelled", count: summary.statusBreakdown.cancelled, bg: "bg-rose-500", text: "text-rose-800 dark:text-rose-300 bg-rose-500/15 border-rose-500/30" }
     ];
 
     return (

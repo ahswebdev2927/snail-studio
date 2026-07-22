@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { customConfirm, customAlert } from "@/components/ui/alert-dialog-provider";
+import { getOrderStatusBadgeStyle } from "@/components/orders/order-status-badge";
 import { createPortal } from "react-dom";
 import { 
   ClipboardList, 
@@ -526,22 +527,7 @@ export default function AdminOrdersPage() {
 
   // Get status color badges for orders
   const getStatusBadge = (status: string) => {
-    switch (status ? status.toLowerCase() : "") {
-      case "paid":
-        return "bg-success/15 text-success border-success/30";
-      case "processing":
-        return "bg-primary/10 text-primary border-primary/20";
-      case "shipped":
-        return "bg-info/10 text-info border-info/20";
-      case "delivered":
-        return "bg-secondary text-secondary-foreground border-border";
-      case "cancelled":
-        return "bg-rose-500/10 text-rose-500 border-rose-500/20";
-      case "refunded":
-        return "bg-purple-500/10 text-purple-500 border-purple-500/20";
-      default:
-        return "bg-warning/15 text-warning border-warning/30";
-    }
+    return getOrderStatusBadgeStyle(status);
   };
 
   // Compute status metrics based on loaded orders

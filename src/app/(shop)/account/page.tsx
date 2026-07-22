@@ -14,6 +14,7 @@ import {
 import { getDashboardData } from "@/features/account/actions";
 import { formatPrice } from "@/lib/utils";
 import { DashboardClient } from "./dashboard-client";
+import { OrderStatusBadge } from "@/components/orders/order-status-badge";
 
 export default async function AccountPage() {
   const res = await getDashboardData();
@@ -30,23 +31,6 @@ export default async function AccountPage() {
   }
 
   const { totalOrders, defaultAddress, recentOrders, wishlistCount, wishlistProducts } = res.data;
-
-  // Status Badge styling helper
-  const getStatusStyle = (status: string) => {
-    switch (status) {
-      case "delivered":
-        return "bg-success/15 text-success border border-success/30";
-      case "processing":
-      case "paid":
-      case "pending":
-        return "bg-warning/15 text-warning border border-warning/30";
-      case "cancelled":
-      case "refunded":
-        return "bg-rose-500/10 text-rose-750 border border-rose-500/20 dark:text-rose-455";
-      default:
-        return "bg-secondary text-muted-foreground border border-border/40";
-    }
-  };
 
   return (
     <div className="space-y-8 w-full">
@@ -185,9 +169,7 @@ export default async function AccountPage() {
                     </div>
 
                     <div className="flex items-center gap-3">
-                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider ${getStatusStyle(order.status)}`}>
-                        {order.status}
-                      </span>
+                      <OrderStatusBadge status={order.status} />
                       <div className="text-right">
                         <p className="text-[9px] uppercase font-bold text-muted-foreground tracking-wider">Total Amount</p>
                         <p className="font-bold text-primary">{formatPrice(order.totalAmount)}</p>

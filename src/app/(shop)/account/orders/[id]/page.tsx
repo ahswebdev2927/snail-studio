@@ -23,6 +23,7 @@ import { eq } from "drizzle-orm";
 import { getSessionUser } from "@/lib/auth/session";
 import { formatPrice } from "@/lib/utils";
 import CustomerOrderActions from "@/components/orders/customer-order-actions";
+import { OrderStatusBadge } from "@/components/orders/order-status-badge";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -161,21 +162,7 @@ export default async function OrderDetailsPage({ params }: PageProps) {
     { label: "Delivered", active: currentStatus === "delivered" }
   ];
 
-  const getStatusBadgeStyle = (status: string) => {
-    switch (status.toLowerCase()) {
-      case "delivered":
-        return "bg-success/15 text-success border border-success/30";
-      case "processing":
-      case "paid":
-      case "pending":
-        return "bg-warning/15 text-warning border border-warning/30";
-      case "cancelled":
-      case "refunded":
-        return "bg-rose-500/10 text-rose-700 border border-rose-500/20 dark:text-rose-400";
-      default:
-        return "bg-secondary text-muted-foreground border border-border/40";
-    }
-  };
+
 
   return (
     <div className="space-y-8 font-sans">
@@ -195,9 +182,7 @@ export default async function OrderDetailsPage({ params }: PageProps) {
               <h1 className="font-serif text-xl md:text-2xl font-semibold text-foreground tracking-wide">
                 Order Details
               </h1>
-              <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${getStatusBadgeStyle(orderRecord.status)}`}>
-                {orderRecord.status}
-              </span>
+              <OrderStatusBadge status={orderRecord.status} />
             </div>
             <p className="text-[11px] text-muted-foreground font-mono">
               ID: {orderRecord.id}
