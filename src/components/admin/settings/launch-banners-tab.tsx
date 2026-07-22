@@ -22,6 +22,11 @@ interface LaunchBanner {
   subtitle: string | null;
   backgroundImage: string | null;
   productImage: string | null;
+  textColor?: string | null;
+  contentAlignment?: string | null;
+  lineSpacing?: string | null;
+  ctaBgColor?: string | null;
+  ctaTextColor?: string | null;
   sortOrder: number;
   isActive: boolean;
 }
@@ -91,6 +96,11 @@ export default function LaunchBannersTab() {
       subtitle: "",
       backgroundImage: "",
       productImage: "",
+      textColor: "#ffffff",
+      contentAlignment: "center",
+      lineSpacing: "normal",
+      ctaBgColor: "#8C5230",
+      ctaTextColor: "#ffffff",
       sortOrder: banners.length,
       isActive: true,
     });
@@ -103,6 +113,11 @@ export default function LaunchBannersTab() {
       subtitle: banner.subtitle || "",
       backgroundImage: banner.backgroundImage || "",
       productImage: banner.productImage || "",
+      textColor: banner.textColor || "#ffffff",
+      contentAlignment: banner.contentAlignment || "center",
+      lineSpacing: banner.lineSpacing || "normal",
+      ctaBgColor: banner.ctaBgColor || "#8C5230",
+      ctaTextColor: banner.ctaTextColor || "#ffffff",
     });
     setIsModalOpen(true);
   };
@@ -141,6 +156,11 @@ export default function LaunchBannersTab() {
       subtitle: currentBanner.subtitle?.trim() || null,
       backgroundImage: currentBanner.backgroundImage?.trim() || null,
       productImage: currentBanner.productImage?.trim() || null,
+      textColor: currentBanner.textColor || "#ffffff",
+      contentAlignment: currentBanner.contentAlignment || "center",
+      lineSpacing: currentBanner.lineSpacing || "normal",
+      ctaBgColor: currentBanner.ctaBgColor || "#8C5230",
+      ctaTextColor: currentBanner.ctaTextColor || "#ffffff",
       sortOrder: Number(currentBanner.sortOrder) || 0,
       isActive: !!currentBanner.isActive,
     };
@@ -190,7 +210,7 @@ export default function LaunchBannersTab() {
         <div>
           <h2 className="text-base font-semibold tracking-wide">Launch Banner Carousel</h2>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Manage banner campaigns for Coming Soon & Launching Soon drops. If multiple are active, they will render as a homepage slider.
+            Manage banner campaigns for Coming Soon & Launching Soon drops with custom layout alignment, line spacing, text color, and CTA button styling.
           </p>
         </div>
         <button
@@ -252,12 +272,15 @@ export default function LaunchBannersTab() {
                 <div className="min-w-0">
                   <h4 className="text-xs font-semibold truncate text-foreground">{banner.title}</h4>
                   {banner.subtitle && <p className="text-[11px] text-muted-foreground truncate font-light mt-0.5">{banner.subtitle}</p>}
-                  <div className="flex items-center gap-1.5 mt-1.5">
+                  <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
                     <span className="text-[9px] bg-secondary/80 text-muted-foreground px-2 py-0.5 rounded-full font-medium">
                       Product: {getProductName(banner.productId)}
                     </span>
-                    <span className="text-[9px] bg-secondary/80 text-muted-foreground px-2 py-0.5 rounded-full font-medium">
-                      Sort: {banner.sortOrder}
+                    <span className="text-[9px] bg-secondary/80 text-muted-foreground px-2 py-0.5 rounded-full font-medium capitalize">
+                      Align: {banner.contentAlignment || "center"}
+                    </span>
+                    <span className="text-[9px] bg-secondary/80 text-muted-foreground px-2 py-0.5 rounded-full font-medium capitalize">
+                      Spacing: {banner.lineSpacing || "normal"}
                     </span>
                     <span
                       className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
@@ -310,11 +333,11 @@ export default function LaunchBannersTab() {
                 {currentBanner.id ? "Edit Launch Banner" : "New Launch Banner"}
               </h3>
               <p className="text-xs text-muted-foreground mt-0.5 font-light">
-                Configure content and imagery for the product launch preview.
+                Configure content, alignment, line spacing, colors, and imagery for the hero launch banner.
               </p>
             </div>
 
-            <form onSubmit={handleSave} className="space-y-4">
+            <form onSubmit={handleSave} className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
               {/* Product Selector */}
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
@@ -365,6 +388,103 @@ export default function LaunchBannersTab() {
                   className="w-full px-4 py-2.5 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none transition-all text-foreground"
                   maxLength={200}
                 />
+              </div>
+
+              {/* Alignment & Line Spacing */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                    Content Alignment
+                  </label>
+                  <select
+                    value={currentBanner.contentAlignment || "center"}
+                    onChange={(e) => setCurrentBanner({ ...currentBanner, contentAlignment: e.target.value })}
+                    className="w-full px-3 py-2 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none text-foreground cursor-pointer"
+                  >
+                    <option value="left">Left</option>
+                    <option value="center">Center</option>
+                    <option value="right">Right</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                    Line Spacing
+                  </label>
+                  <select
+                    value={currentBanner.lineSpacing || "normal"}
+                    onChange={(e) => setCurrentBanner({ ...currentBanner, lineSpacing: e.target.value })}
+                    className="w-full px-3 py-2 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none text-foreground cursor-pointer"
+                  >
+                    <option value="tight">Tight</option>
+                    <option value="normal">Normal</option>
+                    <option value="comfortable">Comfortable</option>
+                    <option value="loose">Loose</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Text & Button Colors */}
+              <div className="grid grid-cols-3 gap-3 pt-1">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                    Text Color
+                  </label>
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      type="color"
+                      value={currentBanner.textColor || "#ffffff"}
+                      onChange={(e) => setCurrentBanner({ ...currentBanner, textColor: e.target.value })}
+                      className="w-8 h-8 rounded-lg cursor-pointer border border-border p-0 bg-transparent shrink-0"
+                    />
+                    <input
+                      type="text"
+                      value={currentBanner.textColor || "#ffffff"}
+                      onChange={(e) => setCurrentBanner({ ...currentBanner, textColor: e.target.value })}
+                      className="w-full px-2 py-1.5 bg-secondary/30 border border-border text-[11px] font-mono rounded-lg text-foreground uppercase"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                    CTA BG Color
+                  </label>
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      type="color"
+                      value={currentBanner.ctaBgColor || "#8C5230"}
+                      onChange={(e) => setCurrentBanner({ ...currentBanner, ctaBgColor: e.target.value })}
+                      className="w-8 h-8 rounded-lg cursor-pointer border border-border p-0 bg-transparent shrink-0"
+                    />
+                    <input
+                      type="text"
+                      value={currentBanner.ctaBgColor || "#8C5230"}
+                      onChange={(e) => setCurrentBanner({ ...currentBanner, ctaBgColor: e.target.value })}
+                      className="w-full px-2 py-1.5 bg-secondary/30 border border-border text-[11px] font-mono rounded-lg text-foreground uppercase"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                    CTA Text Color
+                  </label>
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      type="color"
+                      value={currentBanner.ctaTextColor || "#ffffff"}
+                      onChange={(e) => setCurrentBanner({ ...currentBanner, ctaTextColor: e.target.value })}
+                      className="w-8 h-8 rounded-lg cursor-pointer border border-border p-0 bg-transparent shrink-0"
+                    />
+                    <input
+                      type="text"
+                      value={currentBanner.ctaTextColor || "#ffffff"}
+                      onChange={(e) => setCurrentBanner({ ...currentBanner, ctaTextColor: e.target.value })}
+                      className="w-full px-2 py-1.5 bg-secondary/30 border border-border text-[11px] font-mono rounded-lg text-foreground uppercase"
+                    />
+                  </div>
+                </div>
               </div>
 
               {/* Custom background image */}
