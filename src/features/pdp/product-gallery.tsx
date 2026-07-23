@@ -255,26 +255,81 @@ export function ProductGallery({ media, productName }: ProductGalleryProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
+
+  const touchStartX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
+  const touchEndX = useRef<number | null>(null);
+  const touchEndY = useRef<number | null>(null);
 
   const activeItem = sortedMedia[activeIndex];
   const hasMedia = sortedMedia.length > 0;
 
-  // Auto-play video thumbnail on hover
-  useEffect(() => {
-    if (videoRef.current) {
-      if (isHovering) {
-        videoRef.current.play().catch(() => {});
-      } else {
-        videoRef.current.pause();
-        videoRef.current.currentTime = 0;
-      }
-    }
-  }, [isHovering, activeIndex]);
-
   const goTo = (index: number) => {
     setActiveIndex(index);
+  };
+
+  const prevSlide = useCallback(() => {
+    setActiveIndex((prev) => (prev - 1 + sortedMedia.length) % sortedMedia.length);
+  }, [sortedMedia.length]);
+
+  const nextSlide = useCallback(() => {
+    setActiveIndex((prev) => (prev + 1) % sortedMedia.length);
+  }, [sortedMedia.length]);
+
+  // Auto-scroll every 3 seconds unless hovering or lightbox open
+  useEffect(() => {
+    if (!hasMedia || sortedMedia.length <= 1 || isHovering || lightboxOpen) {
+      return;
+    }
+
+    const timer = setInterval(() => {
+      setActiveIndex((prev) => (prev + 1) % sortedMedia.length);
+    }, 3000);
+
+    return () => clearInterval(timer);
+  }, [hasMedia, sortedMedia.length, isHovering, lightboxOpen]);
+
+  // Mobile Touch Swipe Handlers
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setIsHovering(true); // Pause auto-scroll while touching
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+    touchEndX.current = e.touches[0].clientX;
+    touchEndY.current = e.touches[0].clientY;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    touchEndX.current = e.touches[0].clientX;
+    touchEndY.current = e.touches[0].clientY;
+  };
+
+  const handleTouchEnd = () => {
     setIsHovering(false);
+    if (
+      touchStartX.current === null ||
+      touchEndX.current === null ||
+      touchStartY.current === null ||
+      touchEndY.current === null
+    ) {
+      return;
+    }
+
+    const deltaX = touchEndX.current - touchStartX.current;
+    const deltaY = touchEndY.current - touchStartY.current;
+
+    // Trigger swipe if horizontal drag > 40px and horizontal drag > vertical drag
+    if (Math.abs(deltaX) > 40 && Math.abs(deltaX) > Math.abs(deltaY)) {
+      if (deltaX < 0) {
+        nextSlide();
+      } else {
+        prevSlide();
+      }
+    }
+
+    touchStartX.current = null;
+    touchStartY.current = null;
+    touchEndX.current = null;
+    touchEndY.current = null;
   };
 
   /* -------------------------------------------------------------------
@@ -295,31 +350,34 @@ export function ProductGallery({ media, productName }: ProductGalleryProps) {
    * Render
    * ----------------------------------------------------------------- */
   return (
-    <div className="flex flex-col gap-4">
+    <div
+      className="flex flex-col gap-4"
+      onMouseEnter={() => setIsHovering(true)}
+      onMouseLeave={() => setIsHovering(false)}
+    >
       {/* ---- Main Viewer ---- */}
       <div
-        className="relative aspect-square w-full rounded-2xl overflow-hidden bg-secondary/30 border border-border/50 group cursor-zoom-in"
-        onMouseEnter={() => setIsHovering(true)}
-        onMouseLeave={() => setIsHovering(false)}
+        className="relative aspect-square w-full rounded-2xl overflow-hidden bg-secondary/30 border border-border/50 group cursor-zoom-in touch-pan-y select-none"
         onClick={() => setLightboxOpen(true)}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
         role="button"
         tabIndex={0}
         aria-label={`View ${activeItem.altText || productName} in full size`}
         onKeyDown={(e) => e.key === "Enter" && setLightboxOpen(true)}
       >
         {isVideo(activeItem) ? (
-          /* Video player */
+          /* Video player (show video preview without auto-playing on hover) */
           <video
-            ref={videoRef}
             src={activeItem.url}
             muted
-            loop
             playsInline
+            controls
             className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
             aria-label={activeItem.altText || productName}
             onClick={(e) => {
               e.stopPropagation();
-              setLightboxOpen(true);
             }}
           />
         ) : (
@@ -336,23 +394,73 @@ export function ProductGallery({ media, productName }: ProductGalleryProps) {
 
         {/* Expand hint overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-[#181311]/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-        <div className="absolute bottom-4 right-4 p-2 rounded-full bg-background/80 backdrop-blur-sm border border-border/30 shadow-sm opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-1 group-hover:translate-y-0">
+        <div className="absolute bottom-4 right-4 p-2 rounded-full bg-background/80 backdrop-blur-sm border border-border/30 shadow-sm opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-1 group-hover:translate-y-0 z-10">
           <Expand className="w-4 h-4 text-foreground/70" />
         </div>
 
-        {/* Video play badge */}
-        {isVideo(activeItem) && !isHovering && (
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="p-4 rounded-full bg-background/70 backdrop-blur-sm border border-border/30">
-              <Play className="w-8 h-8 text-primary fill-current" />
-            </div>
+        {/* Video play badge indicator when video is active */}
+        {isVideo(activeItem) && (
+          <div className="absolute top-4 left-4 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-background/80 backdrop-blur-sm border border-border/20 text-[10px] font-semibold text-primary pointer-events-none z-10">
+            <Play className="w-3 h-3 fill-current" />
+            <span>Video</span>
           </div>
         )}
 
-        {/* Image counter badge */}
+        {/* Chevron Navigation Arrows */}
         {sortedMedia.length > 1 && (
-          <div className="absolute top-4 right-4 px-2.5 py-1 rounded-full bg-background/80 backdrop-blur-sm border border-border/20 text-[10px] font-semibold text-foreground/70 pointer-events-none">
+          <>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                prevSlide();
+              }}
+              className="absolute left-3 top-1/2 -translate-y-1/2 z-10 p-2.5 rounded-full bg-background/70 hover:bg-background/90 text-foreground border border-border/40 shadow-sm backdrop-blur-sm transition-all opacity-70 sm:opacity-0 sm:group-hover:opacity-100 cursor-pointer hover:scale-105"
+              aria-label="Previous slide"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                nextSlide();
+              }}
+              className="absolute right-3 top-1/2 -translate-y-1/2 z-10 p-2.5 rounded-full bg-background/70 hover:bg-background/90 text-foreground border border-border/40 shadow-sm backdrop-blur-sm transition-all opacity-70 sm:opacity-0 sm:group-hover:opacity-100 cursor-pointer hover:scale-105"
+              aria-label="Next slide"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </>
+        )}
+
+        {/* Slide counter badge */}
+        {sortedMedia.length > 1 && (
+          <div className="absolute top-4 right-4 px-2.5 py-1 rounded-full bg-background/80 backdrop-blur-sm border border-border/20 text-[10px] font-semibold text-foreground/70 pointer-events-none z-10">
             {activeIndex + 1} / {sortedMedia.length}
+          </div>
+        )}
+
+        {/* Pagination Dots */}
+        {sortedMedia.length > 1 && (
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-10 px-3 py-1.5 rounded-full bg-background/60 backdrop-blur-md border border-border/20">
+            {sortedMedia.map((_, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  goTo(idx);
+                }}
+                className={cn(
+                  "h-1.5 rounded-full transition-all duration-300 cursor-pointer",
+                  idx === activeIndex
+                    ? "w-5 bg-primary"
+                    : "w-1.5 bg-foreground/30 hover:bg-foreground/50"
+                )}
+                aria-label={`Go to slide ${idx + 1}`}
+              />
+            ))}
           </div>
         )}
       </div>
