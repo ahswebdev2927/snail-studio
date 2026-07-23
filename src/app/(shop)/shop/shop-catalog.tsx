@@ -10,7 +10,7 @@ import { SearchBar } from "@/features/catalog/search-bar";
 import { SearchResults } from "@/features/catalog/search-results";
 import { SearchPagination } from "@/features/catalog/search-pagination";
 import { SearchEmptyState } from "@/features/catalog/search-empty-state";
-import { SlidersHorizontal, ArrowUpDown, X } from "lucide-react";
+import { SlidersHorizontal, ArrowUpDown, X, Eye, EyeOff } from "lucide-react";
 import { trackSearch, trackViewItemList } from "@/lib/analytics";
 
 // Helper to compile search filters into query string
@@ -116,6 +116,7 @@ export default function ShopCatalog() {
   const [isLoading, setIsLoading] = useState(true);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isSidebarVisible, setIsSidebarVisible] = useState(true);
   
   // Navigation and Grid Layout customization controls
   const [navMode, setNavMode] = useState<"pagination" | "infinite_scroll">("pagination");
@@ -474,17 +475,25 @@ export default function ShopCatalog() {
             <SearchBar value={searchQuery} onChange={handleQueryChange} />
 
             {/* Sort & Mobile Filter actions */}
-            <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+            <div className="flex items-center gap-2.5 w-full sm:w-auto justify-between sm:justify-end">
+              {/* Mobile Filter Drawer Trigger (Mobile Only) */}
               <button
                 onClick={() => setIsDrawerOpen(true)}
-                className="lg:hidden flex items-center gap-2 px-4 py-2.5 rounded-full border border-border/55 text-xs font-semibold uppercase tracking-wider bg-background hover:bg-secondary/40 text-muted-foreground hover:text-foreground transition-all cursor-pointer"
+                className="lg:hidden flex items-center gap-2 px-3.5 py-2.5 rounded-full border border-border/55 text-xs font-semibold uppercase tracking-wider bg-background hover:bg-secondary/40 text-muted-foreground hover:text-foreground transition-all cursor-pointer active:scale-95 touch-manipulation shadow-sm"
+                title="Open Filters Drawer"
               >
                 <SlidersHorizontal className="w-3.5 h-3.5" />
-                Filters
+                <span>Filters</span>
+                {activeChips.length > 0 && (
+                  <span className="inline-flex items-center justify-center w-4.5 h-4.5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold px-1.5 min-w-[18px]">
+                    {activeChips.length}
+                  </span>
+                )}
               </button>
 
+              {/* Sort Selector */}
               <div className="relative flex items-center bg-secondary/15 border border-border/30 rounded-full px-3 py-1.5 focus-within:border-primary/50 transition-colors">
-                <ArrowUpDown className="w-3.5 h-3.5 text-muted-foreground/80 mr-2" />
+                <ArrowUpDown className="w-3.5 h-3.5 text-muted-foreground/80 mr-2 shrink-0" />
                 <select
                   value={sort}
                   onChange={(e) => handleSortChange(e.target.value as "relevance" | "price_asc" | "price_desc" | "newest" | "best_selling" | "featured" | "alpha_asc" | "alpha_desc")}
@@ -540,25 +549,45 @@ export default function ShopCatalog() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 flex flex-col w-full">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 flex-1">
           {/* Desktop Filter Sidebar */}
-          <aside className="hidden lg:block lg:col-span-3">
-            <FilterSidebar
-              facets={facets}
-              filters={filters}
-              onChange={handleFiltersChange}
-              onClear={handleClearFilters}
-            />
-          </aside>
+          {isSidebarVisible && (
+            <aside className="hidden lg:block lg:col-span-3 transition-all duration-300">
+              <FilterSidebar
+                facets={facets}
+                filters={filters}
+                onChange={handleFiltersChange}
+                onClear={handleClearFilters}
+                onToggleHide={() => setIsSidebarVisible(false)}
+              />
+            </aside>
+          )}
 
           {/* Results Grid Panel */}
-          <div className="lg:col-span-9 flex flex-col flex-1 space-y-6">
+          <div className={`${isSidebarVisible ? "lg:col-span-9" : "lg:col-span-12"} flex flex-col flex-1 space-y-6 transition-all duration-300`}>
             {/* Dynamic Layout Control Toolbar */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/10 pb-4">
-              <span className="text-xs text-muted-foreground/80 font-light">
-                {navMode === "infinite_scroll" 
-                  ? `Loaded ${productsList.length} of ${pagination.totalItems} result(s)`
-                  : `Showing ${productsList.length} of ${pagination.totalItems} result(s)`
-                }
-              </span>
+              <div className="flex items-center gap-3">
+                {!isSidebarVisible && (
+                  <button
+                    onClick={() => setIsSidebarVisible(true)}
+                    className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full border border-border/50 text-xs font-semibold uppercase tracking-wider bg-background hover:bg-secondary/30 text-foreground transition-all cursor-pointer shadow-sm"
+                    title="Show Filters Sidebar"
+                  >
+                    <SlidersHorizontal className="w-3.5 h-3.5 text-primary" />
+                    <span>Show Filters</span>
+                    {activeChips.length > 0 && (
+                      <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">
+                        {activeChips.length}
+                      </span>
+                    )}
+                  </button>
+                )}
+                <span className="text-xs text-muted-foreground/80 font-light">
+                  {navMode === "infinite_scroll" 
+                    ? `Loaded ${productsList.length} of ${pagination.totalItems} result(s)`
+                    : `Showing ${productsList.length} of ${pagination.totalItems} result(s)`
+                  }
+                </span>
+              </div>
 
               {/* Grid switches & Navigation mode switches */}
               <div className="flex flex-wrap items-center gap-4 justify-between sm:justify-end">
@@ -668,7 +697,7 @@ export default function ShopCatalog() {
         </div>
       </main>
 
-      {/* Mobile sliding Drawer */}
+      {/* Universal Overlay Filter Drawer */}
       <FilterDrawer
         isOpen={isDrawerOpen}
         onClose={() => setIsDrawerOpen(false)}
@@ -676,6 +705,7 @@ export default function ShopCatalog() {
         filters={filters}
         onChange={handleFiltersChange}
         onClear={handleClearFilters}
+        totalItems={pagination.totalItems}
       />
     </div>
   );

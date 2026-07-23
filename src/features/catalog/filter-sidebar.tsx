@@ -1,7 +1,7 @@
 "use client";
 
 import { FacetOption, AttributeFacet } from "@/services/search/product-search.service";
-import { ChevronDown, RotateCcw, ShieldCheck } from "lucide-react";
+import { ChevronDown, RotateCcw, ShieldCheck, SlidersHorizontal, EyeOff } from "lucide-react";
 import { useState } from "react";
 
 export interface FilterState {
@@ -29,9 +29,10 @@ interface FilterSidebarProps {
   filters: FilterState;
   onChange: (filters: FilterState) => void;
   onClear: () => void;
+  onToggleHide?: () => void;
 }
 
-export function FilterSidebar({ facets, filters, onChange, onClear }: FilterSidebarProps) {
+export function FilterSidebar({ facets, filters, onChange, onClear, onToggleHide }: FilterSidebarProps) {
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     categories: true,
     brands: true,
@@ -110,16 +111,53 @@ export function FilterSidebar({ facets, filters, onChange, onClear }: FilterSide
     <div className="w-full space-y-6 select-none">
       {/* Header */}
       <div className="flex items-center justify-between pb-4 border-b border-border/40">
-        <h2 className="text-base font-semibold uppercase tracking-wider text-foreground">Filters</h2>
-        {activeFiltersCount > 0 && (
-          <button
-            onClick={onClear}
-            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors cursor-pointer"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-            Clear ({activeFiltersCount})
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {onToggleHide ? (
+            <button
+              onClick={onToggleHide}
+              className="flex items-center gap-2 group cursor-pointer text-left focus:outline-none"
+              title="Click to hide filters sidebar"
+            >
+              <SlidersHorizontal className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+              <h2 className="text-base font-semibold uppercase tracking-wider text-foreground group-hover:text-primary transition-colors">
+                Filters
+              </h2>
+            </button>
+          ) : (
+            <div className="flex items-center gap-2">
+              <SlidersHorizontal className="w-4 h-4 text-muted-foreground" />
+              <h2 className="text-base font-semibold uppercase tracking-wider text-foreground">
+                Filters
+              </h2>
+            </div>
+          )}
+          {activeFiltersCount > 0 && (
+            <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">
+              {activeFiltersCount}
+            </span>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2">
+          {activeFiltersCount > 0 && (
+            <button
+              onClick={onClear}
+              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors cursor-pointer"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              Clear
+            </button>
+          )}
+          {onToggleHide && (
+            <button
+              onClick={onToggleHide}
+              className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-secondary/20 transition-colors cursor-pointer"
+              title="Hide Filters"
+            >
+              <EyeOff className="w-4 h-4" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Stock Availability */}
