@@ -9,3 +9,5 @@ export * from "./notifications";
 export * from "../relations";
 export * from "./search";
 export * from "./crm";
+export * from "./security";
+

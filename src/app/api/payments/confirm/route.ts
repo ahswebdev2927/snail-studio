@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { confirmOrderPayment } from "@/services/payments/payment.service";
+import { rateLimitRequest } from "@/lib/security/rate-limit";
 
 /**
  * API Route Handler for confirming payments: POST /api/payments/confirm
@@ -11,8 +12,22 @@ import { confirmOrderPayment } from "@/services/payments/payment.service";
  * - signature: string (optional signature, required for production verification)
  * - cartId: string (optional cart ID, used to clear purchase history)
  */
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
+    // Rate limit: 10 payment confirmations per 1 minute
+    const limitResult = await rateLimitRequest(request, "payment:confirm", 10, 60 * 1000);
+    if (!limitResult.success) {
+      return NextResponse.json(
+        { success: false, error: "Too many payment confirmation requests. Please try again later." },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": Math.ceil(limitResult.reset / 1000).toString(),
+          },
+        }
+      );
+    }
+
     const body = await request.json();
     const { orderId, paymentId, gatewayOrderId, signature, cartId } = body;
 

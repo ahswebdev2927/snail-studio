@@ -1,8 +1,9 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { systemSettings } from "@/db/schema";
 import { sendMail } from "@/services/email/email.service";
 import { z } from "zod";
+import { rateLimitRequest } from "@/lib/security/rate-limit";
 
 const contactSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -11,8 +12,22 @@ const contactSchema = z.object({
   message: z.string().min(1, "Message is required"),
 });
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
+    // Rate limit: 3 messages per 5 minutes
+    const limitResult = await rateLimitRequest(request, "contact", 3, 5 * 60 * 1000);
+    if (!limitResult.success) {
+      return NextResponse.json(
+        { success: false, error: "Too many requests. Please try again later." },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": Math.ceil(limitResult.reset / 1000).toString(),
+          },
+        }
+      );
+    }
+
     const body = await request.json();
     
     // Validate request body

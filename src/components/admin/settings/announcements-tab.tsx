@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import DOMPurify from "isomorphic-dompurify";
 import { customConfirm } from "@/components/ui/alert-dialog-provider";
 import {
   Plus,
@@ -558,7 +559,7 @@ export default function AnnouncementsTab() {
                   >
                     <div className="flex items-center gap-2 truncate">
                       {ActiveIcon && <ActiveIcon className="w-3.5 h-3.5 shrink-0" />}
-                      <span dangerouslySetInnerHTML={{ __html: ann.text }} />
+                      <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(ann.text) }} />
                       {ann.ctaText && (
                         <span className="underline ml-1 font-semibold">{ann.ctaText}</span>
                       )}
@@ -729,7 +730,7 @@ export default function AnnouncementsTab() {
                       style={{ backgroundColor: currentAnn.backgroundColor, color: currentAnn.textColor }}
                       className="h-10 rounded-lg flex items-center justify-center text-[10px] font-semibold uppercase tracking-widest px-4 select-none"
                     >
-                      <span className="truncate flex items-center gap-1.5" dangerouslySetInnerHTML={{ __html: currentAnn.text }} />
+                      <span className="truncate flex items-center gap-1.5" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(currentAnn.text) }} />
                     </div>
                   </div>
                 )}

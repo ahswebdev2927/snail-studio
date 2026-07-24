@@ -7,8 +7,24 @@ import { nanoid } from "nanoid";
 import { createSession } from "@/lib/auth/refresh-token";
 import { mergeGuestCartIntoCustomerCart } from "@/services/cart/cart.service";
 
+import { rateLimitRequest } from "@/lib/security/rate-limit";
+
 export async function POST(req: NextRequest) {
   try {
+    // Rate limit: 5 login requests per 1 minute
+    const limitResult = await rateLimitRequest(req, "auth:login", 5, 60 * 1000);
+    if (!limitResult.success) {
+      return NextResponse.json(
+        { error: "Too many requests. Please try again later." },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": Math.ceil(limitResult.reset / 1000).toString(),
+          },
+        }
+      );
+    }
+
     let body;
     try {
       body = await req.json();

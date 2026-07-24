@@ -169,6 +169,13 @@
       "when": 1784721133015,
       "tag": "0023_whole_crystal",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "6",
+      "when": 1784884388946,
+      "tag": "0024_mixed_sabretooth",
+      "breakpoints": true
     }
   ]
 }

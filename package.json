@@ -28,6 +28,7 @@
     "firebase": "^12.14.0",
     "firebase-admin": "^14.0.0",
     "fuse.js": "^7.4.2",
+    "isomorphic-dompurify": "^3.19.0",
     "jsonwebtoken": "^9.0.3",
     "lucide-react": "^1.17.0",
     "nanoid": "^5.1.11",

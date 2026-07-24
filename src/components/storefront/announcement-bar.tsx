@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import DOMPurify from "isomorphic-dompurify";
 import {
   Sparkles,
   Truck,
@@ -147,10 +148,10 @@ export function AnnouncementBar({
                   href={ann.ctaLink}
                   className="hover:opacity-90 hover:underline transition-opacity"
                 >
-                  <span dangerouslySetInnerHTML={{ __html: ann.text }} />
+                  <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(ann.text) }} />
                 </Link>
               ) : (
-                <span dangerouslySetInnerHTML={{ __html: ann.text }} />
+                <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(ann.text) }} />
               )}
               {ann.ctaText && ann.ctaLink && (
                 <Link
@@ -252,7 +253,7 @@ export function AnnouncementBar({
               href={staticAnn.ctaLink}
               className="hover:opacity-90 hover:underline flex items-center gap-1.5"
             >
-              <span className="font-semibold select-none truncate" dangerouslySetInnerHTML={{ __html: staticAnn.text }} />
+              <span className="font-semibold select-none truncate" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(staticAnn.text) }} />
               {staticAnn.ctaText && (
                 <span className="underline hover:opacity-85 font-bold text-[9px] sm:text-[10px] shrink-0 uppercase tracking-wider">
                   {staticAnn.ctaText}
@@ -261,7 +262,7 @@ export function AnnouncementBar({
             </Link>
           ) : (
             <>
-              <span className="font-semibold select-none truncate" dangerouslySetInnerHTML={{ __html: staticAnn.text }} />
+              <span className="font-semibold select-none truncate" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(staticAnn.text) }} />
               {staticAnn.ctaText && staticAnn.ctaLink && (
                 <Link
                   href={staticAnn.ctaLink}
@@ -298,7 +299,7 @@ export function AnnouncementBar({
       )}
       <span
         className="font-semibold select-none truncate flex items-center gap-1.5"
-        dangerouslySetInnerHTML={{ __html: current.text }}
+        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(current.text) }}
       />
       {current.ctaText && current.ctaLink && (
         <span className="underline ml-1 hover:opacity-85 transition-opacity font-bold text-[9px] sm:text-[10px] shrink-0 uppercase tracking-wider">

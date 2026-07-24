@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import DOMPurify from "isomorphic-dompurify";
 import {
   FileText,
   Sparkles,
@@ -387,10 +388,11 @@ function parseDescription(text: string): React.ReactNode {
   // Check if it looks like HTML (contains HTML tags like <p>, <div>, <ul>, etc.)
   const isHtml = /<[a-z][\s\S]*>/i.test(text);
   if (isHtml) {
+    const sanitizedHtml = DOMPurify.sanitize(text);
     return (
       <div 
         className="pdp-description-content" 
-        dangerouslySetInnerHTML={{ __html: text }} 
+        dangerouslySetInnerHTML={{ __html: sanitizedHtml }} 
       />
     );
   }
