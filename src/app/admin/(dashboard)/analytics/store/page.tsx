@@ -240,6 +240,8 @@ interface RecentLogItem {
   resultsCount: number;
   ipAddress: string | null;
   createdAt: string;
+  customerName?: string | null;
+  customerPhone?: string | null;
 }
 
 interface SearchAnalyticsResponse {
@@ -1830,6 +1832,7 @@ export default function AnalyticsPage() {
                     <th className="py-2 px-1">Time</th>
                     <th className="py-2">Search Query</th>
                     <th className="py-2 text-center">Results Returned</th>
+                    <th className="py-2 px-2">Customer</th>
                     <th className="py-2 text-right px-1">Client IP Address</th>
                   </tr>
                 </thead>
@@ -1852,6 +1855,22 @@ export default function AnalyticsPage() {
                         >
                           {item.resultsCount} items
                         </span>
+                      </td>
+                      <td className="py-2.5 px-2 text-left">
+                        {item.customerName ? (
+                          <div className="space-y-0.5">
+                            <span className="font-semibold block text-foreground leading-tight">{item.customerName}</span>
+                            {item.customerPhone && (
+                              <span className="text-[9px] text-muted-foreground font-mono block leading-none">
+                                {item.customerPhone}
+                              </span>
+                            )}
+                          </div>
+                        ) : item.customerPhone ? (
+                          <span className="font-mono text-muted-foreground">{item.customerPhone}</span>
+                        ) : (
+                          <span className="text-muted-foreground/60 italic font-light">Guest User</span>
+                        )}
                       </td>
                       <td className="py-2.5 text-right font-mono text-muted-foreground px-1">
                         {item.ipAddress || "127.0.0.1"}
