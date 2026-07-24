@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { searchLogs } from "@/db/schema/search";
+import { searchLogs, users } from "@/db/schema";
 import { desc, eq, sql } from "drizzle-orm";
 import { authorize } from "@/middleware/auth";
 
@@ -35,8 +35,11 @@ export async function GET(req: NextRequest) {
         resultsCount: searchLogs.resultsCount,
         ipAddress: searchLogs.ipAddress,
         createdAt: searchLogs.createdAt,
+        customerName: users.name,
+        customerPhone: users.phoneNumber,
       })
       .from(searchLogs)
+      .leftJoin(users, eq(searchLogs.userId, users.id))
       .orderBy(desc(searchLogs.createdAt))
       .limit(10);
 
@@ -64,6 +67,8 @@ export async function GET(req: NextRequest) {
         query: r.query,
         resultsCount: r.resultsCount,
         ipAddress: r.ipAddress,
+        customerName: r.customerName,
+        customerPhone: r.customerPhone,
         createdAt: new Date((r.createdAt as unknown as number) * 1000).toISOString(),
       })),
       failed: failed.map((f) => ({
