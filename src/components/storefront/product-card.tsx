@@ -284,7 +284,7 @@ export function ProductCard({ product }: ProductCardProps) {
               e.stopPropagation();
               router.push(`/products/${product.slug}`);
             }}
-            className="absolute bottom-4 left-4 right-4 py-2.5 bg-white text-[#3A2E2A] hover:bg-[#3A2E2A] hover:text-white dark:bg-card dark:text-foreground dark:hover:bg-primary dark:hover:text-primary-foreground border border-border/10 shadow-md text-[10px] font-bold uppercase tracking-wider rounded-sm z-30 cursor-pointer text-center transition-all duration-300 md:opacity-0 md:translate-y-2 md:pointer-events-none md:group-hover:opacity-100 md:group-hover:translate-y-0 md:group-hover:pointer-events-auto"
+            className="absolute bottom-4 left-4 right-4 hidden md:block py-2.5 bg-white text-[#3A2E2A] hover:bg-[#3A2E2A] hover:text-white dark:bg-card dark:text-foreground dark:hover:bg-primary dark:hover:text-primary-foreground border border-border/10 shadow-md text-[10px] font-bold uppercase tracking-wider rounded-sm z-30 cursor-pointer text-center transition-all duration-300 md:opacity-0 md:translate-y-2 md:pointer-events-none md:group-hover:opacity-100 md:group-hover:translate-y-0 md:group-hover:pointer-events-auto"
           >
             Quick Buy
           </button>
