@@ -89,165 +89,165 @@
 }
 
 :root {
-  --background: #FFF3EA;              /* App Background */
-  --foreground: #5E514B;              /* Body Text */
+  --background: #DEC6C8;              /* App Background */
+  --foreground: #000000;              /* Body Text */
   
-  --card: #FFFFFF;                    /* Card */
-  --card-foreground: #5E514B;
+  --card: #F8F4F4;                    /* Card */
+  --card-foreground: #000000;
   
   --popover: #FFFFFF;                 /* Popover */
-  --popover-foreground: #5E514B;
+  --popover-foreground: #000000;
   
-  --primary: #A85328;                 /* Primary Brand */
+  --primary: #AC5429;                 /* Primary Brand */
   --primary-foreground: #FFFFFF;
-  --primary-hover: #92471F;
-  --primary-active: #7B3C1A;
-  --primary-light: #D47D6A;
-  --primary-soft: #F6C8BB;
+  --primary-hover: #8F4522;
+  --primary-active: #7E3A1A;
+  --primary-light: #F3D7D2;
+  --primary-soft: #F3D7D2;
   
-  --secondary: #8A5E4A;               /* Secondary Brand */
+  --secondary: #AC5429;               /* Secondary Brand */
   --secondary-foreground: #FFFFFF;
-  --secondary-surface: #FDF7F3;
+  --secondary-surface: #F8F4F4;
   
-  --muted: #E5C8BC;                   /* Border color or muted grey replacement */
-  --muted-foreground: #8B7C74;        /* Muted Text */
-  --muted-surface: #F6C8BB;
+  --muted: #CBB3B5;                   /* Border color or muted grey replacement */
+  --muted-foreground: #4A4A4A;        /* Muted Text */
+  --muted-surface: #F3D7D2;
   
-  --accent: #F6C8BB;                  /* Accent */
-  --accent-foreground: #3A2E2A;
+  --accent: #F3D7D2;                  /* Accent */
+  --accent-foreground: #AC5429;
   
-  --destructive: #E57373;             /* Error color */
+  --destructive: #D32F2F;             /* Error color */
   --destructive-foreground: #FFFFFF;
   
-  --border: #E5C8BC;                  /* Border */
-  --border-light: #F3E3DA;
-  --border-strong: #C89D8A;
+  --border: #CBB3B5;                  /* Border */
+  --border-light: #CBB3B5;
+  --border-strong: #CBB3B5;
   
   --input: #FFFFFF;
-  --input-placeholder: #9A8D86;
-  --ring: #D47D6A;                    /* Focus Ring */
+  --input-placeholder: #4A4A4A;
+  --ring: #AC5429;                    /* Focus Ring */
   
-  --link: #A85328;
-  --link-hover: #92471F;
+  --link: #AC5429;
+  --link-hover: #8F4522;
   
-  --success: #9EE493;
-  --warning: #F7C66F;
-  --error: #E57373;
-  --info: #7AB8FF;
+  --success: #2E7D32;
+  --warning: #ED6C02;
+  --error: #D32F2F;
+  --info: #0288D1;
   
-  --text-heading: #3A2E2A;
-  --text-body: #5E514B;
-  --text-muted: #8B7C74;
-  --text-disabled: #B6AAA3;
+  --text-heading: #000000;
+  --text-body: #000000;
+  --text-muted: #4A4A4A;
+  --text-disabled: #8E8687;
   --text-inverse: #FFFFFF;
   
-  --navbar: #FFFFFF;
-  --navbar-text: #3A2E2A;
-  --navbar-active: #A85328;
-  --navbar-hover: #D47D6A;
+  --navbar: #DEC6C8;
+  --navbar-text: #000000;
+  --navbar-active: #AC5429;
+  --navbar-hover: #AC5429;
   
-  --footer-bg: #3A2E2A;
+  --footer-bg: #000000;
   --footer-heading: #FFFFFF;
-  --footer-body: #D8CEC8;
-  --footer-links: #F6C8BB;
+  --footer-body: #FFFFFF;
+  --footer-links: #FFFFFF;
   
   --radius: 0.75rem;
 
-  --primary-btn-bg: #A85328;
+  --primary-btn-bg: #AC5429;
   --primary-btn-text: #FFFFFF;
-  --primary-btn-hover: #92471F;
-  --primary-btn-active: #7B3C1A;
+  --primary-btn-hover: #8F4522;
+  --primary-btn-active: #7E3A1A;
 
   --secondary-btn-bg: transparent;
-  --secondary-btn-border: #A85328;
-  --secondary-btn-text: #A85328;
-  --secondary-btn-hover-bg: #A85328;
-  --secondary-btn-hover-text: #FFFFFF;
+  --secondary-btn-border: #AC5429;
+  --secondary-btn-text: #AC5429;
+  --secondary-btn-hover-bg: #F3D7D2;
+  --secondary-btn-hover-text: #AC5429;
 
-  --outline-btn-border: #D47D6A;
-  --outline-btn-text: #A85328;
-  --outline-btn-hover-bg: #F6C8BB;
-  --outline-btn-hover-text: #A85328;
+  --outline-btn-border: #CBB3B5;
+  --outline-btn-text: #000000;
+  --outline-btn-hover-bg: #F8F4F4;
+  --outline-btn-hover-text: #000000;
 }
 
 .dark {
-  --background: #181311;              /* App Background */
-  --foreground: #E4D8D1;              /* Body Text */
+  --background: #120F10;              /* App Background */
+  --foreground: #F8F4F4;              /* Body Text */
   
-  --card: #2A221E;                    /* Card */
-  --card-foreground: #E4D8D1;
+  --card: #1C1819;                    /* Card */
+  --card-foreground: #F8F4F4;
   
-  --popover: #2A221E;                 /* Popover */
-  --popover-foreground: #E4D8D1;
+  --popover: #1C1819;                 /* Popover */
+  --popover-foreground: #F8F4F4;
   
-  --primary: #D47D6A;                 /* Primary Brand in Dark Theme */
-  --primary-foreground: #181311;      /* Inverse text */
-  --primary-hover: #E28B78;
-  --primary-active: #C66B56;
-  --primary-light: #D47D6A;
-  --primary-soft: #F6C8BB;
+  --primary: #AC5429;                 /* Primary Brand in Dark Theme */
+  --primary-foreground: #FFFFFF;      /* Inverse text */
+  --primary-hover: #8F4522;
+  --primary-active: #7E3A1A;
+  --primary-light: #F3D7D2;
+  --primary-soft: #F3D7D2;
   
-  --secondary: #C9A18F;               /* Secondary Brand in Dark Theme */
-  --secondary-foreground: #181311;
-  --secondary-surface: #332A25;
+  --secondary: #AC5429;               /* Secondary Brand in Dark Theme */
+  --secondary-foreground: #FFFFFF;
+  --secondary-surface: #1C1819;
   
-  --muted: #56463F;
-  --muted-foreground: #B8A8A0;        /* Muted Text */
-  --muted-surface: #3B302A;
+  --muted: #4A3C3E;
+  --muted-foreground: #CBB3B5;        /* Muted Text */
+  --muted-surface: #1C1819;
   
-  --accent: #F6C8BB;                  /* Accent */
-  --accent-foreground: #181311;
+  --accent: #F3D7D2;                  /* Accent */
+  --accent-foreground: #AC5429;
   
-  --destructive: #FF7A7A;             /* Error color in Dark */
+  --destructive: #D32F2F;             /* Error color in Dark */
   --destructive-foreground: #FFFFFF;
   
-  --border: #56463F;                  /* Border */
-  --border-light: #433630;
-  --border-strong: #6E5950;
+  --border: #4A3C3E;                  /* Border */
+  --border-light: #4A3C3E;
+  --border-strong: #CBB3B5;
   
-  --input: #332A25;
-  --input-placeholder: #8F7F77;
-  --ring: #D47D6A;                    /* Focus Ring */
+  --input: #1C1819;
+  --input-placeholder: #4A4A4A;
+  --ring: #AC5429;                    /* Focus Ring */
   
-  --link: #F6C8BB;
-  --link-hover: #FFFFFF;
+  --link: #AC5429;
+  --link-hover: #8F4522;
   
-  --success: #9EE493;
-  --warning: #F7C66F;
-  --error: #FF7A7A;
-  --info: #7AB8FF;
+  --success: #2E7D32;
+  --warning: #ED6C02;
+  --error: #D32F2F;
+  --info: #0288D1;
   
-  --text-heading: #FFF6F2;
-  --text-body: #E4D8D1;
-  --text-muted: #B8A8A0;
-  --text-disabled: #8E7C73;
-  --text-inverse: #181311;
+  --text-heading: #FFFFFF;
+  --text-body: #F8F4F4;
+  --text-muted: #CBB3B5;
+  --text-disabled: #4A3C3E;
+  --text-inverse: #120F10;
   
-  --navbar: #181311;
-  --navbar-text: #FFF6F2;
-  --navbar-active: #F6C8BB;
-  --navbar-hover: #D47D6A;
+  --navbar: #120F10;
+  --navbar-text: #FFFFFF;
+  --navbar-active: #AC5429;
+  --navbar-hover: #AC5429;
   
-  --footer-bg: #120F0D;
+  --footer-bg: #000000;
   --footer-heading: #FFFFFF;
-  --footer-body: #C8B9B1;
-  --footer-links: #F6C8BB;
+  --footer-body: #FFFFFF;
+  --footer-links: #FFFFFF;
 
-  --primary-btn-bg: #A85328;
+  --primary-btn-bg: #AC5429;
   --primary-btn-text: #FFFFFF;
-  --primary-btn-hover: #C16234;
-  --primary-btn-active: #8D4522;
+  --primary-btn-hover: #8F4522;
+  --primary-btn-active: #7E3A1A;
 
   --secondary-btn-bg: transparent;
-  --secondary-btn-border: #D47D6A;
-  --secondary-btn-text: #F6C8BB;
-  --secondary-btn-hover-bg: #D47D6A;
-  --secondary-btn-hover-text: #FFFFFF;
+  --secondary-btn-border: #AC5429;
+  --secondary-btn-text: #AC5429;
+  --secondary-btn-hover-bg: #F3D7D2;
+  --secondary-btn-hover-text: #AC5429;
 
-  --outline-btn-border: #8A5E4A;
-  --outline-btn-text: #F6C8BB;
-  --outline-btn-hover-bg: #3B302A;
-  --outline-btn-hover-text: #F6C8BB;
+  --outline-btn-border: #4A3C3E;
+  --outline-btn-text: #CBB3B5;
+  --outline-btn-hover-bg: #1C1819;
+  --outline-btn-hover-text: #F8F4F4;
 }
 
 * {

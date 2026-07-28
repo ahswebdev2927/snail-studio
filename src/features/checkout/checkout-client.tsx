@@ -492,7 +492,7 @@ export default function CheckoutClient() {
             email: user?.email || ""
           },
           theme: {
-            color: "#A85328"
+            color: "#AC5429"
           },
           modal: {
             ondismiss: function () {

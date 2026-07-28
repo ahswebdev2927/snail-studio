@@ -146,13 +146,13 @@ interface Customer360Payload {
 const PREDEFINED_TAGS = ["VIP", "Influencer", "Wholesale", "Staff", "Tester"];
 
 const DEFAULT_WISHLIST_HTML = `<html>
-  <body style="font-family: Arial, sans-serif; color: #2C2520; background-color: #FCFAF7; padding: 20px;">
-    <div style="max-width: 600px; margin: 0 auto; background-color: white; border: 1px solid #EAE6DF; border-radius: 15px; padding: 30px; box-shadow: 0 4px 10px rgba(0,0,0,0.02);">
-      <h1 style="color: #A85328; font-family: Georgia, serif; font-size: 24px; text-align: center; margin-bottom: 25px;">Your Saved Styles Await</h1>
+  <body style="font-family: Arial, sans-serif; color: #000000; background-color: #DEC6C8; padding: 20px;">
+    <div style="max-width: 600px; margin: 0 auto; background-color: #F8F4F4; border: 1px solid #CBB3B5; border-radius: 15px; padding: 30px; box-shadow: 0 4px 10px rgba(0,0,0,0.02);">
+      <h1 style="color: #AC5429; font-family: Georgia, serif; font-size: 24px; text-align: center; margin-bottom: 25px;">Your Saved Styles Await</h1>
       <p>Hello {{customer_name}},</p>
       <p>We noticed you saved some premium, reusable press-on nail sets in your wishlist. Because our artists paint each set by hand in small batches, popular designs and sizes sell out quickly.</p>
       
-      <h3 style="color: #A85328; border-bottom: 1px solid #EAE6DF; padding-bottom: 8px; margin-top: 25px;">Saved Items in Your Wishlist</h3>
+      <h3 style="color: #AC5429; border-bottom: 1px solid #CBB3B5; padding-bottom: 8px; margin-top: 25px;">Saved Items in Your Wishlist</h3>
       <div style="margin: 20px 0;">
         {{wishlist_products}}
       </div>
@@ -160,9 +160,9 @@ const DEFAULT_WISHLIST_HTML = `<html>
       {{coupon_block}}
 
       <p style="text-align: center; margin: 30px 0;">
-        <a href="http://localhost:3000/shop" style="background-color: #A85328; color: white; padding: 12px 30px; border-radius: 25px; text-decoration: none; font-weight: bold; font-size: 14px;">Return & Order Now</a>
+        <a href="http://localhost:3000/shop" style="background-color: #AC5429; color: white; padding: 12px 30px; border-radius: 25px; text-decoration: none; font-weight: bold; font-size: 14px;">Return & Order Now</a>
       </p>
-      <p style="font-size: 12px; color: #999; text-align: center; margin-top: 40px; border-top: 1px solid #EAE6DF; padding-top: 15px;">
+      <p style="font-size: 12px; color: #4A4A4A; text-align: center; margin-top: 40px; border-top: 1px solid #CBB3B5; padding-top: 15px;">
         Snail Studios &bull; Premium Reusable Handcrafted Press-On Nails
       </p>
     </div>
@@ -170,13 +170,13 @@ const DEFAULT_WISHLIST_HTML = `<html>
 </html>`;
 
 const DEFAULT_CART_HTML = `<html>
-  <body style="font-family: Arial, sans-serif; color: #2C2520; background-color: #FCFAF7; padding: 20px;">
-    <div style="max-width: 600px; margin: 0 auto; background-color: white; border: 1px solid #EAE6DF; border-radius: 15px; padding: 30px; box-shadow: 0 4px 10px rgba(0,0,0,0.02);">
-      <h1 style="color: #A85328; font-family: Georgia, serif; font-size: 24px; text-align: center; margin-bottom: 25px;">Don't Leave Your Nails Behind</h1>
+  <body style="font-family: Arial, sans-serif; color: #000000; background-color: #DEC6C8; padding: 20px;">
+    <div style="max-width: 600px; margin: 0 auto; background-color: #F8F4F4; border: 1px solid #CBB3B5; border-radius: 15px; padding: 30px; box-shadow: 0 4px 10px rgba(0,0,0,0.02);">
+      <h1 style="color: #AC5429; font-family: Georgia, serif; font-size: 24px; text-align: center; margin-bottom: 25px;">Don't Leave Your Nails Behind</h1>
       <p>Hello {{customer_name}},</p>
       <p>We saved the handcrafted sets left in your shopping cart. Because our nail sets are painted by hand in limited batches, your cart reservation will expire soon and items may sell out.</p>
       
-      <h3 style="color: #A85328; border-bottom: 1px solid #EAE6DF; padding-bottom: 8px; margin-top: 25px;">Items in Your Shopping Cart</h3>
+      <h3 style="color: #AC5429; border-bottom: 1px solid #CBB3B5; padding-bottom: 8px; margin-top: 25px;">Items in Your Shopping Cart</h3>
       <div style="margin: 20px 0;">
         {{cart_products}}
       </div>
@@ -184,9 +184,9 @@ const DEFAULT_CART_HTML = `<html>
       {{coupon_block}}
 
       <p style="text-align: center; margin: 30px 0;">
-        <a href="http://localhost:3000/cart" style="background-color: #A85328; color: white; padding: 12px 30px; border-radius: 25px; text-decoration: none; font-weight: bold; font-size: 14px;">Complete My Checkout</a>
+        <a href="http://localhost:3000/cart" style="background-color: #AC5429; color: white; padding: 12px 30px; border-radius: 25px; text-decoration: none; font-weight: bold; font-size: 14px;">Complete My Checkout</a>
       </p>
-      <p style="font-size: 12px; color: #999; text-align: center; margin-top: 40px; border-top: 1px solid #EAE6DF; padding-top: 15px;">
+      <p style="font-size: 12px; color: #4A4A4A; text-align: center; margin-top: 40px; border-top: 1px solid #CBB3B5; padding-top: 15px;">
         Snail Studios &bull; Premium Reusable Handcrafted Press-On Nails
       </p>
     </div>
@@ -289,9 +289,9 @@ export default function CustomerProfile360Page() {
 
     // Replace coupon block if it exists
     const couponBlock = customCouponId 
-      ? `<div style="border: 2px dashed #A85328; background-color: #FAF6F0; padding: 20px; border-radius: 10px; text-align: center; margin: 25px 0;">
+      ? `<div style="border: 2px dashed #AC5429; background-color: #F3D7D2; padding: 20px; border-radius: 10px; text-align: center; margin: 25px 0;">
           <p style="margin: 0; font-size: 13px; color: #666;">Enjoy a special discount on your purchase:</p>
-          <h2 style="font-family: monospace; font-size: 24px; margin: 8px 0; color: #A85328; letter-spacing: 2px;">${couponCode}</h2>
+          <h2 style="font-family: monospace; font-size: 24px; margin: 8px 0; color: #AC5429; letter-spacing: 2px;">${couponCode}</h2>
          </div>`
       : "";
     html = html.replace(/\{\{coupon_block\}\}/g, couponBlock);
@@ -301,11 +301,11 @@ export default function CustomerProfile360Page() {
       const productsHtml = (data?.wishlist || []).map(p => {
         const featuredImg = p.media && p.media.length > 0 ? p.media[0].media?.url : "https://via.placeholder.com/150";
         return `
-          <div style="display: flex; gap: 15px; align-items: center; border: 1px solid #EAE6DF; padding: 12px; border-radius: 12px; margin-bottom: 10px;">
+          <div style="display: flex; gap: 15px; align-items: center; border: 1px solid #CBB3B5; padding: 12px; border-radius: 12px; margin-bottom: 10px;">
             <img src="${featuredImg}" style="width: 50px; height: 50px; border-radius: 8px; object-fit: cover;" />
             <div>
-              <h4 style="margin: 0; font-size: 14px; color: #2C2520;">${p.name}</h4>
-              <span style="font-size: 12px; color: #A85328; font-weight: bold;">₹${p.priceMin}</span>
+              <h4 style="margin: 0; font-size: 14px; color: #000000;">${p.name}</h4>
+              <span style="font-size: 12px; color: #AC5429; font-weight: bold;">₹${p.priceMin}</span>
             </div>
           </div>
         `;
@@ -314,14 +314,14 @@ export default function CustomerProfile360Page() {
     } else {
       const cartHtml = (data?.cart || []).map(item => {
         return `
-          <div style="display: flex; justify-content: space-between; align-items: center; border: 1px solid #EAE6DF; padding: 12px; border-radius: 12px; margin-bottom: 10px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; border: 1px solid #CBB3B5; padding: 12px; border-radius: 12px; margin-bottom: 10px;">
             <div>
-              <h4 style="margin: 0; font-size: 14px; color: #2C2520;">${item.name}</h4>
+              <h4 style="margin: 0; font-size: 14px; color: #000000;">${item.name}</h4>
               <span style="font-size: 11px; color: #777;">Variant: ${item.variantName}</span>
             </div>
             <div style="text-align: right;">
               <span style="font-size: 12px; color: #777;">${item.quantity} &times; </span>
-              <span style="font-size: 12px; color: #2C2520; font-weight: bold;">₹${item.price}</span>
+              <span style="font-size: 12px; color: #000000; font-weight: bold;">₹${item.price}</span>
             </div>
           </div>
         `;

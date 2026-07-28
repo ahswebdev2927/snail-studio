@@ -109,13 +109,13 @@ export async function triggerAdminNotification(params: TriggerNotificationParams
           to: adminUser.email,
           subject: `[Snail Studio Admin] ${title}`,
           html: `
-            <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 25px; border: 1px solid rgba(212, 125, 106, 0.3); border-radius: 16px; background-color: #ffffff; box-shadow: 0 4px 12px rgba(168, 83, 40, 0.03);">
-              <h2 style="color: #A85328; border-bottom: 2px solid #ebdcd5; padding-bottom: 10px; font-weight: 600; font-size: 18px; margin-top: 0; letter-spacing: 0.02em;">Snail Studio Admin Notification</h2>
-              <div style="padding: 15px 0; color: #5e514b; line-height: 1.6;">
-                <p style="font-size: 15px; font-weight: bold; color: #3a2e2a; margin-bottom: 8px;">${title}</p>
-                <p style="font-size: 14px; margin-top: 0; color: #5e514b;">${message}</p>
+            <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 25px; border: 1px solid #CBB3B5; border-radius: 16px; background-color: #F8F4F4; box-shadow: 0 4px 12px rgba(172, 84, 41, 0.03);">
+              <h2 style="color: #AC5429; border-bottom: 2px solid #CBB3B5; padding-bottom: 10px; font-weight: 600; font-size: 18px; margin-top: 0; letter-spacing: 0.02em;">Snail Studio Admin Notification</h2>
+              <div style="padding: 15px 0; color: #000000; line-height: 1.6;">
+                <p style="font-size: 15px; font-weight: bold; color: #000000; margin-bottom: 8px;">${title}</p>
+                <p style="font-size: 14px; margin-top: 0; color: #4A4A4A;">${message}</p>
               </div>
-              <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #ebdcd5; color: #8c8585; font-size: 11px; line-height: 1.5;">
+              <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #CBB3B5; color: #4A4A4A; font-size: 11px; line-height: 1.5;">
                 <p style="margin: 0;">This is an automated operational notification sent to administrators. You can configure notification channels in your Admin Panel settings.</p>
               </div>
             </div>

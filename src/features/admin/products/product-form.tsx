@@ -1457,7 +1457,7 @@ export default function ProductForm({ mode, productId, initialData }: ProductFor
 
               {watch("status") === "Launching Soon" && (
                 <div className="mt-3 p-4 border border-border/40 bg-slate-50/50 dark:bg-slate-900/20 rounded-xl space-y-3.5 animate-in fade-in duration-200">
-                  <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#A85328] dark:text-[#E2A882]">Launch Scheduler Settings</h4>
+                  <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#AC5429] dark:text-[#E2A882]">Launch Scheduler Settings</h4>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
                       <label className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground ml-0.5">Launch Date</label>
@@ -1615,7 +1615,7 @@ export default function ProductForm({ mode, productId, initialData }: ProductFor
                       name: "Coming Soon",
                       desc: "Displays as a static catalog preview. Customers can explore product details but cannot purchase or sign up for alerts. Shows a 'Coming Soon' badge.",
                       tag: "Static Preview",
-                      color: "text-[#A85328] bg-orange-50 dark:bg-orange-950/20"
+                      color: "text-[#AC5429] bg-orange-50 dark:bg-orange-950/20"
                     },
                     {
                       name: "Launching Soon",

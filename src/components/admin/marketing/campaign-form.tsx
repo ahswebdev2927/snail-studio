@@ -26,9 +26,9 @@ const TEMPLATE_PRESETS: Record<string, { subject: string; html: string }> = {
   promotion: {
     subject: "Handcrafted Elegance Awaits - Special Offer Inside!",
     html: `<html>
-  <body style="font-family: 'Outfit', sans-serif; background-color: #FAF8F5; padding: 30px; margin: 0; color: #2C2520;">
-    <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 20px; overflow: hidden; border: 1px solid #EAE6DF;">
-      <div style="background-color: #A85328; padding: 40px 20px; text-align: center;">
+  <body style="font-family: 'Outfit', sans-serif; background-color: #DEC6C8; padding: 30px; margin: 0; color: #000000;">
+    <div style="max-width: 600px; margin: 0 auto; background-color: #F8F4F4; border-radius: 20px; overflow: hidden; border: 1px solid #CBB3B5;">
+      <div style="background-color: #AC5429; padding: 40px 20px; text-align: center;">
         <h1 style="color: #ffffff; font-family: 'Georgia', serif; margin: 0; font-size: 28px; font-weight: normal; letter-spacing: 1px;">Handcrafted Elegance Awaits</h1>
       </div>
       <div style="padding: 40px 30px;">
@@ -41,14 +41,14 @@ const TEMPLATE_PRESETS: Record<string, { subject: string; html: string }> = {
         </div>
         
         <p style="text-align: center; margin: 40px 0;">
-          <a href="{{unsubscribe_url}}" style="background-color: #A85328; color: #ffffff; padding: 14px 35px; border-radius: 30px; text-decoration: none; font-weight: bold; font-size: 15px; display: inline-block; box-shadow: 0 5px 15px rgba(168,83,40,0.2);">Shop the Collection</a>
+          <a href="{{unsubscribe_url}}" style="background-color: #AC5429; color: #ffffff; padding: 14px 35px; border-radius: 30px; text-decoration: none; font-weight: bold; font-size: 15px; display: inline-block; box-shadow: 0 5px 15px rgba(172,84,41,0.2);">Shop the Collection</a>
         </p>
-        <p style="font-size: 16px; line-height: 1.6; border-top: 1px solid #eee; padding-top: 25px; margin-top: 30px;">We know you love shopping in <strong>{{favorite_category}}</strong>!</p>
-        <p style="font-size: 15px; color: #777; margin-bottom: 0;">Best regards,<br/>Snail Studios</p>
+        <p style="font-size: 16px; line-height: 1.6; border-top: 1px solid #CBB3B5; padding-top: 25px; margin-top: 30px;">We know you love shopping in <strong>{{favorite_category}}</strong>!</p>
+        <p style="font-size: 15px; color: #4A4A4A; margin-bottom: 0;">Best regards,<br/>Snail Studios</p>
       </div>
-      <div style="background-color: #FAF8F5; padding: 20px; text-align: center; font-size: 12px; color: #999; border-top: 1px solid #EAE6DF;">
+      <div style="background-color: #DEC6C8; padding: 20px; text-align: center; font-size: 12px; color: #4A4A4A; border-top: 1px solid #CBB3B5;">
         You are receiving this email because you opted in to receive promotions from Snail Studios. <br/>
-        <a href="{{unsubscribe_url}}" style="color: #A85328; text-decoration: underline; margin-top: 8px; display: inline-block;">Unsubscribe</a>
+        <a href="{{unsubscribe_url}}" style="color: #AC5429; text-decoration: underline; margin-top: 8px; display: inline-block;">Unsubscribe</a>
       </div>
     </div>
   </body>
@@ -57,28 +57,28 @@ const TEMPLATE_PRESETS: Record<string, { subject: string; html: string }> = {
   new_collection: {
     subject: "Introducing: The Velvet Luxe Collection 💅",
     html: `<html>
-  <body style="font-family: 'Outfit', sans-serif; background-color: #FAF8F5; padding: 30px; margin: 0; color: #2C2520;">
-    <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 20px; overflow: hidden; border: 1px solid #EAE6DF;">
-      <div style="background: linear-gradient(135deg, #2C2520 0%, #4E4035 100%); padding: 50px 20px; text-align: center;">
-        <span style="color: #A85328; text-transform: uppercase; font-size: 12px; letter-spacing: 3px; font-weight: bold; display: block; margin-bottom: 10px;">New Arrival Release</span>
+  <body style="font-family: 'Outfit', sans-serif; background-color: #DEC6C8; padding: 30px; margin: 0; color: #000000;">
+    <div style="max-width: 600px; margin: 0 auto; background-color: #F8F4F4; border-radius: 20px; overflow: hidden; border: 1px solid #CBB3B5;">
+      <div style="background: linear-gradient(135deg, #000000 0%, #4A4A4A 100%); padding: 50px 20px; text-align: center;">
+        <span style="color: #AC5429; text-transform: uppercase; font-size: 12px; letter-spacing: 3px; font-weight: bold; display: block; margin-bottom: 10px;">New Arrival Release</span>
         <h1 style="color: #ffffff; font-family: 'Georgia', serif; margin: 0; font-size: 32px; font-weight: normal; letter-spacing: 1px;">THE VELVET LUXE</h1>
       </div>
       <div style="padding: 40px 30px;">
         <p style="font-size: 16px; line-height: 1.6; margin-top: 0;">Hi {{customer_name}},</p>
         <p style="font-size: 16px; line-height: 1.6;">Indulge in textured jewel tones and cat-eye finishes with our newest limited-run collection, designed to deliver head-turning shimmer effects. Every design is crafted meticulously by our hand-paint nail artists.</p>
         
-        <h3 style="color: #A85328; font-family: Georgia, serif; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-top: 30px;">Featured Collection Sets</h3>
+        <h3 style="color: #AC5429; font-family: Georgia, serif; border-bottom: 1px solid #CBB3B5; padding-bottom: 8px; margin-top: 30px;">Featured Collection Sets</h3>
         <div style="margin: 25px 0; text-align: center;">
           {{recommended_products}}
         </div>
-
+        
         <p style="text-align: center; margin: 40px 0 20px 0;">
-          <a href="{{unsubscribe_url}}" style="background-color: #2C2520; color: #ffffff; padding: 14px 35px; border-radius: 30px; text-decoration: none; font-weight: bold; font-size: 15px; display: inline-block;">Explore the Collection</a>
+          <a href="{{unsubscribe_url}}" style="background-color: #000000; color: #ffffff; padding: 14px 35px; border-radius: 30px; text-decoration: none; font-weight: bold; font-size: 15px; display: inline-block;">Explore the Collection</a>
         </p>
       </div>
-      <div style="background-color: #FAF8F5; padding: 20px; text-align: center; font-size: 12px; color: #999; border-top: 1px solid #EAE6DF;">
+      <div style="background-color: #DEC6C8; padding: 20px; text-align: center; font-size: 12px; color: #4A4A4A; border-top: 1px solid #CBB3B5;">
         Snail Studios &bull; Premium Reusable Press-On Nails<br/>
-        <a href="{{unsubscribe_url}}" style="color: #A85328; text-decoration: underline; margin-top: 8px; display: inline-block;">Unsubscribe</a>
+        <a href="{{unsubscribe_url}}" style="color: #AC5429; text-decoration: underline; margin-top: 8px; display: inline-block;">Unsubscribe</a>
       </div>
     </div>
   </body>
@@ -87,28 +87,28 @@ const TEMPLATE_PRESETS: Record<string, { subject: string; html: string }> = {
   wishlist_reminder: {
     subject: "Items in your wishlist are waiting for you!",
     html: `<html>
-  <body style="font-family: 'Outfit', sans-serif; background-color: #FAF8F5; padding: 30px; margin: 0; color: #2C2520;">
-    <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 20px; overflow: hidden; border: 1px solid #EAE6DF;">
-      <div style="background-color: #FAF6F0; padding: 40px 20px; text-align: center; border-bottom: 1px solid #EAE6DF;">
-        <h1 style="color: #A85328; font-family: 'Georgia', serif; margin: 0; font-size: 26px; font-weight: normal;">Your Saved Styles Await</h1>
+  <body style="font-family: 'Outfit', sans-serif; background-color: #DEC6C8; padding: 30px; margin: 0; color: #000000;">
+    <div style="max-width: 600px; margin: 0 auto; background-color: #F8F4F4; border-radius: 20px; overflow: hidden; border: 1px solid #CBB3B5;">
+      <div style="background-color: #F3D7D2; padding: 40px 20px; text-align: center; border-bottom: 1px solid #CBB3B5;">
+        <h1 style="color: #AC5429; font-family: 'Georgia', serif; margin: 0; font-size: 26px; font-weight: normal;">Your Saved Styles Await</h1>
       </div>
       <div style="padding: 40px 30px;">
         <p style="font-size: 16px; line-height: 1.6; margin-top: 0;">Hi {{customer_name}},</p>
         <p style="font-size: 16px; line-height: 1.6;">We noticed you saved some premium, reusable press-on nail sets in your wishlist. Because our artists paint each set by hand in small batches, popular designs sell out quickly.</p>
         
-        <h3 style="color: #A85328; font-family: Georgia, serif; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-top: 30px;">Saved Items in Your Wishlist</h3>
+        <h3 style="color: #AC5429; font-family: Georgia, serif; border-bottom: 1px solid #CBB3B5; padding-bottom: 8px; margin-top: 30px;">Saved Items in Your Wishlist</h3>
         <div style="margin: 25px 0;">
           {{wishlist_products}}
         </div>
-
+        
         <p style="font-size: 16px; line-height: 1.6; margin-top: 30px;">Complete your purchase today before your sizes are gone!</p>
         <p style="text-align: center; margin: 35px 0;">
-          <a href="{{unsubscribe_url}}" style="background-color: #A85328; color: #ffffff; padding: 14px 35px; border-radius: 30px; text-decoration: none; font-weight: bold; font-size: 15px; display: inline-block;">Return & Order Now</a>
+          <a href="{{unsubscribe_url}}" style="background-color: #AC5429; color: #ffffff; padding: 14px 35px; border-radius: 30px; text-decoration: none; font-weight: bold; font-size: 15px; display: inline-block;">Return & Order Now</a>
         </p>
       </div>
-      <div style="background-color: #FAF8F5; padding: 20px; text-align: center; font-size: 12px; color: #999; border-top: 1px solid #EAE6DF;">
+      <div style="background-color: #DEC6C8; padding: 20px; text-align: center; font-size: 12px; color: #4A4A4A; border-top: 1px solid #CBB3B5;">
         Snail Studios &bull; Premium Reusable Press-On Nails<br/>
-        <a href="{{unsubscribe_url}}" style="color: #A85328; text-decoration: underline; margin-top: 8px; display: inline-block;">Unsubscribe</a>
+        <a href="{{unsubscribe_url}}" style="color: #AC5429; text-decoration: underline; margin-top: 8px; display: inline-block;">Unsubscribe</a>
       </div>
     </div>
   </body>
@@ -117,33 +117,33 @@ const TEMPLATE_PRESETS: Record<string, { subject: string; html: string }> = {
   cart_recovery: {
     subject: "Complete your order before it sells out!",
     html: `<html>
-  <body style="font-family: 'Outfit', sans-serif; background-color: #FAF8F5; padding: 30px; margin: 0; color: #2C2520;">
-    <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 20px; overflow: hidden; border: 1px solid #EAE6DF;">
-      <div style="background-color: #FAF6F0; padding: 40px 20px; text-align: center; border-bottom: 1px solid #EAE6DF;">
-        <h1 style="color: #A85328; font-family: 'Georgia', serif; margin: 0; font-size: 26px; font-weight: normal;">Don't Leave Your Nails Behind</h1>
+  <body style="font-family: 'Outfit', sans-serif; background-color: #DEC6C8; padding: 30px; margin: 0; color: #000000;">
+    <div style="max-width: 600px; margin: 0 auto; background-color: #F8F4F4; border-radius: 20px; overflow: hidden; border: 1px solid #CBB3B5;">
+      <div style="background-color: #F3D7D2; padding: 40px 20px; text-align: center; border-bottom: 1px solid #CBB3B5;">
+        <h1 style="color: #AC5429; font-family: 'Georgia', serif; margin: 0; font-size: 26px; font-weight: normal;">Don't Leave Your Nails Behind</h1>
       </div>
       <div style="padding: 40px 30px;">
         <p style="font-size: 16px; line-height: 1.6; margin-top: 0;">Hi {{customer_name}},</p>
         <p style="font-size: 16px; line-height: 1.6;">We've saved the handcrafted items left in your shopping cart. Because our sets are painted by hand in small batches, stock is limited and cart holds expire soon.</p>
         
-        <h3 style="color: #A85328; font-family: Georgia, serif; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-top: 30px;">Items in Your Cart</h3>
+        <h3 style="color: #AC5429; font-family: Georgia, serif; border-bottom: 1px solid #CBB3B5; padding-bottom: 8px; margin-top: 30px;">Items in Your Cart</h3>
         <div style="margin: 25px 0;">
           {{cart_products}}
         </div>
-
-        <div style="border: 2px dashed #A85328; background-color: #FAF6F0; padding: 25px; border-radius: 15px; text-align: center; margin: 30px 0;">
-          <p style="margin: 0; font-size: 14px; color: #666;">Apply checkout coupon code:</p>
-          <h2 style="font-family: monospace; font-size: 26px; margin: 10px 0; letter-spacing: 3px; color: #2C2520;">{{coupon_code}}</h2>
-          <p style="margin: 0; font-size: 11px; color: #999;">Save 10% on your shopping cart order today!</p>
+        
+        <div style="border: 2px dashed #AC5429; background-color: #F3D7D2; padding: 25px; border-radius: 15px; text-align: center; margin: 30px 0;">
+          <p style="margin: 0; font-size: 14px; color: #4A4A4A;">Apply checkout coupon code:</p>
+          <h2 style="font-family: monospace; font-size: 26px; margin: 10px 0; letter-spacing: 3px; color: #000000;">{{coupon_code}}</h2>
+          <p style="margin: 0; font-size: 11px; color: #4A4A4A;">Save 10% on your shopping cart order today!</p>
         </div>
-
+        
         <p style="text-align: center; margin: 35px 0;">
-          <a href="{{unsubscribe_url}}" style="background-color: #A85328; color: #ffffff; padding: 14px 35px; border-radius: 30px; text-decoration: none; font-weight: bold; font-size: 15px; display: inline-block;">Complete Checkout</a>
+          <a href="{{unsubscribe_url}}" style="background-color: #AC5429; color: #ffffff; padding: 14px 35px; border-radius: 30px; text-decoration: none; font-weight: bold; font-size: 15px; display: inline-block;">Complete Checkout</a>
         </p>
       </div>
-      <div style="background-color: #FAF8F5; padding: 20px; text-align: center; font-size: 12px; color: #999; border-top: 1px solid #EAE6DF;">
+      <div style="background-color: #DEC6C8; padding: 20px; text-align: center; font-size: 12px; color: #4A4A4A; border-top: 1px solid #CBB3B5;">
         Snail Studios &bull; Premium Reusable Press-On Nails<br/>
-        <a href="{{unsubscribe_url}}" style="color: #A85328; text-decoration: underline; margin-top: 8px; display: inline-block;">Unsubscribe</a>
+        <a href="{{unsubscribe_url}}" style="color: #AC5429; text-decoration: underline; margin-top: 8px; display: inline-block;">Unsubscribe</a>
       </div>
     </div>
   </body>
@@ -152,12 +152,12 @@ const TEMPLATE_PRESETS: Record<string, { subject: string; html: string }> = {
   custom: {
     subject: "A Message from Snail Studios",
     html: `<html>
-  <body style="font-family: 'Outfit', sans-serif; background-color: #FAF8F5; padding: 30px; margin: 0; color: #2C2520;">
-    <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 20px; overflow: hidden; border: 1px solid #EAE6DF; padding: 40px 30px;">
-      <h2 style="color: #2C2520; font-family: Georgia, serif; border-bottom: 1px solid #eee; padding-bottom: 15px; margin-top: 0;">Snail Studios</h2>
+  <body style="font-family: 'Outfit', sans-serif; background-color: #DEC6C8; padding: 30px; margin: 0; color: #000000;">
+    <div style="max-width: 600px; margin: 0 auto; background-color: #F8F4F4; border-radius: 20px; overflow: hidden; border: 1px solid #CBB3B5; padding: 40px 30px;">
+      <h2 style="color: #000000; font-family: Georgia, serif; border-bottom: 1px solid #CBB3B5; padding-bottom: 15px; margin-top: 0;">Snail Studios</h2>
       <p>Hello {{customer_name}},</p>
       <p>[Type your custom message content here...]</p>
-      <p style="font-size: 14px; color: #777; margin-top: 40px; border-top: 1px solid #eee; padding-top: 20px;">
+      <p style="font-size: 14px; color: #4A4A4A; margin-top: 40px; border-top: 1px solid #CBB3B5; padding-top: 20px;">
         Snail Studios &bull; Handcrafted Press-on Nail Sets
       </p>
     </div>
@@ -352,23 +352,23 @@ export default function CampaignForm({ coupons, products }: CampaignFormProps) {
     `;
     mockHtml = mockHtml.replaceAll("{{cart_products}}", cartMock);
 
-    const productsMock = selectedProductIds.length > 0 
+     const productsMock = selectedProductIds.length > 0 
       ? products
           .filter((p) => selectedProductIds.includes(p.id))
           .map((p) => `
-            <div style="display: inline-block; width: 120px; margin: 10px; text-align: center; border: 1px solid #eee; padding: 10px; border-radius: 8px;">
-              <p style="margin: 5px 0 0 0; font-size: 12px; font-weight: bold; color: #2C2520; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${p.name}</p>
-              <span style="font-size: 11px; color: #A85328; font-weight: bold;">₹1,500</span>
+            <div style="display: inline-block; width: 120px; margin: 10px; text-align: center; border: 1px solid #CBB3B5; padding: 10px; border-radius: 8px;">
+              <p style="margin: 5px 0 0 0; font-size: 12px; font-weight: bold; color: #000000; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${p.name}</p>
+              <span style="font-size: 11px; color: #AC5429; font-weight: bold;">₹1,500</span>
             </div>
           `).join("")
       : `
-        <div style="display: inline-block; width: 120px; margin: 10px; text-align: center; border: 1px solid #eee; padding: 10px; border-radius: 8px;">
-          <p style="margin: 5px 0 0 0; font-size: 12px; font-weight: bold; color: #2C2520;">Classic French</p>
-          <span style="font-size: 11px; color: #A85328; font-weight: bold;">₹1,200</span>
+        <div style="display: inline-block; width: 120px; margin: 10px; text-align: center; border: 1px solid #CBB3B5; padding: 10px; border-radius: 8px;">
+          <p style="margin: 5px 0 0 0; font-size: 12px; font-weight: bold; color: #000000;">Classic French</p>
+          <span style="font-size: 11px; color: #AC5429; font-weight: bold;">₹1,200</span>
         </div>
-        <div style="display: inline-block; width: 120px; margin: 10px; text-align: center; border: 1px solid #eee; padding: 10px; border-radius: 8px;">
-          <p style="margin: 5px 0 0 0; font-size: 12px; font-weight: bold; color: #2C2520;">Cat-Eye Aura</p>
-          <span style="font-size: 11px; color: #A85328; font-weight: bold;">₹1,600</span>
+        <div style="display: inline-block; width: 120px; margin: 10px; text-align: center; border: 1px solid #CBB3B5; padding: 10px; border-radius: 8px;">
+          <p style="margin: 5px 0 0 0; font-size: 12px; font-weight: bold; color: #000000;">Cat-Eye Aura</p>
+          <span style="font-size: 11px; color: #AC5429; font-weight: bold;">₹1,600</span>
         </div>
       `;
     mockHtml = mockHtml.replaceAll("{{recommended_products}}", productsMock);

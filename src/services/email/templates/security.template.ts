@@ -15,32 +15,32 @@ export function getOtpEmailTemplate(otp: string): string {
     body {
       margin: 0;
       padding: 0;
-      background-color: #FFF3EA;
+      background-color: #DEC6C8;
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      color: #333333;
+      color: #000000;
       -webkit-font-smoothing: antialiased;
     }
     .wrapper {
       width: 100%;
       table-layout: fixed;
-      background-color: #FFF3EA;
+      background-color: #DEC6C8;
       padding-bottom: 40px;
       padding-top: 40px;
     }
     .main-table {
-      background-color: #ffffff;
+      background-color: #F8F4F4;
       margin: 0 auto;
       width: 100%;
       max-width: 600px;
       border-spacing: 0;
       border-radius: 24px;
       overflow: hidden;
-      box-shadow: 0 10px 30px rgba(168, 83, 40, 0.08);
-      border: 1px solid rgba(212, 125, 106, 0.3);
+      box-shadow: 0 10px 30px rgba(172, 84, 41, 0.08);
+      border: 1px solid #CBB3B5;
     }
     .header-band {
       height: 6px;
-      background: linear-gradient(90deg, #D47D6A, #A85328);
+      background: #AC5429;
     }
     .header {
       padding: 40px 30px 20px 30px;
@@ -51,21 +51,21 @@ export function getOtpEmailTemplate(otp: string): string {
       width: 48px;
       height: 48px;
       line-height: 48px;
-      background: linear-gradient(135deg, #D47D6A, #A85328);
+      background: #AC5429;
       border-radius: 14px;
       color: #ffffff;
       font-family: 'Playfair Display', Georgia, serif;
       font-size: 24px;
       font-weight: bold;
       text-align: center;
-      box-shadow: 0 4px 10px rgba(168, 83, 40, 0.2);
+      box-shadow: 0 4px 10px rgba(172, 84, 41, 0.2);
     }
     .brand-name {
       font-family: 'Playfair Display', Georgia, serif;
       font-size: 22px;
       font-weight: 600;
       letter-spacing: 0.05em;
-      color: #1e1b1b;
+      color: #000000;
       margin-top: 15px;
       margin-bottom: 5px;
     }
@@ -73,7 +73,7 @@ export function getOtpEmailTemplate(otp: string): string {
       font-size: 11px;
       text-transform: uppercase;
       letter-spacing: 0.15em;
-      color: #A85328;
+      color: #AC5429;
       font-weight: 600;
       margin: 0;
     }
@@ -85,14 +85,14 @@ export function getOtpEmailTemplate(otp: string): string {
       font-family: 'Playfair Display', Georgia, serif;
       font-size: 24px;
       font-weight: 500;
-      color: #1e1b1b;
+      color: #000000;
       margin-top: 0;
       margin-bottom: 15px;
     }
     p {
       font-size: 14px;
       line-height: 1.6;
-      color: #555555;
+      color: #4A4A4A;
       margin-top: 0;
       margin-bottom: 25px;
     }
@@ -101,9 +101,9 @@ export function getOtpEmailTemplate(otp: string): string {
       font-size: 36px;
       font-weight: bold;
       letter-spacing: 0.25em;
-      color: #A85328;
-      background-color: #FFF8F4;
-      border: 1px solid rgba(212, 125, 106, 0.4);
+      color: #AC5429;
+      background-color: #F8F4F4;
+      border: 1px solid #CBB3B5;
       border-radius: 16px;
       padding: 16px 24px;
       display: inline-block;
@@ -111,13 +111,13 @@ export function getOtpEmailTemplate(otp: string): string {
     }
     .footer {
       padding: 30px;
-      background-color: #FFF8F4;
-      border-top: 1px solid #ebdcd5;
+      background-color: #F8F4F4;
+      border-top: 1px solid #CBB3B5;
       text-align: center;
     }
     .footer-text {
       font-size: 11px;
-      color: #8c8585;
+      color: #4A4A4A;
       line-height: 1.5;
       margin: 0;
     }
@@ -177,32 +177,32 @@ export function getPrivilegedActionEmailTemplate(
     body {
       margin: 0;
       padding: 0;
-      background-color: #FFF3EA;
+      background-color: #DEC6C8;
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      color: #333333;
+      color: #000000;
       -webkit-font-smoothing: antialiased;
     }
     .wrapper {
       width: 100%;
       table-layout: fixed;
-      background-color: #FFF3EA;
+      background-color: #DEC6C8;
       padding-bottom: 40px;
       padding-top: 40px;
     }
     .main-table {
-      background-color: #ffffff;
+      background-color: #F8F4F4;
       margin: 0 auto;
       width: 100%;
       max-width: 600px;
       border-spacing: 0;
       border-radius: 24px;
       overflow: hidden;
-      box-shadow: 0 10px 30px rgba(168, 83, 40, 0.08);
-      border: 1px solid rgba(212, 125, 106, 0.3);
+      box-shadow: 0 10px 30px rgba(172, 84, 41, 0.08);
+      border: 1px solid #CBB3B5;
     }
     .header-band {
       height: 6px;
-      background: linear-gradient(90deg, #D47D6A, #A85328);
+      background: #AC5429;
     }
     .header {
       padding: 40px 30px 20px 30px;
@@ -213,21 +213,21 @@ export function getPrivilegedActionEmailTemplate(
       width: 48px;
       height: 48px;
       line-height: 48px;
-      background: linear-gradient(135deg, #D47D6A, #A85328);
+      background: #AC5429;
       border-radius: 14px;
       color: #ffffff;
       font-family: 'Playfair Display', Georgia, serif;
       font-size: 24px;
       font-weight: bold;
       text-align: center;
-      box-shadow: 0 4px 10px rgba(168, 83, 40, 0.2);
+      box-shadow: 0 4px 10px rgba(172, 84, 41, 0.2);
     }
     .brand-name {
       font-family: 'Playfair Display', Georgia, serif;
       font-size: 22px;
       font-weight: 600;
       letter-spacing: 0.05em;
-      color: #1e1b1b;
+      color: #000000;
       margin-top: 15px;
       margin-bottom: 5px;
     }
@@ -235,7 +235,7 @@ export function getPrivilegedActionEmailTemplate(
       font-size: 11px;
       text-transform: uppercase;
       letter-spacing: 0.15em;
-      color: #A85328;
+      color: #AC5429;
       font-weight: 600;
       margin: 0;
     }
@@ -246,7 +246,7 @@ export function getPrivilegedActionEmailTemplate(
       font-family: 'Playfair Display', Georgia, serif;
       font-size: 22px;
       font-weight: 500;
-      color: #1e1b1b;
+      color: #000000;
       margin-top: 0;
       margin-bottom: 15px;
       text-align: center;
@@ -254,7 +254,7 @@ export function getPrivilegedActionEmailTemplate(
     p {
       font-size: 14px;
       line-height: 1.6;
-      color: #555555;
+      color: #4A4A4A;
       margin-top: 0;
       margin-bottom: 25px;
     }
@@ -266,22 +266,22 @@ export function getPrivilegedActionEmailTemplate(
     }
     .details-table td {
       padding: 10px;
-      border-bottom: 1px solid #FFF3EA;
+      border-bottom: 1px solid #DEC6C8;
     }
     .details-table td.label {
       font-weight: bold;
-      color: #A85328;
+      color: #AC5429;
       width: 130px;
     }
     .footer {
       padding: 30px;
-      background-color: #FFF8F4;
-      border-top: 1px solid #ebdcd5;
+      background-color: #F8F4F4;
+      border-top: 1px solid #CBB3B5;
       text-align: center;
     }
     .footer-text {
       font-size: 11px;
-      color: #8c8585;
+      color: #4A4A4A;
       line-height: 1.5;
       margin: 0;
     }
@@ -368,32 +368,32 @@ export function getRoleChangeEmailTemplate(
     body {
       margin: 0;
       padding: 0;
-      background-color: #FFF3EA;
+      background-color: #DEC6C8;
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      color: #333333;
+      color: #000000;
       -webkit-font-smoothing: antialiased;
     }
     .wrapper {
       width: 100%;
       table-layout: fixed;
-      background-color: #FFF3EA;
+      background-color: #DEC6C8;
       padding-bottom: 40px;
       padding-top: 40px;
     }
     .main-table {
-      background-color: #ffffff;
+      background-color: #F8F4F4;
       margin: 0 auto;
       width: 100%;
       max-width: 600px;
       border-spacing: 0;
       border-radius: 24px;
       overflow: hidden;
-      box-shadow: 0 10px 30px rgba(168, 83, 40, 0.08);
-      border: 1px solid rgba(212, 125, 106, 0.3);
+      box-shadow: 0 10px 30px rgba(172, 84, 41, 0.08);
+      border: 1px solid #CBB3B5;
     }
     .header-band {
       height: 6px;
-      background: linear-gradient(90deg, #D47D6A, #A85328);
+      background: #AC5429;
     }
     .header {
       padding: 40px 30px 20px 30px;
@@ -404,21 +404,21 @@ export function getRoleChangeEmailTemplate(
       width: 48px;
       height: 48px;
       line-height: 48px;
-      background: linear-gradient(135deg, #D47D6A, #A85328);
+      background: #AC5429;
       border-radius: 14px;
       color: #ffffff;
       font-family: 'Playfair Display', Georgia, serif;
       font-size: 24px;
       font-weight: bold;
       text-align: center;
-      box-shadow: 0 4px 10px rgba(168, 83, 40, 0.2);
+      box-shadow: 0 4px 10px rgba(172, 84, 41, 0.2);
     }
     .brand-name {
       font-family: 'Playfair Display', Georgia, serif;
       font-size: 22px;
       font-weight: 600;
       letter-spacing: 0.05em;
-      color: #1e1b1b;
+      color: #000000;
       margin-top: 15px;
       margin-bottom: 5px;
     }
@@ -426,7 +426,7 @@ export function getRoleChangeEmailTemplate(
       font-size: 11px;
       text-transform: uppercase;
       letter-spacing: 0.15em;
-      color: #A85328;
+      color: #AC5429;
       font-weight: 600;
       margin: 0;
     }
@@ -437,7 +437,7 @@ export function getRoleChangeEmailTemplate(
       font-family: 'Playfair Display', Georgia, serif;
       font-size: 22px;
       font-weight: 500;
-      color: #1e1b1b;
+      color: #000000;
       margin-top: 0;
       margin-bottom: 15px;
       text-align: center;
@@ -445,7 +445,7 @@ export function getRoleChangeEmailTemplate(
     p {
       font-size: 14px;
       line-height: 1.6;
-      color: #555555;
+      color: #4A4A4A;
       margin-top: 0;
       margin-bottom: 25px;
     }
@@ -467,13 +467,13 @@ export function getRoleChangeEmailTemplate(
     }
     .footer {
       padding: 30px;
-      background-color: #FFF8F4;
-      border-top: 1px solid #ebdcd5;
+      background-color: #F8F4F4;
+      border-top: 1px solid #CBB3B5;
       text-align: center;
     }
     .footer-text {
       font-size: 11px;
-      color: #8c8585;
+      color: #4A4A4A;
       line-height: 1.5;
       margin: 0;
     }

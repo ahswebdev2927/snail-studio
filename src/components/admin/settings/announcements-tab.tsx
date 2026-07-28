@@ -88,12 +88,12 @@ const iconOptions = [
 ];
 
 const colorPresets = [
-  { name: "Brand Primary", bg: "#A85328", text: "#ffffff" },
-  { name: "Soft Rosewood", bg: "#D47D6A", text: "#ffffff" },
-  { name: "Delicate Cream", bg: "#FFF3EA", text: "#A85328" },
-  { name: "Warm Cocoa", bg: "#8A5E4A", text: "#ffffff" },
-  { name: "Cosmetic Gold", bg: "#F7C66F", text: "#3A2E2A" },
-  { name: "Brand Dark", bg: "#3A2E2A", text: "#ffffff" },
+  { name: "Brand Primary", bg: "#AC5429", text: "#ffffff" },
+  { name: "Soft Blush", bg: "#F3D7D2", text: "#AC5429" },
+  { name: "Brand Background", bg: "#DEC6C8", text: "#000000" },
+  { name: "Muted Charcoal", bg: "#4A4A4A", text: "#ffffff" },
+  { name: "Surface White", bg: "#F8F4F4", text: "#000000" },
+  { name: "Brand Black", bg: "#000000", text: "#ffffff" },
 ];
 
 export default function AnnouncementsTab() {
@@ -180,7 +180,7 @@ export default function AnnouncementsTab() {
       icon: "none",
       ctaText: "",
       ctaLink: "",
-      backgroundColor: "#A85328",
+      backgroundColor: "#AC5429",
       textColor: "#ffffff",
       startDate: "",
       endDate: "",
@@ -800,13 +800,13 @@ export default function AnnouncementsTab() {
                     <div className="flex gap-2 items-center">
                       <input
                         type="color"
-                        value={currentAnn.backgroundColor || "#A85328"}
+                        value={currentAnn.backgroundColor || "#AC5429"}
                         onChange={(e) => setCurrentAnn({ ...currentAnn, backgroundColor: e.target.value })}
                         className="w-8 h-8 rounded-lg cursor-pointer border border-border shrink-0 bg-transparent"
                       />
                       <input
                         type="text"
-                        value={currentAnn.backgroundColor || "#A85328"}
+                        value={currentAnn.backgroundColor || "#AC5429"}
                         onChange={(e) => setCurrentAnn({ ...currentAnn, backgroundColor: e.target.value })}
                         className="w-full px-3 py-1.5 bg-background border border-border rounded-xl text-xs font-mono text-foreground focus:outline-none"
                       />
