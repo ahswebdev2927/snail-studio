@@ -277,15 +277,14 @@ export function Header({ navigationData, storeLogo = "", storeName = "Snail Stud
               <Menu className="w-5 h-5" />
             </button>
 
-            <Link href="/" className="flex items-center gap-2">
+            <Link href="/" className="flex items-center gap-2 shrink-0">
               {storeLogo ? (
-                <div className="relative h-16 w-auto flex items-center">
+                <div className="relative w-[90px] h-[45px] sm:w-[100px] sm:h-[50px] md:w-[110px] md:h-[55px] lg:w-[120px] lg:h-[60px] shrink-0 overflow-hidden">
                   <Image
                     src={storeLogo}
                     alt={storeName}
-                    width={300}
-                    height={64}
-                    className="h-16 w-auto object-contain"
+                    fill
+                    className="object-cover"
                     priority
                   />
                 </div>
@@ -641,13 +640,12 @@ export function Header({ navigationData, storeLogo = "", storeName = "Snail Stud
         <DrawerHeader>
           <DrawerTitle className="font-serif text-xl font-semibold tracking-wide bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
             {storeLogo ? (
-              <div className="relative h-12 w-auto flex items-center">
+              <div className="relative w-[90px] h-[45px] sm:w-[100px] sm:h-[50px] md:w-[110px] md:h-[55px] lg:w-[120px] lg:h-[60px] shrink-0 overflow-hidden">
                 <Image
                   src={storeLogo}
                   alt={storeName}
-                  width={240}
-                  height={48}
-                  className="h-12 w-auto object-contain"
+                  fill
+                  className="object-cover"
                 />
               </div>
             ) : (

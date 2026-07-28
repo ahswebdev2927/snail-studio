@@ -205,7 +205,7 @@ export default function AdminGeneralSettingsPage() {
                     )}
                   </div>
                   <p className="text-[10px] text-muted-foreground font-light leading-relaxed">
-                    Recommended: 300x80px or wider aspect ratio.
+                    Recommended: 120x60px (scales responsively down to 90x45px on mobile).
                   </p>
                 </div>
               </div>

@@ -68,15 +68,16 @@ export function Footer({ storeLogo = "", storeName = "Snail Studio" }: FooterPro
       {/* Main Footer links and details */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 grid grid-cols-1 md:grid-cols-4 gap-12">
         <div className="space-y-6 col-span-1 md:col-span-1">
-          <Link href="/" className="inline-block">
+          <Link href="/" className="inline-block shrink-0">
             {storeLogo ? (
-              <Image
-                src={storeLogo}
-                alt={storeName}
-                width={300}
-                height={64}
-                className="h-16 w-auto object-contain invert dark:invert-0"
-              />
+              <div className="relative w-[90px] h-[45px] sm:w-[100px] sm:h-[50px] md:w-[110px] md:h-[55px] lg:w-[120px] lg:h-[60px] shrink-0 overflow-hidden">
+                <Image
+                  src={storeLogo}
+                  alt={storeName}
+                  fill
+                  className="object-cover"
+                />
+              </div>
             ) : (
               <span className="font-serif text-2xl font-semibold tracking-wide bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
                 {storeName}
