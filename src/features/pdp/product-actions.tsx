@@ -932,7 +932,7 @@ function DeliveryEstimator() {
       const startsWith = pincode.substring(0, 2);
       let days = "4–5 business days";
       let deliveryType: "metro" | "standard" | "other" = "standard";
-      let codAvailable = true;
+      let codAvailable = false;
 
       // Metro prefixes: 11 Delhi, 40 Mumbai, 56 Bangalore, 60 Chennai, 70 Kolkata
       if (["11", "40", "56", "60", "70"].includes(startsWith)) {
@@ -1050,7 +1050,7 @@ function DeliveryEstimator() {
               <p className="text-[10px] text-muted-foreground font-light">
                 {result.cod
                   ? "Pay in cash or UPI at the time of delivery"
-                  : "COD is currently unavailable for this PIN code"}
+                  : "Cash on Delivery is not supported. All orders are prepaid."}
               </p>
             </div>
           </div>
