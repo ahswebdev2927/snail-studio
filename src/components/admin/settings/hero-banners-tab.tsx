@@ -454,7 +454,7 @@ export default function HeroBannersTab() {
       {/* Editor Modal Overlay */}
       {isModalOpen && currentBanner && (
         <div className="fixed inset-0 z-50 bg-foreground/20 backdrop-blur-xs overflow-y-auto flex items-center justify-center p-4">
-          <div className="bg-card border border-border/40 rounded-3xl w-full max-w-xl shadow-2xl relative max-h-[90vh] overflow-y-auto p-6 space-y-6 my-auto">
+          <div className="bg-card border border-border/40 rounded-3xl w-full max-w-xl shadow-2xl relative p-6 space-y-6 my-auto animate-in zoom-in-95 duration-200">
             <button
               onClick={() => setIsModalOpen(false)}
               className="absolute top-4 right-4 p-2 text-muted-foreground hover:text-foreground rounded-full hover:bg-secondary/50 cursor-pointer"
@@ -471,7 +471,7 @@ export default function HeroBannersTab() {
               </p>
             </div>
 
-            <form onSubmit={handleSaveBanner} className="space-y-4">
+            <form onSubmit={handleSaveBanner} className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
               {/* Image Input Selection */}
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
