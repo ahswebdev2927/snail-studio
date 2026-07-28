@@ -18,6 +18,7 @@ import { InstagramGallery } from "@/components/storefront/instagram-gallery";
 import { CustomerTestimonials } from "@/components/storefront/customer-testimonials";
 import { InteractiveSizing } from "@/components/storefront/interactive-sizing";
 import { RecentlyViewed } from "@/features/pdp/recently-viewed";
+import { ProductSlider } from "@/components/storefront/product-slider";
 import type { Metadata } from "next";
 import { getBaseMetadata } from "@/lib/seo";
 
@@ -173,10 +174,13 @@ export default async function Home() {
               </Link>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
+            <div className="hidden md:grid grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
               {bestSellers.map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}
+            </div>
+            <div className="md:hidden">
+              <ProductSlider products={bestSellers} />
             </div>
           </div>
         </section>
@@ -204,10 +208,13 @@ export default async function Home() {
               </Link>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
+            <div className="hidden md:grid grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
               {newArrivals.map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}
+            </div>
+            <div className="md:hidden">
+              <ProductSlider products={newArrivals} />
             </div>
           </div>
         </section>
@@ -236,10 +243,13 @@ export default async function Home() {
               </Link>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
+            <div className="hidden md:grid grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
               {trending.map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}
+            </div>
+            <div className="md:hidden">
+              <ProductSlider products={trending} />
             </div>
           </div>
         </section>

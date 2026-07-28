@@ -502,7 +502,7 @@ export function Header({ navigationData, storeLogo = "", storeName = "Snail Stud
             {/* Wishlist Link */}
             <Link
               href="/wishlist"
-              className="p-2 rounded-full text-foreground hover:bg-primary/10 hover:text-primary transition-all relative"
+              className="hidden md:inline-flex p-2 rounded-full text-foreground hover:bg-primary/10 hover:text-primary transition-all relative"
               aria-label="Wishlist"
             >
               <Heart className="w-4 h-4" />
@@ -516,7 +516,7 @@ export function Header({ navigationData, storeLogo = "", storeName = "Snail Stud
             {/* Cart Trigger */}
             <button
               onClick={() => setCartOpen(true)}
-              className="p-2 rounded-full text-foreground hover:bg-primary/10 hover:text-primary transition-all relative cursor-pointer"
+              className="hidden md:inline-flex p-2 rounded-full text-foreground hover:bg-primary/10 hover:text-primary transition-all relative cursor-pointer"
               aria-label="Cart"
             >
               <ShoppingBag className="w-4.5 h-4.5" />
@@ -529,7 +529,7 @@ export function Header({ navigationData, storeLogo = "", storeName = "Snail Stud
 
             {/* Profile / Admin Login Link Dropdown */}
             <div
-              className="relative"
+              className="hidden md:block relative"
               onMouseEnter={handleDropdownMouseEnter}
               onMouseLeave={handleDropdownMouseLeave}
             >

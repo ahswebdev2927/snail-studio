@@ -4,6 +4,7 @@ import { Header } from "@/components/storefront/header";
 import { SearchOverlay } from "@/components/storefront/search-overlay";
 import { CartDrawer } from "@/components/storefront/cart-drawer";
 import { Footer } from "@/components/storefront/footer";
+import { BottomNav } from "@/components/storefront/bottom-nav";
 import { getStorefrontNavigation } from "@/services/navigation";
 import { db } from "@/db";
 import { announcements, systemSettings } from "@/db/schema";
@@ -63,11 +64,12 @@ export default async function StorefrontLayout({
     <>
       <AnnouncementBar announcements={activeAnnouncements} settings={barSettings} />
       <Header navigationData={navigationData} storeLogo={storeLogo} storeName={storeName} />
-      <main className="flex-1 flex flex-col transition-colors duration-300">
+      <main className="flex-1 flex flex-col transition-colors duration-300 pb-16 md:pb-0">
         {children}
       </main>
       <SearchOverlay />
       <CartDrawer />
+      <BottomNav />
       <Footer storeLogo={storeLogo} storeName={storeName} />
     </>
   );
