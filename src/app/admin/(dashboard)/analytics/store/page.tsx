@@ -32,6 +32,9 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
+  PieChart,
+  Pie,
+  Cell,
 } from "recharts";
 
 // Types for Revenue Analytics
@@ -270,6 +273,7 @@ export default function AnalyticsPage() {
   const [activeOrderPoint, setActiveOrderPoint] = useState<any | null>(null);
   const [activeWishlistPoint, setActiveWishlistPoint] = useState<any | null>(null);
   const [activeCustomerPoint, setActiveCustomerPoint] = useState<any | null>(null);
+  const [hoveredStatus, setHoveredStatus] = useState<string | null>(null);
 
   // Fetch data depending on activeTab & range
   async function loadAnalytics() {
@@ -572,6 +576,26 @@ export default function AnalyticsPage() {
       return null;
     };
 
+    const StatusTooltip = ({ active, payload }: any) => {
+      if (active && payload && payload.length) {
+        const data = payload[0].payload;
+        if (data.key === "none") return null;
+        const pct = getStatusPercent(data.value);
+        return (
+          <div className="bg-card/95 backdrop-blur-md border border-border/40 px-3 py-2 rounded-2xl shadow-xl flex flex-col gap-0.5 text-xs font-light">
+            <div className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: data.color }} />
+              <span className="font-semibold text-foreground">{data.name}</span>
+            </div>
+            <p className="font-mono text-[10px] text-muted-foreground pl-3">
+              {data.value} orders ({pct.toFixed(0)}%)
+            </p>
+          </div>
+        );
+      }
+      return null;
+    };
+
     // Formatting helper for duration hours
     const formatFulfillmentHours = (hours: number) => {
       if (hours === 0) return "N/A";
@@ -589,13 +613,13 @@ export default function AnalyticsPage() {
 
     // Status label map with descriptions & icons & color classes
     const statuses = [
-      { key: "delivered", label: "Delivered", count: summary.statusBreakdown.delivered, bg: "bg-emerald-500", text: "text-emerald-800 dark:text-emerald-300 bg-emerald-500/15 border-emerald-500/30" },
-      { key: "shipped", label: "Shipped", count: summary.statusBreakdown.shipped, bg: "bg-sky-500", text: "text-sky-800 dark:text-sky-300 bg-sky-500/15 border-sky-500/30" },
-      { key: "processing", label: "Processing", count: summary.statusBreakdown.processing, bg: "bg-orange-500", text: "text-orange-800 dark:text-orange-300 bg-orange-500/15 border-orange-500/30" },
-      { key: "paid", label: "Paid Checkouts", count: summary.statusBreakdown.paid, bg: "bg-emerald-500", text: "text-emerald-800 dark:text-emerald-300 bg-emerald-500/15 border-emerald-500/30" },
-      { key: "pending", label: "Pending Payment", count: summary.statusBreakdown.pending, bg: "bg-amber-500", text: "text-amber-800 dark:text-amber-300 bg-amber-500/15 border-amber-500/30" },
-      { key: "refunded", label: "Refunded", count: summary.statusBreakdown.refunded, bg: "bg-purple-500", text: "text-purple-800 dark:text-purple-300 bg-purple-500/15 border-purple-500/30" },
-      { key: "cancelled", label: "Cancelled", count: summary.statusBreakdown.cancelled, bg: "bg-rose-500", text: "text-rose-800 dark:text-rose-300 bg-rose-500/15 border-rose-500/30" }
+      { key: "delivered", label: "Delivered", count: summary.statusBreakdown.delivered, bg: "bg-emerald-500", hex: "#10b981", text: "text-emerald-800 dark:text-emerald-300 bg-emerald-500/15 border-emerald-500/30" },
+      { key: "shipped", label: "Shipped", count: summary.statusBreakdown.shipped, bg: "bg-sky-500", hex: "#0ea5e9", text: "text-sky-800 dark:text-sky-300 bg-sky-500/15 border-sky-500/30" },
+      { key: "processing", label: "Processing", count: summary.statusBreakdown.processing, bg: "bg-orange-500", hex: "#f97316", text: "text-orange-800 dark:text-orange-300 bg-orange-500/15 border-orange-500/30" },
+      { key: "paid", label: "Paid Checkouts", count: summary.statusBreakdown.paid, bg: "bg-emerald-500", hex: "#10b981", text: "text-emerald-800 dark:text-emerald-300 bg-emerald-500/15 border-emerald-500/30" },
+      { key: "pending", label: "Pending Payment", count: summary.statusBreakdown.pending, bg: "bg-amber-500", hex: "#f59e0b", text: "text-amber-800 dark:text-amber-300 bg-amber-500/15 border-amber-500/30" },
+      { key: "refunded", label: "Refunded", count: summary.statusBreakdown.refunded, bg: "bg-purple-500", hex: "#a855f7", text: "text-purple-800 dark:text-purple-300 bg-purple-500/15 border-purple-500/30" },
+      { key: "cancelled", label: "Cancelled", count: summary.statusBreakdown.cancelled, bg: "bg-rose-500", hex: "#f43f5e", text: "text-rose-800 dark:text-rose-300 bg-rose-500/15 border-rose-500/30" }
     ];
 
     return (
@@ -690,7 +714,7 @@ export default function AnalyticsPage() {
               )}
             </div>
 
-            <div className="h-56 w-full pt-4">
+            <div className="h-[280px] w-full pt-4">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart
                   data={ordersHistory}
@@ -745,35 +769,119 @@ export default function AnalyticsPage() {
             </div>
           </div>
 
-          {/* Status Breakdown Distribution Lists */}
-          <div className="bg-card border border-border/40 rounded-3xl p-6 hover:border-primary/10 transition-all shadow-sm space-y-4">
-            <div>
-              <h3 className="text-sm font-semibold tracking-wide text-foreground">Status Distributions</h3>
-              <p className="text-[10px] text-muted-foreground font-light">
-                Ledger counts breakdown grouped by order fulfillment stages.
-              </p>
+          {/* Status Breakdown Distribution Donut Chart & Legend */}
+          <div className="bg-card border border-border/40 rounded-3xl p-6 hover:border-primary/10 transition-all shadow-sm flex flex-col justify-between">
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-sm font-semibold tracking-wide text-foreground">Status Distributions</h3>
+                <p className="text-[10px] text-muted-foreground font-light">
+                  Ledger counts breakdown grouped by order fulfillment stages.
+                </p>
+              </div>
+
+              {/* Donut Chart Container */}
+              <div className="relative w-full h-44 flex items-center justify-center">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={summary.totalOrders === 0 
+                        ? [{ name: "No Orders", value: 1, color: "var(--border)", key: "none" }]
+                        : statuses
+                            .filter(s => s.count > 0)
+                            .map(s => ({
+                              name: s.label,
+                              value: s.count,
+                              color: s.hex,
+                              key: s.key,
+                            }))
+                      }
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={52}
+                      outerRadius={70}
+                      paddingAngle={
+                        summary.totalOrders > 0 && statuses.filter(s => s.count > 0).length > 1 ? 3 : 0
+                      }
+                      dataKey="value"
+                      onMouseEnter={(_, index) => {
+                        if (summary.totalOrders > 0) {
+                          const activeStatuses = statuses.filter(s => s.count > 0);
+                          if (activeStatuses[index]) {
+                            setHoveredStatus(activeStatuses[index].key);
+                          }
+                        }
+                      }}
+                      onMouseLeave={() => {
+                        setHoveredStatus(null);
+                      }}
+                    >
+                      {(summary.totalOrders === 0 
+                        ? [{ name: "No Orders", value: 1, color: "var(--border)", key: "none" }]
+                        : statuses
+                            .filter(s => s.count > 0)
+                            .map(s => ({
+                              name: s.label,
+                              value: s.count,
+                              color: s.hex,
+                              key: s.key,
+                            }))
+                      ).map((entry, index) => {
+                        const isHovered = hoveredStatus === entry.key;
+                        return (
+                          <Cell 
+                            key={`cell-${index}`} 
+                            fill={entry.color} 
+                            opacity={hoveredStatus === null || isHovered ? 1 : 0.4}
+                            className="transition-all duration-300 cursor-pointer"
+                            style={{ outline: "none" }}
+                          />
+                        );
+                      })}
+                    </Pie>
+                    <Tooltip content={<StatusTooltip />} />
+                  </PieChart>
+                </ResponsiveContainer>
+                {/* Center text for donut */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                  <span className="font-serif text-2xl font-bold tracking-wide text-foreground">
+                    {summary.totalOrders}
+                  </span>
+                  <span className="text-[9px] text-muted-foreground uppercase tracking-wider font-semibold">
+                    Total Orders
+                  </span>
+                </div>
+              </div>
             </div>
 
-            <div className="space-y-3.5">
+            {/* Status Legend Grid */}
+            <div className="grid grid-cols-2 gap-2 mt-4">
               {statuses.map(s => {
                 const pct = getStatusPercent(s.count);
+                const isHovered = hoveredStatus === s.key;
+                const hasHoverActive = hoveredStatus !== null;
+                const isZero = s.count === 0;
+
                 return (
-                  <div key={s.key} className="space-y-1 text-xs">
-                    <div className="flex justify-between items-center text-[10px] font-medium text-foreground">
-                      <span className="flex items-center gap-1.5">
-                        <span className={`w-1.5 h-1.5 rounded-full ${s.bg}`} />
-                        {s.label}
+                  <div 
+                    key={s.key} 
+                    className={`flex items-center gap-1.5 p-1 rounded-xl transition-all duration-200 ${
+                      isZero ? "opacity-35" : "cursor-pointer"
+                    } ${
+                      isHovered 
+                        ? "bg-secondary/15 scale-[1.02]" 
+                        : hasHoverActive && !isZero 
+                          ? "opacity-50" 
+                          : ""
+                    }`}
+                    onMouseEnter={() => !isZero && setHoveredStatus(s.key)}
+                    onMouseLeave={() => setHoveredStatus(null)}
+                  >
+                    <span className={`w-2 h-2 rounded-full shrink-0 ${s.bg}`} style={{ backgroundColor: s.hex }} />
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-[10px] font-semibold text-foreground truncate">{s.label}</span>
+                      <span className="text-[8px] text-muted-foreground font-mono truncate">
+                        {s.count} ({pct.toFixed(0)}%)
                       </span>
-                      <span className="font-mono text-muted-foreground">
-                        {s.count} orders ({pct.toFixed(0)}%)
-                      </span>
-                    </div>
-                    {/* Custom Premium Progress Bar */}
-                    <div className="w-full h-1.5 bg-secondary/40 rounded-full overflow-hidden">
-                      <div 
-                        className={`h-full ${s.bg} rounded-full transition-all duration-500`}
-                        style={{ width: `${pct}%` }}
-                      />
                     </div>
                   </div>
                 );
