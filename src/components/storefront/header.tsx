@@ -43,6 +43,37 @@ export function Header({ navigationData, storeLogo = "", storeName = "Snail Stud
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const dropdownTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  const [isVisible, setIsVisible] = useState(true);
+  const lastScrollYRef = useRef(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+
+      // Always show at the top of the page
+      if (currentScrollY < 160) {
+        setIsVisible(true);
+        lastScrollYRef.current = currentScrollY;
+        return;
+      }
+
+      const diff = currentScrollY - lastScrollYRef.current;
+      if (Math.abs(diff) > 10) {
+        if (diff > 0) {
+          // Scrolling down -> hide navbar
+          setIsVisible(false);
+        } else {
+          // Scrolling up -> show navbar
+          setIsVisible(true);
+        }
+        lastScrollYRef.current = currentScrollY;
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   const handleDropdownMouseEnter = () => {
     if (dropdownTimeoutRef.current) {
       clearTimeout(dropdownTimeoutRef.current);
@@ -100,7 +131,7 @@ export function Header({ navigationData, storeLogo = "", storeName = "Snail Stud
       setIsLoggingOut(false);
     }
   };
-  
+
   // Zustand store triggers
   const cart = useCartStore((state) => state.cart);
   const wishlist = useCartStore((state) => state.wishlist);
@@ -220,21 +251,27 @@ export function Header({ navigationData, storeLogo = "", storeName = "Snail Stud
   const collectionsList = nav?.shop?.collections?.length
     ? nav.shop.collections
     : [
-        { name: "Best Sellers", url: "/shop?sort=best_selling" },
-        { name: "New Arrivals", url: "/shop?sort=newest" },
-      ];
+      { name: "Best Sellers", url: "/shop?sort=best_selling" },
+      { name: "New Arrivals", url: "/shop?sort=newest" },
+    ];
 
   const promo = nav?.promoBanner;
 
   return (
     <>
-      <header className="sticky top-0 z-50 backdrop-blur-md bg-background/80 border-b border-border/40 transition-colors duration-300">
+      <header
+        style={{
+          transition: "transform 0.5s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.5s cubic-bezier(0.25, 0.8, 0.25, 1), top 0.5s cubic-bezier(0.25, 0.8, 0.25, 1), background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease",
+        }}
+        className={`sticky top-0 z-50 backdrop-blur-md bg-white/95 dark:bg-black/95 border-b border-border/40 transition-all ${isVisible ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0"
+          }`}
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
           {/* Left: Hamburger & Logo (Mobile) or Logo (Desktop) */}
           <div className="flex items-center gap-4">
             <button
               onClick={() => setMobileMenuOpen(true)}
-              className="lg:hidden p-2 rounded-xl text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-all cursor-pointer"
+              className="lg:hidden p-2 rounded-xl text-foreground hover:bg-primary/10 hover:text-primary transition-all cursor-pointer"
               aria-label="Open navigation menu"
             >
               <Menu className="w-5 h-5" />
@@ -261,7 +298,7 @@ export function Header({ navigationData, storeLogo = "", storeName = "Snail Stud
           </div>
 
           {/* Center: Desktop Mega Menu */}
-          <nav className="hidden lg:flex items-center gap-1.5 text-xs font-medium uppercase tracking-widest text-foreground/80 font-inter">
+          <nav className="hidden lg:flex items-center gap-1.5 text-xs font-medium uppercase tracking-widest text-foreground font-inter">
             {/* Home */}
             <Link
               href="/"
@@ -444,11 +481,11 @@ export function Header({ navigationData, storeLogo = "", storeName = "Snail Stud
             {/* Theme Toggle */}
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-full text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-all duration-300 hover:rotate-12 cursor-pointer"
+              className="p-2 rounded-full text-foreground hover:bg-primary/10 hover:text-primary transition-all duration-300 hover:rotate-12 cursor-pointer"
               aria-label="Toggle Theme"
             >
               {theme === "light" ? (
-                <Moon className="w-4 h-4 text-muted-foreground" />
+                <Moon className="w-4 h-4 text-foreground" />
               ) : (
                 <Sun className="w-4 h-4 text-accent" />
               )}
@@ -457,7 +494,7 @@ export function Header({ navigationData, storeLogo = "", storeName = "Snail Stud
             {/* Search Trigger */}
             <button
               onClick={() => setSearchOpen(true)}
-              className="p-2 rounded-full text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-all cursor-pointer"
+              className="p-2 rounded-full text-foreground hover:bg-primary/10 hover:text-primary transition-all cursor-pointer"
               aria-label="Search"
             >
               <Search className="w-4 h-4" />
@@ -466,7 +503,7 @@ export function Header({ navigationData, storeLogo = "", storeName = "Snail Stud
             {/* Wishlist Link */}
             <Link
               href="/wishlist"
-              className="p-2 rounded-full text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-all relative"
+              className="p-2 rounded-full text-foreground hover:bg-primary/10 hover:text-primary transition-all relative"
               aria-label="Wishlist"
             >
               <Heart className="w-4 h-4" />
@@ -480,7 +517,7 @@ export function Header({ navigationData, storeLogo = "", storeName = "Snail Stud
             {/* Cart Trigger */}
             <button
               onClick={() => setCartOpen(true)}
-              className="p-2 rounded-full text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-all relative cursor-pointer"
+              className="p-2 rounded-full text-foreground hover:bg-primary/10 hover:text-primary transition-all relative cursor-pointer"
               aria-label="Cart"
             >
               <ShoppingBag className="w-4.5 h-4.5" />
@@ -492,14 +529,14 @@ export function Header({ navigationData, storeLogo = "", storeName = "Snail Stud
             </button>
 
             {/* Profile / Admin Login Link Dropdown */}
-            <div 
+            <div
               className="relative"
               onMouseEnter={handleDropdownMouseEnter}
               onMouseLeave={handleDropdownMouseLeave}
             >
               <button
                 onClick={() => setUserDropdownOpen(!userDropdownOpen)}
-                className="p-2 rounded-full text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-all cursor-pointer flex items-center gap-1 focus:outline-hidden"
+                className="p-2 rounded-full text-foreground hover:bg-primary/10 hover:text-primary transition-all cursor-pointer flex items-center gap-1 focus:outline-hidden"
                 aria-label="User Account Menu"
               >
                 <User className="w-4 h-4" />
