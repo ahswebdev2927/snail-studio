@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Heart, ShoppingBag, User } from "lucide-react";
+import { Home, Compass, Heart, ShoppingBag, User } from "lucide-react";
 import { useCartStore } from "@/lib/hooks/use-cart-store";
 import { cn } from "@/lib/utils";
 import { getCurrentUser } from "@/features/account/actions";
@@ -35,6 +35,12 @@ export function BottomNav() {
       icon: Home,
       href: "/",
       isActive: pathname === "/",
+    },
+    {
+      label: "Shop",
+      icon: Compass,
+      href: "/shop",
+      isActive: pathname === "/shop" || pathname.startsWith("/shop"),
     },
     {
       label: "Wishlist",

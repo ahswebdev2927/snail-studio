@@ -157,7 +157,7 @@ export default async function Home() {
 
       {/* Best Sellers Section */}
       {bestSellers.length > 0 && (
-        <section id="best-sellers" className="py-16 bg-secondary/10">
+        <section id="best-sellers" className="py-16 bg-[#dec6c8] dark:bg-[#1C1819]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col sm:flex-row items-baseline justify-between mb-12 gap-4">
               <div>
@@ -191,7 +191,7 @@ export default async function Home() {
 
       {/* New Arrivals Section */}
       {newArrivals.length > 0 && (
-        <section id="new-arrivals" className="py-16 bg-secondary/10">
+        <section id="new-arrivals" className="py-16 bg-[#dec6c8] dark:bg-[#1C1819]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col sm:flex-row items-baseline justify-between mb-12 gap-4">
               <div>
@@ -226,7 +226,7 @@ export default async function Home() {
 
       {/* Trending Section */}
       {trending.length > 0 && (
-        <section id="trending" className="py-16 bg-secondary/10">
+        <section id="trending" className="py-16 bg-[#dec6c8] dark:bg-[#1C1819]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col sm:flex-row items-baseline justify-between mb-12 gap-4">
               <div>

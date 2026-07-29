@@ -164,7 +164,7 @@ export function CustomerTestimonials() {
   return (
     <section 
       id="reviews" 
-      className="py-16 bg-background border-t border-border/20 relative overflow-hidden"
+      className="py-16 bg-[#dec6c8] dark:bg-[#1C1819] border-t border-border/20 relative overflow-hidden"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
