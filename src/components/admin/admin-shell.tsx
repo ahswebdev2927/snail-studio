@@ -169,7 +169,7 @@ export default function AdminShell({ user, children }: AdminShellProps) {
         />
 
         {/* Scrollable page body */}
-        <main className="flex-1 overflow-y-auto px-4 py-6 sm:px-6 lg:px-8 bg-secondary/10 dark:bg-secondary/5 transition-colors duration-300">
+        <main className="flex-1 overflow-y-auto px-4 py-6 sm:px-6 lg:px-8 bg-background dark:bg-secondary/5 transition-colors duration-300">
           <div className="max-w-7xl mx-auto animate-fade-in">
             {children}
           </div>

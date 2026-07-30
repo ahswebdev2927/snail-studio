@@ -88,12 +88,12 @@ const iconOptions = [
 ];
 
 const colorPresets = [
-  { name: "Brand Primary", bg: "#AC5429", text: "#ffffff" },
-  { name: "Soft Blush", bg: "#F3D7D2", text: "#AC5429" },
-  { name: "Brand Background", bg: "#DEC6C8", text: "#000000" },
-  { name: "Muted Charcoal", bg: "#4A4A4A", text: "#ffffff" },
-  { name: "Surface White", bg: "#F8F4F4", text: "#000000" },
-  { name: "Brand Black", bg: "#000000", text: "#ffffff" },
+  { name: "Brand Primary", bg: "#A95423", text: "#ffffff" },
+  { name: "Soft Blush", bg: "#EFD3C9", text: "#A95423" },
+  { name: "Brand Background", bg: "#FEFFF6", text: "#222222" },
+  { name: "Muted Charcoal", bg: "#666666", text: "#ffffff" },
+  { name: "Surface White", bg: "#FFFFFF", text: "#222222" },
+  { name: "Brand Black", bg: "#222222", text: "#ffffff" },
 ];
 
 export default function AnnouncementsTab() {
@@ -180,7 +180,7 @@ export default function AnnouncementsTab() {
       icon: "none",
       ctaText: "",
       ctaLink: "",
-      backgroundColor: "#AC5429",
+      backgroundColor: "#A95423",
       textColor: "#ffffff",
       startDate: "",
       endDate: "",
@@ -800,13 +800,13 @@ export default function AnnouncementsTab() {
                     <div className="flex gap-2 items-center">
                       <input
                         type="color"
-                        value={currentAnn.backgroundColor || "#AC5429"}
+                        value={currentAnn.backgroundColor || "#A95423"}
                         onChange={(e) => setCurrentAnn({ ...currentAnn, backgroundColor: e.target.value })}
                         className="w-8 h-8 rounded-lg cursor-pointer border border-border shrink-0 bg-transparent"
                       />
                       <input
                         type="text"
-                        value={currentAnn.backgroundColor || "#AC5429"}
+                        value={currentAnn.backgroundColor || "#A95423"}
                         onChange={(e) => setCurrentAnn({ ...currentAnn, backgroundColor: e.target.value })}
                         className="w-full px-3 py-1.5 bg-background border border-border rounded-xl text-xs font-mono text-foreground focus:outline-none"
                       />

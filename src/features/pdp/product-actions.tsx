@@ -510,11 +510,11 @@ export function ProductActions({
           Price
         </p>
         <div className="flex items-baseline gap-3 flex-wrap">
-          <span className="font-serif text-3xl font-medium text-primary">
+          <span className="font-sans text-3xl font-bold text-primary">
             {displayPrice}
           </span>
           {originalPrice && (
-            <span className="font-serif text-xl text-muted-foreground line-through">
+            <span className="font-sans text-xl text-muted-foreground line-through">
               {formatPrice(originalPrice)}
             </span>
           )}

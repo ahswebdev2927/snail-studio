@@ -23,23 +23,23 @@ export function Footer({ storeLogo = "", storeName = "Snail Studio" }: FooterPro
   };
 
   return (
-    <footer className="bg-black text-white mt-auto border-t border-white/10">
+    <footer className="bg-background text-foreground mt-auto border-t border-border">
       {/* Newsletter signup area banner */}
-      <div className="border-b border-white/10 py-12 md:py-16">
+      <div className="bg-[#EFD3C9] border-b border-border py-12 md:py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-8">
           <div className="space-y-2 text-center md:text-left max-w-xl">
             <span className="text-[10px] uppercase tracking-widest text-primary font-bold">Join the Studio Club</span>
-            <h3 className="font-serif text-xl sm:text-2xl font-normal text-white tracking-wide">
+            <h3 className="font-serif text-xl sm:text-2xl font-normal text-foreground tracking-wide">
               Unlock early access to new collections & exclusive offers
             </h3>
-            <p className="text-xs text-white/60 font-light">
+            <p className="text-xs text-muted-foreground font-light">
               Receive 10% off your first purchase when you sign up. No spam, only luxury nail releases.
             </p>
           </div>
 
           <div className="w-full md:w-auto min-w-[320px] sm:min-w-[400px]">
             {subscribed ? (
-              <div className="p-4 bg-white/5 border border-primary/20 rounded-2xl text-center text-xs font-medium text-primary">
+              <div className="p-4 bg-white border border-primary/20 rounded-2xl text-center text-xs font-medium text-primary shadow-xs">
                 ✨ Thank you for subscribing! Check your inbox for your 10% off code.
               </div>
             ) : (
@@ -49,7 +49,7 @@ export function Footer({ storeLogo = "", storeName = "Snail Studio" }: FooterPro
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Enter your email address"
-                  className="w-full bg-white/5 border border-white/25 rounded-full pl-5 pr-14 py-3 text-xs text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors placeholder:text-white/45 font-light"
+                  className="w-full bg-white border border-border rounded-full pl-5 pr-14 py-3 text-xs text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors placeholder:text-muted-foreground/50 font-light"
                   required
                 />
                 <button
@@ -84,7 +84,7 @@ export function Footer({ storeLogo = "", storeName = "Snail Studio" }: FooterPro
               </span>
             )}
           </Link>
-          <p className="text-xs text-white/60 font-light leading-relaxed max-w-sm">
+          <p className="text-xs text-muted-foreground font-light leading-relaxed max-w-sm">
             Handcrafting premium, luxury press-on nails that offer high-fashion aesthetics without compromise. Experience salon-quality manicures in minutes.
           </p>
           <div className="flex gap-4">
@@ -92,7 +92,7 @@ export function Footer({ storeLogo = "", storeName = "Snail Studio" }: FooterPro
               href="https://instagram.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/60 hover:text-primary hover:bg-white/10 transition-colors"
+              className="w-8 h-8 rounded-full bg-card border border-border flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/5 transition-colors shadow-xs"
               aria-label="Instagram"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
@@ -101,14 +101,14 @@ export function Footer({ storeLogo = "", storeName = "Snail Studio" }: FooterPro
               href="https://facebook.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/60 hover:text-primary hover:bg-white/10 transition-colors"
+              className="w-8 h-8 rounded-full bg-card border border-border flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/5 transition-colors shadow-xs"
               aria-label="Facebook"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
             </a>
             <a
               href="mailto:hello@snailstudio.in"
-              className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/60 hover:text-primary hover:bg-white/10 transition-colors"
+              className="w-8 h-8 rounded-full bg-card border border-border flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/5 transition-colors shadow-xs"
               aria-label="Email"
             >
               <Mail className="w-4 h-4" />
@@ -117,8 +117,8 @@ export function Footer({ storeLogo = "", storeName = "Snail Studio" }: FooterPro
         </div>
 
         <div>
-          <h4 className="font-serif text-sm font-semibold tracking-wider mb-6 text-white">Collections</h4>
-          <ul className="space-y-3.5 text-xs text-white/70 font-light">
+          <h4 className="font-serif text-sm font-semibold tracking-wider mb-6 text-foreground">Collections</h4>
+          <ul className="space-y-3.5 text-xs text-muted-foreground font-light">
             <li>
               <Link href="/shop?shape=coffin" className="hover:text-primary transition-colors">
                 Coffin Shape Sets
@@ -148,8 +148,8 @@ export function Footer({ storeLogo = "", storeName = "Snail Studio" }: FooterPro
         </div>
 
         <div>
-          <h4 className="font-serif text-sm font-semibold tracking-wider mb-6 text-white">Client Support</h4>
-          <ul className="space-y-3.5 text-xs text-white/70 font-light">
+          <h4 className="font-serif text-sm font-semibold tracking-wider mb-6 text-foreground">Client Support</h4>
+          <ul className="space-y-3.5 text-xs text-muted-foreground font-light">
             <li>
               <Link href="/sizing-guide" className="hover:text-primary transition-colors">
                 Sizing Chart & Care
@@ -174,17 +174,17 @@ export function Footer({ storeLogo = "", storeName = "Snail Studio" }: FooterPro
         </div>
 
         <div>
-          <h4 className="font-serif text-sm font-semibold tracking-wider mb-6 text-white">About Us</h4>
-          <p className="text-xs text-white/70 font-light leading-relaxed mb-4">
+          <h4 className="font-serif text-sm font-semibold tracking-wider mb-6 text-foreground">About Us</h4>
+          <p className="text-xs text-muted-foreground font-light leading-relaxed mb-4">
             Our nails are 100% reusable, non-damaging, and customized. Each set is handcrafted by professional nail artists using premium gel polishes.
           </p>
-          <div className="p-4 bg-white/5 border border-white/10 rounded-2xl flex items-start gap-3">
+          <div className="p-4 bg-white border border-border rounded-2xl flex items-start gap-3 shadow-xs">
             <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0 text-primary">
               <Heart className="w-4 h-4 fill-current" />
             </div>
             <div className="space-y-0.5">
-              <h5 className="text-[10px] uppercase font-bold tracking-wider text-white">Locally Designed</h5>
-              <p className="text-[10px] text-white/50 font-light leading-relaxed">
+              <h5 className="text-[10px] uppercase font-bold tracking-wider text-foreground">Locally Designed</h5>
+              <p className="text-[10px] text-muted-foreground font-light leading-relaxed">
                 Handcrafted with pride in India. Reusable & sustainable.
               </p>
             </div>
@@ -193,8 +193,8 @@ export function Footer({ storeLogo = "", storeName = "Snail Studio" }: FooterPro
       </div>
 
       {/* Copyright & policies */}
-      <div className="border-t border-white/10 py-8 bg-black/95">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between text-[11px] text-white/50 font-light gap-4">
+      <div className="border-t border-border py-8 bg-background">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between text-[11px] text-muted-foreground font-light gap-4">
           <p>&copy; {new Date().getFullYear()} Snail Studio. All rights reserved.</p>
           <div className="flex gap-6">
             <Link href="/privacy-policy" className="hover:text-primary transition-colors">

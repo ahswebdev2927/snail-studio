@@ -65,15 +65,15 @@ export function BottomNav() {
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 h-16 bg-[#F3D7D2] dark:bg-card border-t border-[#AC5429]/10 shadow-[0_-4px_12px_rgba(0,0,0,0.08)] z-40 md:hidden flex items-center justify-around px-4 pb-safe">
+    <div className="fixed bottom-0 left-0 right-0 h-16 bg-background dark:bg-card border-t border-border shadow-[0_-4px_12px_rgba(0,0,0,0.08)] z-40 md:hidden flex items-center justify-around px-4 pb-safe">
       {navItems.map((item) => {
         const Icon = item.icon;
         const active = item.isActive;
         const baseClasses = cn(
           "flex flex-col items-center justify-center gap-1 w-16 h-full transition-all duration-200 cursor-pointer relative",
           active 
-            ? "text-[#AC5429] scale-105" 
-            : "text-[#5E514B]/80 dark:text-muted-foreground hover:text-[#AC5429]"
+            ? "text-primary scale-105" 
+            : "text-muted-foreground hover:text-primary"
         );
 
         const content = (
@@ -81,7 +81,7 @@ export function BottomNav() {
             <div className="relative">
               <Icon className="w-5 h-5 stroke-[2]" />
               {item.badge !== undefined && (
-                <span className="absolute -top-1.5 -right-2.5 bg-[#AC5429] text-white text-[9px] font-bold min-w-[15px] h-[15px] rounded-full flex items-center justify-center px-1 font-sans">
+                <span className="absolute -top-1.5 -right-2.5 bg-primary text-white text-[9px] font-bold min-w-[15px] h-[15px] rounded-full flex items-center justify-center px-1 font-sans">
                   {item.badge}
                 </span>
               )}

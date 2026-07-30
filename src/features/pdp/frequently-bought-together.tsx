@@ -327,11 +327,11 @@ export function FrequentlyBoughtTogether({
                       Total Price ({prices.checkedItemsCount} Items)
                     </span>
                     <div className="flex items-baseline gap-2">
-                      <span className="font-serif text-2xl font-bold text-primary">
+                      <span className="font-sans text-2xl font-bold text-primary">
                         {formatPrice(prices.discountedTotal)}
                       </span>
                       {prices.originalSubtotal > prices.discountedTotal && (
-                        <span className="font-serif text-sm text-muted-foreground line-through">
+                        <span className="font-sans text-sm text-muted-foreground line-through">
                           {formatPrice(prices.originalSubtotal)}
                         </span>
                       )}

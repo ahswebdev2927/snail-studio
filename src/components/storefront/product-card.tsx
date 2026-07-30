@@ -180,7 +180,7 @@ export function ProductCard({ product }: ProductCardProps) {
   }
 
   return (
-    <div className="group flex flex-col bg-card rounded-xl overflow-hidden border border-border/25 hover:border-primary/30 hover:shadow-md transition-all duration-300 relative h-full justify-between">
+    <div className="group flex flex-col bg-card rounded-3xl overflow-hidden border border-border/40 hover:border-primary/30 hover:shadow-md transition-all duration-300 relative h-full justify-between">
       {/* Product Image Container */}
       <Link href={`/products/${product.slug}`} className="relative aspect-square w-full overflow-hidden block bg-white">
         {/* Main image */}
@@ -238,12 +238,12 @@ export function ProductCard({ product }: ProductCardProps) {
               e.stopPropagation();
               router.push(`/products/${product.slug}`);
             }}
-            className="absolute bottom-4 left-4 right-4 py-2.5 bg-white text-[#3A2E2A] hover:bg-[#3A2E2A] hover:text-white dark:bg-card dark:text-foreground dark:hover:bg-primary dark:hover:text-primary-foreground border border-border/10 shadow-md text-[10px] font-bold uppercase tracking-wider rounded-sm z-30 cursor-pointer text-center transition-all duration-300 md:opacity-0 md:translate-y-2 md:pointer-events-none md:group-hover:opacity-100 md:group-hover:translate-y-0 md:group-hover:pointer-events-auto"
+            className="absolute bottom-4 left-4 right-4 py-2.5 bg-white hover:bg-primary border border-primary text-primary hover:text-white dark:bg-card dark:text-foreground dark:hover:bg-primary dark:hover:text-primary-foreground shadow-md text-[10px] font-bold uppercase tracking-widest rounded-full z-30 cursor-pointer text-center transition-all duration-300 md:opacity-0 md:translate-y-2 md:pointer-events-none md:group-hover:opacity-100 md:group-hover:translate-y-0 md:group-hover:pointer-events-auto"
           >
             {product.status === "Coming Soon" ? "Coming Soon" : "Notify Me"}
           </button>
         ) : isInCart && cartItem ? (
-          <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between bg-white text-[#3A2E2A] dark:bg-card dark:text-foreground border border-border/10 shadow-md rounded-sm h-[38px] z-30 select-none overflow-hidden animate-fade-in transition-all duration-300 md:opacity-0 md:translate-y-2 md:pointer-events-none md:group-hover:opacity-100 md:group-hover:translate-y-0 md:group-hover:pointer-events-auto">
+          <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between bg-white dark:bg-card border border-primary shadow-md rounded-full h-[38px] z-30 select-none overflow-hidden animate-fade-in transition-all duration-300 md:opacity-0 md:translate-y-2 md:pointer-events-none md:group-hover:opacity-100 md:group-hover:translate-y-0 md:group-hover:pointer-events-auto">
             <button
               type="button"
               onClick={(e) => {
@@ -255,12 +255,12 @@ export function ProductCard({ product }: ProductCardProps) {
                   removeFromCart(cartItem.id);
                 }
               }}
-              className="w-1/3 h-full flex items-center justify-center text-[#5E514B] hover:bg-[#3A2E2A] hover:text-white dark:text-[#E4D8D1] dark:hover:bg-primary dark:hover:text-primary-foreground transition-all duration-200 cursor-pointer border-none bg-transparent"
+              className="w-1/3 h-full flex items-center justify-center text-primary hover:bg-primary hover:text-white dark:text-[#E4D8D1] dark:hover:bg-primary dark:hover:text-primary-foreground transition-all duration-200 cursor-pointer border-none bg-transparent"
               aria-label="Decrease Quantity"
             >
               <Minus className="w-3 h-3" />
             </button>
-            <span className="w-1/3 h-full flex items-center justify-center border-x border-border/10 text-xs font-bold font-sans text-[#3A2E2A] dark:text-foreground">
+            <span className="w-1/3 h-full flex items-center justify-center border-x border-border/10 text-xs font-bold font-sans text-foreground dark:text-foreground">
               {cartItem.quantity}
             </span>
             <button
@@ -270,7 +270,7 @@ export function ProductCard({ product }: ProductCardProps) {
                 e.stopPropagation();
                 updateQuantity(cartItem.id, cartItem.quantity + 1);
               }}
-              className="w-1/3 h-full flex items-center justify-center text-[#5E514B] hover:bg-[#3A2E2A] hover:text-white dark:text-[#E4D8D1] dark:hover:bg-primary dark:hover:text-primary-foreground transition-all duration-200 cursor-pointer border-none bg-transparent"
+              className="w-1/3 h-full flex items-center justify-center text-primary hover:bg-primary hover:text-white dark:text-[#E4D8D1] dark:hover:bg-primary dark:hover:text-primary-foreground transition-all duration-200 cursor-pointer border-none bg-transparent"
               aria-label="Increase Quantity"
             >
               <Plus className="w-3 h-3" />
@@ -284,7 +284,7 @@ export function ProductCard({ product }: ProductCardProps) {
               e.stopPropagation();
               router.push(`/products/${product.slug}`);
             }}
-            className="absolute bottom-4 left-4 right-4 hidden md:block py-2.5 bg-white text-[#3A2E2A] hover:bg-[#3A2E2A] hover:text-white dark:bg-card dark:text-foreground dark:hover:bg-primary dark:hover:text-primary-foreground border border-border/10 shadow-md text-[10px] font-bold uppercase tracking-wider rounded-sm z-30 cursor-pointer text-center transition-all duration-300 md:opacity-0 md:translate-y-2 md:pointer-events-none md:group-hover:opacity-100 md:group-hover:translate-y-0 md:group-hover:pointer-events-auto"
+            className="absolute bottom-4 left-4 right-4 hidden md:block py-2.5 bg-white hover:bg-primary border border-primary text-primary hover:text-white dark:bg-card dark:text-foreground dark:hover:bg-primary dark:hover:text-primary-foreground shadow-md text-[10px] font-bold uppercase tracking-widest rounded-full z-30 cursor-pointer text-center transition-all duration-300 md:opacity-0 md:translate-y-2 md:pointer-events-none md:group-hover:opacity-100 md:group-hover:translate-y-0 md:group-hover:pointer-events-auto"
           >
             Quick Buy
           </button>

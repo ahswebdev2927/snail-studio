@@ -28,7 +28,7 @@ export function WhyChooseUs() {
   ];
 
   return (
-    <section id="benefits" className="py-20 bg-[#FFEEF0] dark:bg-background border-y border-border/20 relative overflow-hidden">
+    <section id="benefits" className="py-20 bg-background border-y border-border/20 relative overflow-hidden">
       {/* Decorative background glows */}
       <div className="absolute left-1/4 top-1/4 w-96 h-96 bg-primary/5 rounded-full filter blur-3xl pointer-events-none" />
       <div className="absolute right-1/4 bottom-1/4 w-96 h-96 bg-accent/5 rounded-full filter blur-3xl pointer-events-none" />
@@ -52,11 +52,11 @@ export function WhyChooseUs() {
             return (
               <div
                 key={index}
-                className="group p-8 rounded-3xl bg-gradient-to-br from-card to-secondary/15 border border-border/40 hover:border-primary/30 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between"
+                className="group p-8 rounded-3xl bg-card border border-border hover:border-primary/30 hover:shadow-md hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between"
               >
                 <div className="space-y-5">
                   {/* Icon Circle */}
-                  <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-primary-foreground group-hover:scale-105 group-hover:rotate-3 transition-all duration-500">
+                  <div className="w-12 h-12 rounded-2xl border border-border flex items-center justify-center text-foreground group-hover:border-primary/30 group-hover:bg-primary/5 group-hover:text-primary group-hover:scale-105 transition-all duration-500">
                     <Icon className="w-5 h-5 transition-transform duration-500" />
                   </div>
                   

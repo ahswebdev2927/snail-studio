@@ -58,29 +58,29 @@ export async function POST(request: NextRequest) {
       to: recipient,
       subject: `[Contact Form] ${subject} — from ${name}`,
       html: `
-        <div style="font-family: sans-serif; padding: 25px; color: #000000; max-width: 600px; margin: 0 auto; border: 1px solid #CBB3B5; border-radius: 16px; background-color: #F8F4F4;">
-          <h2 style="font-family: serif; color: #AC5429; border-bottom: 1px solid #CBB3B5; padding-bottom: 12px; margin-top: 0; font-size: 22px; font-weight: normal; tracking-wide;">
+        <div style="font-family: sans-serif; padding: 25px; color: #222222; max-width: 600px; margin: 0 auto; border: 1px solid #E7DDD7; border-radius: 16px; background-color: #FFFFFF;">
+          <h2 style="font-family: serif; color: #A95423; border-bottom: 1px solid #E7DDD7; padding-bottom: 12px; margin-top: 0; font-size: 22px; font-weight: normal; tracking-wide;">
             New Contact Form Inquiry
           </h2>
           <table style="width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 13px;">
             <tr>
-              <td style="padding: 8px 0; font-weight: bold; width: 100px; color: #4A4A4A;">Customer Name:</td>
-              <td style="padding: 8px 0; color: #000000;">${name}</td>
+              <td style="padding: 8px 0; font-weight: bold; width: 100px; color: #666666;">Customer Name:</td>
+              <td style="padding: 8px 0; color: #222222;">${name}</td>
             </tr>
             <tr>
-              <td style="padding: 8px 0; font-weight: bold; color: #4A4A4A;">Customer Email:</td>
-              <td style="padding: 8px 0;"><a href="mailto:${email}" style="color: #AC5429; text-decoration: underline;">${email}</a></td>
+              <td style="padding: 8px 0; font-weight: bold; color: #666666;">Customer Email:</td>
+              <td style="padding: 8px 0;"><a href="mailto:${email}" style="color: #A95423; text-decoration: underline;">${email}</a></td>
             </tr>
             <tr>
-              <td style="padding: 8px 0; font-weight: bold; color: #4A4A4A;">Subject Line:</td>
-              <td style="padding: 8px 0; color: #000000; font-weight: 500;">${subject}</td>
+              <td style="padding: 8px 0; font-weight: bold; color: #666666;">Subject Line:</td>
+              <td style="padding: 8px 0; color: #222222; font-weight: 500;">${subject}</td>
             </tr>
           </table>
-          <div style="margin-top: 24px; padding: 20px; background-color: #F3D7D2; border-radius: 12px; border-left: 4px solid #AC5429;">
-            <p style="margin: 0; font-size: 13px; font-weight: bold; color: #AC5429; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em;">Message Details:</p>
-            <p style="margin: 0; font-size: 13px; line-height: 1.6; white-space: pre-wrap; color: #000000;">${message}</p>
+          <div style="margin-top: 24px; padding: 20px; background-color: #EFD3C9; border-radius: 12px; border-left: 4px solid #A95423;">
+            <p style="margin: 0; font-size: 13px; font-weight: bold; color: #A95423; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em;">Message Details:</p>
+            <p style="margin: 0; font-size: 13px; line-height: 1.6; white-space: pre-wrap; color: #222222;">${message}</p>
           </div>
-          <div style="font-size: 10px; color: #4A4A4A; margin-top: 32px; border-t: 1px solid #CBB3B5; padding-top: 12px; text-align: center; font-style: italic;">
+          <div style="font-size: 10px; color: #666666; margin-top: 32px; border-top: 1px solid #E7DDD7; padding-top: 12px; text-align: center; font-style: italic;">
             This transactional notification was sent automatically from Snail Studio Storefront.
           </div>
         </div>

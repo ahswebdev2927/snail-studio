@@ -14,32 +14,32 @@ export function getTestEmailTemplate(senderEmail: string): string {
     body {
       margin: 0;
       padding: 0;
-      background-color: #DEC6C8;
+      background-color: #FEFFF6;
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      color: #000000;
+      color: #222222;
       -webkit-font-smoothing: antialiased;
     }
     .wrapper {
       width: 100%;
       table-layout: fixed;
-      background-color: #DEC6C8;
+      background-color: #FEFFF6;
       padding-bottom: 40px;
       padding-top: 40px;
     }
     .main-table {
-      background-color: #F8F4F4;
+      background-color: #FFFFFF;
       margin: 0 auto;
       width: 100%;
       max-width: 600px;
       border-spacing: 0;
       border-radius: 24px;
       overflow: hidden;
-      box-shadow: 0 10px 30px rgba(172, 84, 41, 0.08);
-      border: 1px solid #CBB3B5;
+      box-shadow: 0 10px 30px rgba(169, 84, 35, 0.08);
+      border: 1px solid #E7DDD7;
     }
     .header-band {
       height: 6px;
-      background: #AC5429;
+      background: #A95423;
     }
     .header {
       padding: 40px 30px 20px 30px;
@@ -50,21 +50,21 @@ export function getTestEmailTemplate(senderEmail: string): string {
       width: 48px;
       height: 48px;
       line-height: 48px;
-      background: #AC5429;
+      background: #A95423;
       border-radius: 14px;
       color: #ffffff;
       font-family: 'Playfair Display', Georgia, serif;
       font-size: 24px;
       font-weight: bold;
       text-align: center;
-      box-shadow: 0 4px 10px rgba(172, 84, 41, 0.2);
+      box-shadow: 0 4px 10px rgba(169, 84, 35, 0.2);
     }
     .brand-name {
       font-family: 'Playfair Display', Georgia, serif;
       font-size: 22px;
       font-weight: 600;
       letter-spacing: 0.05em;
-      color: #000000;
+      color: #222222;
       margin-top: 15px;
       margin-bottom: 5px;
     }
@@ -72,7 +72,7 @@ export function getTestEmailTemplate(senderEmail: string): string {
       font-size: 11px;
       text-transform: uppercase;
       letter-spacing: 0.15em;
-      color: #AC5429;
+      color: #A95423;
       font-weight: 600;
       margin: 0;
     }
@@ -84,20 +84,20 @@ export function getTestEmailTemplate(senderEmail: string): string {
       font-family: 'Playfair Display', Georgia, serif;
       font-size: 24px;
       font-weight: 500;
-      color: #000000;
+      color: #222222;
       margin-top: 0;
       margin-bottom: 15px;
     }
     p {
       font-size: 14px;
       line-height: 1.6;
-      color: #4A4A4A;
+      color: #666666;
       margin-top: 0;
       margin-bottom: 25px;
     }
     .card {
-      background-color: #F8F4F4;
-      border: 1px dashed #CBB3B5;
+      background-color: #FEFFF6;
+      border: 1px dashed #E7DDD7;
       border-radius: 16px;
       padding: 24px;
       margin-bottom: 30px;
@@ -108,24 +108,24 @@ export function getTestEmailTemplate(senderEmail: string): string {
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.08em;
-      color: #AC5429;
+      color: #A95423;
       margin-bottom: 12px;
       display: block;
     }
     .card-detail {
       font-size: 13px;
-      color: #4A4A4A;
+      color: #666666;
       line-height: 1.5;
       margin: 4px 0;
     }
     .card-detail strong {
-      color: #000000;
+      color: #222222;
     }
     .badge {
       display: inline-block;
       padding: 6px 14px;
-      background-color: #F3D7D2;
-      color: #AC5429;
+      background-color: #EFD3C9;
+      color: #A95423;
       border-radius: 50px;
       font-size: 11px;
       font-weight: 700;
@@ -135,13 +135,13 @@ export function getTestEmailTemplate(senderEmail: string): string {
     }
     .footer {
       padding: 30px;
-      background-color: #F8F4F4;
-      border-top: 1px solid #CBB3B5;
+      background-color: #FEFFF6;
+      border-top: 1px solid #E7DDD7;
       text-align: center;
     }
     .footer-text {
       font-size: 11px;
-      color: #4A4A4A;
+      color: #666666;
       line-height: 1.5;
       margin: 0;
     }

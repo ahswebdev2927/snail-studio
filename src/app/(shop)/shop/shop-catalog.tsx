@@ -459,7 +459,7 @@ export default function ShopCatalog() {
   return (
     <div className="flex-1 bg-background text-foreground flex flex-col">
       {/* Search & Sort Panel Header */}
-      <section className="bg-[#dec6c8] dark:bg-[#1C1819] border-b border-border/20 py-8">
+      <section className="bg-[#EFD3C9] dark:bg-[#1C1819] border-b border-border/20 py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
           <div className="text-center md:text-left space-y-2">
             <h1 className="font-serif text-3xl md:text-4xl font-normal tracking-wide text-foreground">

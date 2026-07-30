@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Manrope, Inter } from "next/font/google";
+import { Manrope, Inter, Playfair_Display } from "next/font/google";
 import Script from "next/script";
 import { GoogleAnalytics } from "@next/third-parties/google";
 import "./globals.css";
@@ -21,6 +21,14 @@ const inter = Inter({
   subsets: ["latin"],
   weight: ["400", "500", "600"],
   display: "swap",
+});
+
+const playfair = Playfair_Display({
+  variable: "--font-playfair",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+  style: ["normal", "italic"],
 });
 
 export const metadata: Metadata = {
@@ -61,7 +69,7 @@ export default function RootLayout({
   const websiteJsonLd = getWebsiteJsonLd();
 
   return (
-    <html lang="en" className={`${manrope.variable} ${inter.variable}`} suppressHydrationWarning>
+    <html lang="en" className={`${manrope.variable} ${inter.variable} ${playfair.variable}`} suppressHydrationWarning>
       <body className="font-sans antialiased min-h-screen flex flex-col">
         {GA_MEASUREMENT_ID && (
           <>

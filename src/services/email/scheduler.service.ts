@@ -228,7 +228,7 @@ export async function personalizeTemplate(
         const html = prodList
           .map(
             (p) =>
-              `<div style="margin: 10px 0;"><a href="/products/${p.id}" style="color: #AC5429; font-weight: bold;">${p.name}</a> - ${p.description || "Artisan nails"}</div>`
+              `<div style="margin: 10px 0;"><a href="/products/${p.id}" style="color: #A95423; font-weight: bold;">${p.name}</a> - ${p.description || "Artisan nails"}</div>`
           )
           .join("");
         personalized = personalized.replaceAll("{{wishlist_products}}", html);
@@ -274,7 +274,7 @@ export async function personalizeTemplate(
         (p) =>
           `<div style="display: inline-block; width: 140px; margin: 10px; text-align: center;">
             <p style="margin: 5px 0 0 0; font-size: 13px; font-weight: bold;">${p.name}</p>
-            <a href="/products/${p.id}" style="font-size: 11px; color: #AC5429; text-decoration: none;">View Detail &rarr;</a>
+            <a href="/products/${p.id}" style="font-size: 11px; color: #A95423; text-decoration: none;">View Detail &rarr;</a>
           </div>`
       )
       .join("");

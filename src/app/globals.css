@@ -67,8 +67,8 @@
   --color-outline-btn-hover-bg: var(--outline-btn-hover-bg);
   --color-outline-btn-hover-text: var(--outline-btn-hover-text);
 
-  --font-serif: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
-  --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-playfair), Georgia, serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-inter: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 
   --radius-lg: var(--radius);
@@ -89,85 +89,85 @@
 }
 
 :root {
-  --background: #DEC6C8;              /* App Background */
-  --foreground: #000000;              /* Body Text */
+  --background: #FEFFF6;              /* App Background */
+  --foreground: #222222;              /* Body Text */
   
-  --card: #F8F4F4;                    /* Card */
-  --card-foreground: #000000;
+  --card: #FFFFFF;                    /* Card */
+  --card-foreground: #222222;
   
   --popover: #FFFFFF;                 /* Popover */
-  --popover-foreground: #000000;
+  --popover-foreground: #222222;
   
-  --primary: #AC5429;                 /* Primary Brand */
+  --primary: #A95423;                 /* Primary Brand */
   --primary-foreground: #FFFFFF;
-  --primary-hover: #8F4522;
-  --primary-active: #7E3A1A;
-  --primary-light: #F3D7D2;
-  --primary-soft: #F3D7D2;
+  --primary-hover: #94451B;
+  --primary-active: #7F3A16;
+  --primary-light: #EFD3C9;
+  --primary-soft: #EFD3C9;
   
-  --secondary: #AC5429;               /* Secondary Brand */
+  --secondary: #A95423;               /* Secondary Brand */
   --secondary-foreground: #FFFFFF;
-  --secondary-surface: #F8F4F4;
+  --secondary-surface: #FFFFFF;
   
-  --muted: #CBB3B5;                   /* Border color or muted grey replacement */
-  --muted-foreground: #4A4A4A;        /* Muted Text */
-  --muted-surface: #F3D7D2;
+  --muted: #E7DDD7;                   /* Border color or muted grey replacement */
+  --muted-foreground: #666666;        /* Muted Text */
+  --muted-surface: #EFD3C9;
   
-  --accent: #F3D7D2;                  /* Accent */
-  --accent-foreground: #AC5429;
+  --accent: #EFD3C9;                  /* Accent */
+  --accent-foreground: #A95423;
   
   --destructive: #D32F2F;             /* Error color */
   --destructive-foreground: #FFFFFF;
   
-  --border: #CBB3B5;                  /* Border */
-  --border-light: #CBB3B5;
-  --border-strong: #CBB3B5;
+  --border: #E7DDD7;                  /* Border */
+  --border-light: #E7DDD7;
+  --border-strong: #E7DDD7;
   
   --input: #FFFFFF;
-  --input-placeholder: #4A4A4A;
-  --ring: #AC5429;                    /* Focus Ring */
+  --input-placeholder: #666666;
+  --ring: #A95423;                    /* Focus Ring */
   
-  --link: #AC5429;
-  --link-hover: #8F4522;
+  --link: #A95423;
+  --link-hover: #94451B;
   
   --success: #2E7D32;
   --warning: #ED6C02;
   --error: #D32F2F;
   --info: #0288D1;
   
-  --text-heading: #000000;
-  --text-body: #000000;
-  --text-muted: #4A4A4A;
+  --text-heading: #222222;
+  --text-body: #222222;
+  --text-muted: #666666;
   --text-disabled: #8E8687;
   --text-inverse: #FFFFFF;
   
-  --navbar: #DEC6C8;
-  --navbar-text: #000000;
-  --navbar-active: #AC5429;
-  --navbar-hover: #AC5429;
+  --navbar: #FEFFF6;
+  --navbar-text: #222222;
+  --navbar-active: #A95423;
+  --navbar-hover: #A95423;
   
-  --footer-bg: #000000;
-  --footer-heading: #FFFFFF;
-  --footer-body: #FFFFFF;
-  --footer-links: #FFFFFF;
+  --footer-bg: #FEFFF6;
+  --footer-heading: #222222;
+  --footer-body: #666666;
+  --footer-links: #A95423;
   
   --radius: 0.75rem;
 
-  --primary-btn-bg: #AC5429;
+  --primary-btn-bg: #A95423;
   --primary-btn-text: #FFFFFF;
-  --primary-btn-hover: #8F4522;
-  --primary-btn-active: #7E3A1A;
+  --primary-btn-hover: #94451B;
+  --primary-btn-active: #7F3A16;
 
-  --secondary-btn-bg: transparent;
-  --secondary-btn-border: #AC5429;
-  --secondary-btn-text: #AC5429;
-  --secondary-btn-hover-bg: #F3D7D2;
-  --secondary-btn-hover-text: #AC5429;
+  --secondary-btn-bg: #FFFFFF;
+  --secondary-btn-border: #A95423;
+  --secondary-btn-text: #A95423;
+  --secondary-btn-hover-bg: #A95423;
+  --secondary-btn-hover-text: #FFFFFF;
 
-  --outline-btn-border: #CBB3B5;
-  --outline-btn-text: #000000;
-  --outline-btn-hover-bg: #F8F4F4;
-  --outline-btn-hover-text: #000000;
+  --outline-btn-border: #E7DDD7;
+  --outline-btn-text: #222222;
+  --outline-btn-hover-bg: #FEFFF6;
+  --outline-btn-hover-text: #222222;
 }
 
 .dark {
@@ -252,6 +252,7 @@
 
 * {
   border-color: var(--color-border);
+  font-variant-numeric: lining-nums;
 }
 
 html {
@@ -262,7 +263,7 @@ html {
 body {
   background-color: var(--color-background);
   color: var(--color-foreground);
-  font-feature-settings: "rlig" 1, "calt" 1;
+  font-feature-settings: "rlig" 1, "calt" 1, "lnum" 1;
 }
 
 button,
@@ -299,13 +300,13 @@ input[type="submit"] {
 /* Premium Product Description Styling (supports Markdown output and raw HTML) */
 .pdp-description-content {
   h1 {
-    @apply font-serif text-2xl font-normal text-foreground mt-6 mb-4;
+    @apply font-serif text-2xl font-semibold text-foreground mt-6 mb-4;
   }
   h2 {
-    @apply font-serif text-lg font-normal text-foreground mt-6 mb-3 border-b border-border/20 pb-1.5;
+    @apply font-serif text-lg font-semibold text-foreground mt-6 mb-3 border-b border-border/20 pb-1.5;
   }
   h3 {
-    @apply font-serif text-base font-normal text-foreground mt-4 mb-2;
+    @apply font-serif text-base font-semibold text-foreground mt-4 mb-2;
   }
   p {
     @apply text-sm text-muted-foreground leading-loose font-light mb-4;

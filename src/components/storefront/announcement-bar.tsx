@@ -110,7 +110,7 @@ export function AnnouncementBar({
   }
 
   const current = announcements[index] || announcements[0];
-  const barBackground = current?.backgroundColor || "#AC5429";
+  const barBackground = current?.backgroundColor || "#A95423";
   const barText = current?.textColor || "#ffffff";
 
   const handleDismiss = (e: React.MouseEvent) => {

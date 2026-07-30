@@ -39,18 +39,18 @@ export function getOrderConfirmationTemplate(params: OrderConfirmationParams): s
   };
 
   const itemsListHtml = params.items.map(item => `
-    <tr style="border-bottom: 1px solid #CBB3B5;">
-      <td style="padding: 15px 0; font-size: 13px; color: #000000; line-height: 1.5;">
+    <tr style="border-bottom: 1px solid #E7DDD7;">
+      <td style="padding: 15px 0; font-size: 13px; color: #222222; line-height: 1.5;">
         <span style="font-weight: 600; display: block;">${item.productName}</span>
-        <span style="font-size: 11px; color: #AC5429; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 500;">${item.variantName}</span>
+        <span style="font-size: 11px; color: #A95423; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 500;">${item.variantName}</span>
       </td>
-      <td style="padding: 15px 0; text-align: center; font-size: 13px; color: #4A4A4A;">x ${item.quantity}</td>
-      <td style="padding: 15px 0; text-align: right; font-size: 13px; font-weight: 600; color: #000000;">${formatPrice(item.price * item.quantity)}</td>
+      <td style="padding: 15px 0; text-align: center; font-size: 13px; color: #666666;">x ${item.quantity}</td>
+      <td style="padding: 15px 0; text-align: right; font-size: 13px; font-weight: 600; color: #222222;">${formatPrice(item.price * item.quantity)}</td>
     </tr>
   `).join("");
 
   const addressLine2Html = params.shippingAddress.addressLine2 
-    ? `<div style="font-size: 13px; color: #555555; margin-bottom: 3px;">${params.shippingAddress.addressLine2}</div>` 
+    ? `<div style="font-size: 13px; color: #666666; margin-bottom: 3px;">${params.shippingAddress.addressLine2}</div>` 
     : "";
 
   return `<!DOCTYPE html>
@@ -63,31 +63,31 @@ export function getOrderConfirmationTemplate(params: OrderConfirmationParams): s
     body {
       margin: 0;
       padding: 0;
-      background-color: #DEC6C8;
+      background-color: #FEFFF6;
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      color: #000000;
+      color: #222222;
     }
     .wrapper {
       width: 100%;
       table-layout: fixed;
-      background-color: #DEC6C8;
+      background-color: #FEFFF6;
       padding-bottom: 40px;
       padding-top: 40px;
     }
     .main-table {
-      background-color: #F8F4F4;
+      background-color: #FFFFFF;
       margin: 0 auto;
       width: 100%;
       max-width: 600px;
       border-spacing: 0;
       border-radius: 24px;
       overflow: hidden;
-      box-shadow: 0 10px 30px rgba(172, 84, 41, 0.08);
-      border: 1px solid #CBB3B5;
+      box-shadow: 0 10px 30px rgba(169, 84, 35, 0.08);
+      border: 1px solid #E7DDD7;
     }
     .header-band {
       height: 6px;
-      background: #AC5429;
+      background: #A95423;
     }
     .header {
       padding: 40px 30px 20px 30px;
@@ -98,21 +98,21 @@ export function getOrderConfirmationTemplate(params: OrderConfirmationParams): s
       width: 48px;
       height: 48px;
       line-height: 48px;
-      background: #AC5429;
+      background: #A95423;
       border-radius: 14px;
       color: #ffffff;
       font-family: 'Playfair Display', Georgia, serif;
       font-size: 24px;
       font-weight: bold;
       text-align: center;
-      box-shadow: 0 4px 10px rgba(172, 84, 41, 0.2);
+      box-shadow: 0 4px 10px rgba(169, 84, 35, 0.2);
     }
     .brand-name {
       font-family: 'Playfair Display', Georgia, serif;
       font-size: 22px;
       font-weight: 600;
       letter-spacing: 0.05em;
-      color: #000000;
+      color: #222222;
       margin-top: 15px;
       margin-bottom: 5px;
     }
@@ -120,7 +120,7 @@ export function getOrderConfirmationTemplate(params: OrderConfirmationParams): s
       font-size: 11px;
       text-transform: uppercase;
       letter-spacing: 0.15em;
-      color: #AC5429;
+      color: #A95423;
       font-weight: 600;
       margin: 0;
     }
@@ -131,7 +131,7 @@ export function getOrderConfirmationTemplate(params: OrderConfirmationParams): s
       font-family: 'Playfair Display', Georgia, serif;
       font-size: 24px;
       font-weight: 500;
-      color: #000000;
+      color: #222222;
       margin-top: 0;
       margin-bottom: 10px;
       text-align: center;
@@ -139,14 +139,14 @@ export function getOrderConfirmationTemplate(params: OrderConfirmationParams): s
     .intro-p {
       font-size: 14px;
       line-height: 1.6;
-      color: #4A4A4A;
+      color: #666666;
       margin-top: 0;
       margin-bottom: 30px;
       text-align: center;
     }
     .order-meta-box {
-      background-color: #FFFFFF;
-      border: 1px solid #CBB3B5;
+      background-color: #FEFFF6;
+      border: 1px solid #E7DDD7;
       border-radius: 16px;
       padding: 15px 20px;
       margin-bottom: 30px;
@@ -157,20 +157,20 @@ export function getOrderConfirmationTemplate(params: OrderConfirmationParams): s
     }
     .order-meta-table td {
       font-size: 12px;
-      color: #4A4A4A;
+      color: #666666;
       padding: 4px 0;
     }
     .order-meta-table td strong {
-      color: #000000;
+      color: #222222;
     }
     .section-title {
       font-family: 'Playfair Display', Georgia, serif;
       font-size: 16px;
       font-weight: 600;
-      color: #000000;
+      color: #222222;
       margin-bottom: 15px;
       margin-top: 0;
-      border-bottom: 1px solid #CBB3B5;
+      border-bottom: 1px solid #E7DDD7;
       padding-bottom: 8px;
     }
     .items-table {
@@ -182,9 +182,9 @@ export function getOrderConfirmationTemplate(params: OrderConfirmationParams): s
       font-size: 11px;
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      color: #AC5429;
+      color: #A95423;
       padding-bottom: 10px;
-      border-bottom: 2px solid #CBB3B5;
+      border-bottom: 2px solid #E7DDD7;
       font-weight: 700;
     }
     .pricing-table {
@@ -195,14 +195,14 @@ export function getOrderConfirmationTemplate(params: OrderConfirmationParams): s
     .pricing-table td {
       padding: 6px 0;
       font-size: 13px;
-      color: #4A4A4A;
+      color: #666666;
     }
     .pricing-table .total-row td {
-      border-top: 2px solid #CBB3B5;
+      border-top: 2px solid #E7DDD7;
       padding-top: 15px;
       font-size: 16px;
       font-weight: bold;
-      color: #AC5429;
+      color: #A95423;
     }
     .grid-table {
       width: 100%;
@@ -216,7 +216,7 @@ export function getOrderConfirmationTemplate(params: OrderConfirmationParams): s
     }
     .address-card {
       background-color: #FFFFFF;
-      border: 1px solid #CBB3B5;
+      border: 1px solid #E7DDD7;
       border-radius: 16px;
       padding: 18px;
     }
@@ -227,7 +227,7 @@ export function getOrderConfirmationTemplate(params: OrderConfirmationParams): s
     .btn {
       display: inline-block;
       padding: 14px 30px;
-      background: #AC5429;
+      background: #A95423;
       color: #ffffff !important;
       text-decoration: none;
       border-radius: 14px;
@@ -235,17 +235,17 @@ export function getOrderConfirmationTemplate(params: OrderConfirmationParams): s
       font-weight: bold;
       text-transform: uppercase;
       letter-spacing: 0.1em;
-      box-shadow: 0 5px 15px rgba(172, 84, 41, 0.2);
+      box-shadow: 0 5px 15px rgba(169, 84, 35, 0.2);
     }
     .footer {
       padding: 30px;
-      background-color: #F8F4F4;
-      border-top: 1px solid #CBB3B5;
+      background-color: #FEFFF6;
+      border-top: 1px solid #E7DDD7;
       text-align: center;
     }
     .footer-text {
       font-size: 11px;
-      color: #4A4A4A;
+      color: #666666;
       line-height: 1.5;
       margin: 0;
     }
@@ -318,8 +318,8 @@ export function getOrderConfirmationTemplate(params: OrderConfirmationParams): s
             </tr>`}
             ${params.discount > 0 ? `
             <tr>
-              <td style="color: #AC5429;">Discount</td>
-              <td style="text-align: right; color: #AC5429; font-weight: 500;">-${formatPrice(params.discount)}</td>
+              <td style="color: #A95423;">Discount</td>
+              <td style="text-align: right; color: #A95423; font-weight: 500;">-${formatPrice(params.discount)}</td>
             </tr>` : ''}
             <tr class="total-row">
               <td>Grand Total</td>
@@ -332,22 +332,22 @@ export function getOrderConfirmationTemplate(params: OrderConfirmationParams): s
             <tr>
               <td style="padding-bottom: 16px;">
                 <div class="address-card">
-                  <div style="font-size: 11px; font-weight: bold; text-transform: uppercase; color: #AC5429; margin-bottom: 8px;">Shipping Address</div>
-                  <div style="font-size: 13px; font-weight: 600; color: #000000; margin-bottom: 4px;">${params.shippingAddress.name}</div>
-                  <div style="font-size: 13px; color: #4A4A4A; margin-bottom: 3px;">${params.shippingAddress.addressLine1}</div>
+                  <div style="font-size: 11px; font-weight: bold; text-transform: uppercase; color: #A95423; margin-bottom: 8px;">Shipping Address</div>
+                  <div style="font-size: 13px; font-weight: 600; color: #222222; margin-bottom: 4px;">${params.shippingAddress.name}</div>
+                  <div style="font-size: 13px; color: #666666; margin-bottom: 3px;">${params.shippingAddress.addressLine1}</div>
                   ${addressLine2Html}
-                  <div style="font-size: 13px; color: #4A4A4A; margin-bottom: 3px;">${params.shippingAddress.city}, ${params.shippingAddress.state} - ${params.shippingAddress.postalCode}</div>
-                  <div style="font-size: 13px; color: #4A4A4A; margin-bottom: 6px;">${params.shippingAddress.country}</div>
-                  <div style="font-size: 12px; color: #4A4A4A;">Phone: ${params.shippingAddress.phone}</div>
+                  <div style="font-size: 13px; color: #666666; margin-bottom: 3px;">${params.shippingAddress.city}, ${params.shippingAddress.state} - ${params.shippingAddress.postalCode}</div>
+                  <div style="font-size: 13px; color: #666666; margin-bottom: 6px;">${params.shippingAddress.country}</div>
+                  <div style="font-size: 12px; color: #666666;">Phone: ${params.shippingAddress.phone}</div>
                 </div>
               </td>
             </tr>
             <tr>
               <td>
                 <div class="address-card">
-                  <div style="font-size: 11px; font-weight: bold; text-transform: uppercase; color: #AC5429; margin-bottom: 8px;">What's Next?</div>
-                  <p style="font-size: 12px; line-height: 1.5; color: #4A4A4A; margin: 0 0 10px 0;">Our artists are handcrafting your nails. Orders usually take 2-3 business days to prepare before shipping.</p>
-                  <p style="font-size: 12px; line-height: 1.5; color: #4A4A4A; margin: 0;">You can check your order tracking status anytime via the button below.</p>
+                  <div style="font-size: 11px; font-weight: bold; text-transform: uppercase; color: #A95423; margin-bottom: 8px;">What's Next?</div>
+                  <p style="font-size: 12px; line-height: 1.5; color: #666666; margin: 0 0 10px 0;">Our artists are handcrafting your nails. Orders usually take 2-3 business days to prepare before shipping.</p>
+                  <p style="font-size: 12px; line-height: 1.5; color: #666666; margin: 0;">You can check your order tracking status anytime via the button below.</p>
                 </div>
               </td>
             </tr>

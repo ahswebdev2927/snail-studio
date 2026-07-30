@@ -130,30 +130,30 @@ export async function sendTargetedWishlistEmailAction(
     // Wishlist reminder email body template
     const bodyTemplate = customBodyHtml || `
       <html>
-        <body style="font-family: Arial, sans-serif; color: #000000; background-color: #DEC6C8; padding: 20px;">
-          <div style="max-width: 600px; margin: 0 auto; background-color: #F8F4F4; border: 1px solid #CBB3B5; border-radius: 15px; padding: 30px; box-shadow: 0 4px 10px rgba(0,0,0,0.02);">
-            <h1 style="color: #AC5429; font-family: Georgia, serif; font-size: 24px; text-align: center; margin-bottom: 25px;">Your Saved Styles Await</h1>
+        <body style="font-family: Arial, sans-serif; color: #222222; background-color: #FEFFF6; padding: 20px;">
+          <div style="max-width: 600px; margin: 0 auto; background-color: #FFFFFF; border: 1px solid #E7DDD7; border-radius: 15px; padding: 30px; box-shadow: 0 4px 10px rgba(0,0,0,0.02);">
+            <h1 style="color: #A95423; font-family: Georgia, serif; font-size: 24px; text-align: center; margin-bottom: 25px;">Your Saved Styles Await</h1>
             <p>Hello ${user.name || "Customer"},</p>
             <p>We noticed you saved some premium, reusable press-on nail sets in your wishlist. Because our artists paint each set by hand in small batches, popular designs and sizes sell out quickly.</p>
             
-            <h3 style="color: #AC5429; border-bottom: 1px solid #CBB3B5; padding-bottom: 8px; margin-top: 25px;">Saved Items in Your Wishlist</h3>
+            <h3 style="color: #A95423; border-bottom: 1px solid #E7DDD7; padding-bottom: 8px; margin-top: 25px;">Saved Items in Your Wishlist</h3>
             <div style="margin: 20px 0;">
               {{wishlist_products}}
             </div>
 
             ${
               couponCode
-                ? `<div style="border: 2px dashed #AC5429; background-color: #F3D7D2; padding: 20px; border-radius: 10px; text-align: center; margin: 25px 0;">
-                    <p style="margin: 0; font-size: 13px; color: #4A4A4A;">Claim a special discount on your wishlist items at checkout:</p>
-                    <h2 style="font-family: monospace; font-size: 24px; margin: 8px 0; color: #AC5429; letter-spacing: 2px;">${couponCode}</h2>
+                ? `<div style="border: 2px dashed #A95423; background-color: #EFD3C9; padding: 20px; border-radius: 10px; text-align: center; margin: 25px 0;">
+                    <p style="margin: 0; font-size: 13px; color: #666666;">Claim a special discount on your wishlist items at checkout:</p>
+                    <h2 style="font-family: monospace; font-size: 24px; margin: 8px 0; color: #A95423; letter-spacing: 2px;">${couponCode}</h2>
                    </div>`
                 : ""
             }
 
             <p style="text-align: center; margin: 30px 0;">
-              <a href="${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/shop" style="background-color: #AC5429; color: white; padding: 12px 30px; border-radius: 25px; text-decoration: none; font-weight: bold; font-size: 14px;">Return & Order Now</a>
+              <a href="${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/shop" style="background-color: #A95423; color: white; padding: 12px 30px; border-radius: 25px; text-decoration: none; font-weight: bold; font-size: 14px;">Return & Order Now</a>
             </p>
-            <p style="font-size: 12px; color: #4A4A4A; text-align: center; margin-top: 40px; border-top: 1px solid #CBB3B5; padding-top: 15px;">
+            <p style="font-size: 12px; color: #666666; text-align: center; margin-top: 40px; border-top: 1px solid #E7DDD7; padding-top: 15px;">
               Snail Studios &bull; Premium Reusable Handcrafted Press-On Nails
             </p>
           </div>
@@ -265,30 +265,30 @@ export async function sendTargetedCartAbandonedEmailAction(
     // Cart recovery email body template
     const bodyTemplate = customBodyHtml || `
       <html>
-        <body style="font-family: Arial, sans-serif; color: #000000; background-color: #DEC6C8; padding: 20px;">
-          <div style="max-width: 600px; margin: 0 auto; background-color: #F8F4F4; border: 1px solid #CBB3B5; border-radius: 15px; padding: 30px; box-shadow: 0 4px 10px rgba(0,0,0,0.02);">
-            <h1 style="color: #AC5429; font-family: Georgia, serif; font-size: 24px; text-align: center; margin-bottom: 25px;">Don't Leave Your Nails Behind</h1>
+        <body style="font-family: Arial, sans-serif; color: #222222; background-color: #FEFFF6; padding: 20px;">
+          <div style="max-width: 600px; margin: 0 auto; background-color: #FFFFFF; border: 1px solid #E7DDD7; border-radius: 15px; padding: 30px; box-shadow: 0 4px 10px rgba(0,0,0,0.02);">
+            <h1 style="color: #A95423; font-family: Georgia, serif; font-size: 24px; text-align: center; margin-bottom: 25px;">Don't Leave Your Nails Behind</h1>
             <p>Hello ${user.name || "Customer"},</p>
             <p>We saved the handcrafted sets left in your shopping cart. Because our nail sets are painted by hand in limited batches, your cart reservation will expire soon and items may sell out.</p>
             
-            <h3 style="color: #AC5429; border-bottom: 1px solid #CBB3B5; padding-bottom: 8px; margin-top: 25px;">Items in Your Shopping Cart</h3>
+            <h3 style="color: #A95423; border-bottom: 1px solid #E7DDD7; padding-bottom: 8px; margin-top: 25px;">Items in Your Shopping Cart</h3>
             <div style="margin: 20px 0;">
               {{cart_products}}
             </div>
 
             ${
               couponCode
-                ? `<div style="border: 2px dashed #AC5429; background-color: #F3D7D2; padding: 20px; border-radius: 10px; text-align: center; margin: 25px 0;">
-                    <p style="margin: 0; font-size: 13px; color: #4A4A4A;">Complete your cart checkout today with this exclusive discount code:</p>
-                    <h2 style="font-family: monospace; font-size: 24px; margin: 8px 0; color: #AC5429; letter-spacing: 2px;">${couponCode}</h2>
+                ? `<div style="border: 2px dashed #A95423; background-color: #EFD3C9; padding: 20px; border-radius: 10px; text-align: center; margin: 25px 0;">
+                    <p style="margin: 0; font-size: 13px; color: #666666;">Complete your cart checkout today with this exclusive discount code:</p>
+                    <h2 style="font-family: monospace; font-size: 24px; margin: 8px 0; color: #A95423; letter-spacing: 2px;">${couponCode}</h2>
                    </div>`
                 : ""
             }
 
             <p style="text-align: center; margin: 30px 0;">
-              <a href="${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/cart" style="background-color: #AC5429; color: white; padding: 12px 30px; border-radius: 25px; text-decoration: none; font-weight: bold; font-size: 14px;">Complete My Checkout</a>
+              <a href="${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/cart" style="background-color: #A95423; color: white; padding: 12px 30px; border-radius: 25px; text-decoration: none; font-weight: bold; font-size: 14px;">Complete My Checkout</a>
             </p>
-            <p style="font-size: 12px; color: #4A4A4A; text-align: center; margin-top: 40px; border-top: 1px solid #CBB3B5; padding-top: 15px;">
+            <p style="font-size: 12px; color: #666666; text-align: center; margin-top: 40px; border-top: 1px solid #E7DDD7; padding-top: 15px;">
               Snail Studios &bull; Premium Reusable Handcrafted Press-On Nails
             </p>
           </div>

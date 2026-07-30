@@ -29,13 +29,13 @@ export function getOrderStatusUpdateTemplate(params: OrderStatusUpdateParams): s
     const active = targetStatuses.includes(params.newStatus.toLowerCase());
     return {
       circle: active 
-        ? "background: #AC5429; color: #ffffff;" 
-        : "background-color: #e5e7eb; color: #9ca3af;",
+        ? "background: #A95423; color: #ffffff;" 
+        : "background-color: #f3f4f6; color: #1f2937;",
       line: active
-        ? "background: #AC5429;"
+        ? "background: #A95423;"
         : "background-color: #e5e7eb;",
       text: active
-        ? "color: #AC5429; font-weight: 600;"
+        ? "color: #A95423; font-weight: 600;"
         : "color: #9ca3af; font-weight: normal;"
     };
   };
@@ -62,7 +62,7 @@ export function getOrderStatusUpdateTemplate(params: OrderStatusUpdateParams): s
     `;
   } else {
     timelineHtml = `
-      <div style="margin-bottom: 35px; padding: 20px 10px; background-color: #FFFFFF; border: 1px solid #CBB3B5; border-radius: 20px;">
+      <div style="margin-bottom: 35px; padding: 20px 10px; background-color: #FFFFFF; border: 1px solid #E7DDD7; border-radius: 20px;">
         <table style="width: 100%; border-collapse: collapse;">
           <tr>
             <!-- Paid Circle -->
@@ -111,9 +111,9 @@ export function getOrderStatusUpdateTemplate(params: OrderStatusUpdateParams): s
 
   const notesHtml = params.statusNotes 
     ? `
-      <div style="background-color: #F3D7D2; border-left: 4px solid #AC5429; border-radius: 4px 16px 16px 4px; padding: 20px; margin-bottom: 30px;">
-        <span style="font-size: 11px; font-weight: bold; text-transform: uppercase; color: #AC5429; display: block; margin-bottom: 6px; letter-spacing: 0.05em;">Status Note / Comments</span>
-        <p style="font-size: 13px; line-height: 1.6; color: #000000; margin: 0; white-space: pre-wrap;">${params.statusNotes}</p>
+      <div style="background-color: #EFD3C9; border-left: 4px solid #A95423; border-radius: 4px 16px 16px 4px; padding: 20px; margin-bottom: 30px;">
+        <span style="font-size: 11px; font-weight: bold; text-transform: uppercase; color: #A95423; display: block; margin-bottom: 6px; letter-spacing: 0.05em;">Status Note / Comments</span>
+        <p style="font-size: 13px; line-height: 1.6; color: #222222; margin: 0; white-space: pre-wrap;">${params.statusNotes}</p>
       </div>
     `
     : "";
@@ -128,31 +128,31 @@ export function getOrderStatusUpdateTemplate(params: OrderStatusUpdateParams): s
     body {
       margin: 0;
       padding: 0;
-      background-color: #DEC6C8;
+      background-color: #FEFFF6;
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      color: #000000;
+      color: #222222;
     }
     .wrapper {
       width: 100%;
       table-layout: fixed;
-      background-color: #DEC6C8;
+      background-color: #FEFFF6;
       padding-bottom: 40px;
       padding-top: 40px;
     }
     .main-table {
-      background-color: #F8F4F4;
+      background-color: #FFFFFF;
       margin: 0 auto;
       width: 100%;
       max-width: 600px;
       border-spacing: 0;
       border-radius: 24px;
       overflow: hidden;
-      box-shadow: 0 10px 30px rgba(172, 84, 41, 0.08);
-      border: 1px solid #CBB3B5;
+      box-shadow: 0 10px 30px rgba(169, 84, 35, 0.08);
+      border: 1px solid #E7DDD7;
     }
     .header-band {
       height: 6px;
-      background: #AC5429;
+      background: #A95423;
     }
     .header {
       padding: 40px 30px 20px 30px;
@@ -163,21 +163,21 @@ export function getOrderStatusUpdateTemplate(params: OrderStatusUpdateParams): s
       width: 48px;
       height: 48px;
       line-height: 48px;
-      background: #AC5429;
+      background: #A95423;
       border-radius: 14px;
       color: #ffffff;
       font-family: 'Playfair Display', Georgia, serif;
       font-size: 24px;
       font-weight: bold;
       text-align: center;
-      box-shadow: 0 4px 10px rgba(172, 84, 41, 0.2);
+      box-shadow: 0 4px 10px rgba(169, 84, 35, 0.2);
     }
     .brand-name {
       font-family: 'Playfair Display', Georgia, serif;
       font-size: 22px;
       font-weight: 600;
       letter-spacing: 0.05em;
-      color: #000000;
+      color: #222222;
       margin-top: 15px;
       margin-bottom: 5px;
     }
@@ -185,7 +185,7 @@ export function getOrderStatusUpdateTemplate(params: OrderStatusUpdateParams): s
       font-size: 11px;
       text-transform: uppercase;
       letter-spacing: 0.15em;
-      color: #AC5429;
+      color: #A95423;
       font-weight: 600;
       margin: 0;
     }
@@ -210,20 +210,20 @@ export function getOrderStatusUpdateTemplate(params: OrderStatusUpdateParams): s
       text-align: center;
     }
     .meta-card {
-      background-color: #FFFFFF;
-      border: 1px dashed #CBB3B5;
+      background-color: #FEFFF6;
+      border: 1px dashed #E7DDD7;
       border-radius: 16px;
       padding: 20px;
       margin-bottom: 30px;
     }
     .meta-detail {
       font-size: 13px;
-      color: #4A4A4A;
+      color: #666666;
       line-height: 1.5;
       margin: 4px 0;
     }
     .meta-detail strong {
-      color: #000000;
+      color: #222222;
     }
     .btn-container {
       text-align: center;
@@ -232,7 +232,7 @@ export function getOrderStatusUpdateTemplate(params: OrderStatusUpdateParams): s
     .btn {
       display: inline-block;
       padding: 14px 30px;
-      background: #AC5429;
+      background: #A95423;
       color: #ffffff !important;
       text-decoration: none;
       border-radius: 14px;
@@ -240,17 +240,17 @@ export function getOrderStatusUpdateTemplate(params: OrderStatusUpdateParams): s
       font-weight: bold;
       text-transform: uppercase;
       letter-spacing: 0.1em;
-      box-shadow: 0 5px 15px rgba(172, 84, 41, 0.2);
+      box-shadow: 0 5px 15px rgba(169, 84, 35, 0.2);
     }
     .footer {
       padding: 30px;
-      background-color: #F8F4F4;
-      border-top: 1px solid #CBB3B5;
+      background-color: #FEFFF6;
+      border-top: 1px solid #E7DDD7;
       text-align: center;
     }
     .footer-text {
       font-size: 11px;
-      color: #4A4A4A;
+      color: #666666;
       line-height: 1.5;
       margin: 0;
     }

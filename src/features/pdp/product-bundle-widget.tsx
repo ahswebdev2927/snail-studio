@@ -427,7 +427,7 @@ export function ProductBundleWidget({ bundles, currentProductId }: ProductBundle
                     </span>
                   </div>
                   <div className="flex items-baseline justify-center sm:justify-start gap-2">
-                    <span className="font-serif text-2xl font-normal text-foreground">
+                    <span className="font-sans text-2xl font-bold text-foreground">
                       {formatPrice(discountedTotal)}
                     </span>
                     <span className="text-xs text-emerald-600 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-md font-semibold">

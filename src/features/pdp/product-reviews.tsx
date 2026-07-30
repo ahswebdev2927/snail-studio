@@ -366,7 +366,7 @@ export function ProductReviews({
           
           {/* Rating Summary Score */}
           <div className="flex flex-col items-center justify-center text-center p-4 border-b md:border-b-0 md:border-r border-border/20">
-            <span className="font-serif text-5xl font-medium text-foreground tracking-tight">
+            <span className="font-sans text-5xl font-bold text-foreground tracking-tight">
               {averageRating.toFixed(1)}
             </span>
             <div className="flex items-center gap-1 mt-3">
