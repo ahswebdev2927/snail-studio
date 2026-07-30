@@ -24,18 +24,67 @@ import {
   Search
 } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
-import {
-  ResponsiveContainer,
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  PieChart,
-  Pie,
-  Cell,
-} from "recharts";
+import dynamic from "next/dynamic";
+
+const RevenueTrendChart = dynamic(
+  () => import("@/components/admin/analytics/store-revenue-charts").then(mod => mod.RevenueTrendChart),
+  {
+    loading: () => (
+      <div className="h-full w-full flex items-center justify-center">
+        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+      </div>
+    ),
+    ssr: false,
+  }
+);
+
+const OrdersTrendChart = dynamic(
+  () => import("@/components/admin/analytics/store-revenue-charts").then(mod => mod.OrdersTrendChart),
+  {
+    loading: () => (
+      <div className="h-full w-full flex items-center justify-center">
+        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+      </div>
+    ),
+    ssr: false,
+  }
+);
+
+const OrderStatusPieChart = dynamic(
+  () => import("@/components/admin/analytics/store-revenue-charts").then(mod => mod.OrderStatusPieChart),
+  {
+    loading: () => (
+      <div className="h-full w-full flex items-center justify-center">
+        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+      </div>
+    ),
+    ssr: false,
+  }
+);
+
+const WishlistTrendChart = dynamic(
+  () => import("@/components/admin/analytics/store-revenue-charts").then(mod => mod.WishlistTrendChart),
+  {
+    loading: () => (
+      <div className="h-full w-full flex items-center justify-center">
+        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+      </div>
+    ),
+    ssr: false,
+  }
+);
+
+const CustomerAcquisitionChart = dynamic(
+  () => import("@/components/admin/analytics/store-revenue-charts").then(mod => mod.CustomerAcquisitionChart),
+  {
+    loading: () => (
+      <div className="h-full w-full flex items-center justify-center">
+        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+      </div>
+    ),
+    ssr: false,
+  }
+);
 
 // Types for Revenue Analytics
 interface SummaryData {
@@ -361,19 +410,7 @@ export default function AnalyticsPage() {
     if (!revenueData) return null;
     const { summary, salesHistory } = revenueData;
 
-    const RevenueTooltip = ({ active, payload }: any) => {
-      if (active && payload && payload.length) {
-        const data = payload[0].payload;
-        return (
-          <div className="bg-card/95 backdrop-blur-md border border-border/40 px-3 py-2 rounded-2xl shadow-xl flex flex-col gap-0.5 text-xs font-light">
-            <p className="font-medium text-foreground">{formatDateLabel(data.date)}</p>
-            <p className="font-bold text-primary">{formatPriceDecimal(data.amount)}</p>
-            <p className="text-muted-foreground text-[10px] font-light">({data.count} orders)</p>
-          </div>
-        );
-      }
-      return null;
-    };
+
 
     return (
       <div className="space-y-6">
@@ -463,57 +500,7 @@ export default function AnalyticsPage() {
           </div>
 
           <div className="h-64 w-full pt-4">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart
-                data={salesHistory}
-                margin={{ top: 10, right: 10, left: 10, bottom: 0 }}
-                onMouseMove={(e: any) => {
-                  if (e.activePayload && e.activePayload.length) {
-                    setActiveRevenuePoint(e.activePayload[0].payload);
-                  }
-                }}
-                onMouseLeave={() => setActiveRevenuePoint(null)}
-              >
-                <defs>
-                  <linearGradient id="revenueChartGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.25} />
-                    <stop offset="95%" stopColor="var(--primary)" stopOpacity={0.00} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid 
-                  strokeDasharray="4 4" 
-                  vertical={false} 
-                  stroke="var(--border)" 
-                  opacity={0.15}
-                />
-                <XAxis 
-                  dataKey="date" 
-                  tickLine={false}
-                  axisLine={false}
-                  tickFormatter={(str) => formatDateLabel(str)}
-                  tick={{ fill: "var(--muted-foreground)", fontSize: 9, fontFamily: "monospace" }}
-                  dy={10}
-                />
-                <YAxis 
-                  tickLine={false}
-                  axisLine={false}
-                  tickFormatter={(val) => formatPrice(val)}
-                  tick={{ fill: "var(--muted-foreground)", fontSize: 9, fontFamily: "monospace" }}
-                  dx={-5}
-                />
-                <Tooltip content={<RevenueTooltip />} />
-                <Area 
-                  type="monotone" 
-                  dataKey="amount" 
-                  stroke="var(--primary)" 
-                  strokeWidth={2.5}
-                  fillOpacity={1} 
-                  fill="url(#revenueChartGradient)"
-                  activeDot={{ r: 6, fill: "var(--background)", stroke: "var(--primary)", strokeWidth: 2.5 }}
-                  dot={{ r: 3.5, fill: "var(--background)", stroke: "var(--primary)", strokeWidth: 2 }}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+            <RevenueTrendChart salesHistory={salesHistory} setActiveRevenuePoint={setActiveRevenuePoint} />
           </div>
         </div>
 
@@ -563,38 +550,7 @@ export default function AnalyticsPage() {
     if (!ordersData) return null;
     const { summary, ordersHistory } = ordersData;
 
-    const OrdersTooltip = ({ active, payload }: any) => {
-      if (active && payload && payload.length) {
-        const data = payload[0].payload;
-        return (
-          <div className="bg-card/95 backdrop-blur-md border border-border/40 px-3 py-2 rounded-2xl shadow-xl flex flex-col gap-0.5 text-xs font-light">
-            <p className="font-medium text-foreground">{formatDateLabel(data.date)}</p>
-            <p className="font-bold text-primary">{data.count} Orders</p>
-          </div>
-        );
-      }
-      return null;
-    };
 
-    const StatusTooltip = ({ active, payload }: any) => {
-      if (active && payload && payload.length) {
-        const data = payload[0].payload;
-        if (data.key === "none") return null;
-        const pct = getStatusPercent(data.value);
-        return (
-          <div className="bg-card/95 backdrop-blur-md border border-border/40 px-3 py-2 rounded-2xl shadow-xl flex flex-col gap-0.5 text-xs font-light">
-            <div className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: data.color }} />
-              <span className="font-semibold text-foreground">{data.name}</span>
-            </div>
-            <p className="font-mono text-[10px] text-muted-foreground pl-3">
-              {data.value} orders ({pct.toFixed(0)}%)
-            </p>
-          </div>
-        );
-      }
-      return null;
-    };
 
     // Formatting helper for duration hours
     const formatFulfillmentHours = (hours: number) => {
@@ -715,57 +671,7 @@ export default function AnalyticsPage() {
             </div>
 
             <div className="h-[280px] w-full pt-4">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart
-                  data={ordersHistory}
-                  margin={{ top: 10, right: 10, left: 10, bottom: 0 }}
-                  onMouseMove={(e: any) => {
-                    if (e.activePayload && e.activePayload.length) {
-                      setActiveOrderPoint(e.activePayload[0].payload);
-                    }
-                  }}
-                  onMouseLeave={() => setActiveOrderPoint(null)}
-                >
-                  <defs>
-                    <linearGradient id="ordersChartGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.25} />
-                      <stop offset="95%" stopColor="var(--primary)" stopOpacity={0.00} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid 
-                    strokeDasharray="4 4" 
-                    vertical={false} 
-                    stroke="var(--border)" 
-                    opacity={0.15}
-                  />
-                  <XAxis 
-                    dataKey="date" 
-                    tickLine={false}
-                    axisLine={false}
-                    tickFormatter={(str) => formatDateLabel(str)}
-                    tick={{ fill: "var(--muted-foreground)", fontSize: 9, fontFamily: "monospace" }}
-                    dy={10}
-                  />
-                  <YAxis 
-                    tickLine={false}
-                    axisLine={false}
-                    tickFormatter={(val) => Math.round(val).toString()}
-                    tick={{ fill: "var(--muted-foreground)", fontSize: 9, fontFamily: "monospace" }}
-                    dx={-5}
-                  />
-                  <Tooltip content={<OrdersTooltip />} />
-                  <Area 
-                    type="monotone" 
-                    dataKey="count" 
-                    stroke="var(--primary)" 
-                    strokeWidth={2.5}
-                    fillOpacity={1} 
-                    fill="url(#ordersChartGradient)"
-                    activeDot={{ r: 6, fill: "var(--background)", stroke: "var(--primary)", strokeWidth: 2.5 }}
-                    dot={{ r: 3.5, fill: "var(--background)", stroke: "var(--primary)", strokeWidth: 2 }}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
+              <OrdersTrendChart ordersHistory={ordersHistory} setActiveOrderPoint={setActiveOrderPoint} />
             </div>
           </div>
 
@@ -781,66 +687,12 @@ export default function AnalyticsPage() {
 
               {/* Donut Chart Container */}
               <div className="relative w-full h-44 flex items-center justify-center">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={summary.totalOrders === 0 
-                        ? [{ name: "No Orders", value: 1, color: "var(--border)", key: "none" }]
-                        : statuses
-                            .filter(s => s.count > 0)
-                            .map(s => ({
-                              name: s.label,
-                              value: s.count,
-                              color: s.hex,
-                              key: s.key,
-                            }))
-                      }
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={52}
-                      outerRadius={70}
-                      paddingAngle={
-                        summary.totalOrders > 0 && statuses.filter(s => s.count > 0).length > 1 ? 3 : 0
-                      }
-                      dataKey="value"
-                      onMouseEnter={(_, index) => {
-                        if (summary.totalOrders > 0) {
-                          const activeStatuses = statuses.filter(s => s.count > 0);
-                          if (activeStatuses[index]) {
-                            setHoveredStatus(activeStatuses[index].key);
-                          }
-                        }
-                      }}
-                      onMouseLeave={() => {
-                        setHoveredStatus(null);
-                      }}
-                    >
-                      {(summary.totalOrders === 0 
-                        ? [{ name: "No Orders", value: 1, color: "var(--border)", key: "none" }]
-                        : statuses
-                            .filter(s => s.count > 0)
-                            .map(s => ({
-                              name: s.label,
-                              value: s.count,
-                              color: s.hex,
-                              key: s.key,
-                            }))
-                      ).map((entry, index) => {
-                        const isHovered = hoveredStatus === entry.key;
-                        return (
-                          <Cell 
-                            key={`cell-${index}`} 
-                            fill={entry.color} 
-                            opacity={hoveredStatus === null || isHovered ? 1 : 0.4}
-                            className="transition-all duration-300 cursor-pointer"
-                            style={{ outline: "none" }}
-                          />
-                        );
-                      })}
-                    </Pie>
-                    <Tooltip content={<StatusTooltip />} />
-                  </PieChart>
-                </ResponsiveContainer>
+                <OrderStatusPieChart
+                  totalOrders={summary.totalOrders}
+                  statuses={statuses}
+                  hoveredStatus={hoveredStatus}
+                  setHoveredStatus={setHoveredStatus}
+                />
                 {/* Center text for donut */}
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                   <span className="font-serif text-2xl font-bold tracking-wide text-foreground">
@@ -1297,18 +1149,7 @@ export default function AnalyticsPage() {
     if (!wishlistData) return null;
     const { summary, wishlistHistory, topWishlisted } = wishlistData;
 
-    const WishlistTooltip = ({ active, payload }: any) => {
-      if (active && payload && payload.length) {
-        const data = payload[0].payload;
-        return (
-          <div className="bg-card/95 backdrop-blur-md border border-border/40 px-3 py-2 rounded-2xl shadow-xl flex flex-col gap-0.5 text-xs font-light">
-            <p className="font-medium text-foreground">{formatDateLabel(data.date)}</p>
-            <p className="font-bold text-primary">{data.count} wishlist adds</p>
-          </div>
-        );
-      }
-      return null;
-    };
+
 
     return (
       <div className="space-y-6">
@@ -1374,51 +1215,7 @@ export default function AnalyticsPage() {
           </div>
 
           <div className="h-56 w-full pt-4">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart
-                data={wishlistHistory}
-                margin={{ top: 10, right: 10, left: 10, bottom: 0 }}
-              >
-                <defs>
-                  <linearGradient id="wishlistChartGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.25} />
-                    <stop offset="95%" stopColor="var(--primary)" stopOpacity={0.00} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid 
-                  strokeDasharray="4 4" 
-                  vertical={false} 
-                  stroke="var(--border)" 
-                  opacity={0.15}
-                />
-                <XAxis 
-                  dataKey="date" 
-                  tickLine={false}
-                  axisLine={false}
-                  tickFormatter={(str) => formatDateLabel(str)}
-                  tick={{ fill: "var(--muted-foreground)", fontSize: 9, fontFamily: "monospace" }}
-                  dy={10}
-                />
-                <YAxis 
-                  tickLine={false}
-                  axisLine={false}
-                  tickFormatter={(val) => Math.round(val).toString()}
-                  tick={{ fill: "var(--muted-foreground)", fontSize: 9, fontFamily: "monospace" }}
-                  dx={-5}
-                />
-                <Tooltip content={<WishlistTooltip />} />
-                <Area 
-                  type="monotone" 
-                  dataKey="count" 
-                  stroke="var(--primary)" 
-                  strokeWidth={2.5}
-                  fillOpacity={1} 
-                  fill="url(#wishlistChartGradient)"
-                  activeDot={{ r: 6, fill: "var(--background)", stroke: "var(--primary)", strokeWidth: 2.5 }}
-                  dot={{ r: 3.5, fill: "var(--background)", stroke: "var(--primary)", strokeWidth: 2 }}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+            <WishlistTrendChart wishlistHistory={wishlistHistory} totalWishlistAdds={summary.totalWishlistAdds} />
           </div>
         </div>
 
@@ -1484,18 +1281,7 @@ export default function AnalyticsPage() {
     if (!customerData) return null;
     const { summary, acquisitionHistory, topSpenders } = customerData;
 
-    const CustomersTooltip = ({ active, payload }: any) => {
-      if (active && payload && payload.length) {
-        const data = payload[0].payload;
-        return (
-          <div className="bg-card/95 backdrop-blur-md border border-border/40 px-3 py-2 rounded-2xl shadow-xl flex flex-col gap-0.5 text-xs font-light">
-            <p className="font-medium text-foreground">{formatDateLabel(data.date)}</p>
-            <p className="font-bold text-primary">{data.count} signups</p>
-          </div>
-        );
-      }
-      return null;
-    };
+
 
     return (
       <div className="space-y-6 animate-fade-in">
@@ -1580,51 +1366,7 @@ export default function AnalyticsPage() {
           </div>
 
           <div className="h-56 w-full pt-4">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart
-                data={acquisitionHistory}
-                margin={{ top: 10, right: 10, left: 10, bottom: 0 }}
-              >
-                <defs>
-                  <linearGradient id="customersChartGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.25} />
-                    <stop offset="95%" stopColor="var(--primary)" stopOpacity={0.00} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid 
-                  strokeDasharray="4 4" 
-                  vertical={false} 
-                  stroke="var(--border)" 
-                  opacity={0.15}
-                />
-                <XAxis 
-                  dataKey="date" 
-                  tickLine={false}
-                  axisLine={false}
-                  tickFormatter={(str) => formatDateLabel(str)}
-                  tick={{ fill: "var(--muted-foreground)", fontSize: 9, fontFamily: "monospace" }}
-                  dy={10}
-                />
-                <YAxis 
-                  tickLine={false}
-                  axisLine={false}
-                  tickFormatter={(val) => Math.round(val).toString()}
-                  tick={{ fill: "var(--muted-foreground)", fontSize: 9, fontFamily: "monospace" }}
-                  dx={-5}
-                />
-                <Tooltip content={<CustomersTooltip />} />
-                <Area 
-                  type="monotone" 
-                  dataKey="count" 
-                  stroke="var(--primary)" 
-                  strokeWidth={2.5}
-                  fillOpacity={1} 
-                  fill="url(#customersChartGradient)"
-                  activeDot={{ r: 6, fill: "var(--background)", stroke: "var(--primary)", strokeWidth: 2.5 }}
-                  dot={{ r: 3.5, fill: "var(--background)", stroke: "var(--primary)", strokeWidth: 2 }}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+            <CustomerAcquisitionChart acquisitionHistory={acquisitionHistory} />
           </div>
         </div>
 

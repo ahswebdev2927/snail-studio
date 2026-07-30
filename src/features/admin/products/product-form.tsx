@@ -28,7 +28,20 @@ import {
   Package,
   AlertCircle
 } from "lucide-react";
-import { MediaPicker } from "@/components/media/media-picker";
+import dynamic from "next/dynamic";
+
+const MediaPicker = dynamic(
+  () => import("@/components/media/media-picker").then(mod => mod.MediaPicker),
+  {
+    loading: () => (
+      <div className="flex items-center justify-center p-4 border border-dashed rounded-xl">
+        <Loader2 className="w-5 h-5 animate-spin text-primary" />
+        <span className="text-xs text-muted-foreground ml-2 font-mono">Loading media assets library...</span>
+      </div>
+    ),
+    ssr: false,
+  }
+);
 import { generateVariants, generateUPCBarcode } from "@/lib/catalog/variants";
 import { slugify } from "@/lib/utils";
 

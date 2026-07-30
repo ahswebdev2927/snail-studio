@@ -3,7 +3,8 @@ import { products, reviews, orders, orderItems, productVariants, productBundles,
 import { eq, ne, avg, count, and, inArray, sql } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
-import { ProductGallery, GalleryMediaItem } from "@/features/pdp/product-gallery";
+import { GalleryMediaItem } from "@/features/pdp/product-gallery";
+import { ProductGalleryWrapper as ProductGallery } from "@/features/pdp/product-gallery-wrapper";
 import { ProductInfo } from "@/features/pdp/product-info";
 import { ProductActions, ProductVariantFull } from "@/features/pdp/product-actions";
 import { BreadcrumbItem } from "@/features/pdp/pdp-breadcrumb";

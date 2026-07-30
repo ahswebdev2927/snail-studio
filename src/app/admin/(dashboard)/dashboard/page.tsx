@@ -17,15 +17,19 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { getOrderStatusBadgeStyle } from "@/components/orders/order-status-badge";
-import {
-  ResponsiveContainer,
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-} from "recharts";
+import dynamic from "next/dynamic";
+
+const SalesAreaChart = dynamic(
+  () => import("@/components/admin/dashboard/sales-area-chart"),
+  {
+    loading: () => (
+      <div className="h-full w-full flex items-center justify-center">
+        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+      </div>
+    ),
+    ssr: false,
+  }
+);
 
 interface DashboardStats {
   totalSales: number;
@@ -106,27 +110,7 @@ export default function AdminDashboardPage() {
     });
   };
 
-  // Custom tooltip for Recharts
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      return (
-        <div className="bg-card/90 backdrop-blur-md border border-border/40 px-3 py-2 rounded-2xl shadow-xl flex flex-col gap-0.5 text-xs font-light">
-          <p className="font-medium text-foreground">
-            {new Date(data.date).toLocaleDateString("en-IN", {
-              weekday: "short",
-              month: "short",
-              day: "numeric",
-            })}
-          </p>
-          <p className="font-bold text-primary">
-            {formatPriceDecimal(data.amount)}
-          </p>
-        </div>
-      );
-    }
-    return null;
-  };
+
 
   // Get status color badges for orders
   const getStatusBadge = (status: string) => {
@@ -253,51 +237,7 @@ export default function AdminDashboardPage() {
 
           {/* Recharts Area Chart */}
           <div className="h-56 w-full pt-4">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart
-                data={stats.salesHistory}
-                margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
-              >
-                <defs>
-                  <linearGradient id="dashboardChartGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.25} />
-                    <stop offset="95%" stopColor="var(--primary)" stopOpacity={0.00} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid 
-                  strokeDasharray="4 4" 
-                  vertical={false} 
-                  stroke="var(--border)" 
-                  opacity={0.2}
-                />
-                <XAxis 
-                  dataKey="date" 
-                  tickLine={false}
-                  axisLine={false}
-                  tickFormatter={(str) => new Date(str).toLocaleDateString("en-IN", { weekday: "short" })}
-                  tick={{ fill: "var(--muted-foreground)", fontSize: 9, fontFamily: "monospace" }}
-                  dy={10}
-                />
-                <YAxis 
-                  tickLine={false}
-                  axisLine={false}
-                  tickFormatter={(val) => formatPrice(val)}
-                  tick={{ fill: "var(--muted-foreground)", fontSize: 9, fontFamily: "monospace" }}
-                  dx={-5}
-                />
-                <Tooltip content={<CustomTooltip />} />
-                <Area 
-                  type="monotone" 
-                  dataKey="amount" 
-                  stroke="var(--primary)" 
-                  strokeWidth={2.5}
-                  fillOpacity={1} 
-                  fill="url(#dashboardChartGradient)"
-                  activeDot={{ r: 6, fill: "var(--background)", stroke: "var(--primary)", strokeWidth: 2.5 }}
-                  dot={{ r: 3.5, fill: "var(--background)", stroke: "var(--primary)", strokeWidth: 2 }}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+            <SalesAreaChart salesHistory={stats.salesHistory} />
           </div>
         </div>
 

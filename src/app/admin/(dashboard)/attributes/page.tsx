@@ -24,7 +24,7 @@ interface TooltipProps {
   children: React.ReactNode;
 }
 
-export function Tooltip({ content, children }: TooltipProps) {
+function Tooltip({ content, children }: TooltipProps) {
   return (
     <div className="group relative inline-block">
       {children}
