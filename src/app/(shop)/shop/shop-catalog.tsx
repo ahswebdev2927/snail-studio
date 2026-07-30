@@ -116,11 +116,11 @@ export default function ShopCatalog() {
   const [isLoading, setIsLoading] = useState(true);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [isSidebarVisible, setIsSidebarVisible] = useState(true);
+  const [isSidebarVisible, setIsSidebarVisible] = useState(false);
   
   // Navigation and Grid Layout customization controls
   const [navMode, setNavMode] = useState<"pagination" | "infinite_scroll">("pagination");
-  const [gridCols, setGridCols] = useState<2 | 3 | 4>(3);
+  const [gridCols, setGridCols] = useState<2 | 3 | 4>(4);
   const [recommendations, setRecommendations] = useState<ProductSearchItem[]>([]);
 
   // Track latest state values in refs to prevent stale closures while keeping dependency array minimal
