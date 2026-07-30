@@ -89,7 +89,7 @@
 }
 
 :root {
-  --background: #FFEEF0;              /* App Background */
+  --background: #DEC6C8;              /* App Background */
   --foreground: #000000;              /* Body Text */
   
   --card: #F8F4F4;                    /* Card */
@@ -141,7 +141,7 @@
   --text-disabled: #8E8687;
   --text-inverse: #FFFFFF;
   
-  --navbar: #FFEEF0;
+  --navbar: #DEC6C8;
   --navbar-text: #000000;
   --navbar-active: #AC5429;
   --navbar-hover: #AC5429;

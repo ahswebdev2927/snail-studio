@@ -263,7 +263,7 @@ export function Header({ navigationData, storeLogo = "", storeName = "Snail Stud
         style={{
           transition: "transform 0.5s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.5s cubic-bezier(0.25, 0.8, 0.25, 1), top 0.5s cubic-bezier(0.25, 0.8, 0.25, 1), background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease",
         }}
-        className={`sticky top-0 z-50 backdrop-blur-md bg-[#FFEEF0]/95 dark:bg-black/95 border-b border-border/40 transition-all ${isVisible ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0"
+        className={`sticky top-0 z-50 backdrop-blur-md bg-background/95 dark:bg-black/95 border-b border-border/40 transition-all ${isVisible ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0"
           }`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
