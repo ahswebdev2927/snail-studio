@@ -3,16 +3,16 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { 
-  ShoppingBag, 
-  Trash2, 
-  Plus, 
-  Minus, 
-  ArrowRight, 
-  Tag, 
-  Info, 
-  CheckCircle2, 
-  Percent, 
+import {
+  ShoppingBag,
+  Trash2,
+  Plus,
+  Minus,
+  ArrowRight,
+  Tag,
+  Info,
+  CheckCircle2,
+  Percent,
   HelpCircle,
   Heart,
   Loader2
@@ -396,11 +396,6 @@ export default function CartClient() {
       <div className="mb-10">
         <h1 className="font-serif text-3xl md:text-4xl font-semibold tracking-wide text-foreground flex items-baseline gap-3">
           Your Shopping Bag
-          {cart.length > 0 && (
-            <span className="font-sans font-light text-muted-foreground text-lg md:text-xl">
-              ({cart.reduce((sum, item) => sum + item.quantity, 0)} items)
-            </span>
-          )}
         </h1>
         <p className="text-xs text-muted-foreground font-light font-sans mt-1">
           Review your items, apply offers, and prepare for your home manicure.
@@ -489,7 +484,11 @@ export default function CartClient() {
             {/* Left Column: Cart Items & Add-ons */}
             <div className="lg:col-span-2 space-y-8">
               <div className="bg-card border border-border/30 rounded-2xl p-6 md:p-8 shadow-xs">
-                <h2 className="font-serif text-lg font-normal mb-6 text-foreground">Items in Your Bag</h2>
+                <h2 className="font-serif text-lg font-normal mb-6 text-foreground">Items in Your Bag <span>{cart.length > 0 && (
+                  <span className="font-sans font-light text-muted-foreground text-lg md:text-xl">
+                    ({cart.reduce((sum, item) => sum + item.quantity, 0)} items)
+                  </span>
+                )}</span></h2>
                 <div className="divide-y divide-border/10">
                   {cart.map((item) => {
                     const priceInPaise = getNormalizedPriceInPaise(item.price);
@@ -532,7 +531,7 @@ export default function CartClient() {
                                 </div>
                               )}
                             </div>
-                            
+
                             {/* Item Subtotal */}
                             <span className="font-serif text-sm font-semibold text-foreground shrink-0 mt-0.5">
                               {formatPrice(priceInPaise * item.quantity)}
@@ -777,15 +776,15 @@ export default function CartClient() {
                           Code: {appliedCoupon.code}
                         </div>
                         <p className="text-[9px] font-light">
-                          {appliedCoupon.discountType === "percentage" 
-                            ? `${appliedCoupon.discountValue}% discount applied` 
+                          {appliedCoupon.discountType === "percentage"
+                            ? `${appliedCoupon.discountValue}% discount applied`
                             : "Fixed discount applied"
                           }
                         </p>
                       </div>
                       <div className="flex items-center gap-3">
                         <span className="font-semibold">-{formatPrice(discountAmount)}</span>
-                        <button 
+                        <button
                           onClick={handleRemoveCoupon}
                           className="text-muted-foreground/60 hover:text-destructive text-[10px] uppercase font-bold tracking-wider underline cursor-pointer"
                         >

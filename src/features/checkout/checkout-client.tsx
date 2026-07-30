@@ -36,7 +36,7 @@ import {
   reserveCartStockOnCheckout
 } from "./actions";
 
-type CheckoutStep = "address" | "shipping" | "payment" | "review";
+type CheckoutStep = "address" | "shipping" | "review";
 
 export default function CheckoutClient() {
   const router = useRouter();
@@ -362,11 +362,9 @@ export default function CheckoutClient() {
         getGA4CartValue(),
         appliedCoupon?.code || undefined
       );
-      setCurrentStep("payment");
-    } else if (step === "payment") {
-      // Trigger GA4 add_payment_info event
+      // Trigger GA4 add_payment_info event (Razorpay is default)
       trackAddPaymentInfo(
-        paymentGateway === "razorpay" ? "Razorpay Gateway" : "Razorpay Gateway",
+        "Razorpay Gateway",
         getGA4CartItems(),
         getGA4CartValue(),
         appliedCoupon?.code || undefined
@@ -563,11 +561,10 @@ export default function CheckoutClient() {
           {[
             { id: "address", label: "Address", icon: MapPin },
             { id: "shipping", label: "Shipping", icon: Truck },
-            { id: "payment", label: "Payment", icon: CreditCard },
             { id: "review", label: "Review", icon: Eye }
           ].map((s, index) => {
             const Icon = s.icon;
-            const steps: CheckoutStep[] = ["address", "shipping", "payment", "review"];
+            const steps: CheckoutStep[] = ["address", "shipping", "review"];
             const currentIdx = steps.indexOf(currentStep);
             const thisIdx = steps.indexOf(s.id as CheckoutStep);
             const isCompleted = thisIdx < currentIdx;
@@ -947,15 +944,6 @@ export default function CheckoutClient() {
                 </div>
               )}
 
-              <div className="pt-4 border-t border-border/20 flex justify-end">
-                <Button 
-                  onClick={() => handleStepSubmit("address")}
-                  className="rounded-xl px-6 py-2.5 bg-primary text-primary-foreground hover:bg-primary/95 text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-sm"
-                >
-                  <span>Continue to Shipping</span>
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
-              </div>
             </div>
           )}
 
@@ -1021,7 +1009,7 @@ export default function CheckoutClient() {
                 </label>
               </div>
 
-              <div className="pt-4 border-t border-border/20 flex justify-between">
+              <div className="pt-4 border-t border-border/20 flex justify-start">
                 <Button 
                   onClick={() => setCurrentStep("address")}
                   variant="outline"
@@ -1030,88 +1018,11 @@ export default function CheckoutClient() {
                   <ArrowLeft className="w-4 h-4" />
                   <span>Back to Address</span>
                 </Button>
-                <Button 
-                  onClick={() => handleStepSubmit("shipping")}
-                  className="rounded-xl px-6 py-2.5 bg-primary text-primary-foreground hover:bg-primary/95 text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-sm"
-                >
-                  <span>Continue to Payment</span>
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
               </div>
             </div>
           )}
 
-          {/* STEP 3: PAYMENT */}
-          {currentStep === "payment" && (
-            <div className="space-y-6">
-              <div className="space-y-1 border-b border-border/20 pb-4">
-                <h2 className="font-serif text-lg font-normal text-foreground flex items-center gap-2">
-                  <CreditCard className="w-5 h-5 text-primary" /> Payment Method
-                </h2>
-                <p className="text-[10px] text-muted-foreground font-light">
-                  Select payment gateway. Payments are processed securely.
-                </p>
-              </div>
-
-              <div className="space-y-3">
-                <label 
-                  className={cn(
-                    "flex items-center justify-between p-4.5 bg-card border rounded-2xl cursor-pointer transition-all",
-                    paymentGateway === "razorpay" ? "border-primary ring-1 ring-primary" : "border-border/60"
-                  )}
-                >
-                  <div className="flex items-center gap-3">
-                    <input 
-                      type="radio" 
-                      name="payment_gateway" 
-                      checked={paymentGateway === "razorpay"}
-                      onChange={() => setPaymentGateway("razorpay")}
-                      className="text-primary focus:ring-primary focus:ring-0" 
-                    />
-                    <div className="space-y-0.5">
-                      <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                        Razorpay Gateway <span className="text-[8.5px] bg-success/15 text-success border border-success/30 px-1.5 py-0.5 rounded font-bold uppercase">Secure</span>
-                      </p>
-                      <p className="text-[10px] text-muted-foreground font-light">Pay instantly via UPI, Cards, NetBanking, or Wallet.</p>
-                    </div>
-                  </div>
-                  <div className="h-5 flex items-center gap-1 text-muted-foreground/40 text-[9px] font-bold tracking-widest font-sans uppercase">
-                    UPI / cards / wallets
-                  </div>
-                </label>
-              </div>
-
-              <div className="p-4 bg-secondary/30 rounded-2xl border border-border/20 flex items-start gap-3">
-                <Lock className="w-4.5 h-4.5 text-primary shrink-0 mt-0.5" />
-                <div className="space-y-1 leading-relaxed">
-                  <p className="text-[11px] font-semibold text-foreground">Secure Billing Guarantee</p>
-                  <p className="text-[10px] text-muted-foreground font-light">
-                    Your personal credentials and transaction logs are encrypted using industrial security protocols. Snail Studio does not store payment credentials.
-                  </p>
-                </div>
-              </div>
-
-              <div className="pt-4 border-t border-border/20 flex justify-between">
-                <Button 
-                  onClick={() => setCurrentStep("shipping")}
-                  variant="outline"
-                  className="rounded-xl px-5 py-2.5 text-xs font-medium flex items-center gap-1.5 cursor-pointer"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                  <span>Back to Shipping</span>
-                </Button>
-                <Button 
-                  onClick={() => handleStepSubmit("payment")}
-                  className="rounded-xl px-6 py-2.5 bg-primary text-primary-foreground hover:bg-primary/95 text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-sm"
-                >
-                  <span>Review Order</span>
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* STEP 4: REVIEW */}
+          {/* STEP 3: REVIEW */}
           {currentStep === "review" && (
             <div className="space-y-6">
               <div className="space-y-1 border-b border-border/20 pb-4">
@@ -1144,7 +1055,7 @@ export default function CheckoutClient() {
                   </div>
                   <div>
                     <p className="font-bold text-foreground">Payment Gateway</p>
-                    <p className="text-muted-foreground text-[11px] uppercase">{paymentGateway}</p>
+                    <p className="text-muted-foreground text-[11px] font-semibold text-primary">Razorpay Gateway (Secure)</p>
                   </div>
                 </div>
               </div>
@@ -1156,33 +1067,15 @@ export default function CheckoutClient() {
                 </div>
               )}
 
-              <div className="pt-4 border-t border-border/20 flex justify-between">
+              <div className="pt-4 border-t border-border/20 flex justify-start">
                 <Button 
-                  onClick={() => setCurrentStep("payment")}
+                  onClick={() => setCurrentStep("shipping")}
                   variant="outline"
                   disabled={processingOrder}
                   className="rounded-xl px-5 py-2.5 text-xs font-medium flex items-center gap-1.5 cursor-pointer"
                 >
                   <ArrowLeft className="w-4 h-4" />
-                  <span>Back to Payment</span>
-                </Button>
-                
-                <Button 
-                  onClick={handlePlaceOrder}
-                  disabled={processingOrder}
-                  className="rounded-xl px-6 py-2.5 bg-accent text-accent-foreground hover:bg-accent/95 text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-sm"
-                >
-                  {processingOrder ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Processing Order...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Lock className="w-4 h-4" />
-                      <span>Place Order & Pay {formatPrice(finalTotal)}</span>
-                    </>
-                  )}
+                  <span>Back to Shipping</span>
                 </Button>
               </div>
             </div>
@@ -1326,6 +1219,49 @@ export default function CheckoutClient() {
 
           <div className="text-[10px] text-muted-foreground font-light text-center leading-normal pt-1.5 flex items-center justify-center gap-1">
             <Lock className="w-3.5 h-3.5 text-muted-foreground/60" /> SSL SECURE 256-BIT CHECKOUT
+          </div>
+
+          {/* Dynamic Action Button based on current step */}
+          <div className="pt-2">
+            {currentStep === "address" && (
+              <Button 
+                onClick={() => handleStepSubmit("address")}
+                className="w-full rounded-xl py-3 bg-primary text-primary-foreground hover:bg-primary/95 text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer shadow-md transition-all"
+              >
+                <span>Continue to Shipping</span>
+                <ArrowRight className="w-4 h-4" />
+              </Button>
+            )}
+
+            {currentStep === "shipping" && (
+              <Button 
+                onClick={() => handleStepSubmit("shipping")}
+                className="w-full rounded-xl py-3 bg-primary text-primary-foreground hover:bg-primary/95 text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer shadow-md transition-all"
+              >
+                <span>Continue to Review</span>
+                <ArrowRight className="w-4 h-4" />
+              </Button>
+            )}
+
+            {currentStep === "review" && (
+              <Button 
+                onClick={handlePlaceOrder}
+                disabled={processingOrder}
+                className="w-full rounded-xl py-3 bg-accent text-accent-foreground hover:bg-accent/95 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer shadow-md transition-all"
+              >
+                {processingOrder ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Processing Order...</span>
+                  </>
+                ) : (
+                  <>
+                    <Lock className="w-4 h-4" />
+                    <span>Place Order & Pay {formatPrice(finalTotal)}</span>
+                  </>
+                )}
+              </Button>
+            )}
           </div>
         </div>
 
