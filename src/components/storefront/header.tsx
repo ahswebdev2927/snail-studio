@@ -277,7 +277,7 @@ export function Header({ navigationData, storeLogo = "", storeName = "Snail Stud
               <Menu className="w-5 h-5" />
             </button>
 
-            <Link href="/" className="flex items-center gap-2 shrink-0">
+            <Link prefetch={true} href="/" className="flex items-center gap-2 shrink-0">
               {storeLogo ? (
                 <div className="relative w-[90px] h-[45px] sm:w-[100px] sm:h-[50px] md:w-[110px] md:h-[55px] lg:w-[120px] lg:h-[60px] shrink-0 overflow-hidden">
                   <Image
@@ -300,6 +300,7 @@ export function Header({ navigationData, storeLogo = "", storeName = "Snail Stud
           <nav className="hidden lg:flex items-center gap-1.5 text-xs font-medium uppercase tracking-widest text-foreground font-inter">
             {/* Home */}
             <Link
+              prefetch={true}
               href="/"
               className="px-4 py-2.5 rounded-full hover:text-primary transition-all"
             >
@@ -326,7 +327,7 @@ export function Header({ navigationData, storeLogo = "", storeName = "Snail Stud
                         <ul className="space-y-2.5 text-xs font-light text-muted-foreground normal-case tracking-normal">
                           {group.values.map((val) => (
                             <li key={val.name}>
-                              <Link href={val.url} className="hover:text-primary transition-colors">
+                              <Link prefetch={true} href={val.url} className="hover:text-primary transition-colors">
                                 {val.name} {group.code === "shape" ? "Shape" : group.code === "length" ? "Nails" : ""}
                               </Link>
                             </li>
@@ -344,7 +345,7 @@ export function Header({ navigationData, storeLogo = "", storeName = "Snail Stud
                         <ul className="space-y-2.5 text-xs font-light text-muted-foreground normal-case tracking-normal">
                           {nav.shop.categories.map((cat) => (
                             <li key={cat.name}>
-                              <Link href={cat.url} className="hover:text-primary transition-colors">
+                              <Link prefetch={true} href={cat.url} className="hover:text-primary transition-colors">
                                 {cat.name}
                               </Link>
                             </li>
@@ -362,7 +363,7 @@ export function Header({ navigationData, storeLogo = "", storeName = "Snail Stud
                         <ul className="space-y-2.5 text-xs font-light text-muted-foreground normal-case tracking-normal">
                           {nav.shop.collections.map((col) => (
                             <li key={col.name}>
-                              <Link href={col.url} className="hover:text-primary transition-colors">
+                              <Link prefetch={true} href={col.url} className="hover:text-primary transition-colors">
                                 {col.name}
                               </Link>
                             </li>
@@ -394,6 +395,7 @@ export function Header({ navigationData, storeLogo = "", storeName = "Snail Stud
                         </p>
                       </div>
                       <Link
+                        prefetch={true}
                         href={promo.ctaLink}
                         className="inline-flex items-center text-[10px] font-semibold text-primary uppercase tracking-widest hover:text-accent transition-colors pt-3 z-10 group mt-auto"
                       >
@@ -411,6 +413,7 @@ export function Header({ navigationData, storeLogo = "", storeName = "Snail Stud
             {nav?.navbarCollections?.map((col) => (
               <Link
                 key={col.slug}
+                prefetch={true}
                 href={col.url}
                 className="px-4 py-2.5 rounded-full hover:text-primary transition-all whitespace-nowrap"
               >
@@ -435,6 +438,7 @@ export function Header({ navigationData, storeLogo = "", storeName = "Snail Stud
                         {cat.children.map((sub) => (
                           <Link
                             key={sub.id}
+                            prefetch={true}
                             href={`/shop?category=${sub.slug}`}
                             className="block text-[11px] font-medium text-muted-foreground hover:text-primary transition-colors normal-case tracking-wider"
                           >
@@ -450,6 +454,7 @@ export function Header({ navigationData, storeLogo = "", storeName = "Snail Stud
               return (
                 <Link
                   key={cat.id}
+                  prefetch={true}
                   href={`/shop?category=${cat.slug}`}
                   className="px-4 py-2.5 rounded-full hover:text-primary transition-all"
                 >
@@ -460,6 +465,7 @@ export function Header({ navigationData, storeLogo = "", storeName = "Snail Stud
 
             {/* Sizing Guide */}
             <Link
+              prefetch={true}
               href="/sizing-guide"
               className="px-4 py-2.5 rounded-full hover:text-primary transition-all"
             >
@@ -468,6 +474,7 @@ export function Header({ navigationData, storeLogo = "", storeName = "Snail Stud
 
             {/* Contact */}
             <Link
+              prefetch={true}
               href="/contact"
               className="px-4 py-2.5 rounded-full hover:text-primary transition-all"
             >
@@ -501,6 +508,7 @@ export function Header({ navigationData, storeLogo = "", storeName = "Snail Stud
 
             {/* Wishlist Link */}
             <Link
+              prefetch={true}
               href="/wishlist"
               className="hidden md:inline-flex p-2 rounded-full text-foreground hover:bg-primary/10 hover:text-primary transition-all relative"
               aria-label="Wishlist"
@@ -581,6 +589,7 @@ export function Header({ navigationData, storeLogo = "", storeName = "Snail Stud
                         <div className="pt-1.5 space-y-0.5">
                           {currentUser.role === "admin" && (
                             <Link
+                              prefetch={true}
                               href="/admin/dashboard"
                               onClick={() => setUserDropdownOpen(false)}
                               className="w-full flex items-center gap-2 px-3 py-2 text-[11px] font-medium rounded-xl text-foreground hover:bg-secondary/65 transition-colors"
@@ -589,6 +598,7 @@ export function Header({ navigationData, storeLogo = "", storeName = "Snail Stud
                             </Link>
                           )}
                           <Link
+                            prefetch={true}
                             href="/account"
                             onClick={() => setUserDropdownOpen(false)}
                             className="w-full flex items-center gap-2 px-3 py-2 text-[11px] font-medium rounded-xl text-foreground hover:bg-secondary/65 transition-colors"
@@ -618,6 +628,7 @@ export function Header({ navigationData, storeLogo = "", storeName = "Snail Stud
                         {/* Guest Action Links */}
                         <div className="pt-1.5 space-y-0.5">
                           <Link
+                            prefetch={true}
                             href="/account"
                             onClick={() => setUserDropdownOpen(false)}
                             className="w-full flex items-center gap-2 px-3 py-2 text-[11px] font-bold rounded-xl text-primary hover:bg-primary/5 transition-colors"

@@ -39,6 +39,7 @@ export async function FeaturedCategories() {
             return (
               <Link
                 key={category.id}
+                prefetch={true}
                 href={`/shop?category=${category.slug}`}
                 className="group relative block aspect-[4/5] rounded-3xl overflow-hidden border border-border/10 bg-card shadow-xs hover:shadow-lg transition-all duration-500"
               >

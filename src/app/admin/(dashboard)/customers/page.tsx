@@ -336,6 +336,7 @@ export default function AdminCustomersPage() {
                       </td>
                       <td className="py-4 px-5 text-right">
                         <Link
+                          prefetch={false}
                           href={`/admin/customers/${c.id}`}
                           className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:text-primary-foreground hover:bg-primary px-3 py-1.5 rounded-full border border-primary/20 hover:border-primary transition-all cursor-pointer"
                         >

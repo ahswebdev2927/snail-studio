@@ -47,6 +47,7 @@ export async function FeaturedCollections() {
             return (
               <Link
                 key={collection.id}
+                prefetch={true}
                 href={`/shop?collection=${collection.slug}`}
                 className="group relative block aspect-[4/5] rounded-3xl overflow-hidden border border-border/10 bg-card shadow-xs hover:shadow-lg transition-all duration-500"
               >

@@ -293,6 +293,7 @@ export default function Sidebar({ isCollapsed, isMobileOpen, closeMobileSidebar,
     return (
       <Link
         key={item.name}
+        prefetch={false}
         href={item.href || "#"}
         onClick={() => {
           closeMobileSidebar();
@@ -329,7 +330,7 @@ export default function Sidebar({ isCollapsed, isMobileOpen, closeMobileSidebar,
         "h-20 flex items-center border-b border-border/40 shrink-0 px-6",
         isCollapsed ? "justify-center" : "justify-between"
       )}>
-        <Link href="/admin/dashboard" className="flex items-center gap-2.5 group w-full justify-center">
+        <Link prefetch={false} href="/admin/dashboard" className="flex items-center gap-2.5 group w-full justify-center">
           {isCollapsed ? (
             storeLogoCollapsed ? (
               <img
@@ -411,6 +412,7 @@ export default function Sidebar({ isCollapsed, isMobileOpen, closeMobileSidebar,
                   return (
                     <Link
                       key={sub.name}
+                      prefetch={false}
                       href={sub.href}
                       onClick={() => {
                         closeMobileSidebar();

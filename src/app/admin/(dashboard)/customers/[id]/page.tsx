@@ -959,6 +959,7 @@ export default function CustomerProfile360Page() {
                         {/* Event action link if orders */}
                         {event.metadata?.orderId && (
                           <Link
+                            prefetch={false}
                             href={`/admin/orders/${event.metadata.orderId}`}
                             className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-primary hover:underline"
                           >
@@ -1038,6 +1039,7 @@ export default function CustomerProfile360Page() {
                         <td className="py-3 px-3 text-rose-500">-{formatPrice(ord.discountAmount)}</td>
                         <td className="py-3 px-3 text-right">
                           <Link
+                            prefetch={false}
                             href={`/admin/orders/${ord.id}`}
                             className="inline-flex items-center gap-0.5 text-[11px] text-primary hover:underline font-semibold"
                           >
@@ -1300,7 +1302,7 @@ export default function CustomerProfile360Page() {
                               {cop.discountType === "percentage" ? `${cop.discountValue}% Off` : `${formatPrice(cop.discountValue)} Off`}
                             </td>
                             <td className="py-2.5 px-3">
-                              <Link href={`/admin/orders/${cop.orderId}`} className="text-primary hover:underline font-mono">
+                              <Link prefetch={false} href={`/admin/orders/${cop.orderId}`} className="text-primary hover:underline font-mono">
                                 {cop.orderId}
                               </Link>
                             </td>

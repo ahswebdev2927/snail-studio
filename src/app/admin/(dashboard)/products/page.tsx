@@ -235,6 +235,7 @@ export default function AdminProductsPage() {
         </div>
         <div>
           <Link
+            prefetch={false}
             href="/admin/products/new"
             className="inline-flex items-center gap-1.5 px-4.5 py-2.5 bg-primary text-primary-foreground hover:bg-primary/95 hover:scale-[1.01] active:scale-[0.99] rounded-xl text-xs font-semibold uppercase tracking-wider transition-all shadow-sm cursor-pointer"
           >
@@ -326,6 +327,7 @@ export default function AdminProductsPage() {
             {products.length === 0 && (
               <div className="pt-2">
                 <Link
+                  prefetch={false}
                   href="/admin/products/new"
                   className="inline-flex items-center gap-1.5 px-4.5 py-2.5 bg-secondary text-foreground hover:bg-muted border border-border rounded-xl text-xs font-medium transition-all cursor-pointer"
                 >
@@ -456,6 +458,7 @@ export default function AdminProductsPage() {
                         {/* Desktop view actions */}
                         <div className="hidden md:flex items-center justify-center gap-1.5">
                           <Link
+                            prefetch={false}
                             href={`/products/${product.slug}`}
                             target="_blank"
                             className="inline-flex items-center justify-center p-1.5 border border-border/40 hover:bg-secondary text-muted-foreground hover:text-foreground rounded-xl transition-all cursor-pointer"
@@ -464,6 +467,7 @@ export default function AdminProductsPage() {
                             <Eye className="w-3.5 h-3.5" />
                           </Link>
                           <Link
+                            prefetch={false}
                             href={`/admin/products/${product.id}/edit`}
                             className="inline-flex items-center justify-center p-1.5 border border-border/40 hover:bg-secondary text-muted-foreground hover:text-foreground rounded-xl transition-all cursor-pointer"
                             title="Edit Product"
@@ -471,6 +475,7 @@ export default function AdminProductsPage() {
                             <Pencil className="w-3.5 h-3.5" />
                           </Link>
                           <Link
+                            prefetch={false}
                             href={`/admin/inventory?q=${encodeURIComponent(product.name)}`}
                             className="inline-flex items-center justify-center p-1.5 border border-border/40 hover:bg-secondary text-muted-foreground hover:text-foreground rounded-xl transition-all cursor-pointer"
                             title="Inventory"
@@ -504,6 +509,7 @@ export default function AdminProductsPage() {
                               <div className="fixed inset-0 z-30" onClick={() => setOpenDropdownId(null)} />
                               <div className="absolute right-0 mt-1 w-36 bg-card border border-border rounded-xl shadow-lg py-1.5 z-40 text-left">
                                 <Link
+                                  prefetch={false}
                                   href={`/products/${product.slug}`}
                                   target="_blank"
                                   className="flex items-center gap-2 px-3 py-1.5 hover:bg-secondary text-foreground text-[11px] transition-colors"
@@ -513,6 +519,7 @@ export default function AdminProductsPage() {
                                   View Product
                                 </Link>
                                 <Link
+                                  prefetch={false}
                                   href={`/admin/products/${product.id}/edit`}
                                   className="flex items-center gap-2 px-3 py-1.5 hover:bg-secondary text-foreground text-[11px] transition-colors"
                                   onClick={() => setOpenDropdownId(null)}
@@ -521,6 +528,7 @@ export default function AdminProductsPage() {
                                   Edit Product
                                 </Link>
                                 <Link
+                                  prefetch={false}
                                   href={`/admin/inventory?q=${encodeURIComponent(product.name)}`}
                                   className="flex items-center gap-2 px-3 py-1.5 hover:bg-secondary text-foreground text-[11px] transition-colors"
                                   onClick={() => setOpenDropdownId(null)}

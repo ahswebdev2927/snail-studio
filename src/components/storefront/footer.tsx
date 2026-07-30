@@ -68,7 +68,7 @@ export function Footer({ storeLogo = "", storeName = "Snail Studio" }: FooterPro
       {/* Main Footer links and details */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 grid grid-cols-1 md:grid-cols-4 gap-12">
         <div className="space-y-6 col-span-1 md:col-span-1">
-          <Link href="/" className="inline-block shrink-0">
+          <Link prefetch={false} href="/" className="inline-block shrink-0">
             {storeLogo ? (
               <div className="relative w-[90px] h-[45px] sm:w-[100px] sm:h-[50px] md:w-[110px] md:h-[55px] lg:w-[120px] lg:h-[60px] shrink-0 overflow-hidden">
                 <Image
@@ -120,27 +120,27 @@ export function Footer({ storeLogo = "", storeName = "Snail Studio" }: FooterPro
           <h4 className="font-serif text-sm font-semibold tracking-wider mb-6 text-foreground">Collections</h4>
           <ul className="space-y-3.5 text-xs text-muted-foreground font-light">
             <li>
-              <Link href="/shop?shape=coffin" className="hover:text-primary transition-colors">
+              <Link prefetch={false} href="/shop?shape=coffin" className="hover:text-primary transition-colors">
                 Coffin Shape Sets
               </Link>
             </li>
             <li>
-              <Link href="/shop?shape=almond" className="hover:text-primary transition-colors">
+              <Link prefetch={false} href="/shop?shape=almond" className="hover:text-primary transition-colors">
                 Almond Shape Sets
               </Link>
             </li>
             <li>
-              <Link href="/shop?length=short" className="hover:text-primary transition-colors">
+              <Link prefetch={false} href="/shop?length=short" className="hover:text-primary transition-colors">
                 Short Length Sets
               </Link>
             </li>
             <li>
-              <Link href="/shop?texture=glossy" className="hover:text-primary transition-colors">
+              <Link prefetch={false} href="/shop?texture=glossy" className="hover:text-primary transition-colors">
                 Glossy Finishes
               </Link>
             </li>
             <li>
-              <Link href="/shop?texture=matte" className="hover:text-primary transition-colors">
+              <Link prefetch={false} href="/shop?texture=matte" className="hover:text-primary transition-colors">
                 Matte Collections
               </Link>
             </li>
@@ -151,22 +151,22 @@ export function Footer({ storeLogo = "", storeName = "Snail Studio" }: FooterPro
           <h4 className="font-serif text-sm font-semibold tracking-wider mb-6 text-foreground">Client Support</h4>
           <ul className="space-y-3.5 text-xs text-muted-foreground font-light">
             <li>
-              <Link href="/sizing-guide" className="hover:text-primary transition-colors">
+              <Link prefetch={false} href="/sizing-guide" className="hover:text-primary transition-colors">
                 Sizing Chart & Care
               </Link>
             </li>
             <li>
-              <Link href="/shipping-returns" className="hover:text-primary transition-colors">
+              <Link prefetch={false} href="/shipping-returns" className="hover:text-primary transition-colors">
                 Shipping & Returns
               </Link>
             </li>
             <li>
-              <Link href="/faq" className="hover:text-primary transition-colors">
+              <Link prefetch={false} href="/faq" className="hover:text-primary transition-colors">
                 Frequently Asked Questions
               </Link>
             </li>
             <li>
-              <Link href="/contact" className="hover:text-primary transition-colors">
+              <Link prefetch={false} href="/contact" className="hover:text-primary transition-colors">
                 Contact Support
               </Link>
             </li>
@@ -197,10 +197,10 @@ export function Footer({ storeLogo = "", storeName = "Snail Studio" }: FooterPro
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between text-[11px] text-muted-foreground font-light gap-4">
           <p>&copy; {new Date().getFullYear()} Snail Studio. All rights reserved.</p>
           <div className="flex gap-6">
-            <Link href="/privacy-policy" className="hover:text-primary transition-colors">
+            <Link prefetch={false} href="/privacy-policy" className="hover:text-primary transition-colors">
               Privacy Policy
             </Link>
-            <Link href="/terms-of-service" className="hover:text-primary transition-colors">
+            <Link prefetch={false} href="/terms-of-service" className="hover:text-primary transition-colors">
               Terms of Service
             </Link>
           </div>

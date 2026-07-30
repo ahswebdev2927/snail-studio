@@ -122,6 +122,7 @@ export function SearchOverlay() {
   // Sync Overlay Open/Close
   useEffect(() => {
     if (searchOpen) {
+      router.prefetch("/shop");
       // Focus search input after animation
       const timer = setTimeout(() => {
         inputRef.current?.focus();

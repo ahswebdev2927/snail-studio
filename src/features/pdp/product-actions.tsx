@@ -171,6 +171,10 @@ export function ProductActions({
     checkSub();
   }, [productId, productStatus]);
 
+  useEffect(() => {
+    router.prefetch("/checkout");
+  }, [router]);
+
   const handleSubscribe = async () => {
     setSubmittingSub(true);
     try {

@@ -182,7 +182,7 @@ export function ProductCard({ product }: ProductCardProps) {
   return (
     <div className="group flex flex-col bg-card rounded-3xl overflow-hidden border border-border/40 hover:border-primary/30 hover:shadow-md transition-all duration-300 relative h-full justify-between">
       {/* Product Image Container */}
-      <Link href={`/products/${product.slug}`} className="relative aspect-square w-full overflow-hidden block bg-white">
+      <Link prefetch={true} href={`/products/${product.slug}`} className="relative aspect-square w-full overflow-hidden block bg-white">
         {/* Main image */}
         <Image
           src={primaryImage}
@@ -296,7 +296,7 @@ export function ProductCard({ product }: ProductCardProps) {
         <div className="space-y-1">
           {/* Title */}
           <h3 className="font-serif text-sm sm:text-base text-foreground font-medium group-hover:text-primary transition-colors line-clamp-1">
-            <Link href={`/products/${product.slug}`}>{product.name}</Link>
+            <Link prefetch={true} href={`/products/${product.slug}`}>{product.name}</Link>
           </h3>
 
           {/* Rating Badge */}

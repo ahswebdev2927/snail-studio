@@ -25,6 +25,8 @@ export function CartDrawer() {
 
   useEffect(() => {
     if (cartOpen) {
+      router.prefetch("/cart");
+      router.prefetch("/checkout");
       fetch("/api/bundles/active")
         .then((res) => res.json())
         .then((data) => {
@@ -173,6 +175,7 @@ export function CartDrawer() {
               </p>
               <div className="grid grid-cols-2 gap-2">
                 <Link
+                  prefetch={true}
                   href="/shop?shape=coffin"
                   onClick={() => setCartOpen(false)}
                   className="px-3 py-2 bg-secondary/35 border border-border/20 hover:border-primary/20 hover:bg-secondary/60 rounded-xl text-center text-xs font-medium text-foreground transition-all duration-200"
@@ -180,6 +183,7 @@ export function CartDrawer() {
                   Coffin Nails
                 </Link>
                 <Link
+                  prefetch={true}
                   href="/shop?shape=almond"
                   onClick={() => setCartOpen(false)}
                   className="px-3 py-2 bg-secondary/35 border border-border/20 hover:border-primary/20 hover:bg-secondary/60 rounded-xl text-center text-xs font-medium text-foreground transition-all duration-200"
@@ -187,6 +191,7 @@ export function CartDrawer() {
                   Almond Nails
                 </Link>
                 <Link
+                  prefetch={true}
                   href="/shop?category=nail-art"
                   onClick={() => setCartOpen(false)}
                   className="px-3 py-2 bg-secondary/35 border border-border/20 hover:border-primary/20 hover:bg-secondary/60 rounded-xl text-center text-xs font-medium text-foreground transition-all duration-200"
@@ -194,6 +199,7 @@ export function CartDrawer() {
                   Nail Art
                 </Link>
                 <Link
+                  prefetch={true}
                   href="/shop"
                   onClick={() => setCartOpen(false)}
                   className="px-3 py-2 bg-secondary/35 border border-border/20 hover:border-primary/20 hover:bg-secondary/60 rounded-xl text-center text-xs font-medium text-foreground transition-all duration-200"

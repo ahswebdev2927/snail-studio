@@ -68,7 +68,8 @@ export default function CartClient() {
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    router.prefetch("/checkout");
+  }, [router]);
 
   // Trigger GA4 view_cart event on mount
   useEffect(() => {
