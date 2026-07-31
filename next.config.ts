@@ -31,9 +31,9 @@ const securityHeaders = [
     value: [
       "default-src 'self';",
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://checkout.razorpay.com https://www.google-analytics.com https://*.google-analytics.com https://*.googletagmanager.com;",
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;",
+      "style-src 'self' 'unsafe-inline';",
       "img-src 'self' data: blob: https://res.cloudinary.com https://www.naild.de https://www.google-analytics.com https://*.google-analytics.com https://*.googletagmanager.com;",
-      "font-src 'self' data: https://fonts.gstatic.com;",
+      "font-src 'self' data:;",
       "connect-src 'self' https://api.razorpay.com https://www.google-analytics.com https://*.google-analytics.com https://*.googletagmanager.com;",
       "frame-src 'self' https://checkout.razorpay.com https://api.razorpay.com https://*.razorpay.com;",
     ].join(" "),

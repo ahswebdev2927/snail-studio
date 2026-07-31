@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Manrope, Inter, Playfair_Display } from "next/font/google";
+import { Inter, Playfair_Display } from "next/font/google";
 import Script from "next/script";
 import { GoogleAnalytics } from "@next/third-parties/google";
 import "./globals.css";
@@ -8,13 +8,6 @@ import { GA_MEASUREMENT_ID } from "@/lib/analytics";
 import { AnalyticsTracker } from "@/components/analytics-tracker";
 import { AlertDialogProvider } from "@/components/ui/alert-dialog-provider";
 import { Toaster } from "@/components/ui/toaster";
-
-const manrope = Manrope({
-  variable: "--font-manrope",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  display: "swap",
-});
 
 const inter = Inter({
   variable: "--font-inter",
@@ -69,7 +62,7 @@ export default function RootLayout({
   const websiteJsonLd = getWebsiteJsonLd();
 
   return (
-    <html lang="en" className={`${manrope.variable} ${inter.variable} ${playfair.variable}`} suppressHydrationWarning>
+    <html lang="en" className={`${inter.variable} ${playfair.variable}`} suppressHydrationWarning>
       <body className="font-sans antialiased min-h-screen flex flex-col">
         {GA_MEASUREMENT_ID && (
           <>
