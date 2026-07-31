@@ -79,175 +79,183 @@
   --animate-accordion-up: accordion-up 0.2s ease-out;
 
   @keyframes accordion-down {
-    from { height: 0; }
-    to { height: var(--radix-accordion-content-height); }
+    from {
+      height: 0;
+    }
+    to {
+      height: var(--radix-accordion-content-height);
+    }
   }
   @keyframes accordion-up {
-    from { height: var(--radix-accordion-content-height); }
-    to { height: 0; }
+    from {
+      height: var(--radix-accordion-content-height);
+    }
+    to {
+      height: 0;
+    }
   }
 }
 
 :root {
-  --background: #FEFFF6;              /* App Background */
-  --foreground: #222222;              /* Body Text */
-  
-  --card: #FFFFFF;                    /* Card */
+  --background: #fdfcfa; /* App Background */
+  --foreground: #222222; /* Body Text */
+
+  --card: #ffffff; /* Card */
   --card-foreground: #222222;
-  
-  --popover: #FFFFFF;                 /* Popover */
+
+  --popover: #ffffff; /* Popover */
   --popover-foreground: #222222;
-  
-  --primary: #A95423;                 /* Primary Brand */
-  --primary-foreground: #FFFFFF;
-  --primary-hover: #94451B;
-  --primary-active: #7F3A16;
-  --primary-light: #EFD3C9;
-  --primary-soft: #EFD3C9;
-  
-  --secondary: #A95423;               /* Secondary Brand */
-  --secondary-foreground: #FFFFFF;
-  --secondary-surface: #FFFFFF;
-  
-  --muted: #E7DDD7;                   /* Border color or muted grey replacement */
-  --muted-foreground: #666666;        /* Muted Text */
-  --muted-surface: #EFD3C9;
-  
-  --accent: #EFD3C9;                  /* Accent */
-  --accent-foreground: #A95423;
-  
-  --destructive: #D32F2F;             /* Error color */
-  --destructive-foreground: #FFFFFF;
-  
-  --border: #E7DDD7;                  /* Border */
-  --border-light: #E7DDD7;
-  --border-strong: #E7DDD7;
-  
-  --input: #FFFFFF;
+
+  --primary: #a95423; /* Primary Brand */
+  --primary-foreground: #ffffff;
+  --primary-hover: #94451b;
+  --primary-active: #7f3a16;
+  --primary-light: #efd3c9;
+  --primary-soft: #efd3c9;
+
+  --secondary: #a95423; /* Secondary Brand */
+  --secondary-foreground: #ffffff;
+  --secondary-surface: #ffffff;
+
+  --muted: #e7ddd7; /* Border color or muted grey replacement */
+  --muted-foreground: #666666; /* Muted Text */
+  --muted-surface: #efd3c9;
+
+  --accent: #efd3c9; /* Accent */
+  --accent-foreground: #a95423;
+
+  --destructive: #d32f2f; /* Error color */
+  --destructive-foreground: #ffffff;
+
+  --border: #e7ddd7; /* Border */
+  --border-light: #e7ddd7;
+  --border-strong: #e7ddd7;
+
+  --input: #ffffff;
   --input-placeholder: #666666;
-  --ring: #A95423;                    /* Focus Ring */
-  
-  --link: #A95423;
-  --link-hover: #94451B;
-  
-  --success: #2E7D32;
-  --warning: #ED6C02;
-  --error: #D32F2F;
-  --info: #0288D1;
-  
+  --ring: #a95423; /* Focus Ring */
+
+  --link: #a95423;
+  --link-hover: #94451b;
+
+  --success: #2e7d32;
+  --warning: #ed6c02;
+  --error: #d32f2f;
+  --info: #0288d1;
+
   --text-heading: #222222;
   --text-body: #222222;
   --text-muted: #666666;
-  --text-disabled: #8E8687;
-  --text-inverse: #FFFFFF;
-  
-  --navbar: #FEFFF6;
+  --text-disabled: #8e8687;
+  --text-inverse: #ffffff;
+
+  --navbar: #fdfcfa;
   --navbar-text: #222222;
-  --navbar-active: #A95423;
-  --navbar-hover: #A95423;
-  
-  --footer-bg: #FEFFF6;
+  --navbar-active: #a95423;
+  --navbar-hover: #a95423;
+
+  --footer-bg: #fdfcfa;
   --footer-heading: #222222;
   --footer-body: #666666;
-  --footer-links: #A95423;
-  
+  --footer-links: #a95423;
+
   --radius: 0.75rem;
 
-  --primary-btn-bg: #A95423;
-  --primary-btn-text: #FFFFFF;
-  --primary-btn-hover: #94451B;
-  --primary-btn-active: #7F3A16;
+  --primary-btn-bg: #a95423;
+  --primary-btn-text: #ffffff;
+  --primary-btn-hover: #94451b;
+  --primary-btn-active: #7f3a16;
 
-  --secondary-btn-bg: #FFFFFF;
-  --secondary-btn-border: #A95423;
-  --secondary-btn-text: #A95423;
-  --secondary-btn-hover-bg: #A95423;
-  --secondary-btn-hover-text: #FFFFFF;
+  --secondary-btn-bg: #ffffff;
+  --secondary-btn-border: #a95423;
+  --secondary-btn-text: #a95423;
+  --secondary-btn-hover-bg: #a95423;
+  --secondary-btn-hover-text: #ffffff;
 
-  --outline-btn-border: #E7DDD7;
+  --outline-btn-border: #e7ddd7;
   --outline-btn-text: #222222;
-  --outline-btn-hover-bg: #FEFFF6;
+  --outline-btn-hover-bg: #fdfcfa;
   --outline-btn-hover-text: #222222;
 }
 
 .dark {
-  --background: #120F10;              /* App Background */
-  --foreground: #F8F4F4;              /* Body Text */
-  
-  --card: #1C1819;                    /* Card */
-  --card-foreground: #F8F4F4;
-  
-  --popover: #1C1819;                 /* Popover */
-  --popover-foreground: #F8F4F4;
-  
-  --primary: #AC5429;                 /* Primary Brand in Dark Theme */
-  --primary-foreground: #FFFFFF;      /* Inverse text */
-  --primary-hover: #8F4522;
-  --primary-active: #7E3A1A;
-  --primary-light: #F3D7D2;
-  --primary-soft: #F3D7D2;
-  
-  --secondary: #AC5429;               /* Secondary Brand in Dark Theme */
-  --secondary-foreground: #FFFFFF;
-  --secondary-surface: #1C1819;
-  
-  --muted: #4A3C3E;
-  --muted-foreground: #CBB3B5;        /* Muted Text */
-  --muted-surface: #1C1819;
-  
-  --accent: #F3D7D2;                  /* Accent */
-  --accent-foreground: #AC5429;
-  
-  --destructive: #D32F2F;             /* Error color in Dark */
-  --destructive-foreground: #FFFFFF;
-  
-  --border: #4A3C3E;                  /* Border */
-  --border-light: #4A3C3E;
-  --border-strong: #CBB3B5;
-  
-  --input: #1C1819;
-  --input-placeholder: #4A4A4A;
-  --ring: #AC5429;                    /* Focus Ring */
-  
-  --link: #AC5429;
-  --link-hover: #8F4522;
-  
-  --success: #2E7D32;
-  --warning: #ED6C02;
-  --error: #D32F2F;
-  --info: #0288D1;
-  
-  --text-heading: #FFFFFF;
-  --text-body: #F8F4F4;
-  --text-muted: #CBB3B5;
-  --text-disabled: #4A3C3E;
-  --text-inverse: #120F10;
-  
-  --navbar: #120F10;
-  --navbar-text: #FFFFFF;
-  --navbar-active: #AC5429;
-  --navbar-hover: #AC5429;
-  
-  --footer-bg: #000000;
-  --footer-heading: #FFFFFF;
-  --footer-body: #FFFFFF;
-  --footer-links: #FFFFFF;
+  --background: #120f10; /* App Background */
+  --foreground: #f8f4f4; /* Body Text */
 
-  --primary-btn-bg: #AC5429;
-  --primary-btn-text: #FFFFFF;
-  --primary-btn-hover: #8F4522;
-  --primary-btn-active: #7E3A1A;
+  --card: #1c1819; /* Card */
+  --card-foreground: #f8f4f4;
+
+  --popover: #1c1819; /* Popover */
+  --popover-foreground: #f8f4f4;
+
+  --primary: #ac5429; /* Primary Brand in Dark Theme */
+  --primary-foreground: #ffffff; /* Inverse text */
+  --primary-hover: #8f4522;
+  --primary-active: #7e3a1a;
+  --primary-light: #f3d7d2;
+  --primary-soft: #f3d7d2;
+
+  --secondary: #ac5429; /* Secondary Brand in Dark Theme */
+  --secondary-foreground: #ffffff;
+  --secondary-surface: #1c1819;
+
+  --muted: #4a3c3e;
+  --muted-foreground: #cbb3b5; /* Muted Text */
+  --muted-surface: #1c1819;
+
+  --accent: #f3d7d2; /* Accent */
+  --accent-foreground: #ac5429;
+
+  --destructive: #d32f2f; /* Error color in Dark */
+  --destructive-foreground: #ffffff;
+
+  --border: #4a3c3e; /* Border */
+  --border-light: #4a3c3e;
+  --border-strong: #cbb3b5;
+
+  --input: #1c1819;
+  --input-placeholder: #4a4a4a;
+  --ring: #ac5429; /* Focus Ring */
+
+  --link: #ac5429;
+  --link-hover: #8f4522;
+
+  --success: #2e7d32;
+  --warning: #ed6c02;
+  --error: #d32f2f;
+  --info: #0288d1;
+
+  --text-heading: #ffffff;
+  --text-body: #f8f4f4;
+  --text-muted: #cbb3b5;
+  --text-disabled: #4a3c3e;
+  --text-inverse: #120f10;
+
+  --navbar: #120f10;
+  --navbar-text: #ffffff;
+  --navbar-active: #ac5429;
+  --navbar-hover: #ac5429;
+
+  --footer-bg: #000000;
+  --footer-heading: #ffffff;
+  --footer-body: #ffffff;
+  --footer-links: #ffffff;
+
+  --primary-btn-bg: #ac5429;
+  --primary-btn-text: #ffffff;
+  --primary-btn-hover: #8f4522;
+  --primary-btn-active: #7e3a1a;
 
   --secondary-btn-bg: transparent;
-  --secondary-btn-border: #AC5429;
-  --secondary-btn-text: #AC5429;
-  --secondary-btn-hover-bg: #F3D7D2;
-  --secondary-btn-hover-text: #AC5429;
+  --secondary-btn-border: #ac5429;
+  --secondary-btn-text: #ac5429;
+  --secondary-btn-hover-bg: #f3d7d2;
+  --secondary-btn-hover-text: #ac5429;
 
-  --outline-btn-border: #4A3C3E;
-  --outline-btn-text: #CBB3B5;
-  --outline-btn-hover-bg: #1C1819;
-  --outline-btn-hover-text: #F8F4F4;
+  --outline-btn-border: #4a3c3e;
+  --outline-btn-text: #cbb3b5;
+  --outline-btn-hover-bg: #1c1819;
+  --outline-btn-hover-text: #f8f4f4;
 }
 
 * {
@@ -263,7 +271,10 @@ html {
 body {
   background-color: var(--color-background);
   color: var(--color-foreground);
-  font-feature-settings: "rlig" 1, "calt" 1, "lnum" 1;
+  font-feature-settings:
+    "rlig" 1,
+    "calt" 1,
+    "lnum" 1;
 }
 
 button,
@@ -276,17 +287,21 @@ input[type="submit"] {
 
 /* Hide scrollbar cross-browser while maintaining scroll functionality */
 .scrollbar-none {
-  scrollbar-width: none;        /* Firefox */
-  -ms-overflow-style: none;     /* IE / Edge */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE / Edge */
 }
 .scrollbar-none::-webkit-scrollbar {
-  display: none;                /* Chrome / Safari / Opera */
+  display: none; /* Chrome / Safari / Opera */
 }
 
 /* Fade-in animation for lightbox and modals */
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .animate-in {
@@ -374,17 +389,25 @@ input[type="submit"] {
 }
 
 @keyframes slideInRight {
-  from { opacity: 0; transform: translateX(-8px); }
-  to { opacity: 1; transform: translateX(0); }
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 .animate-slide-in-right {
   animation: slideInRight 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* Force all input, select, and textarea fields to have white backgrounds, outline borders, and visible text */
-input, select, textarea {
-  background-color: #FFFFFF !important;
+/* Force all input, select, and textarea fields to have theme-aware backgrounds, outline borders, and visible text */
+input,
+select,
+textarea {
+  background-color: var(--input) !important;
   border: 1px solid var(--border) !important;
   color: var(--foreground) !important;
 }

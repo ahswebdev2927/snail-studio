@@ -327,8 +327,8 @@ export default function Sidebar({ isCollapsed, isMobileOpen, closeMobileSidebar,
     <aside className={sidebarClasses}>
       {/* Brand Header */}
       <div className={cn(
-        "h-20 flex items-center border-b border-border/40 shrink-0 px-6",
-        isCollapsed ? "justify-center" : "justify-between"
+        "h-20 flex items-center border-b border-border/40 shrink-0",
+        isCollapsed ? "justify-center px-2" : "justify-between px-6"
       )}>
         <Link prefetch={false} href="/admin/dashboard" className="flex items-center gap-2.5 group w-full justify-center">
           {isCollapsed ? (
@@ -336,20 +336,20 @@ export default function Sidebar({ isCollapsed, isMobileOpen, closeMobileSidebar,
               <img
                 src={storeLogoCollapsed}
                 alt={storeName || "Store Icon"}
-                className="h-9 w-9 object-contain rounded-xl group-hover:scale-105 transition-transform duration-300"
+                className="h-12 w-12 object-contain rounded-xl group-hover:scale-105 transition-transform duration-300"
               />
             ) : (
-              <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-primary to-accent flex items-center justify-center text-primary-foreground font-serif font-bold text-lg shadow-sm group-hover:scale-105 transition-transform duration-300">
+              <div className="h-12 w-12 rounded-xl bg-gradient-to-tr from-primary to-accent flex items-center justify-center text-primary-foreground font-serif font-bold text-xl shadow-sm group-hover:scale-105 transition-transform duration-300">
                 {storeName ? storeName.charAt(0) : "S"}
               </div>
             )
           ) : (
             storeLogo ? (
-              <div className="h-9 w-full flex items-center justify-center overflow-hidden">
+              <div className="h-14 w-full flex items-center justify-center overflow-hidden">
                 <img
                   src={storeLogo}
                   alt={storeName || "Store Logo"}
-                  className="h-9 w-auto max-w-[180px] object-contain group-hover:scale-[1.02] transition-transform duration-300"
+                  className="h-14 w-auto max-w-[200px] object-contain group-hover:scale-[1.02] transition-transform duration-300"
                 />
               </div>
             ) : (
