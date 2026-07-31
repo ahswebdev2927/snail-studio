@@ -31,9 +31,7 @@ const RevenueTrendChart = dynamic(
   () => import("@/components/admin/analytics/store-revenue-charts").then(mod => mod.RevenueTrendChart),
   {
     loading: () => (
-      <div className="h-full w-full flex items-center justify-center">
-        <Loader2 className="w-6 h-6 animate-spin text-primary" />
-      </div>
+      <div className="h-full w-full bg-secondary/5 rounded-xl animate-pulse" />
     ),
     ssr: false,
   }
@@ -43,9 +41,7 @@ const OrdersTrendChart = dynamic(
   () => import("@/components/admin/analytics/store-revenue-charts").then(mod => mod.OrdersTrendChart),
   {
     loading: () => (
-      <div className="h-full w-full flex items-center justify-center">
-        <Loader2 className="w-6 h-6 animate-spin text-primary" />
-      </div>
+      <div className="h-full w-full bg-secondary/5 rounded-xl animate-pulse" />
     ),
     ssr: false,
   }
@@ -55,9 +51,7 @@ const OrderStatusPieChart = dynamic(
   () => import("@/components/admin/analytics/store-revenue-charts").then(mod => mod.OrderStatusPieChart),
   {
     loading: () => (
-      <div className="h-full w-full flex items-center justify-center">
-        <Loader2 className="w-6 h-6 animate-spin text-primary" />
-      </div>
+      <div className="h-full w-full bg-secondary/5 rounded-full animate-pulse max-w-44 mx-auto" />
     ),
     ssr: false,
   }
@@ -67,9 +61,7 @@ const WishlistTrendChart = dynamic(
   () => import("@/components/admin/analytics/store-revenue-charts").then(mod => mod.WishlistTrendChart),
   {
     loading: () => (
-      <div className="h-full w-full flex items-center justify-center">
-        <Loader2 className="w-6 h-6 animate-spin text-primary" />
-      </div>
+      <div className="h-full w-full bg-secondary/5 rounded-xl animate-pulse" />
     ),
     ssr: false,
   }
@@ -79,9 +71,7 @@ const CustomerAcquisitionChart = dynamic(
   () => import("@/components/admin/analytics/store-revenue-charts").then(mod => mod.CustomerAcquisitionChart),
   {
     loading: () => (
-      <div className="h-full w-full flex items-center justify-center">
-        <Loader2 className="w-6 h-6 animate-spin text-primary" />
-      </div>
+      <div className="h-full w-full bg-secondary/5 rounded-xl animate-pulse" />
     ),
     ssr: false,
   }
@@ -502,9 +492,7 @@ export default function AnalyticsPage() {
 
           <div className="h-64 w-full pt-4">
             <LazyHydrate fallback={
-              <div className="h-full w-full flex items-center justify-center bg-secondary/5 rounded-xl animate-pulse">
-                <Loader2 className="w-6 h-6 animate-spin text-primary animate-duration-1000" />
-              </div>
+              <div className="h-full w-full bg-secondary/5 rounded-xl animate-pulse" />
             }>
               <RevenueTrendChart salesHistory={salesHistory} setActiveRevenuePoint={setActiveRevenuePoint} />
             </LazyHydrate>
@@ -679,9 +667,7 @@ export default function AnalyticsPage() {
 
             <div className="h-[280px] w-full pt-4">
               <LazyHydrate fallback={
-                <div className="h-full w-full flex items-center justify-center bg-secondary/5 rounded-xl animate-pulse">
-                  <Loader2 className="w-6 h-6 animate-spin text-primary animate-duration-1000" />
-                </div>
+                <div className="h-full w-full bg-secondary/5 rounded-xl animate-pulse" />
               }>
                 <OrdersTrendChart ordersHistory={ordersHistory} setActiveOrderPoint={setActiveOrderPoint} />
               </LazyHydrate>
@@ -701,9 +687,7 @@ export default function AnalyticsPage() {
               {/* Donut Chart Container */}
               <div className="relative w-full h-44 flex items-center justify-center">
                 <LazyHydrate fallback={
-                  <div className="h-full w-full flex items-center justify-center bg-secondary/5 rounded-full animate-pulse max-w-44 mx-auto">
-                    <Loader2 className="w-6 h-6 animate-spin text-primary animate-duration-1000" />
-                  </div>
+                  <div className="h-full w-full bg-secondary/5 rounded-full animate-pulse max-w-44 mx-auto" />
                 }>
                   <OrderStatusPieChart
                     totalOrders={summary.totalOrders}
@@ -1235,9 +1219,7 @@ export default function AnalyticsPage() {
 
           <div className="h-56 w-full pt-4">
             <LazyHydrate fallback={
-              <div className="h-full w-full flex items-center justify-center bg-secondary/5 rounded-xl animate-pulse">
-                <Loader2 className="w-6 h-6 animate-spin text-primary animate-duration-1000" />
-              </div>
+              <div className="h-full w-full bg-secondary/5 rounded-xl animate-pulse" />
             }>
               <WishlistTrendChart wishlistHistory={wishlistHistory} totalWishlistAdds={summary.totalWishlistAdds} />
             </LazyHydrate>
@@ -1392,9 +1374,7 @@ export default function AnalyticsPage() {
 
           <div className="h-56 w-full pt-4">
             <LazyHydrate fallback={
-              <div className="h-full w-full flex items-center justify-center bg-secondary/5 rounded-xl animate-pulse">
-                <Loader2 className="w-6 h-6 animate-spin text-primary animate-duration-1000" />
-              </div>
+              <div className="h-full w-full bg-secondary/5 rounded-xl animate-pulse" />
             }>
               <CustomerAcquisitionChart acquisitionHistory={acquisitionHistory} />
             </LazyHydrate>

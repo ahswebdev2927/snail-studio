@@ -23,9 +23,7 @@ const SalesAreaChart = dynamic(
   () => import("@/components/admin/dashboard/sales-area-chart"),
   {
     loading: () => (
-      <div className="h-full w-full flex items-center justify-center">
-        <Loader2 className="w-6 h-6 animate-spin text-primary" />
-      </div>
+      <div className="h-full w-full bg-secondary/5 rounded-xl animate-pulse" />
     ),
     ssr: false,
   }
@@ -239,9 +237,7 @@ export default function AdminDashboardPage() {
           {/* Recharts Area Chart */}
           <div className="h-56 w-full pt-4">
             <LazyHydrate fallback={
-              <div className="h-full w-full flex items-center justify-center bg-secondary/5 rounded-xl animate-pulse">
-                <Loader2 className="w-6 h-6 animate-spin text-primary animate-duration-1000" />
-              </div>
+              <div className="h-full w-full bg-secondary/5 rounded-xl animate-pulse" />
             }>
               <SalesAreaChart salesHistory={stats.salesHistory} />
             </LazyHydrate>

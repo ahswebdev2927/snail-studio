@@ -52,7 +52,7 @@ export function getOptimizedImageUrl(
     crop = "scale",
     quality = "auto",
     format = "auto",
-    dpr,
+    dpr = "auto",
     gravity,
     blur,
   } = options;
