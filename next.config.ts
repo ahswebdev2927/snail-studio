@@ -40,6 +40,30 @@ const securityHeaders = [
   },
 ];
 
+const allowedDevOrigins = [
+  "127.0.0.1",
+  "localhost",
+  "192.168.1.22",
+  "*.ngrok-free.dev",
+  "*.ngrok-free.app",
+  "*.ngrok.io",
+];
+
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+if (siteUrl) {
+  try {
+    const hostname = new URL(siteUrl).hostname;
+    if (hostname && !allowedDevOrigins.includes(hostname)) {
+      allowedDevOrigins.push(hostname);
+    }
+  } catch {
+    const hostname = siteUrl.replace(/^https?:\/\//, "").split("/")[0];
+    if (hostname && !allowedDevOrigins.includes(hostname)) {
+      allowedDevOrigins.push(hostname);
+    }
+  }
+}
+
 const nextConfig: NextConfig = {
   images: {
     loader: "custom",
@@ -55,7 +79,7 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  allowedDevOrigins: ['127.0.0.1', 'localhost', '192.168.1.22', 'blandness-drown-shrank.ngrok-free.dev'],
+  allowedDevOrigins,
   async headers() {
     return [
       {
