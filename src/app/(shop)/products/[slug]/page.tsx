@@ -9,10 +9,36 @@ import { ProductInfo } from "@/features/pdp/product-info";
 import { ProductActions, ProductVariantFull } from "@/features/pdp/product-actions";
 import { BreadcrumbItem } from "@/features/pdp/pdp-breadcrumb";
 import { ProductTabs } from "@/features/pdp/product-tabs";
-import { ProductReviews } from "@/features/pdp/product-reviews";
-import { RelatedProducts } from "@/features/pdp/related-products";
-import { FrequentlyBoughtTogether } from "@/features/pdp/frequently-bought-together";
-import { RecentlyViewedTracker, RecentlyViewed } from "@/features/pdp/recently-viewed";
+import { RecentlyViewedTracker } from "@/features/pdp/recently-viewed";
+import dynamic from "next/dynamic";
+
+const ProductReviews = dynamic(
+  () => import("@/features/pdp/product-reviews").then(mod => mod.ProductReviews),
+  {
+    loading: () => <div className="h-96 w-full bg-secondary/10 animate-pulse rounded-2xl" />,
+  }
+);
+
+const RelatedProducts = dynamic(
+  () => import("@/features/pdp/related-products").then(mod => mod.RelatedProducts),
+  {
+    loading: () => <div className="h-96 w-full bg-secondary/10 animate-pulse rounded-2xl" />,
+  }
+);
+
+const FrequentlyBoughtTogether = dynamic(
+  () => import("@/features/pdp/frequently-bought-together").then(mod => mod.FrequentlyBoughtTogether),
+  {
+    loading: () => <div className="h-48 w-full bg-secondary/10 animate-pulse rounded-2xl" />,
+  }
+);
+
+const RecentlyViewed = dynamic(
+  () => import("@/features/pdp/recently-viewed").then(mod => mod.RecentlyViewed),
+  {
+    loading: () => <div className="h-48 w-full bg-secondary/10 animate-pulse" />,
+  }
+);
 import { getBaseMetadata, getProductJsonLd, getBreadcrumbJsonLd, getFAQJsonLd } from "@/lib/seo";
 import { getOptimizedImageUrl } from "@/lib/cloudinary/utils";
 

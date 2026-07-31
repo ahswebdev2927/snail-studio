@@ -3,8 +3,15 @@ import { AnnouncementBar } from "@/components/storefront/announcement-bar";
 import { Header } from "@/components/storefront/header";
 import { SearchOverlay } from "@/components/storefront/search-overlay";
 import { CartDrawer } from "@/components/storefront/cart-drawer";
-import { Footer } from "@/components/storefront/footer";
 import { BottomNav } from "@/components/storefront/bottom-nav";
+import dynamic from "next/dynamic";
+
+const Footer = dynamic(
+  () => import("@/components/storefront/footer").then(mod => mod.Footer),
+  {
+    loading: () => <div className="w-full h-80 bg-background animate-pulse border-t border-border" />,
+  }
+);
 import { getStorefrontNavigation } from "@/services/navigation";
 import { db } from "@/db";
 import { announcements, systemSettings } from "@/db/schema";

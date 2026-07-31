@@ -11,14 +11,45 @@ import { eq, and, asc, desc, sql, inArray } from "drizzle-orm";
 import { HeroCarousel } from "@/components/storefront/hero-carousel";
 import { LaunchCarousel } from "@/components/storefront/launch-carousel";
 import { FeaturedCategories } from "@/components/storefront/featured-categories";
-import { FeaturedCollections } from "@/components/storefront/featured-collections";
 import { ProductCard } from "@/components/storefront/product-card";
 import { WhyChooseUs } from "@/components/storefront/why-choose-us";
-import { InstagramGallery } from "@/components/storefront/instagram-gallery";
-import { CustomerTestimonials } from "@/components/storefront/customer-testimonials";
-import { InteractiveSizing } from "@/components/storefront/interactive-sizing";
-import { RecentlyViewed } from "@/features/pdp/recently-viewed";
 import { ProductSlider } from "@/components/storefront/product-slider";
+import dynamic from "next/dynamic";
+
+const FeaturedCollections = dynamic(
+  () => import("@/components/storefront/featured-collections").then(mod => mod.FeaturedCollections),
+  {
+    loading: () => <div className="h-96 w-full bg-secondary/20 animate-pulse rounded-3xl" />,
+  }
+);
+
+const InteractiveSizing = dynamic(
+  () => import("@/components/storefront/interactive-sizing").then(mod => mod.InteractiveSizing),
+  {
+    loading: () => <div className="h-96 w-full bg-[#EFD3C9]/20 dark:bg-card/20 animate-pulse rounded-3xl" />,
+  }
+);
+
+const RecentlyViewed = dynamic(
+  () => import("@/features/pdp/recently-viewed").then(mod => mod.RecentlyViewed),
+  {
+    loading: () => <div className="h-48 w-full bg-secondary/10 animate-pulse" />,
+  }
+);
+
+const InstagramGallery = dynamic(
+  () => import("@/components/storefront/instagram-gallery").then(mod => mod.InstagramGallery),
+  {
+    loading: () => <div className="h-96 w-full bg-secondary/10 animate-pulse" />,
+  }
+);
+
+const CustomerTestimonials = dynamic(
+  () => import("@/components/storefront/customer-testimonials").then(mod => mod.CustomerTestimonials),
+  {
+    loading: () => <div className="h-80 w-full bg-secondary/15 animate-pulse rounded-3xl" />,
+  }
+);
 import type { Metadata } from "next";
 import { getBaseMetadata } from "@/lib/seo";
 
