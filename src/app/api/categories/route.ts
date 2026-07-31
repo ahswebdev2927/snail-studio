@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
+import { CACHE_TAGS } from "@/lib/cache-tags";
 import { db } from "@/db";
 import { categories } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -189,6 +191,9 @@ export async function POST(req: NextRequest) {
         updatedAt: now,
       })
       .returning();
+
+    revalidateTag(CACHE_TAGS.CATEGORIES, "max");
+    revalidateTag(CACHE_TAGS.NAVIGATION, "max");
 
     return NextResponse.json(inserted[0], { status: 201 });
   } catch (error: unknown) {

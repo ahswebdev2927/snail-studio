@@ -1,6 +1,8 @@
 import { db } from "@/db";
 import { categories, attributeGroups, collections, systemSettings } from "@/db/schema";
 import { eq, and, asc } from "drizzle-orm";
+import { unstable_cache } from "next/cache";
+import { CACHE_TAGS } from "@/lib/cache-tags";
 
 export interface NavigationItem {
   name: string;
@@ -77,7 +79,7 @@ function buildCategoryTree(flatList: any[]): NavigationCategory[] {
   return tree;
 }
 
-export async function getStorefrontNavigation(): Promise<StorefrontNavigation> {
+async function getStorefrontNavigationQuery(): Promise<StorefrontNavigation> {
   try {
     const [dropdownGroups, activeCollectionsList, allCategoriesList, promoRow] = await Promise.all([
       db.query.attributeGroups.findMany({
@@ -206,3 +208,11 @@ export async function getStorefrontNavigation(): Promise<StorefrontNavigation> {
     };
   }
 }
+
+export const getStorefrontNavigation = unstable_cache(
+  getStorefrontNavigationQuery,
+  ["storefront-navigation"],
+  {
+    tags: [CACHE_TAGS.NAVIGATION, CACHE_TAGS.COLLECTIONS, CACHE_TAGS.CATEGORIES, CACHE_TAGS.SETTINGS],
+  }
+);

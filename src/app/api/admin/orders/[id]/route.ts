@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
+import { CACHE_TAGS } from "@/lib/cache-tags";
 import { db } from "@/db";
 import { orders } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -165,6 +167,10 @@ export async function PATCH(
         });
       }
     }
+
+    revalidateTag(CACHE_TAGS.ORDERS, "max");
+    revalidateTag(CACHE_TAGS.DASHBOARD, "max");
+    revalidateTag(CACHE_TAGS.ANALYTICS, "max");
 
     return NextResponse.json({
       success: true,

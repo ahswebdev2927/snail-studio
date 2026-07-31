@@ -42,6 +42,42 @@ const RecentlyViewed = dynamic(
 import { LazyHydrate } from "@/components/ui/lazy-hydrate";
 import { getBaseMetadata, getProductJsonLd, getBreadcrumbJsonLd, getFAQJsonLd } from "@/lib/seo";
 import { getOptimizedImageUrl } from "@/lib/cloudinary/utils";
+import { cache } from "react";
+
+const getCachedProductBySlug = cache(async (slug: string) => {
+  return db.query.products.findFirst({
+    where: eq(products.slug, slug),
+    with: {
+      brand:    true,
+      category: true,
+      attributeValues: {
+        with: {
+          attributeValue: {
+            with: {
+              group: true
+            }
+          }
+        }
+      },
+      variants: {
+        with: {
+          inventory: true,
+          attributes: {
+            with: {
+              attributeValue: {
+                with: { group: true },
+              },
+            },
+          },
+        },
+      },
+      media: {
+        with:    { media: true },
+        orderBy: (pm, { asc }) => [asc(pm.sortOrder)],
+      },
+    },
+  });
+});
 
 export const revalidate = 3600; // Cache pages for 1 hour, then regenerate in background
 export const dynamicParams = true; // Support dynamic rendering of newly added products
@@ -69,13 +105,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
 
-  const product = await db.query.products.findFirst({
-    where: eq(products.slug, slug),
-    with: {
-      media: { with: { media: true } },
-      category: true,
-    },
-  });
+  const product = await getCachedProductBySlug(slug);
 
   if (!product) {
     return { title: "Product Not Found | Snail Studio" };
@@ -119,38 +149,7 @@ export default async function ProductPage({
   const { slug } = await params;
 
   /* ----- 1. Fetch product with all relations ----- */
-  const product = await db.query.products.findFirst({
-    where: eq(products.slug, slug),
-    with: {
-      brand:    true,
-      category: true,
-      attributeValues: {
-        with: {
-          attributeValue: {
-            with: {
-              group: true
-            }
-          }
-        }
-      },
-      variants: {
-        with: {
-          inventory: true,
-          attributes: {
-            with: {
-              attributeValue: {
-                with: { group: true },
-              },
-            },
-          },
-        },
-      },
-      media: {
-        with:    { media: true },
-        orderBy: (pm, { asc }) => [asc(pm.sortOrder)],
-      },
-    },
-  });
+  const product = await getCachedProductBySlug(slug);
 
   if (!product || !product.isActive) {
     notFound();

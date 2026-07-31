@@ -14,8 +14,9 @@ const Footer = dynamic(
 );
 import { getStorefrontNavigation } from "@/services/navigation";
 import { db } from "@/db";
-import { announcements, systemSettings } from "@/db/schema";
+import { announcements } from "@/db/schema";
 import { eq, and, asc } from "drizzle-orm";
+import { getSystemSettingsMap } from "@/services/settings";
 
 export const metadata = {
   title: "Shop Luxury Nails | Snail Studio",
@@ -43,26 +44,19 @@ export default async function StorefrontLayout({
     return startValid && endValid;
   });
 
-  // Fetch global bar settings
-  const settingsRow = await db.query.systemSettings.findFirst({
-    where: eq(systemSettings.key, "announcement_bar_settings"),
-  });
+  // Fetch cached system settings map
+  const settingsMap = await getSystemSettingsMap();
 
+  // Extract announcement bar settings from map
+  const barSettingsString = settingsMap["announcement_bar_settings"];
   let barSettings = null;
-  if (settingsRow && settingsRow.value) {
+  if (barSettingsString) {
     try {
-      barSettings = JSON.parse(settingsRow.value);
+      barSettings = JSON.parse(barSettingsString);
     } catch (e) {
       console.error("Failed to parse announcement bar settings JSON:", e);
     }
   }
-
-  // Fetch all system settings to extract store name and logo
-  const systemSettingsRows = await db.select().from(systemSettings);
-  const settingsMap = systemSettingsRows.reduce((acc, row) => {
-    acc[row.key] = row.value;
-    return acc;
-  }, {} as Record<string, string>);
 
   const storeLogo = settingsMap["store_logo"] || "";
   const storeName = settingsMap["store_name"] || "Snail Studio";

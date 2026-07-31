@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
+import { CACHE_TAGS } from "@/lib/cache-tags";
 import { db } from "@/db";
 import { collections, collectionRules, productCollections } from "@/db/schema";
 import { eq, and, ne } from "drizzle-orm";
@@ -209,6 +211,9 @@ export async function PUT(
       },
     });
 
+    revalidateTag(CACHE_TAGS.COLLECTIONS, "max");
+    revalidateTag(CACHE_TAGS.NAVIGATION, "max");
+
     return NextResponse.json(updated);
   } catch (error: unknown) {
     console.error("PUT /api/admin/collections/[id] error:", error);
@@ -283,6 +288,9 @@ export async function DELETE(
         templateName: "admin_privileged_action",
       });
     }
+
+    revalidateTag(CACHE_TAGS.COLLECTIONS, "max");
+    revalidateTag(CACHE_TAGS.NAVIGATION, "max");
 
     return NextResponse.json({ success: true, message: "Collection deleted successfully" });
   } catch (error: unknown) {

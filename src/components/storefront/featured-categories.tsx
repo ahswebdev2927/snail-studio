@@ -5,13 +5,25 @@ import { ChevronRight } from "lucide-react";
 import { db } from "@/db";
 import { categories } from "@/db/schema";
 import { eq, asc } from "drizzle-orm";
+import { unstable_cache } from "next/cache";
+import { CACHE_TAGS } from "@/lib/cache-tags";
+
+const getFeaturedCategories = unstable_cache(
+  async () => {
+    return db.query.categories.findMany({
+      where: eq(categories.showOnHomepage, true),
+      orderBy: asc(categories.sortOrder)
+    });
+  },
+  ["featured-categories"],
+  {
+    tags: [CACHE_TAGS.CATEGORIES],
+  }
+);
 
 export async function FeaturedCategories() {
   // Query categories flagged to show on the homepage
-  const categoriesList = await db.query.categories.findMany({
-    where: eq(categories.showOnHomepage, true),
-    orderBy: asc(categories.sortOrder)
-  });
+  const categoriesList = await getFeaturedCategories();
 
   // If there are no configured categories, hide the section to avoid a blank layout
   if (categoriesList.length === 0) return null;

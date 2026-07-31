@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
+import { CACHE_TAGS } from "@/lib/cache-tags";
 import { authorize } from "@/middleware/auth";
 import { adjustStock } from "@/services/inventory/inventory.service";
 import { z } from "zod";
@@ -56,6 +58,10 @@ export async function POST(req: NextRequest) {
       quantity,
       reference: reference || null,
     });
+
+    revalidateTag(CACHE_TAGS.INVENTORY, "max");
+    revalidateTag(CACHE_TAGS.PRODUCTS, "max");
+    revalidateTag(CACHE_TAGS.DASHBOARD, "max");
 
     return NextResponse.json(res, { status: 200 });
   } catch (error: any) {

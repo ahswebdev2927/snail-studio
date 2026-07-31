@@ -5,21 +5,33 @@ import { ChevronRight } from "lucide-react";
 import { db } from "@/db";
 import { collections } from "@/db/schema";
 import { eq, and, asc } from "drizzle-orm";
+import { unstable_cache } from "next/cache";
+import { CACHE_TAGS } from "@/lib/cache-tags";
+
+const getFeaturedCollections = unstable_cache(
+  async () => {
+    return db.query.collections.findMany({
+      where: and(eq(collections.isActive, true), eq(collections.showOnHomepage, true)),
+      with: {
+        media: {
+          limit: 1,
+          with: {
+            media: true
+          }
+        }
+      },
+      orderBy: asc(collections.sortOrder)
+    });
+  },
+  ["featured-collections"],
+  {
+    tags: [CACHE_TAGS.COLLECTIONS],
+  }
+);
 
 export async function FeaturedCollections() {
   // Query collections configured to show on the homepage
-  const collectionsList = await db.query.collections.findMany({
-    where: and(eq(collections.isActive, true), eq(collections.showOnHomepage, true)),
-    with: {
-      media: {
-        limit: 1,
-        with: {
-          media: true
-        }
-      }
-    },
-    orderBy: asc(collections.sortOrder)
-  });
+  const collectionsList = await getFeaturedCollections();
 
   // If there are no collections, hide the section to avoid a blank layout
   if (collectionsList.length === 0) return null;

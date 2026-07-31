@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
+import { CACHE_TAGS } from "@/lib/cache-tags";
 import { db } from "@/db";
 import { categories } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -180,6 +182,9 @@ export async function PUT(
       .where(eq(categories.id, id))
       .returning();
 
+    revalidateTag(CACHE_TAGS.CATEGORIES, "max");
+    revalidateTag(CACHE_TAGS.NAVIGATION, "max");
+
     return NextResponse.json(updated[0]);
   } catch (error: unknown) {
     console.error("PUT /api/categories/[id] error:", error);
@@ -256,6 +261,9 @@ export async function DELETE(
         templateName: "admin_privileged_action",
       });
     }
+
+    revalidateTag(CACHE_TAGS.CATEGORIES, "max");
+    revalidateTag(CACHE_TAGS.NAVIGATION, "max");
 
     return NextResponse.json({ success: true, message: "Category deleted successfully" });
   } catch (error: unknown) {

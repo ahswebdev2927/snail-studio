@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag, revalidatePath } from "next/cache";
 import { db } from "@/db";
+import { CACHE_TAGS } from "@/lib/cache-tags";
 import { products, userAuditLogs } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
@@ -62,6 +64,13 @@ export async function POST(
         createdAt: now,
       });
     });
+
+    revalidateTag(CACHE_TAGS.PRODUCTS, "max");
+    revalidateTag(CACHE_TAGS.DASHBOARD, "max");
+    revalidateTag(CACHE_TAGS.ANALYTICS, "max");
+    revalidatePath("/admin/products");
+    revalidatePath("/");
+    revalidatePath("/shop");
 
     return NextResponse.json({
       success: true,

@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
+import { CACHE_TAGS } from "@/lib/cache-tags";
 import { db } from "@/db";
 import { systemSettings } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -158,7 +160,10 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    return NextResponse.json({ success: true, message: "Settings saved successfully" }, { status: 200 });
+    revalidateTag(CACHE_TAGS.SETTINGS, "max");
+    revalidateTag(CACHE_TAGS.NAVIGATION, "max");
+
+    return NextResponse.json({ success: true, message: "Settings updated successfully" }, { status: 200 });
   } catch (error: any) {
     console.error("POST /api/admin/settings error:", error);
     return NextResponse.json(
