@@ -15,6 +15,7 @@ import { ProductCard } from "@/components/storefront/product-card";
 import { WhyChooseUs } from "@/components/storefront/why-choose-us";
 import { ProductSlider } from "@/components/storefront/product-slider";
 import dynamic from "next/dynamic";
+import { LazyHydrate } from "@/components/ui/lazy-hydrate";
 
 const FeaturedCollections = dynamic(
   () => import("@/components/storefront/featured-collections").then(mod => mod.FeaturedCollections),
@@ -252,7 +253,9 @@ export default async function Home() {
       )}
 
       {/* Featured Collections Grid */}
-      <FeaturedCollections />
+      <LazyHydrate fallback={<div className="h-96 w-full bg-secondary/20 animate-pulse rounded-3xl" />}>
+        <FeaturedCollections />
+      </LazyHydrate>
 
 
       {/* Trending Section */}
@@ -286,15 +289,23 @@ export default async function Home() {
         </section>
       )}
       {/* Sizing Guide Interactive Preview */}
-      <InteractiveSizing sizeProfiles={activeSizes} />
+      <LazyHydrate fallback={<div className="h-96 w-full bg-[#EFD3C9]/20 dark:bg-card/20 animate-pulse rounded-3xl" />}>
+        <InteractiveSizing sizeProfiles={activeSizes} />
+      </LazyHydrate>
       {/* Recently Viewed Products Section */}
-      <RecentlyViewed />
+      <LazyHydrate fallback={<div className="h-48 w-full bg-secondary/10 animate-pulse" />}>
+        <RecentlyViewed />
+      </LazyHydrate>
 
       {/* Instagram/Social Gallery Showcase */}
-      <InstagramGallery />
+      <LazyHydrate fallback={<div className="h-96 w-full bg-secondary/10 animate-pulse" />}>
+        <InstagramGallery />
+      </LazyHydrate>
 
       {/* Customer Testimonials Slider Showcase */}
-      <CustomerTestimonials />
+      <LazyHydrate fallback={<div className="h-80 w-full bg-secondary/15 animate-pulse rounded-3xl" />}>
+        <CustomerTestimonials />
+      </LazyHydrate>
     </div>
   );
 }

@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 import dynamic from "next/dynamic";
+import { LazyHydrate } from "@/components/ui/lazy-hydrate";
 
 const RevenueTrendChart = dynamic(
   () => import("@/components/admin/analytics/store-revenue-charts").then(mod => mod.RevenueTrendChart),
@@ -500,7 +501,13 @@ export default function AnalyticsPage() {
           </div>
 
           <div className="h-64 w-full pt-4">
-            <RevenueTrendChart salesHistory={salesHistory} setActiveRevenuePoint={setActiveRevenuePoint} />
+            <LazyHydrate fallback={
+              <div className="h-full w-full flex items-center justify-center bg-secondary/5 rounded-xl animate-pulse">
+                <Loader2 className="w-6 h-6 animate-spin text-primary animate-duration-1000" />
+              </div>
+            }>
+              <RevenueTrendChart salesHistory={salesHistory} setActiveRevenuePoint={setActiveRevenuePoint} />
+            </LazyHydrate>
           </div>
         </div>
 
@@ -671,7 +678,13 @@ export default function AnalyticsPage() {
             </div>
 
             <div className="h-[280px] w-full pt-4">
-              <OrdersTrendChart ordersHistory={ordersHistory} setActiveOrderPoint={setActiveOrderPoint} />
+              <LazyHydrate fallback={
+                <div className="h-full w-full flex items-center justify-center bg-secondary/5 rounded-xl animate-pulse">
+                  <Loader2 className="w-6 h-6 animate-spin text-primary animate-duration-1000" />
+                </div>
+              }>
+                <OrdersTrendChart ordersHistory={ordersHistory} setActiveOrderPoint={setActiveOrderPoint} />
+              </LazyHydrate>
             </div>
           </div>
 
@@ -687,12 +700,18 @@ export default function AnalyticsPage() {
 
               {/* Donut Chart Container */}
               <div className="relative w-full h-44 flex items-center justify-center">
-                <OrderStatusPieChart
-                  totalOrders={summary.totalOrders}
-                  statuses={statuses}
-                  hoveredStatus={hoveredStatus}
-                  setHoveredStatus={setHoveredStatus}
-                />
+                <LazyHydrate fallback={
+                  <div className="h-full w-full flex items-center justify-center bg-secondary/5 rounded-full animate-pulse max-w-44 mx-auto">
+                    <Loader2 className="w-6 h-6 animate-spin text-primary animate-duration-1000" />
+                  </div>
+                }>
+                  <OrderStatusPieChart
+                    totalOrders={summary.totalOrders}
+                    statuses={statuses}
+                    hoveredStatus={hoveredStatus}
+                    setHoveredStatus={setHoveredStatus}
+                  />
+                </LazyHydrate>
                 {/* Center text for donut */}
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                   <span className="font-serif text-2xl font-bold tracking-wide text-foreground">
@@ -1215,7 +1234,13 @@ export default function AnalyticsPage() {
           </div>
 
           <div className="h-56 w-full pt-4">
-            <WishlistTrendChart wishlistHistory={wishlistHistory} totalWishlistAdds={summary.totalWishlistAdds} />
+            <LazyHydrate fallback={
+              <div className="h-full w-full flex items-center justify-center bg-secondary/5 rounded-xl animate-pulse">
+                <Loader2 className="w-6 h-6 animate-spin text-primary animate-duration-1000" />
+              </div>
+            }>
+              <WishlistTrendChart wishlistHistory={wishlistHistory} totalWishlistAdds={summary.totalWishlistAdds} />
+            </LazyHydrate>
           </div>
         </div>
 
@@ -1366,7 +1391,13 @@ export default function AnalyticsPage() {
           </div>
 
           <div className="h-56 w-full pt-4">
-            <CustomerAcquisitionChart acquisitionHistory={acquisitionHistory} />
+            <LazyHydrate fallback={
+              <div className="h-full w-full flex items-center justify-center bg-secondary/5 rounded-xl animate-pulse">
+                <Loader2 className="w-6 h-6 animate-spin text-primary animate-duration-1000" />
+              </div>
+            }>
+              <CustomerAcquisitionChart acquisitionHistory={acquisitionHistory} />
+            </LazyHydrate>
           </div>
         </div>
 

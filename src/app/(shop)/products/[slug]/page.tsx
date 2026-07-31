@@ -39,6 +39,7 @@ const RecentlyViewed = dynamic(
     loading: () => <div className="h-48 w-full bg-secondary/10 animate-pulse" />,
   }
 );
+import { LazyHydrate } from "@/components/ui/lazy-hydrate";
 import { getBaseMetadata, getProductJsonLd, getBreadcrumbJsonLd, getFAQJsonLd } from "@/lib/seo";
 import { getOptimizedImageUrl } from "@/lib/cloudinary/utils";
 
@@ -631,25 +632,33 @@ export default async function ProductPage({
         <ProductTabs description={product.description} specifications={sortedCatalogAttributes} />
 
         {/* ---- Frequently Bought Together Section ---- */}
-        <FrequentlyBoughtTogether
-          bundles={formattedBundles}
-          currentProductId={product.id}
-        />
+        <LazyHydrate fallback={<div className="h-48 w-full bg-secondary/10 animate-pulse rounded-2xl" />}>
+          <FrequentlyBoughtTogether
+            bundles={formattedBundles}
+            currentProductId={product.id}
+          />
+        </LazyHydrate>
 
         {/* ---- Customer Reviews Section ---- */}
-        <ProductReviews
-          productId={product.id}
-          reviews={formattedReviews}
-          averageRating={averageRating}
-          reviewCount={reviewCount}
-          eligibility={eligibility}
-        />
+        <LazyHydrate fallback={<div className="h-96 w-full bg-secondary/10 animate-pulse rounded-2xl" />}>
+          <ProductReviews
+            productId={product.id}
+            reviews={formattedReviews}
+            averageRating={averageRating}
+            reviewCount={reviewCount}
+            eligibility={eligibility}
+          />
+        </LazyHydrate>
 
         {/* ---- Related Products Section ---- */}
-        <RelatedProducts products={relatedProducts} />
+        <LazyHydrate fallback={<div className="h-96 w-full bg-secondary/10 animate-pulse rounded-2xl" />}>
+          <RelatedProducts products={relatedProducts} />
+        </LazyHydrate>
 
         {/* ---- Recently Viewed Section ---- */}
-        <RecentlyViewed currentSlug={product.slug} />
+        <LazyHydrate fallback={<div className="h-48 w-full bg-secondary/10 animate-pulse" />}>
+          <RecentlyViewed currentSlug={product.slug} />
+        </LazyHydrate>
       </div>
     </>
   );

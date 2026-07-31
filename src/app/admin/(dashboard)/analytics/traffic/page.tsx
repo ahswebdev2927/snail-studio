@@ -27,6 +27,7 @@ const TrafficFunnelChart = dynamic(
     ssr: false,
   }
 );
+import { LazyHydrate } from "@/components/ui/lazy-hydrate";
 
 interface GA4Summary {
   activeUsers: number;
@@ -329,7 +330,13 @@ export default function TrafficAnalyticsPage() {
               </div>
               
               <div className="h-80 w-full pt-2">
-                <TrafficFunnelChart funnel={gaData.funnel} />
+                <LazyHydrate fallback={
+                  <div className="h-full w-full flex items-center justify-center bg-secondary/5 rounded-xl animate-pulse">
+                    <Loader2 className="w-6 h-6 animate-spin text-primary animate-duration-1000" />
+                  </div>
+                }>
+                  <TrafficFunnelChart funnel={gaData.funnel} />
+                </LazyHydrate>
               </div>
             </div>
 

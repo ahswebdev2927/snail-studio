@@ -30,6 +30,7 @@ const SalesAreaChart = dynamic(
     ssr: false,
   }
 );
+import { LazyHydrate } from "@/components/ui/lazy-hydrate";
 
 interface DashboardStats {
   totalSales: number;
@@ -237,7 +238,13 @@ export default function AdminDashboardPage() {
 
           {/* Recharts Area Chart */}
           <div className="h-56 w-full pt-4">
-            <SalesAreaChart salesHistory={stats.salesHistory} />
+            <LazyHydrate fallback={
+              <div className="h-full w-full flex items-center justify-center bg-secondary/5 rounded-xl animate-pulse">
+                <Loader2 className="w-6 h-6 animate-spin text-primary animate-duration-1000" />
+              </div>
+            }>
+              <SalesAreaChart salesHistory={stats.salesHistory} />
+            </LazyHydrate>
           </div>
         </div>
 
