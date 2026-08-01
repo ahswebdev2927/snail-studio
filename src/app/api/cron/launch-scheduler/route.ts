@@ -1,23 +1,25 @@
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import { db } from "@/db";
 import { products, launchSubscribers, launchEvents } from "@/db/schema";
 import { eq, and, inArray } from "drizzle-orm";
 import { sendResendEmail } from "@/services/email/resend.service";
 import { nanoid } from "nanoid";
+import { logRouteHandler } from "@/lib/logger/request";
 
 async function handleRequest(request: Request) {
+  const reqLogger = (request as any).log;
   try {
     // 1. Authorize Cron
     const authHeader = request.headers.get("authorization");
     const cronSecret = process.env.CRON_SECRET;
 
     if (!cronSecret) {
-      console.error("[Launch Scheduler] CRON_SECRET is not configured in environment variables.");
+      reqLogger.error({ type: "cron_error" }, "[Launch Scheduler] CRON_SECRET is not configured in environment variables.");
       return NextResponse.json({ error: "Scheduler configuration error" }, { status: 500 });
     }
 
     if (!authHeader || authHeader !== `Bearer ${cronSecret}`) {
-      console.warn("[Launch Scheduler] Unauthorized access attempt blocked.");
+      reqLogger.warn({ type: "cron_auth_failed" }, "[Launch Scheduler] Unauthorized access attempt blocked.");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -158,15 +160,17 @@ async function handleRequest(request: Request) {
       errors,
     });
   } catch (error: any) {
-    console.error("[Launch Scheduler] Unhandled error during cron invocation:", error);
+    reqLogger.error({ err: error, type: "cron_failed" }, "[Launch Scheduler] Unhandled error during cron invocation");
     return NextResponse.json({ error: error.message || "Internal Server Error" }, { status: 500 });
   }
 }
 
+const loggedHandleRequest = logRouteHandler(handleRequest as any);
+
 export async function GET(request: Request) {
-  return handleRequest(request);
+  return loggedHandleRequest(request as NextRequest);
 }
 
 export async function POST(request: Request) {
-  return handleRequest(request);
+  return loggedHandleRequest(request as NextRequest);
 }

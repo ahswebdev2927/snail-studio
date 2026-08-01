@@ -8,8 +8,10 @@ import { createSession } from "@/lib/auth/refresh-token";
 import { mergeGuestCartIntoCustomerCart } from "@/services/cart/cart.service";
 
 import { rateLimitRequest } from "@/lib/security/rate-limit";
+import { logRouteHandler } from "@/lib/logger/request";
 
-export async function POST(req: NextRequest) {
+async function postHandler(req: NextRequest) {
+  const reqLogger = (req as any).log;
   try {
     // Rate limit: 5 login requests per 1 minute
     const limitResult = await rateLimitRequest(req, "auth:login", 5, 60 * 1000);
@@ -49,7 +51,7 @@ export async function POST(req: NextRequest) {
     try {
       decodedToken = await adminAuth.verifyIdToken(idToken);
     } catch (authError: any) {
-      console.error("Firebase ID Token verification failed:", authError);
+      reqLogger.error({ err: authError }, "Firebase ID Token verification failed");
       return NextResponse.json(
         { error: "Invalid ID token", details: authError.message },
         { status: 401 }
@@ -132,7 +134,7 @@ export async function POST(req: NextRequest) {
           }
         });
       } catch (err) {
-        console.error("Failed to trigger registration notification:", err);
+        reqLogger.error({ err }, "Failed to trigger registration notification");
       }
     }
 
@@ -162,7 +164,7 @@ export async function POST(req: NextRequest) {
         changes: null,
       });
     } catch (auditError) {
-      console.error("Failed to write login audit log:", auditError);
+      reqLogger.error({ err: auditError }, "Failed to write login audit log");
     }
 
     // Merge guest cart to customer cart if guestCartToken cookie exists
@@ -171,7 +173,7 @@ export async function POST(req: NextRequest) {
       try {
         await mergeGuestCartIntoCustomerCart(guestCartToken, user.id);
       } catch (mergeError) {
-        console.error("Failed to merge guest cart into customer cart:", mergeError);
+        reqLogger.error({ err: mergeError }, "Failed to merge guest cart into customer cart");
       }
     }
 
@@ -218,10 +220,12 @@ export async function POST(req: NextRequest) {
 
     return response;
   } catch (error: any) {
-    console.error("Login API route error:", error);
+    reqLogger.error({ err: error }, "Login API route error");
     return NextResponse.json(
       { error: "Internal Server Error", details: error.message },
       { status: 500 }
     );
   }
 }
+
+export const POST = logRouteHandler(postHandler);

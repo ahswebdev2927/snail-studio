@@ -4,6 +4,7 @@ import { eq, and, desc, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { sendToRole } from "./sse-manager";
 import { sendMail } from "../email/email.service";
+import { logger } from "@/lib/logger/logger";
 import { getApps } from "firebase-admin/app";
 import { getMessaging } from "firebase-admin/messaging";
 
@@ -23,8 +24,9 @@ export interface TriggerNotificationParams {
 /**
  * Main dispatcher to route notifications to all system administrators.
  */
-export async function triggerAdminNotification(params: TriggerNotificationParams) {
+export async function triggerAdminNotification(params: TriggerNotificationParams, loggerInstance?: any) {
   const { category, title, message, priority = "medium", data = {} } = params;
+  const reqLogger = loggerInstance || logger;
 
   // 1. Log to the system Activity Timeline
   const activityId = `act_${nanoid(12)}`;
@@ -47,7 +49,7 @@ export async function triggerAdminNotification(params: TriggerNotificationParams
       createdAt: new Date().toISOString(),
     });
   } catch (err) {
-    console.error("Failed to log activity timeline entry:", err);
+    reqLogger.error({ err }, "Failed to log activity timeline entry");
   }
 
   // 2. Fetch all Administrator users
@@ -58,7 +60,7 @@ export async function triggerAdminNotification(params: TriggerNotificationParams
       .from(users)
       .where(eq(users.role, "admin"));
   } catch (err) {
-    console.error("Failed to fetch admin users for notification routing:", err);
+    reqLogger.error({ err }, "Failed to fetch admin users for notification routing");
     return;
   }
 
@@ -121,7 +123,7 @@ export async function triggerAdminNotification(params: TriggerNotificationParams
             </div>
           `,
           templateName: "admin_notification",
-        });
+        }, reqLogger);
       }
 
       // 6. Push Notifications via FCM (Firebase Cloud Messaging)

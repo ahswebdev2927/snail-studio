@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { getSystemSettingsMap } from "@/services/settings";
 import nodemailer from "nodemailer";
 import { nanoid } from "nanoid";
+import { logger } from "@/lib/logger/logger";
 
 export interface SmtpConfig {
   host: string;
@@ -92,22 +93,22 @@ interface SendMailParams {
  * Sends a transactional email, logging the delivery attempt to the audit trail.
  * Falls back to terminal logging if SMTP is unconfigured.
  */
-export async function sendMail(params: SendMailParams): Promise<{ success: boolean; error?: string; logId: string }> {
+export async function sendMail(params: SendMailParams, loggerInstance?: any): Promise<{ success: boolean; error?: string; logId: string }> {
   const logId = `eml_${nanoid(12)}`;
   const timestamp = new Date();
+  const reqLogger = loggerInstance || logger;
 
   try {
     const config = await getSmtpConfig();
 
     if (!config) {
-      // SMTP not configured - log to console and save success audit log in dev fallback mode
-      console.warn(`
-[SMTP BYPASS] Outgoing Email Triggered (${logId})
-Recipient: ${params.to}
-Subject: ${params.subject}
-Template: ${params.templateName}
-Note: SMTP credentials are not configured in system settings or environment variables.
-      `);
+      reqLogger.warn({
+        logId,
+        recipient: params.to,
+        subject: params.subject,
+        templateName: params.templateName,
+        type: "smtp_bypass"
+      }, `[SMTP BYPASS] Outgoing Email Triggered (${logId})`);
 
       await db.insert(emailLogs).values({
         id: logId,
@@ -154,7 +155,7 @@ Note: SMTP credentials are not configured in system settings or environment vari
     return { success: true, logId };
 
   } catch (error: any) {
-    console.error(`Email delivery failed for log ${logId}:`, error);
+    reqLogger.error({ err: error, logId, type: "email_send_failed" }, `Email delivery failed for log ${logId}: ${error.message}`);
 
     try {
       await db.insert(emailLogs).values({
@@ -167,7 +168,7 @@ Note: SMTP credentials are not configured in system settings or environment vari
         sentAt: timestamp,
       });
     } catch (dbError) {
-      console.error("Failed to write email error logs to database:", dbError);
+      reqLogger.error({ err: dbError }, "Failed to write email error logs to database");
     }
 
     // Trigger admin system notification for SMTP failure
@@ -185,7 +186,7 @@ Note: SMTP credentials are not configured in system settings or environment vari
         }
       });
     } catch (notifErr) {
-      console.error("Failed to trigger SMTP failure notification:", notifErr);
+      reqLogger.error({ err: notifErr }, "Failed to trigger SMTP failure notification");
     }
 
     return { success: false, error: error.message || String(error), logId };

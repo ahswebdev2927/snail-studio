@@ -2,6 +2,7 @@ import { db } from "@/db";
 import { inventoryItems, inventoryReservations, inventoryTransactions, productVariants, products, productMedia, media } from "@/db/schema";
 import { eq, gt, lt, inArray, and, or, like, desc, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
+import { logger } from "@/lib/logger/logger";
 
 /**
  * Calculates the available stock for a given product variant, optionally using a transaction client.
@@ -323,9 +324,12 @@ export async function adjustStock(
     quantity: number;
     reference?: string | null;
   },
-  tx?: any
+  tx?: any,
+  loggerInstance?: any
 ) {
+  const reqLogger = loggerInstance || logger;
   const execute = async (client: any) => {
+    reqLogger.info({ type: "inventory_adjustment_start", inventoryItemId: params.inventoryItemId, adjustmentType: params.type, quantity: params.quantity }, `Starting stock adjustment for item ${params.inventoryItemId} (${params.type})`);
     // 1. Fetch item
     const item = await client.query.inventoryItems.findFirst({
       where: eq(inventoryItems.id, params.inventoryItemId),
@@ -368,6 +372,8 @@ export async function adjustStock(
       reference: params.reference || "manual adjustment",
       createdAt: now,
     });
+
+    reqLogger.info({ type: "inventory_adjustment_success", inventoryItemId: params.inventoryItemId, adjustmentType: params.type, quantity: params.quantity, oldStockLevel: item.stockLevel, newStockLevel }, `Successfully adjusted stock for item ${params.inventoryItemId} (old: ${item.stockLevel}, new: ${newStockLevel})`);
 
     return {
       success: true,

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { confirmOrderPayment } from "@/services/payments/payment.service";
 import { rateLimitRequest } from "@/lib/security/rate-limit";
+import { logRouteHandler } from "@/lib/logger/request";
 
 /**
  * API Route Handler for confirming payments: POST /api/payments/confirm
@@ -12,7 +13,8 @@ import { rateLimitRequest } from "@/lib/security/rate-limit";
  * - signature: string (optional signature, required for production verification)
  * - cartId: string (optional cart ID, used to clear purchase history)
  */
-export async function POST(request: NextRequest) {
+async function postHandler(request: NextRequest) {
+  const reqLogger = (request as any).log;
   try {
     // Rate limit: 10 payment confirmations per 1 minute
     const limitResult = await rateLimitRequest(request, "payment:confirm", 10, 60 * 1000);
@@ -44,13 +46,16 @@ export async function POST(request: NextRequest) {
       gatewayOrderId: gatewayOrderId || undefined,
       signature: signature || undefined,
       cartId: cartId || undefined
-    });
+    }, reqLogger);
 
     return NextResponse.json(result);
   } catch (error: any) {
+    reqLogger.error({ err: error }, `Error during payment confirmation: ${error.message}`);
     return NextResponse.json(
       { success: false, error: error.message || "An error occurred during payment confirmation." },
       { status: 500 }
     );
   }
 }
+
+export const POST = logRouteHandler(postHandler);

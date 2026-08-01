@@ -4,6 +4,7 @@ import { CACHE_TAGS } from "@/lib/cache-tags";
 import { authorize } from "@/middleware/auth";
 import { adjustStock } from "@/services/inventory/inventory.service";
 import { z } from "zod";
+import { logRouteHandler } from "@/lib/logger/request";
 
 const adjustSchema = z.object({
   inventoryItemId: z.string().min(1, "Inventory Item ID is required"),
@@ -13,7 +14,8 @@ const adjustSchema = z.object({
 });
 
 // POST /api/inventory/adjust - Perform physical stock adjustment and log transaction (Admin only)
-export async function POST(req: NextRequest) {
+async function postHandler(req: NextRequest) {
+  const reqLogger = (req as any).log;
   try {
     const auth = await authorize(req, "admin");
     if (!auth.authorized) {
@@ -57,7 +59,7 @@ export async function POST(req: NextRequest) {
       type,
       quantity,
       reference: reference || null,
-    });
+    }, undefined, reqLogger);
 
     revalidateTag(CACHE_TAGS.INVENTORY, "max");
     revalidateTag(CACHE_TAGS.PRODUCTS, "max");
@@ -65,10 +67,12 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(res, { status: 200 });
   } catch (error: any) {
-    console.error("POST /api/inventory/adjust error:", error);
+    reqLogger.error({ err: error }, `POST /api/inventory/adjust error: ${error.message}`);
     return NextResponse.json(
       { error: "Internal Server Error", details: error.message || String(error) },
       { status: 500 }
     );
   }
 }
+
+export const POST = logRouteHandler(postHandler);

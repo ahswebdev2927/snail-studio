@@ -1,6 +1,7 @@
 import { createClient } from "@libsql/client";
 import { drizzle } from "drizzle-orm/libsql";
 import * as schema from "./schema";
+import { DrizzlePinoLogger } from "@/lib/logger/db";
 
 const provider = process.env.DB_PROVIDER || "sqlite";
 const url = provider === "sqlite" 
@@ -13,4 +14,7 @@ if (!url) {
 }
 
 export const client = createClient({ url, authToken });
-export const db = drizzle(client, { schema });
+export const db = drizzle(client, {
+  schema,
+  logger: process.env.LOG_DB_QUERIES === "true" ? new DrizzlePinoLogger() : undefined
+});

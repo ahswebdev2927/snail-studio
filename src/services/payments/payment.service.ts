@@ -6,6 +6,7 @@ import { getPaymentProvider } from "@/lib/payments/payment-factory";
 import { PaymentSession, PaymentVerificationResult, RefundResult } from "@/lib/payments/types";
 import { updateOrderStatus } from "../checkout/order.service";
 import { triggerAdminNotification } from "../notifications/notification-service";
+import { logger } from "@/lib/logger/logger";
 
 /**
  * Creates a payment session with the active gateway and logs a pending payment record in the DB.
@@ -166,16 +167,22 @@ export async function refundOrderPayment(
  * @param params Confirmation input including orderId, paymentId, gatewayOrderId, and optional signature or cartId.
  * @returns Object indicating success.
  */
-export async function confirmOrderPayment(params: {
-  orderId: string;
-  paymentId: string;
-  gatewayOrderId?: string;
-  signature?: string;
-  cartId?: string;
-}) {
+export async function confirmOrderPayment(
+  params: {
+    orderId: string;
+    paymentId: string;
+    gatewayOrderId?: string;
+    signature?: string;
+    cartId?: string;
+  },
+  loggerInstance?: any
+) {
   const lowStockAlerts: { name: string; stock: number; productId: string }[] = [];
+  const reqLogger = loggerInstance || logger;
 
-  const result = await db.transaction(async (tx) => {
+  reqLogger.info({ type: "payment_confirmation_start", orderId: params.orderId, paymentId: params.paymentId }, `Starting order payment confirmation for order ${params.orderId}`);
+  try {
+    const result = await db.transaction(async (tx) => {
     // 1. Fetch the order record
     const orderRecord = await tx.query.orders.findFirst({
       where: eq(orders.id, params.orderId),
@@ -309,43 +316,49 @@ export async function confirmOrderPayment(params: {
       await tx.delete(cartItems).where(eq(cartItems.cartId, resolvedCartId));
     }
 
-    return {
-      success: true,
-      orderId: params.orderId,
-      alreadyPaid: false
-    };
-  });
+      return {
+        success: true,
+        orderId: params.orderId,
+        alreadyPaid: false
+      };
+    });
 
-  // If transaction was successful and order was newly paid, trigger notification(s)
-  if (result.success && !result.alreadyPaid) {
-    // 1. Trigger New Order notification
-    triggerAdminNotification({
-      category: "orders",
-      title: "New Order Placed",
-      message: `Order #${params.orderId} was successfully paid and placed.`,
-      priority: "medium",
-      data: {
-        action: "order_placed",
-        entityType: "order",
-        entityId: params.orderId,
-      }
-    }).catch((err) => console.error("Failed to trigger order confirmation notification:", err));
+    reqLogger.info({ type: "payment_confirmation_success", orderId: params.orderId, paymentId: params.paymentId }, `Successfully confirmed payment for order ${params.orderId}`);
 
-    // 2. Trigger Low Stock alert notifications if any variant dropped below threshold
-    for (const alert of lowStockAlerts) {
+    // If transaction was successful and order was newly paid, trigger notification(s)
+    if (result.success && !result.alreadyPaid) {
+      // 1. Trigger New Order notification
       triggerAdminNotification({
-        category: "inventory",
-        title: "Low Stock Alert",
-        message: `Variant '${alert.name}' is running low on stock. Only ${alert.stock} remaining.`,
-        priority: "high",
+        category: "orders",
+        title: "New Order Placed",
+        message: `Order #${params.orderId} was successfully paid and placed.`,
+        priority: "medium",
         data: {
-          action: "stock_low",
-          entityType: "product",
-          entityId: alert.productId,
+          action: "order_placed",
+          entityType: "order",
+          entityId: params.orderId,
         }
-      }).catch((err) => console.error("Failed to trigger low stock notification:", err));
-    }
-  }
+      }, reqLogger).catch((err) => reqLogger.error({ err }, "Failed to trigger order confirmation notification"));
 
-  return result;
+      // 2. Trigger Low Stock alert notifications if any variant dropped below threshold
+      for (const alert of lowStockAlerts) {
+        triggerAdminNotification({
+          category: "inventory",
+          title: "Low Stock Alert",
+          message: `Variant '${alert.name}' is running low on stock. Only ${alert.stock} remaining.`,
+          priority: "high",
+          data: {
+            action: "stock_low",
+            entityType: "product",
+            entityId: alert.productId,
+          }
+        }, reqLogger).catch((err) => reqLogger.error({ err }, "Failed to trigger low stock notification"));
+      }
+    }
+
+    return result;
+  } catch (err: any) {
+    reqLogger.error({ type: "payment_confirmation_failed", orderId: params.orderId, paymentId: params.paymentId, error: err.message, stack: err.stack }, `Failed order payment confirmation for order ${params.orderId}: ${err.message}`);
+    throw err;
+  }
 }

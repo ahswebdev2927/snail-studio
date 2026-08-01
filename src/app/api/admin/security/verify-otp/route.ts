@@ -2,8 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { authorize } from "@/middleware/auth";
 import { verifySecurityOtp, logAdminAudit } from "@/lib/auth/security";
 import jwt from "jsonwebtoken";
+import { logRouteHandler } from "@/lib/logger/request";
 
-export async function POST(req: NextRequest) {
+async function postHandler(req: NextRequest) {
+  const reqLogger = (req as any).log;
   try {
     const auth = await authorize(req, "admin");
     if (!auth.authorized) {
@@ -75,10 +77,12 @@ export async function POST(req: NextRequest) {
 
     return response;
   } catch (error: any) {
-    console.error("verify-otp error:", error);
+    reqLogger.error({ err: error }, "verify-otp error");
     return NextResponse.json(
       { error: "Internal Server Error", details: error.message || String(error) },
       { status: 500 }
     );
   }
 }
+
+export const POST = logRouteHandler(postHandler);

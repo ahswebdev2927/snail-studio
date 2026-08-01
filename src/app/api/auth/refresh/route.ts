@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { rotateRefreshToken } from "@/lib/auth/refresh-token";
+import { logRouteHandler } from "@/lib/logger/request";
 
-export async function POST(req: NextRequest) {
+async function postHandler(req: NextRequest) {
+  const reqLogger = (req as any).log;
   try {
     const refreshToken = req.cookies.get("refreshToken")?.value;
 
@@ -26,7 +28,7 @@ export async function POST(req: NextRequest) {
         ipAddress
       );
     } catch (rotationError: any) {
-      console.warn("Refresh token rotation failed:", rotationError.message);
+      reqLogger.warn({ err: rotationError }, `Refresh token rotation failed: ${rotationError.message}`);
 
       const response = NextResponse.json(
         { error: "Invalid or expired session", details: rotationError.message },
@@ -67,10 +69,12 @@ export async function POST(req: NextRequest) {
 
     return response;
   } catch (error: any) {
-    console.error("Refresh API route error:", error);
+    reqLogger.error({ err: error }, "Refresh API route error");
     return NextResponse.json(
       { error: "Internal Server Error", details: error.message },
       { status: 500 }
     );
   }
 }
+
+export const POST = logRouteHandler(postHandler);
