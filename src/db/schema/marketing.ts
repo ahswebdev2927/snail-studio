@@ -249,4 +249,8 @@ export const launchEvents = sqliteTable('launch_events', {
   eventType: text('event_type').notNull(), // 'subscriber_signup' | 'countdown_view' | 'reminder_open' | 'launch_conversion'
   metadata: text('metadata'), // JSON string payload
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)
-});
+}, (table) => [
+  index('launch_events_product_id_idx').on(table.productId),
+  index('launch_events_event_type_idx').on(table.eventType),
+  index('launch_events_created_at_idx').on(table.createdAt),
+]);

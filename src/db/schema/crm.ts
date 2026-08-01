@@ -21,5 +21,6 @@ export const customerTags = sqliteTable('customer_tags', {
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)
 }, (table) => [
   index('customer_tags_user_id_idx').on(table.userId),
-  uniqueIndex('customer_tags_user_tag_uniq').on(table.userId, table.tag)
+  uniqueIndex('customer_tags_user_tag_uniq').on(table.userId, table.tag),
+  index('customer_tags_created_at_idx').on(table.createdAt),
 ]);

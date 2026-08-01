@@ -20,7 +20,9 @@ export const users = sqliteTable('users', {
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)
 }, (table) => [
   uniqueIndex('users_firebase_uid_idx').on(table.firebaseUid),
-  uniqueIndex('users_phone_number_idx').on(table.phoneNumber)
+  uniqueIndex('users_phone_number_idx').on(table.phoneNumber),
+  uniqueIndex('users_email_idx').on(table.email),
+  index('users_role_idx').on(table.role),
 ]);
 
 export const refreshTokens = sqliteTable('refresh_tokens', {

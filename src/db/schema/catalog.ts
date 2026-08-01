@@ -60,6 +60,8 @@ export const products = sqliteTable('products', {
   index('products_is_active_idx').on(table.isActive),
   index('products_is_featured_idx').on(table.isFeatured),
   index('products_is_best_seller_idx').on(table.isBestSeller),
+  index('products_status_idx').on(table.status),
+  index('products_created_at_idx').on(table.createdAt),
 ]);
 
 export const attributeGroups = sqliteTable('attribute_groups', {
@@ -102,6 +104,7 @@ export const productVariants = sqliteTable('product_variants', {
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)
 }, (table) => [
   index('product_variants_price_idx').on(table.price),
+  index('product_variants_product_id_idx').on(table.productId),
 ]);
 
 export const variantAttributeValues = sqliteTable('variant_attribute_values', {

@@ -30,7 +30,10 @@ export const orders = sqliteTable('orders', {
   addressVersion: integer('address_version').notNull().default(1),
   addressVerified: integer('address_verified', { mode: 'boolean' }).notNull().default(false)
 }, (table) => [
-  index('orders_user_id_status_idx').on(table.userId, table.status)
+  index('orders_user_id_status_idx').on(table.userId, table.status),
+  index('orders_user_id_idx').on(table.userId),
+  index('orders_status_idx').on(table.status),
+  index('orders_created_at_idx').on(table.createdAt),
 ]);
 
 export const orderItems = sqliteTable('order_items', {
