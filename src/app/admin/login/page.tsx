@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import { Sparkles, Phone, Lock, ArrowRight, ShieldCheck, Loader2, Sun, Moon } from "lucide-react";
+import { RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult } from "firebase/auth";
+import { auth } from "@/lib/firebase/client";
 
 export default function AdminLoginPage() {
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -12,6 +14,9 @@ export default function AdminLoginPage() {
   const [devBypassLoading, setDevBypassLoading] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [checkingSession, setCheckingSession] = useState(true);
+
+  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
+  const [recaptchaVerifier, setRecaptchaVerifier] = useState<RecaptchaVerifier | null>(null);
 
   // Check if there is an active session on mount to auto-login
   useEffect(() => {
@@ -31,6 +36,19 @@ export default function AdminLoginPage() {
     }
     checkSession();
   }, []);
+
+  // Clean up recaptcha verifier on unmount
+  useEffect(() => {
+    return () => {
+      if (recaptchaVerifier) {
+        try {
+          recaptchaVerifier.clear();
+        } catch (e) {
+          console.error("Error clearing RecaptchaVerifier:", e);
+        }
+      }
+    };
+  }, [recaptchaVerifier]);
 
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme") || localStorage.getItem("admin-theme");
@@ -59,32 +77,99 @@ export default function AdminLoginPage() {
     }
   };
 
-  const isDev = process.env.NODE_ENV === "development";
+  const isDev = process.env.APP_ENV !== "production";
 
-  const handlePhoneSubmit = (e: React.FormEvent) => {
+  const handlePhoneSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!phoneNumber) return;
     setLoading(true);
     setError(null);
     
-    // Simulate sending OTP for regular admin login flow
-    setTimeout(() => {
-      setLoading(false);
+    // Normalize phone number
+    let formattedPhone = phoneNumber.trim().replace(/\s+/g, "");
+    if (!formattedPhone.startsWith("+")) {
+      if (formattedPhone.startsWith("0")) {
+        formattedPhone = formattedPhone.slice(1);
+      }
+      formattedPhone = `+91${formattedPhone}`;
+    }
+
+    try {
+      let verifier = recaptchaVerifier;
+      if (!verifier) {
+        const container = document.getElementById("admin-recaptcha-container");
+        if (container) {
+          container.innerHTML = "";
+        }
+        verifier = new RecaptchaVerifier(auth, "admin-recaptcha-container", {
+          size: "invisible",
+          callback: () => {},
+        });
+        setRecaptchaVerifier(verifier);
+      }
+
+      const confirmation = await signInWithPhoneNumber(auth, formattedPhone, verifier);
+      setConfirmationResult(confirmation);
       setStep("otp");
-    }, 1000);
+    } catch (err: any) {
+      console.error("Admin Phone Send OTP failed:", err);
+      setRecaptchaVerifier(null);
+      let friendlyMsg = "Failed to send code. Please verify your phone number and try again.";
+      if (err.code === "auth/invalid-phone-number") {
+        friendlyMsg = "Invalid phone number format. Please check the number and try again.";
+      } else if (err.code === "auth/too-many-requests") {
+        friendlyMsg = "Too many requests. SMS quota exceeded or traffic block. Please try again later or use the Dev Bypass.";
+      }
+      setError(err.message || friendlyMsg);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleOtpSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!otp) return;
+    if (!otp || !confirmationResult) return;
     setLoading(true);
     setError(null);
     
-    // Regular login would verify standard Firebase ID token.
-    // For safety in this shell, we warn the user if Firebase isn't configured,
-    // or let them proceed if they have mock setup.
-    setError("Regular phone login is only supported when client-side Firebase SDK is configured. Please use the Dev Auto-Login bypass below for local testing.");
-    setLoading(false);
+    try {
+      const userCredential = await confirmationResult.confirm(otp);
+      const idToken = await userCredential.user.getIdToken();
+
+      // Submit token to local backend session API
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken }),
+      });
+
+      const data = await res.json();
+      
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Authentication failed on local server.");
+      }
+
+      // Check if user has admin role
+      if (data.user.role !== "admin") {
+        // Log user out server-side immediately to clean up cookies
+        await fetch("/api/auth/logout", { method: "POST" });
+        throw new Error("Access denied: This phone number is not registered as an administrator.");
+      }
+
+      // Successful login - redirect to dashboard
+      window.location.href = "/admin/dashboard";
+    } catch (err: any) {
+      console.error("Admin OTP Verification failed:", err);
+      let friendlyMsg = "Invalid verification code. Please check the OTP.";
+      if (err.code === "auth/invalid-verification-code") {
+        friendlyMsg = "The verification code you entered is invalid. Please check the OTP.";
+      } else if (err.code === "auth/code-expired") {
+        friendlyMsg = "The verification code has expired. Please request a new one.";
+      }
+      setError(err.message || friendlyMsg);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleDevBypass = async () => {
@@ -270,6 +355,7 @@ export default function AdminLoginPage() {
               </p>
             </div>
           )}
+          <div id="admin-recaptcha-container" className="hidden"></div>
         </div>
       </div>
     </div>

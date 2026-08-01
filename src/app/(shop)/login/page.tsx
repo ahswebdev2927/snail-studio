@@ -4,11 +4,15 @@ import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Phone, Lock, Sparkles, Loader2, ArrowRight, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult } from "firebase/auth";
+import { auth } from "@/lib/firebase/client";
 
 function LoginFormContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/account";
+
+  const isDev = process.env.APP_ENV !== "production";
 
   const [phoneNumber, setPhoneNumber] = useState("");
   const [otp, setOtp] = useState("");
@@ -16,6 +20,9 @@ function LoginFormContent() {
   const [loading, setLoading] = useState(false);
   const [checkingSession, setCheckingSession] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
+
+  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
+  const [recaptchaVerifier, setRecaptchaVerifier] = useState<RecaptchaVerifier | null>(null);
 
   // Dev bypass states
   const [devPhone, setDevPhone] = useState("+91 99999 88888");
@@ -50,30 +57,103 @@ function LoginFormContent() {
     checkSession();
   }, [router, callbackUrl]);
 
-  const handlePhoneSubmit = (e: React.FormEvent) => {
+  // Clean up recaptcha verifier on unmount
+  useEffect(() => {
+    return () => {
+      if (recaptchaVerifier) {
+        try {
+          recaptchaVerifier.clear();
+        } catch (e) {
+          console.error("Error clearing RecaptchaVerifier:", e);
+        }
+      }
+    };
+  }, [recaptchaVerifier]);
+
+  const handlePhoneSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!phoneNumber) return;
     setLoading(true);
     setErrorMsg("");
 
-    // Simulate OTP delivery
-    setTimeout(() => {
-      setLoading(false);
+    // Normalize phone number (must be E.164 format)
+    let formattedPhone = phoneNumber.trim().replace(/\s+/g, "");
+    if (!formattedPhone.startsWith("+")) {
+      if (formattedPhone.startsWith("0")) {
+        formattedPhone = formattedPhone.slice(1);
+      }
+      formattedPhone = `+91${formattedPhone}`;
+    }
+
+    try {
+      let verifier = recaptchaVerifier;
+      if (!verifier) {
+        const container = document.getElementById("recaptcha-container");
+        if (container) {
+          container.innerHTML = "";
+        }
+        verifier = new RecaptchaVerifier(auth, "recaptcha-container", {
+          size: "invisible",
+          callback: () => {},
+        });
+        setRecaptchaVerifier(verifier);
+      }
+
+      const confirmation = await signInWithPhoneNumber(auth, formattedPhone, verifier);
+      setConfirmationResult(confirmation);
       setStep("otp");
-    }, 800);
+    } catch (err: any) {
+      console.error("Firebase Phone Send OTP failed:", err);
+      setRecaptchaVerifier(null);
+      let friendlyMsg = "Failed to send code. Please verify your phone number and try again.";
+      if (err.code === "auth/invalid-phone-number") {
+        friendlyMsg = "Invalid phone number format. Please check the number and try again.";
+      } else if (err.code === "auth/too-many-requests") {
+        friendlyMsg = "Too many requests. SMS quota exceeded or traffic block. Please try again later or use the Dev Bypass.";
+      }
+      setErrorMsg(err.message || friendlyMsg);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleOtpSubmit = (e: React.FormEvent) => {
+  const handleOtpSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!otp) return;
+    if (!otp || !confirmationResult) return;
     setLoading(true);
     setErrorMsg("");
 
-    // Display message that production Firebase is simulated here, prompting bypass usage
-    setTimeout(() => {
+    try {
+      const userCredential = await confirmationResult.confirm(otp);
+      const idToken = await userCredential.user.getIdToken();
+
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          idToken,
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        router.push(callbackUrl);
+        router.refresh();
+      } else {
+        setErrorMsg(data.error || "Authentication failed on local server.");
+      }
+    } catch (err: any) {
+      console.error("Firebase OTP Verification failed:", err);
+      let friendlyMsg = "Invalid verification code. Please check the OTP and try again.";
+      if (err.code === "auth/invalid-verification-code") {
+        friendlyMsg = "The verification code you entered is invalid. Please check the OTP.";
+      } else if (err.code === "auth/code-expired") {
+        friendlyMsg = "The verification code has expired. Please send a new code.";
+      }
+      setErrorMsg(err.message || friendlyMsg);
+    } finally {
       setLoading(false);
-      setErrorMsg("Firebase phone verification is simulated. Please use the developer bypass option below for instant local login.");
-    }, 600);
+    }
   };
 
   const handleDevBypass = async (e: React.FormEvent) => {
@@ -211,107 +291,112 @@ function LoginFormContent() {
           </Button>
         </form>
 
-        {/* Divider */}
-        <div className="my-8 flex items-center gap-3">
-          <div className="flex-1 h-[1px] bg-border/20" />
-          <span className="text-[9px] uppercase font-bold tracking-widest text-muted-foreground/60">
-            Dev Bypass Options
-          </span>
-          <div className="flex-1 h-[1px] bg-border/20" />
-        </div>
-
-        {/* Developer Bypass Panel */}
-        <form onSubmit={handleDevBypass} className="space-y-3.5 bg-secondary/25 border border-border/30 rounded-2xl p-5">
-          <div className="flex items-center gap-1.5 text-xs text-primary font-medium pb-1.5 border-b border-border/20">
-            <CheckCircle2 className="w-4 h-4" />
-            Instant Customer Login
-          </div>
-
-          <div className="space-y-2.5">
-            <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-1">
-                <label className="text-[8px] font-bold text-muted-foreground uppercase pl-0.5">
-                  Test Name
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={devName}
-                  onChange={(e) => setDevName(e.target.value)}
-                  className="w-full px-2.5 py-1.5 rounded-lg bg-card border border-border/35 text-[11px] outline-none"
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-[8px] font-bold text-muted-foreground uppercase pl-0.5">
-                  Test Phone
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={devPhone}
-                  onChange={(e) => setDevPhone(e.target.value)}
-                  className="w-full px-2.5 py-1.5 rounded-lg bg-card border border-border/35 text-[11px] outline-none"
-                />
-              </div>
+        {/* Developer Bypass Panel (Only rendered in local development mode) */}
+        {isDev && (
+          <>
+            {/* Divider */}
+            <div className="my-8 flex items-center gap-3">
+              <div className="flex-1 h-[1px] bg-border/20" />
+              <span className="text-[9px] uppercase font-bold tracking-widest text-muted-foreground/60">
+                Dev Bypass Options
+              </span>
+              <div className="flex-1 h-[1px] bg-border/20" />
             </div>
-            
-            <div className="space-y-1">
-              <label className="text-[8px] font-bold text-muted-foreground uppercase pl-0.5">
-                Test Email (For offers/orders update)
-              </label>
-              <input
-                type="email"
-                required
-                value={devEmail}
-                onChange={(e) => setDevEmail(e.target.value)}
-                className="w-full px-2.5 py-1.5 rounded-lg bg-card border border-border/35 text-[11px] outline-none"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <div className="flex items-center gap-1.5 pl-0.5">
-                <input
-                  id="same-whatsapp"
-                  type="checkbox"
-                  checked={sameAsMobile}
-                  onChange={(e) => setSameAsMobile(e.target.checked)}
-                  className="rounded border-border text-primary focus:ring-primary w-3 h-3 cursor-pointer"
-                />
-                <label htmlFor="same-whatsapp" className="text-[8px] font-bold text-muted-foreground uppercase cursor-pointer select-none">
-                  WhatsApp same as mobile number
-                </label>
+
+            <form onSubmit={handleDevBypass} className="space-y-3.5 bg-secondary/25 border border-border/30 rounded-2xl p-5">
+              <div className="flex items-center gap-1.5 text-xs text-primary font-medium pb-1.5 border-b border-border/20">
+                <CheckCircle2 className="w-4 h-4" />
+                Instant Customer Login
               </div>
 
-              {!sameAsMobile && (
-                <div className="space-y-1 animate-in fade-in duration-200">
+              <div className="space-y-2.5">
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <label className="text-[8px] font-bold text-muted-foreground uppercase pl-0.5">
+                      Test Name
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={devName}
+                      onChange={(e) => setDevName(e.target.value)}
+                      className="w-full px-2.5 py-1.5 rounded-lg bg-card border border-border/35 text-[11px] outline-none"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[8px] font-bold text-muted-foreground uppercase pl-0.5">
+                      Test Phone
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={devPhone}
+                      onChange={(e) => setDevPhone(e.target.value)}
+                      className="w-full px-2.5 py-1.5 rounded-lg bg-card border border-border/35 text-[11px] outline-none"
+                    />
+                  </div>
+                </div>
+                
+                <div className="space-y-1">
                   <label className="text-[8px] font-bold text-muted-foreground uppercase pl-0.5">
-                    WhatsApp Number
+                    Test Email (For offers/orders update)
                   </label>
                   <input
-                    type="text"
+                    type="email"
                     required
-                    value={devWhatsapp}
-                    onChange={(e) => setDevWhatsapp(e.target.value)}
+                    value={devEmail}
+                    onChange={(e) => setDevEmail(e.target.value)}
                     className="w-full px-2.5 py-1.5 rounded-lg bg-card border border-border/35 text-[11px] outline-none"
                   />
                 </div>
-              )}
-            </div>
-          </div>
+                
+                <div className="space-y-2">
+                  <div className="flex items-center gap-1.5 pl-0.5">
+                    <input
+                      id="same-whatsapp"
+                      type="checkbox"
+                      checked={sameAsMobile}
+                      onChange={(e) => setSameAsMobile(e.target.checked)}
+                      className="rounded border-border text-primary focus:ring-primary w-3 h-3 cursor-pointer"
+                    />
+                    <label htmlFor="same-whatsapp" className="text-[8px] font-bold text-muted-foreground uppercase cursor-pointer select-none">
+                      WhatsApp same as mobile number
+                    </label>
+                  </div>
 
-          <Button
-            type="submit"
-            disabled={devLoading}
-            variant="outline"
-            className="w-full py-4 text-xs font-semibold uppercase tracking-wider rounded-xl hover:bg-primary hover:text-primary-foreground border-primary/20 transition-all cursor-pointer"
-          >
-            {devLoading ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              "Sign In with Mock Details"
-            )}
-          </Button>
-        </form>
+                  {!sameAsMobile && (
+                    <div className="space-y-1 animate-in fade-in duration-200">
+                      <label className="text-[8px] font-bold text-muted-foreground uppercase pl-0.5">
+                        WhatsApp Number
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={devWhatsapp}
+                        onChange={(e) => setDevWhatsapp(e.target.value)}
+                        className="w-full px-2.5 py-1.5 rounded-lg bg-card border border-border/35 text-[11px] outline-none"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <Button
+                type="submit"
+                disabled={devLoading}
+                variant="outline"
+                className="w-full py-4 text-xs font-semibold uppercase tracking-wider rounded-xl hover:bg-primary hover:text-primary-foreground border-primary/20 transition-all cursor-pointer"
+              >
+                {devLoading ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  "Sign In with Mock Details"
+                )}
+              </Button>
+            </form>
+          </>
+        )}
+        <div id="recaptcha-container" className="hidden"></div>
       </div>
     </div>
   );

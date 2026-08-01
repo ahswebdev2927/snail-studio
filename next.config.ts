@@ -65,6 +65,9 @@ if (siteUrl) {
 }
 
 const nextConfig: NextConfig = {
+  env: {
+    APP_ENV: process.env.APP_ENV || "development",
+  },
   images: {
     loader: "custom",
     loaderFile: "./src/lib/cloudinary/loader.ts",

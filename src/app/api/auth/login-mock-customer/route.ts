@@ -6,8 +6,8 @@ import { nanoid } from "nanoid";
 import { createSession } from "@/lib/auth/refresh-token";
 
 export async function POST(req: NextRequest) {
-  // Only permit this endpoint in non-production environments
-  if (process.env.NODE_ENV === "production" && process.env.APP_ENV === "production") {
+  // Only permit this endpoint in development environment
+  if (process.env.APP_ENV === "production") {
     return new Response("Not Found", { status: 404 });
   }
 
