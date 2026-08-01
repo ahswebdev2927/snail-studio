@@ -92,12 +92,14 @@ export async function PATCH(
         // Delete existing items
         await tx.delete(productBundleItems).where(eq(productBundleItems.bundleId, bundleId));
 
-        // Insert new items
-        for (const productId of productIds) {
-          await tx.insert(productBundleItems).values({
-            bundleId,
-            productId,
-          });
+        // Insert new items in batch
+        if (productIds.length > 0) {
+          await tx.insert(productBundleItems).values(
+            productIds.map((productId) => ({
+              bundleId,
+              productId,
+            }))
+          );
         }
       }
 

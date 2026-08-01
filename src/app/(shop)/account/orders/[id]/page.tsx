@@ -18,8 +18,9 @@ import {
   ExternalLink
 } from "lucide-react";
 import { db } from "@/db";
-import { orders, systemSettings } from "@/db/schema";
+import { orders } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { getSystemSettingsMap } from "@/services/settings";
 import { getSessionUser } from "@/lib/auth/session";
 import { formatPrice } from "@/lib/utils";
 import CustomerOrderActions from "@/components/orders/customer-order-actions";
@@ -86,12 +87,8 @@ export default async function OrderDetailsPage({ params }: PageProps) {
     },
   });
 
-  // Fetch settings from database
-  const settingsRows = await db.select().from(systemSettings);
-  const settingsObj = settingsRows.reduce((acc, row) => {
-    acc[row.key] = row.value;
-    return acc;
-  }, {} as Record<string, string>);
+  // Fetch settings from database (cached)
+  const settingsObj = await getSystemSettingsMap();
   const storePhone = settingsObj.store_phone || "+91 99999 99999";
 
   // 1. Order Not Found Check

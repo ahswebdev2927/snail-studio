@@ -20,7 +20,27 @@ export async function GET(req: NextRequest) {
     const q = searchParams.get("q") || undefined;
     const status = searchParams.get("status") || undefined;
 
+    const pageVal = searchParams.get("page");
+    const page = pageVal ? Math.max(1, parseInt(pageVal, 10)) : null;
+    const limitVal = searchParams.get("limit");
+    const limit = limitVal ? Math.max(1, parseInt(limitVal, 10)) : (page ? 25 : null);
+    const offset = page && limit ? (page - 1) * limit : null;
+
     const items = await getInventoryItems({ q, status });
+
+    if (page !== null && limit !== null && offset !== null) {
+      const totalItems = items.length;
+      const paginatedItems = items.slice(offset, offset + limit);
+      return NextResponse.json({
+        items: paginatedItems,
+        pagination: {
+          totalItems,
+          page,
+          limit,
+          totalPages: Math.ceil(totalItems / limit),
+        }
+      }, { status: 200 });
+    }
 
     return NextResponse.json(items, { status: 200 });
   } catch (error: any) {

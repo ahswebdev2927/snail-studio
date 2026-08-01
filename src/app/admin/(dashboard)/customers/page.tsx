@@ -13,7 +13,8 @@ import {
   TrendingUp,
   Award,
   MessageSquare,
-  ChevronRight
+  ChevronRight,
+  ChevronLeft
 } from "lucide-react";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 
@@ -50,6 +51,11 @@ export default function AdminCustomersPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSegment, setSelectedSegment] = useState("");
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
+  
+  const [currentPage, setCurrentPage] = useState(1);
+  const [limit, setLimit] = useState(25);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
 
   // Parse initial query params on mount
   useEffect(() => {
@@ -83,12 +89,19 @@ export default function AdminCustomersPage() {
     }
   }, [selectedSegment]);
 
+  // Reset page when queries change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearchQuery, selectedSegment]);
+
   const loadCustomers = async () => {
     setIsLoading(true);
     try {
       const query = new URLSearchParams();
       if (debouncedSearchQuery.trim()) query.set("q", debouncedSearchQuery.trim());
       if (selectedSegment) query.set("segment", selectedSegment);
+      query.set("page", String(currentPage));
+      query.set("limit", String(limit));
 
       const res = await fetch(`/api/admin/customers?${query.toString()}`);
       if (res.ok) {
@@ -96,6 +109,13 @@ export default function AdminCustomersPage() {
         setCustomers(data.customers || []);
         if (data.segmentCounts) {
           setSegmentCounts(data.segmentCounts);
+        }
+        if (data.pagination) {
+          setTotalPages(data.pagination.totalPages || 1);
+          setTotalItems(data.pagination.totalItems || 0);
+        } else {
+          setTotalPages(1);
+          setTotalItems(data.customers ? data.customers.length : 0);
         }
       }
     } catch (error) {
@@ -107,7 +127,7 @@ export default function AdminCustomersPage() {
 
   useEffect(() => {
     loadCustomers();
-  }, [debouncedSearchQuery, selectedSegment]);
+  }, [debouncedSearchQuery, selectedSegment, currentPage, limit]);
 
   // Format currency helpers
   const formatPrice = (priceInPaise: number) => {
@@ -254,7 +274,59 @@ export default function AdminCustomersPage() {
             </div>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <>
+            {/* Top Pagination Controls */}
+            {(totalPages > 1 || totalItems > 0) && (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-3.5 bg-background border-b border-border">
+                <div className="text-xs font-light text-muted-foreground">
+                  Showing <span className="font-semibold text-foreground">{customers.length}</span> of{" "}
+                  <span className="font-semibold text-foreground">{totalItems}</span> customers
+                </div>
+                <div className="flex items-center gap-6">
+                  {/* Page Size Selector */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-light text-muted-foreground">Show</span>
+                    <select
+                      value={limit}
+                      onChange={(e) => {
+                        setLimit(Number(e.target.value));
+                        setCurrentPage(1);
+                      }}
+                      className="bg-muted text-foreground border border-border text-xs rounded-lg px-2 py-1 focus:ring-1 focus:ring-primary focus:outline-none cursor-pointer font-medium"
+                    >
+                      {[25, 50, 75, 100].map((size) => (
+                        <option key={size} value={size}>
+                          {size}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  {/* Page Nav */}
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      disabled={currentPage === 1}
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      className="p-1.5 rounded-lg border border-border hover:bg-muted text-muted-foreground disabled:opacity-40 disabled:hover:bg-transparent transition-all cursor-pointer"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <span className="text-xs text-foreground font-light px-2.5">
+                      Page <span className="font-semibold">{currentPage}</span> of{" "}
+                      <span className="font-semibold">{totalPages}</span>
+                    </span>
+                    <button
+                      disabled={currentPage === totalPages}
+                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                      className="p-1.5 rounded-lg border border-border hover:bg-muted text-muted-foreground disabled:opacity-40 disabled:hover:bg-transparent transition-all cursor-pointer"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="overflow-x-auto">
             <table className="w-full text-left text-xs font-light border-collapse">
               <thead>
                 <tr className="border-b border-border/40 text-muted-foreground uppercase text-[9px] font-bold tracking-wider bg-secondary/10">
@@ -350,6 +422,57 @@ export default function AdminCustomersPage() {
               </tbody>
             </table>
           </div>
+          {/* Pagination Controls */}
+          {(totalPages > 1 || totalItems > 0) && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-4.5 bg-background border-t border-border">
+              <div className="text-xs font-light text-muted-foreground">
+                Showing <span className="font-semibold text-foreground">{customers.length}</span> of{" "}
+                <span className="font-semibold text-foreground">{totalItems}</span> customers
+              </div>
+              <div className="flex items-center gap-6">
+                {/* Page Size Selector */}
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-light text-muted-foreground">Show</span>
+                  <select
+                    value={limit}
+                    onChange={(e) => {
+                      setLimit(Number(e.target.value));
+                      setCurrentPage(1);
+                    }}
+                    className="bg-muted text-foreground border border-border text-xs rounded-lg px-2 py-1 focus:ring-1 focus:ring-primary focus:outline-none cursor-pointer font-medium"
+                  >
+                    {[25, 50, 75, 100].map((size) => (
+                      <option key={size} value={size}>
+                        {size}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {/* Page Nav */}
+                <div className="flex items-center gap-1.5">
+                  <button
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    className="p-1.5 rounded-lg border border-border hover:bg-muted text-muted-foreground disabled:opacity-40 disabled:hover:bg-transparent transition-all cursor-pointer"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <span className="text-xs text-foreground font-light px-2.5">
+                    Page <span className="font-semibold">{currentPage}</span> of{" "}
+                    <span className="font-semibold">{totalPages}</span>
+                  </span>
+                  <button
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    className="p-1.5 rounded-lg border border-border hover:bg-muted text-muted-foreground disabled:opacity-40 disabled:hover:bg-transparent transition-all cursor-pointer"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+          </>
         )}
       </div>
     </div>

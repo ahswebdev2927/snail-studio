@@ -1,6 +1,7 @@
 import { db } from "@/db";
-import { systemSettings, orders, orderAddresses, orderAddressHistory, inventoryItems, inventoryReservations } from "@/db/schema";
+import { orders, orderAddresses, orderAddressHistory, inventoryItems, inventoryReservations } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
+import { getSystemSettingsMap } from "@/services/settings";
 import { nanoid } from "nanoid";
 
 export interface ShippingPolicySettings {
@@ -23,21 +24,20 @@ export interface ShippingPolicySettings {
  * Fetch shipping settings from the system_settings table, providing defaults.
  */
 export async function getShippingSettings(): Promise<ShippingPolicySettings> {
-  const rows = await db.select().from(systemSettings);
-  const settingsMap = new Map(rows.map((r) => [r.key, r.value]));
+  const settingsMap = await getSystemSettingsMap();
 
   const getBool = (key: string, def: boolean): boolean => {
-    const val = settingsMap.get(key);
+    const val = settingsMap[key];
     if (val === undefined) return def;
     return val === "true" || val === "1" || val === "enabled" || val === "true";
   };
 
   const getString = <T extends string>(key: string, def: T): T => {
-    return (settingsMap.get(key) as T) || def;
+    return (settingsMap[key] as T) || def;
   };
 
   const getNum = (key: string, def: number): number => {
-    const val = settingsMap.get(key);
+    const val = settingsMap[key];
     if (val === undefined) return def;
     const num = Number(val);
     return isNaN(num) ? def : num;

@@ -44,7 +44,23 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const results = await db
+    const pageVal = searchParams.get("page");
+    const page = pageVal ? Math.max(1, parseInt(pageVal, 10)) : null;
+    const limitVal = searchParams.get("limit");
+    const limit = limitVal ? Math.max(1, parseInt(limitVal, 10)) : (page ? 25 : null);
+    const offset = page && limit ? (page - 1) * limit : null;
+
+    let totalItems = 0;
+    if (page !== null && limit !== null) {
+      const countResult = await db
+        .select({ count: sql<number>`count(distinct ${users.id})` })
+        .from(users)
+        .leftJoin(orders, eq(users.id, orders.userId))
+        .where(and(...conditions));
+      totalItems = countResult[0]?.count || 0;
+    }
+
+    const mainQuery = db
       .select({
         id: users.id,
         name: users.name,
@@ -63,6 +79,28 @@ export async function GET(req: NextRequest) {
       .where(and(...conditions))
       .groupBy(users.id)
       .orderBy(desc(users.createdAt));
+
+    if (limit !== null) {
+      mainQuery.limit(limit);
+    }
+    if (offset !== null) {
+      mainQuery.offset(offset);
+    }
+
+    const results = await mainQuery;
+
+    if (page !== null && limit !== null) {
+      return NextResponse.json({
+        customers: results,
+        segmentCounts,
+        pagination: {
+          totalItems,
+          page,
+          limit,
+          totalPages: Math.ceil(totalItems / limit),
+        }
+      }, { status: 200 });
+    }
 
     return NextResponse.json({
       customers: results,

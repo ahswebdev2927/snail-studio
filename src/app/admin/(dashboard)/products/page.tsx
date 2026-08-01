@@ -18,7 +18,8 @@ import {
   Eye,
   Pencil,
   Package,
-  Archive
+  Archive,
+  ChevronLeft
 } from "lucide-react";
 import Link from "next/link";
 
@@ -73,6 +74,10 @@ export default function AdminProductsPage() {
   // Loading and action states
   const [isLoading, setIsLoading] = useState(true);
   const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [limit, setLimit] = useState(25);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const [archivingId, setArchivingId] = useState<string | null>(null);
   
@@ -83,29 +88,56 @@ export default function AdminProductsPage() {
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [sortBy, setSortBy] = useState("newest");
 
-  // Fetch all products, categories, and brands
+  // Fetch categories and brands once on mount
   useEffect(() => {
-    async function loadData() {
-      setIsLoading(true);
+    async function loadMeta() {
       try {
-        const [productsRes, catsRes, brandsRes] = await Promise.all([
-          fetch("/api/products"),
+        const [catsRes, brandsRes] = await Promise.all([
           fetch("/api/categories"),
           fetch("/api/brands")
         ]);
-
-        if (productsRes.ok) setProducts(await productsRes.json());
         if (catsRes.ok) setCategories(await catsRes.json());
         if (brandsRes.ok) setBrands(await brandsRes.json());
       } catch (error) {
-        console.error("Error loading admin products:", error);
-      } finally {
-        setIsLoading(false);
+        console.error("Error loading categories/brands:", error);
       }
     }
-
-    loadData();
+    loadMeta();
   }, []);
+
+  // Fetch products when page or limit changes
+  const loadProducts = async () => {
+    setIsLoading(true);
+    try {
+      const query = new URLSearchParams();
+      query.set("page", String(currentPage));
+      query.set("limit", String(limit));
+
+      const res = await fetch(`/api/products?${query.toString()}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.products) {
+          setProducts(data.products);
+          if (data.pagination) {
+            setTotalPages(data.pagination.totalPages || 1);
+            setTotalItems(data.pagination.totalItems || 0);
+          }
+        } else {
+          setProducts(data);
+          setTotalPages(1);
+          setTotalItems(data.length);
+        }
+      }
+    } catch (error) {
+      console.error("Error loading products:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadProducts();
+  }, [currentPage, limit]);
 
   // Handle Product Deletion
   const handleDeleteProduct = async (productId: string, productName: string) => {
@@ -337,7 +369,59 @@ export default function AdminProductsPage() {
             )}
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <>
+            {/* Top Pagination Controls */}
+            {(totalPages > 1 || totalItems > 0) && (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-3.5 bg-background border-b border-border">
+                <div className="text-xs font-light text-muted-foreground">
+                  Showing <span className="font-semibold text-foreground">{products.length}</span> of{" "}
+                  <span className="font-semibold text-foreground">{totalItems}</span> products
+                </div>
+                <div className="flex items-center gap-6">
+                  {/* Page Size Selector */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-light text-muted-foreground">Show</span>
+                    <select
+                      value={limit}
+                      onChange={(e) => {
+                        setLimit(Number(e.target.value));
+                        setCurrentPage(1);
+                      }}
+                      className="bg-muted text-foreground border border-border text-xs rounded-lg px-2 py-1 focus:ring-1 focus:ring-primary focus:outline-none cursor-pointer font-medium"
+                    >
+                      {[25, 50, 75, 100].map((size) => (
+                        <option key={size} value={size}>
+                          {size}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  {/* Page Nav */}
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      disabled={currentPage === 1}
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      className="p-1.5 rounded-lg border border-border hover:bg-muted text-muted-foreground disabled:opacity-40 disabled:hover:bg-transparent transition-all cursor-pointer"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <span className="text-xs text-foreground font-light px-2.5">
+                      Page <span className="font-semibold">{currentPage}</span> of{" "}
+                      <span className="font-semibold">{totalPages}</span>
+                    </span>
+                    <button
+                      disabled={currentPage === totalPages}
+                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                      className="p-1.5 rounded-lg border border-border hover:bg-muted text-muted-foreground disabled:opacity-40 disabled:hover:bg-transparent transition-all cursor-pointer"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="overflow-x-auto">
             <table className="w-full text-left text-xs font-light border-collapse">
               <thead>
                 <tr className="bg-secondary/35 border-b border-border/40 text-muted-foreground uppercase text-[9px] font-bold tracking-wider">
@@ -558,6 +642,57 @@ export default function AdminProductsPage() {
               </tbody>
             </table>
           </div>
+          {/* Pagination Controls */}
+          {(totalPages > 1 || totalItems > 0) && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-4.5 bg-background border-t border-border">
+              <div className="text-xs font-light text-muted-foreground">
+                Showing <span className="font-semibold text-foreground">{products.length}</span> of{" "}
+                <span className="font-semibold text-foreground">{totalItems}</span> products
+              </div>
+              <div className="flex items-center gap-6">
+                {/* Page Size Selector */}
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-light text-muted-foreground">Show</span>
+                  <select
+                    value={limit}
+                    onChange={(e) => {
+                      setLimit(Number(e.target.value));
+                      setCurrentPage(1);
+                    }}
+                    className="bg-muted text-foreground border border-border text-xs rounded-lg px-2 py-1 focus:ring-1 focus:ring-primary focus:outline-none cursor-pointer font-medium"
+                  >
+                    {[25, 50, 75, 100].map((size) => (
+                      <option key={size} value={size}>
+                        {size}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {/* Page Nav */}
+                <div className="flex items-center gap-1.5">
+                  <button
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    className="p-1.5 rounded-lg border border-border hover:bg-muted text-muted-foreground disabled:opacity-40 disabled:hover:bg-transparent transition-all cursor-pointer"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <span className="text-xs text-foreground font-light px-2.5">
+                    Page <span className="font-semibold">{currentPage}</span> of{" "}
+                    <span className="font-semibold">{totalPages}</span>
+                  </span>
+                  <button
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    className="p-1.5 rounded-lg border border-border hover:bg-muted text-muted-foreground disabled:opacity-40 disabled:hover:bg-transparent transition-all cursor-pointer"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+          </>
         )}
       </div>
     </div>

@@ -16,21 +16,11 @@ export async function GET(req: NextRequest) {
     const status = searchParams.get("status") || "all";
     const q = searchParams.get("q") || "";
 
-    const queryBuilder = db
-      .select({
-        id: orders.id,
-        userId: orders.userId,
-        status: orders.status,
-        totalAmount: orders.totalAmount,
-        couponCode: orders.couponCode,
-        createdAt: orders.createdAt,
-        updatedAt: orders.updatedAt,
-        customerName: users.name,
-        customerPhone: users.phoneNumber,
-        customerEmail: users.email,
-      })
-      .from(orders)
-      .leftJoin(users, eq(orders.userId, users.id));
+    const pageVal = searchParams.get("page");
+    const page = pageVal ? Math.max(1, parseInt(pageVal, 10)) : null;
+    const limitVal = searchParams.get("limit");
+    const limit = limitVal ? Math.max(1, parseInt(limitVal, 10)) : (page ? 25 : null);
+    const offset = page && limit ? (page - 1) * limit : null;
 
     const conditions = [];
 
@@ -51,13 +41,62 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    let totalItems = 0;
+    if (page !== null && limit !== null) {
+      const countBuilder = db
+        .select({ count: sql<number>`count(${orders.id})` })
+        .from(orders)
+        .leftJoin(users, eq(orders.userId, users.id));
+      
+      if (conditions.length > 0) {
+        countBuilder.where(and(...conditions));
+      }
+      const countResult = await countBuilder;
+      totalItems = countResult[0]?.count || 0;
+    }
+
+    const queryBuilder = db
+      .select({
+        id: orders.id,
+        userId: orders.userId,
+        status: orders.status,
+        totalAmount: orders.totalAmount,
+        couponCode: orders.couponCode,
+        createdAt: orders.createdAt,
+        updatedAt: orders.updatedAt,
+        customerName: users.name,
+        customerPhone: users.phoneNumber,
+        customerEmail: users.email,
+      })
+      .from(orders)
+      .leftJoin(users, eq(orders.userId, users.id));
+
     if (conditions.length > 0) {
       queryBuilder.where(and(...conditions));
     }
 
     queryBuilder.orderBy(desc(orders.createdAt));
 
+    if (limit !== null) {
+      queryBuilder.limit(limit);
+    }
+    if (offset !== null) {
+      queryBuilder.offset(offset);
+    }
+
     const results = await queryBuilder;
+
+    if (page !== null && limit !== null) {
+      return NextResponse.json({
+        orders: results,
+        pagination: {
+          totalItems,
+          page,
+          limit,
+          totalPages: Math.ceil(totalItems / limit),
+        }
+      }, { status: 200 });
+    }
 
     return NextResponse.json(results, { status: 200 });
 

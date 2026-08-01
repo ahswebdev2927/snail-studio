@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db";
-import { systemSettings } from "@/db/schema";
+import { getSystemSettingsMap } from "@/services/settings";
 import { sendMail } from "@/services/email/email.service";
 import { z } from "zod";
 import { rateLimitRequest } from "@/lib/security/rate-limit";
@@ -41,12 +40,8 @@ export async function POST(request: NextRequest) {
 
     const { name, email, subject, message } = parseResult.data;
 
-    // Fetch store email from system settings database table
-    const settings = await db.select().from(systemSettings);
-    const settingsMap = settings.reduce((acc, row) => {
-      acc[row.key] = row.value;
-      return acc;
-    }, {} as Record<string, string>);
+    // Fetch store email from system settings (cached)
+    const settingsMap = await getSystemSettingsMap();
 
     const storeEmail = settingsMap["store_email"];
     

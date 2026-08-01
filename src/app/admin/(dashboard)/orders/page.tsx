@@ -29,7 +29,9 @@ import {
   Pencil,
   History,
   Share2,
-  Check
+  Check,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 
@@ -149,6 +151,11 @@ export default function AdminOrdersPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
   const [statusFilter, setStatusFilter] = useState<string>("all");
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [limit, setLimit] = useState(25);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
   
   // Dialog/Modal State
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
@@ -187,6 +194,11 @@ export default function AdminOrdersPage() {
     setMounted(true);
   }, []);
 
+  // Reset page when queries change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearchQuery, statusFilter]);
+
   // Edit address form state
   const [editName, setEditName] = useState("");
   const [editPhone, setEditPhone] = useState("");
@@ -211,11 +223,23 @@ export default function AdminOrdersPage() {
       const query = new URLSearchParams();
       if (statusFilter !== "all") query.set("status", statusFilter);
       if (debouncedSearchQuery.trim()) query.set("q", debouncedSearchQuery.trim());
+      query.set("page", String(currentPage));
+      query.set("limit", String(limit));
 
       const res = await fetch(`/api/admin/orders?${query.toString()}`);
       if (res.ok) {
         const data = await res.json();
-        setOrders(data);
+        if (data.orders) {
+          setOrders(data.orders);
+          if (data.pagination) {
+            setTotalPages(data.pagination.totalPages || 1);
+            setTotalItems(data.pagination.totalItems || 0);
+          }
+        } else {
+          setOrders(data);
+          setTotalPages(1);
+          setTotalItems(data.length);
+        }
       }
     } catch (error) {
       console.error("Error fetching orders:", error);
@@ -226,7 +250,7 @@ export default function AdminOrdersPage() {
 
   useEffect(() => {
     loadOrders();
-  }, [statusFilter, debouncedSearchQuery]);
+  }, [statusFilter, debouncedSearchQuery, currentPage, limit]);
 
   // Load settings on mount
   useEffect(() => {
@@ -653,7 +677,59 @@ export default function AdminOrdersPage() {
             </div>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <>
+            {/* Top Pagination Controls */}
+            {(totalPages > 1 || totalItems > 0) && (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-3.5 bg-background border-b border-border">
+                <div className="text-xs font-light text-muted-foreground">
+                  Showing <span className="font-semibold text-foreground">{orders.length}</span> of{" "}
+                  <span className="font-semibold text-foreground">{totalItems}</span> orders
+                </div>
+                <div className="flex items-center gap-6">
+                  {/* Page Size Selector */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-light text-muted-foreground">Show</span>
+                    <select
+                      value={limit}
+                      onChange={(e) => {
+                        setLimit(Number(e.target.value));
+                        setCurrentPage(1);
+                      }}
+                      className="bg-muted text-foreground border border-border text-xs rounded-lg px-2 py-1 focus:ring-1 focus:ring-primary focus:outline-none cursor-pointer font-medium"
+                    >
+                      {[25, 50, 75, 100].map((size) => (
+                        <option key={size} value={size}>
+                          {size}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  {/* Page Nav */}
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      disabled={currentPage === 1}
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      className="p-1.5 rounded-lg border border-border hover:bg-muted text-muted-foreground disabled:opacity-40 disabled:hover:bg-transparent transition-all cursor-pointer"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <span className="text-xs text-foreground font-light px-2.5">
+                      Page <span className="font-semibold">{currentPage}</span> of{" "}
+                      <span className="font-semibold">{totalPages}</span>
+                    </span>
+                    <button
+                      disabled={currentPage === totalPages}
+                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                      className="p-1.5 rounded-lg border border-border hover:bg-muted text-muted-foreground disabled:opacity-40 disabled:hover:bg-transparent transition-all cursor-pointer"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="overflow-x-auto">
             <table className="w-full text-left text-xs font-light border-collapse">
               <thead>
                 <tr className="border-b border-border/40 text-muted-foreground uppercase text-[9px] font-bold tracking-wider bg-secondary/10">
@@ -706,6 +782,57 @@ export default function AdminOrdersPage() {
               </tbody>
             </table>
           </div>
+          {/* Pagination Controls */}
+          {(totalPages > 1 || totalItems > 0) && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-4.5 bg-background border-t border-border">
+              <div className="text-xs font-light text-muted-foreground">
+                Showing <span className="font-semibold text-foreground">{orders.length}</span> of{" "}
+                <span className="font-semibold text-foreground">{totalItems}</span> orders
+              </div>
+              <div className="flex items-center gap-6">
+                {/* Page Size Selector */}
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-light text-muted-foreground">Show</span>
+                  <select
+                    value={limit}
+                    onChange={(e) => {
+                      setLimit(Number(e.target.value));
+                      setCurrentPage(1);
+                    }}
+                    className="bg-muted text-foreground border border-border text-xs rounded-lg px-2 py-1 focus:ring-1 focus:ring-primary focus:outline-none cursor-pointer font-medium"
+                  >
+                    {[25, 50, 75, 100].map((size) => (
+                      <option key={size} value={size}>
+                        {size}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {/* Page Nav */}
+                <div className="flex items-center gap-1.5">
+                  <button
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    className="p-1.5 rounded-lg border border-border hover:bg-muted text-muted-foreground disabled:opacity-40 disabled:hover:bg-transparent transition-all cursor-pointer"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <span className="text-xs text-foreground font-light px-2.5">
+                    Page <span className="font-semibold">{currentPage}</span> of{" "}
+                    <span className="font-semibold">{totalPages}</span>
+                  </span>
+                  <button
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    className="p-1.5 rounded-lg border border-border hover:bg-muted text-muted-foreground disabled:opacity-40 disabled:hover:bg-transparent transition-all cursor-pointer"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+          </>
         )}
       </div>
 

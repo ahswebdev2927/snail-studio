@@ -96,12 +96,14 @@ export async function POST(req: NextRequest) {
         isActive,
       });
 
-      // 2. Insert bundle product associations
-      for (const productId of productIds) {
-        await tx.insert(productBundleItems).values({
-          bundleId,
-          productId,
-        });
+      // 2. Insert bundle product associations in batch
+      if (productIds.length > 0) {
+        await tx.insert(productBundleItems).values(
+          productIds.map((productId) => ({
+            bundleId,
+            productId,
+          }))
+        );
       }
 
       // Return details

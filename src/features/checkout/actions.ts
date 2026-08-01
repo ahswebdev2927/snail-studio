@@ -1,8 +1,9 @@
 "use server";
 
 import { db } from "@/db";
-import { carts, cartItems, userAddresses, systemSettings, productVariants } from "@/db/schema";
+import { carts, cartItems, userAddresses, productVariants } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { getSystemSettingsMap } from "@/services/settings";
 import { nanoid } from "nanoid";
 import { cookies } from "next/headers";
 import { getSessionUser } from "@/lib/auth/session";
@@ -105,12 +106,11 @@ export async function syncCartToDb(items: { variantId: string; quantity: number 
  */
 export async function getShippingRules() {
   try {
-    const settings = await db.select().from(systemSettings);
-    const settingsMap = new Map(settings.map((s) => [s.key, s.value]));
+    const settingsMap = await getSystemSettingsMap();
 
-    const standardFee = Number(settingsMap.get("shipping_standard_fee") ?? "99");
-    const freeThreshold = Number(settingsMap.get("shipping_free_threshold") ?? "1500");
-    const expressFee = Number(settingsMap.get("shipping_express_fee") ?? "250");
+    const standardFee = Number(settingsMap["shipping_standard_fee"] ?? "99");
+    const freeThreshold = Number(settingsMap["shipping_free_threshold"] ?? "1500");
+    const expressFee = Number(settingsMap["shipping_express_fee"] ?? "250");
 
     return {
       success: true,

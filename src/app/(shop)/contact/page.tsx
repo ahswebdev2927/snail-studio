@@ -10,8 +10,7 @@ export const metadata: Metadata = getBaseMetadata({
   keywords: "contact support, email nail studio, whatsapp nail support, customer service, Snail Studio",
 });
 
-import { db } from "@/db";
-import { systemSettings } from "@/db/schema";
+import { getSystemSettingsMap } from "@/services/settings";
 
 export default async function ContactPage() {
   const breadcrumbJsonLd = getBreadcrumbJsonLd([
@@ -19,12 +18,8 @@ export default async function ContactPage() {
     { name: "Contact Support", url: "/contact" },
   ]);
 
-  // Fetch store contact details from system settings in database
-  const settings = await db.select().from(systemSettings);
-  const settingsMap = settings.reduce((acc, row) => {
-    acc[row.key] = row.value;
-    return acc;
-  }, {} as Record<string, string>);
+  // Fetch store contact details from system settings (cached)
+  const settingsMap = await getSystemSettingsMap();
 
   const storeEmail = settingsMap["store_email"] || "hello@snailstudio.in";
   const storePhone = settingsMap["store_phone"] || "+91 99999 99999";

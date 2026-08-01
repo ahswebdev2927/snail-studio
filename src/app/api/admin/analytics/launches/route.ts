@@ -21,63 +21,100 @@ export async function GET(req: NextRequest) {
 
     const reportProducts = [];
 
-    // 2. Aggregate stats for each product
+    // 1. Bulk count subscribers per product
+    const subsCounts = await db
+      .select({ productId: launchSubscribers.productId, val: count() })
+      .from(launchSubscribers)
+      .groupBy(launchSubscribers.productId);
+    const subsCountMap = new Map(subsCounts.map((s) => [s.productId, s.val]));
+
+    // 2. Bulk count event metrics (views, email notifications) per product
+    const eventCounts = await db
+      .select({
+        productId: launchEvents.productId,
+        eventType: launchEvents.eventType,
+        val: count(),
+      })
+      .from(launchEvents)
+      .groupBy(launchEvents.productId, launchEvents.eventType);
+
+    const eventCountsMap = new Map<string, { viewCount: number; emailCount: number }>();
+    for (const ec of eventCounts) {
+      if (!ec.productId) continue;
+      if (!eventCountsMap.has(ec.productId)) {
+        eventCountsMap.set(ec.productId, { viewCount: 0, emailCount: 0 });
+      }
+      const val = eventCountsMap.get(ec.productId)!;
+      if (ec.eventType === "view") {
+        val.viewCount += ec.val;
+      } else if (ec.eventType && ec.eventType.startsWith("email_")) {
+        val.emailCount += ec.val;
+      }
+    }
+
+    // 3. Bulk fetch subscribers emails per product
+    const allActiveProductIds = activeProducts.map((p) => p.id);
+    const productSubscribers = allActiveProductIds.length > 0
+      ? await db
+          .select({ productId: launchSubscribers.productId, email: launchSubscribers.email })
+          .from(launchSubscribers)
+          .where(inArray(launchSubscribers.productId, allActiveProductIds))
+      : [];
+
+    const subEmailsMap = new Map<string, string[]>();
+    for (const ps of productSubscribers) {
+      if (!ps.productId) continue;
+      if (!subEmailsMap.has(ps.productId)) {
+        subEmailsMap.set(ps.productId, []);
+      }
+      subEmailsMap.get(ps.productId)!.push(ps.email);
+    }
+
+    // 4. Bulk fetch conversions: subscribers who ordered this product's variants
+    const activeVariantIds = activeProducts.flatMap((p) => p.variants.map((v) => v.id));
+    const allSubEmails = Array.from(new Set(productSubscribers.map((s) => s.email).filter(Boolean)));
+    const subscriberSalesSet = new Set<string>();
+
+    if (activeVariantIds.length > 0 && allSubEmails.length > 0) {
+      const salesResult = await db
+        .select({ email: users.email, variantId: orderItems.variantId })
+        .from(orders)
+        .innerJoin(orderItems, eq(orderItems.orderId, orders.id))
+        .innerJoin(users, eq(orders.userId, users.id))
+        .where(
+          and(
+            inArray(orderItems.variantId, activeVariantIds),
+            inArray(users.email, allSubEmails),
+            sql`${orders.status} IN ('paid', 'confirmed', 'processing', 'shipped', 'delivered')`
+          )
+        );
+
+      for (const sale of salesResult) {
+        if (sale.email) {
+          subscriberSalesSet.add(`${sale.email}_${sale.variantId}`);
+        }
+      }
+    }
+
+    // 5. Aggregate stats in memory
     for (const prod of activeProducts) {
-      // Get subscribers count
-      const subsResult = await db
-        .select({ val: count() })
-        .from(launchSubscribers)
-        .where(eq(launchSubscribers.productId, prod.id));
-      const subscriberCount = subsResult[0]?.val || 0;
+      const subscriberCount = subsCountMap.get(prod.id) || 0;
+      const ec = eventCountsMap.get(prod.id) || { viewCount: 0, emailCount: 0 };
+      const viewCount = ec.viewCount;
+      const emailCount = ec.emailCount;
 
-      // Get views count
-      const viewsResult = await db
-        .select({ val: count() })
-        .from(launchEvents)
-        .where(
-          and(
-            eq(launchEvents.productId, prod.id),
-            eq(launchEvents.eventType, "view")
-          )
-        );
-      const viewCount = viewsResult[0]?.val || 0;
-
-      // Get sent notifications counts
-      const alertsResult = await db
-        .select({ val: count() })
-        .from(launchEvents)
-        .where(
-          and(
-            eq(launchEvents.productId, prod.id),
-            sql`${launchEvents.eventType} LIKE 'email_%'`
-          )
-        );
-      const emailCount = alertsResult[0]?.val || 0;
-
-      // Calculate conversions: subscribers who ordered this product's variants
       let conversionCount = 0;
       if (subscriberCount > 0 && prod.variants.length > 0) {
+        const subEmails = subEmailsMap.get(prod.id) || [];
         const variantIds = prod.variants.map((v) => v.id);
-        const productSubscribers = await db
-          .select({ email: launchSubscribers.email })
-          .from(launchSubscribers)
-          .where(eq(launchSubscribers.productId, prod.id));
-        const subEmails = productSubscribers.map((s) => s.email);
 
-        if (subEmails.length > 0) {
-          const salesResult = await db
-            .select({ val: count(orders.id) })
-            .from(orders)
-            .innerJoin(orderItems, eq(orderItems.orderId, orders.id))
-            .innerJoin(users, eq(orders.userId, users.id))
-            .where(
-              and(
-                inArray(orderItems.variantId, variantIds),
-                inArray(users.email, subEmails),
-                sql`${orders.status} IN ('paid', 'confirmed', 'processing', 'shipped', 'delivered')`
-              )
-            );
-          conversionCount = salesResult[0]?.val || 0;
+        for (const email of subEmails) {
+          const hasPurchased = variantIds.some((vid) =>
+            subscriberSalesSet.has(`${email}_${vid}`)
+          );
+          if (hasPurchased) {
+            conversionCount++;
+          }
         }
       }
 

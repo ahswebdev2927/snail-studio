@@ -19,7 +19,9 @@ import {
   TrendingUp,
   TrendingDown,
   Info,
-  Pencil
+  Pencil,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 
@@ -62,6 +64,11 @@ export default function AdminInventoryPage() {
   // Data lists
   const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
   const [logs, setLogs] = useState<TransactionLog[]>([]);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [limit, setLimit] = useState(25);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
   
   // Loading states
   const [isLoading, setIsLoading] = useState(true);
@@ -79,6 +86,11 @@ export default function AdminInventoryPage() {
   const [adjustRef, setAdjustRef] = useState("");
   const [adjustError, setAdjustError] = useState<string | null>(null);
 
+  // Reset page when queries change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearchQuery, statusFilter]);
+
   // Fetch Inventory Stock Levels
   const fetchInventory = useCallback(async () => {
     setIsLoading(true);
@@ -86,11 +98,23 @@ export default function AdminInventoryPage() {
       const qParams = new URLSearchParams();
       if (debouncedSearchQuery.trim()) qParams.append("q", debouncedSearchQuery.trim());
       if (statusFilter !== "all") qParams.append("status", statusFilter);
+      qParams.append("page", String(currentPage));
+      qParams.append("limit", String(limit));
 
       const res = await fetch(`/api/inventory?${qParams.toString()}`);
       if (res.ok) {
         const data = await res.json();
-        setInventoryItems(data);
+        if (data.items) {
+          setInventoryItems(data.items);
+          if (data.pagination) {
+            setTotalPages(data.pagination.totalPages || 1);
+            setTotalItems(data.pagination.totalItems || 0);
+          }
+        } else {
+          setInventoryItems(data);
+          setTotalPages(1);
+          setTotalItems(data.length);
+        }
       } else {
         console.error("Failed to load inventory data");
       }
@@ -99,7 +123,7 @@ export default function AdminInventoryPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [debouncedSearchQuery, statusFilter]);
+  }, [debouncedSearchQuery, statusFilter, currentPage, limit]);
 
   // Fetch Adjustment Logs
   const fetchLogs = useCallback(async () => {
@@ -362,7 +386,59 @@ export default function AdminInventoryPage() {
                 </p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
+              <>
+                {/* Top Pagination Controls */}
+                {activeTab === "stock" && (totalPages > 1 || totalItems > 0) && (
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-3.5 bg-background border-b border-border">
+                    <div className="text-xs font-light text-muted-foreground">
+                      Showing <span className="font-semibold text-foreground">{inventoryItems.length}</span> of{" "}
+                      <span className="font-semibold text-foreground">{totalItems}</span> stock items
+                    </div>
+                    <div className="flex items-center gap-6">
+                      {/* Page Size Selector */}
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-light text-muted-foreground">Show</span>
+                        <select
+                          value={limit}
+                          onChange={(e) => {
+                            setLimit(Number(e.target.value));
+                            setCurrentPage(1);
+                          }}
+                          className="bg-muted text-foreground border border-border text-xs rounded-lg px-2 py-1 focus:ring-1 focus:ring-primary focus:outline-none cursor-pointer font-medium"
+                        >
+                          {[25, 50, 75, 100].map((size) => (
+                            <option key={size} value={size}>
+                              {size}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      {/* Page Nav */}
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          disabled={currentPage === 1}
+                          onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                          className="p-1.5 rounded-lg border border-border hover:bg-muted text-muted-foreground disabled:opacity-40 disabled:hover:bg-transparent transition-all cursor-pointer"
+                        >
+                          <ChevronLeft className="w-4 h-4" />
+                        </button>
+                        <span className="text-xs text-foreground font-light px-2.5">
+                          Page <span className="font-semibold">{currentPage}</span> of{" "}
+                          <span className="font-semibold">{totalPages}</span>
+                        </span>
+                        <button
+                          disabled={currentPage === totalPages}
+                          onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                          className="p-1.5 rounded-lg border border-border hover:bg-muted text-muted-foreground disabled:opacity-40 disabled:hover:bg-transparent transition-all cursor-pointer"
+                        >
+                          <ChevronRight className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs font-light border-collapse">
                   <thead>
                     <tr className="bg-secondary/35 border-b border-border/40 text-muted-foreground uppercase text-[9px] font-bold tracking-wider">
@@ -533,10 +609,62 @@ export default function AdminInventoryPage() {
                   </tbody>
                 </table>
               </div>
-            )}
-          </div>
+
+              {/* Pagination Controls */}
+              {activeTab === "stock" && (totalPages > 1 || totalItems > 0) && (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-4.5 bg-background border-t border-border">
+                  <div className="text-xs font-light text-muted-foreground">
+                    Showing <span className="font-semibold text-foreground">{inventoryItems.length}</span> of{" "}
+                    <span className="font-semibold text-foreground">{totalItems}</span> stock items
+                  </div>
+                  <div className="flex items-center gap-6">
+                    {/* Page Size Selector */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-light text-muted-foreground">Show</span>
+                      <select
+                        value={limit}
+                        onChange={(e) => {
+                          setLimit(Number(e.target.value));
+                          setCurrentPage(1);
+                        }}
+                        className="bg-muted text-foreground border border-border text-xs rounded-lg px-2 py-1 focus:ring-1 focus:ring-primary focus:outline-none cursor-pointer font-medium"
+                      >
+                        {[25, 50, 75, 100].map((size) => (
+                          <option key={size} value={size}>
+                            {size}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    {/* Page Nav */}
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        disabled={currentPage === 1}
+                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                        className="p-1.5 rounded-lg border border-border hover:bg-muted text-muted-foreground disabled:opacity-40 disabled:hover:bg-transparent transition-all cursor-pointer"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </button>
+                      <span className="text-xs text-foreground font-light px-2.5">
+                        Page <span className="font-semibold">{currentPage}</span> of{" "}
+                        <span className="font-semibold">{totalPages}</span>
+                      </span>
+                      <button
+                        disabled={currentPage === totalPages}
+                        onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                        className="p-1.5 rounded-lg border border-border hover:bg-muted text-muted-foreground disabled:opacity-40 disabled:hover:bg-transparent transition-all cursor-pointer"
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
         </div>
-      )}
+      </div>
+    )}
 
       {/* Main Adjustment Audit Logs View */}
       {activeTab === "logs" && (
@@ -567,7 +695,7 @@ export default function AdminInventoryPage() {
               <table className="w-full text-left text-xs font-light border-collapse">
                 <thead>
                   <tr className="bg-secondary/35 border-b border-border/40 text-muted-foreground uppercase text-[9px] font-bold tracking-wider">
-                    <th className="py-3.5 px-4 w-44">Date / Time</th>
+                    <th className="py-3.5 px-4 min-w-[150px]">User / Date & Time</th>
                     <th className="py-3.5 px-4 min-w-[200px]">Product / Variant Details</th>
                     <th className="py-3.5 px-4 w-36">SKU</th>
                     <th className="py-3.5 px-4 text-center w-28">Log Type</th>
@@ -606,14 +734,36 @@ export default function AdminInventoryPage() {
                         : <TrendingDown className="w-3.5 h-3.5 text-amber-500" />;
                     }
 
+                    const getExecutorName = (reference: string | null) => {
+                       if (!reference) return "System";
+                       const adminMatch = reference.match(/Admin:\s*([^\s|]+)/i);
+                       if (adminMatch && adminMatch[1]) {
+                         return adminMatch[1];
+                       }
+                       if (reference.startsWith("order_")) {
+                         return "System (Checkout)";
+                       }
+                       if (reference.toLowerCase().includes("manual") || reference.toLowerCase().includes("added stock")) {
+                         return "Admin";
+                       }
+                       return "System";
+                     };
+
                     return (
                       <tr 
                         key={log.id} 
                         className="border-b border-border/10 last:border-0 hover:bg-secondary/15 transition-all"
                       >
-                        {/* Timestamp */}
-                        <td className="py-3.5 px-4 font-mono text-[10px] text-muted-foreground">
-                          {formattedDate}
+                        {/* Actor & Timestamp */}
+                        <td className="py-3.5 px-4">
+                          <div className="flex flex-col space-y-0.5">
+                             <span className="font-semibold text-foreground text-xs leading-normal block">
+                               {getExecutorName(log.reference)}
+                             </span>
+                             <span className="font-mono text-[9px] text-muted-foreground leading-normal block">
+                               {formattedDate}
+                             </span>
+                           </div>
                         </td>
 
                         {/* Product / Variant name */}

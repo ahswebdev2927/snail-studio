@@ -10,7 +10,7 @@ import {
   inventoryItems, 
   productMedia 
 } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { z } from "zod";
 import { authorize } from "@/middleware/auth";
@@ -60,7 +60,22 @@ export async function GET(req: NextRequest) {
       return auth.response!;
     }
 
-    const allProducts = await db.query.products.findMany({
+    const { searchParams } = new URL(req.url);
+    const pageVal = searchParams.get("page");
+    const page = pageVal ? Math.max(1, parseInt(pageVal, 10)) : null;
+    const limitVal = searchParams.get("limit");
+    const limit = limitVal ? Math.max(1, parseInt(limitVal, 10)) : (page ? 25 : null);
+    const offset = page && limit ? (page - 1) * limit : null;
+
+    let totalItems = 0;
+    if (page !== null && limit !== null) {
+      const countResult = await db
+        .select({ count: sql<number>`count(${products.id})` })
+        .from(products);
+      totalItems = countResult[0]?.count || 0;
+    }
+
+    const queryOptions: any = {
       with: {
         brand: true,
         category: true,
@@ -71,8 +86,29 @@ export async function GET(req: NextRequest) {
           }
         }
       },
-      orderBy: (products, { desc }) => [desc(products.createdAt)],
-    });
+      orderBy: (products: any, { desc }: any) => [desc(products.createdAt)],
+    };
+
+    if (limit !== null) {
+      queryOptions.limit = limit;
+    }
+    if (offset !== null) {
+      queryOptions.offset = offset;
+    }
+
+    const allProducts = await db.query.products.findMany(queryOptions);
+
+    if (page !== null && limit !== null) {
+      return NextResponse.json({
+        products: allProducts,
+        pagination: {
+          totalItems,
+          page,
+          limit,
+          totalPages: Math.ceil(totalItems / limit),
+        }
+      }, { status: 200 });
+    }
 
     return NextResponse.json(allProducts, { status: 200 });
   } catch (error: any) {
@@ -217,48 +253,57 @@ export async function POST(req: NextRequest) {
           );
       }
 
-      // D. Insert variants & their corresponding stocks and attribute links
-      for (const v of variants) {
-        const variantId = `var_${nanoid(10)}`;
-        
-        await tx
-          .insert(productVariants)
-          .values({
-            id: variantId,
+      // D. Insert variants & their corresponding stocks and attribute links in batch
+      if (variants.length > 0) {
+        const preparedVariants = variants.map((v) => ({
+          id: `var_${nanoid(10)}`,
+          sku: v.sku,
+          name: v.name,
+          price: v.price,
+          compareAtPrice: v.compareAtPrice || null,
+          barcode: v.barcode || null,
+          attributeValueIds: v.attributeValueIds || [],
+          stockLevel: v.stock || 0,
+          lowStockThreshold: v.lowStockThreshold !== undefined ? v.lowStockThreshold : 5,
+        }));
+
+        await tx.insert(productVariants).values(
+          preparedVariants.map((pv) => ({
+            id: pv.id,
             productId,
-            sku: v.sku,
-            name: v.name,
-            price: v.price,
-            compareAtPrice: v.compareAtPrice || null,
-            barcode: v.barcode || null,
+            sku: pv.sku,
+            name: pv.name,
+            price: pv.price,
+            compareAtPrice: pv.compareAtPrice,
+            barcode: pv.barcode,
             createdAt: now,
             updatedAt: now,
-          });
+          }))
+        );
 
-        // Link variant attributes
-        if (v.attributeValueIds.length > 0) {
-          await tx
-            .insert(variantAttributeValues)
-            .values(
-              v.attributeValueIds.map((valId) => ({
-                variantId,
-                attributeValueId: valId,
-              }))
-            );
+        // Link variant attributes in batch
+        const attributeValuesToInsert = preparedVariants.flatMap((pv) =>
+          pv.attributeValueIds.map((valId) => ({
+            variantId: pv.id,
+            attributeValueId: valId,
+          }))
+        );
+
+        if (attributeValuesToInsert.length > 0) {
+          await tx.insert(variantAttributeValues).values(attributeValuesToInsert);
         }
 
-        // Insert inventory stock item
-        const inventoryId = `inv_${nanoid(10)}`;
-        await tx
-          .insert(inventoryItems)
-          .values({
-            id: inventoryId,
-            variantId,
-            stockLevel: v.stock,
-            lowStockThreshold: v.lowStockThreshold,
+        // Insert inventory stock items in batch
+        await tx.insert(inventoryItems).values(
+          preparedVariants.map((pv) => ({
+            id: `inv_${nanoid(10)}`,
+            variantId: pv.id,
+            stockLevel: pv.stockLevel,
+            lowStockThreshold: pv.lowStockThreshold,
             createdAt: now,
             updatedAt: now,
-          });
+          }))
+        );
       }
 
       return insertedProducts[0];

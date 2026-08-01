@@ -1,6 +1,7 @@
 import { db } from "@/db";
-import { systemSettings, emailLogs } from "@/db/schema";
+import { emailLogs } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { getSystemSettingsMap } from "@/services/settings";
 import nodemailer from "nodemailer";
 import { nanoid } from "nanoid";
 
@@ -17,11 +18,7 @@ export interface SmtpConfig {
  */
 export async function getSmtpConfig(): Promise<SmtpConfig | null> {
   try {
-    const rows = await db.select().from(systemSettings);
-    const configMap: Record<string, string> = {};
-    for (const row of rows) {
-      configMap[row.key] = row.value;
-    }
+    const configMap = await getSystemSettingsMap();
 
     const host = configMap["smtp_host"] || process.env.SMTP_HOST || "";
     const portStr = configMap["smtp_port"] || process.env.SMTP_PORT || "465";
