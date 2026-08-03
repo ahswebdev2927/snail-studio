@@ -262,15 +262,23 @@ export async function getFilteredProducts(params: FilterParams): Promise<Product
   });
 
   // 9.5 Fetch reviews stats for fetched products to aggregate average rating and count
-  const reviewsData = await db
-    .select({
-      productId: reviews.productId,
-      avgRating: sql<number>`avg(${reviews.rating})`,
-      count: sql<number>`count(${reviews.id})`,
-    })
-    .from(reviews)
-    .where(eq(reviews.isApproved, true))
-    .groupBy(reviews.productId);
+  let reviewsData: { productId: string | null; avgRating: number; count: number }[] = [];
+  if (rawProducts.length > 0) {
+    reviewsData = await db
+      .select({
+        productId: reviews.productId,
+        avgRating: sql<number>`avg(${reviews.rating})`,
+        count: sql<number>`count(${reviews.id})`,
+      })
+      .from(reviews)
+      .where(
+        and(
+          eq(reviews.isApproved, true),
+          inArray(reviews.productId, rawProducts.map((p) => p.id))
+        )
+      )
+      .groupBy(reviews.productId);
+  }
   
   const reviewsMap = new Map(reviewsData.map((r) => [r.productId, r]));
 

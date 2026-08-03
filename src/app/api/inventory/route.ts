@@ -26,13 +26,13 @@ export async function GET(req: NextRequest) {
     const limit = limitVal ? Math.max(1, parseInt(limitVal, 10)) : (page ? 25 : null);
     const offset = page && limit ? (page - 1) * limit : null;
 
-    const items = await getInventoryItems({ q, status });
-
     if (page !== null && limit !== null && offset !== null) {
-      const totalItems = items.length;
-      const paginatedItems = items.slice(offset, offset + limit);
+      const { items, totalItems } = await getInventoryItems({ q, status, limit, offset }) as {
+        items: any[];
+        totalItems: number;
+      };
       return NextResponse.json({
-        items: paginatedItems,
+        items,
         pagination: {
           totalItems,
           page,
@@ -42,6 +42,7 @@ export async function GET(req: NextRequest) {
       }, { status: 200 });
     }
 
+    const items = await getInventoryItems({ q, status });
     return NextResponse.json(items, { status: 200 });
   } catch (error: any) {
     console.error("GET /api/inventory error:", error);

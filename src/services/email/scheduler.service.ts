@@ -15,7 +15,7 @@ import {
   products,
   coupons
 } from "@/db/schema";
-import { eq, and, lte, inArray, lt } from "drizzle-orm";
+import { eq, and, lte, inArray, lt, isNotNull, exists, not, gte, or, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { sendResendBatch, sendResendEmail } from "./resend.service";
 
@@ -27,55 +27,107 @@ export async function resolveCampaignAudience(
   segmentType: string,
   segmentDetails: string | null
 ): Promise<{ userId: string | null; email: string; name: string }[]> {
-  const activeUsers = await db.query.users.findMany({
-    where: eq(users.isActive, true),
-  });
-
-  const allOrders = await db.query.orders.findMany({
-    where: inArray(orders.status, ["paid", "confirmed", "processing", "shipped", "delivered"]),
-  });
-
   switch (segmentType) {
     case "all": {
-      return activeUsers
-        .filter((u) => u.email)
-        .map((u) => ({ userId: u.id, email: u.email!, name: u.name || "Customer" }));
+      const activeUsers = await db
+        .select({
+          userId: users.id,
+          email: users.email,
+          name: users.name,
+        })
+        .from(users)
+        .where(and(eq(users.isActive, true), isNotNull(users.email)));
+
+      return activeUsers.map((u) => ({
+        userId: u.userId,
+        email: u.email!,
+        name: u.name || "Customer",
+      }));
     }
 
     case "new": {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      return activeUsers
-        .filter((u) => u.email && u.createdAt >= thirtyDaysAgo)
-        .map((u) => ({ userId: u.id, email: u.email!, name: u.name || "Customer" }));
+
+      const activeUsers = await db
+        .select({
+          userId: users.id,
+          email: users.email,
+          name: users.name,
+        })
+        .from(users)
+        .where(
+          and(
+            eq(users.isActive, true),
+            isNotNull(users.email),
+            gte(users.createdAt, thirtyDaysAgo)
+          )
+        );
+
+      return activeUsers.map((u) => ({
+        userId: u.userId,
+        email: u.email!,
+        name: u.name || "Customer",
+      }));
     }
 
     case "frequent": {
       // Users with >= 3 completed orders
-      const orderCounts = new Map<string, number>();
-      for (const order of allOrders) {
-        if (order.userId) {
-          orderCounts.set(order.userId, (orderCounts.get(order.userId) || 0) + 1);
-        }
-      }
-      return activeUsers
-        .filter((u) => u.email && (orderCounts.get(u.id) || 0) >= 3)
-        .map((u) => ({ userId: u.id, email: u.email!, name: u.name || "Customer" }));
+      const matched = await db
+        .select({
+          userId: users.id,
+          email: users.email,
+          name: users.name,
+        })
+        .from(users)
+        .innerJoin(orders, eq(orders.userId, users.id))
+        .where(
+          and(
+            eq(users.isActive, true),
+            isNotNull(users.email),
+            inArray(orders.status, ["paid", "confirmed", "processing", "shipped", "delivered"])
+          )
+        )
+        .groupBy(users.id)
+        .having(sql`count(${orders.id}) >= 3`);
+
+      return matched.map((u) => ({
+        userId: u.userId,
+        email: u.email!,
+        name: u.name || "Customer",
+      }));
     }
 
     case "vip": {
       // Users with total spend >= 15000 paise (150 INR) or order count >= 3
-      const userSpend = new Map<string, number>();
-      const orderCounts = new Map<string, number>();
-      for (const order of allOrders) {
-        if (order.userId) {
-          userSpend.set(order.userId, (userSpend.get(order.userId) || 0) + order.totalAmount);
-          orderCounts.set(order.userId, (orderCounts.get(order.userId) || 0) + 1);
-        }
-      }
-      return activeUsers
-        .filter((u) => u.email && ((userSpend.get(u.id) || 0) >= 15000 || (orderCounts.get(u.id) || 0) >= 3))
-        .map((u) => ({ userId: u.id, email: u.email!, name: u.name || "Customer" }));
+      const matched = await db
+        .select({
+          userId: users.id,
+          email: users.email,
+          name: users.name,
+        })
+        .from(users)
+        .innerJoin(orders, eq(orders.userId, users.id))
+        .where(
+          and(
+            eq(users.isActive, true),
+            isNotNull(users.email),
+            inArray(orders.status, ["paid", "confirmed", "processing", "shipped", "delivered"])
+          )
+        )
+        .groupBy(users.id)
+        .having(
+          or(
+            sql`sum(${orders.totalAmount}) >= 15000`,
+            sql`count(${orders.id}) >= 3`
+          )
+        );
+
+      return matched.map((u) => ({
+        userId: u.userId,
+        email: u.email!,
+        name: u.name || "Customer",
+      }));
     }
 
     case "inactive": {
@@ -83,15 +135,37 @@ export async function resolveCampaignAudience(
       const ninetyDaysAgo = new Date();
       ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
 
-      const activeUserIds = new Set<string>();
-      for (const order of allOrders) {
-        if (order.userId && order.createdAt >= ninetyDaysAgo) {
-          activeUserIds.add(order.userId);
-        }
-      }
-      return activeUsers
-        .filter((u) => u.email && !activeUserIds.has(u.id))
-        .map((u) => ({ userId: u.id, email: u.email!, name: u.name || "Customer" }));
+      const orderSubquery = db
+        .select()
+        .from(orders)
+        .where(
+          and(
+            eq(orders.userId, users.id),
+            inArray(orders.status, ["paid", "confirmed", "processing", "shipped", "delivered"]),
+            gte(orders.createdAt, ninetyDaysAgo)
+          )
+        );
+
+      const matched = await db
+        .select({
+          userId: users.id,
+          email: users.email,
+          name: users.name,
+        })
+        .from(users)
+        .where(
+          and(
+            eq(users.isActive, true),
+            isNotNull(users.email),
+            not(exists(orderSubquery))
+          )
+        );
+
+      return matched.map((u) => ({
+        userId: u.userId,
+        email: u.email!,
+        name: u.name || "Customer",
+      }));
     }
 
     case "cart_abandoners": {
@@ -99,49 +173,84 @@ export async function resolveCampaignAudience(
       const oneDayAgo = new Date();
       oneDayAgo.setDate(oneDayAgo.getDate() - 1);
 
-      const recentBuyers = new Set<string>();
-      for (const order of allOrders) {
-        if (order.userId && order.createdAt >= oneDayAgo) {
-          recentBuyers.add(order.userId);
-        }
-      }
+      const cartSubquery = db
+        .select()
+        .from(carts)
+        .innerJoin(cartItems, eq(cartItems.cartId, carts.id))
+        .where(eq(carts.userId, users.id));
 
-      const activeCarts = await db.query.carts.findMany();
-      const cartItemsList = await db.query.cartItems.findMany();
-      const cartsWithItems = new Set(cartItemsList.map((ci) => ci.cartId));
+      const orderSubquery = db
+        .select()
+        .from(orders)
+        .where(
+          and(
+            eq(orders.userId, users.id),
+            inArray(orders.status, ["paid", "confirmed", "processing", "shipped", "delivered"]),
+            gte(orders.createdAt, oneDayAgo)
+          )
+        );
 
-      const cartUserIds = new Set<string>();
-      for (const cart of activeCarts) {
-        if (cart.userId && cartsWithItems.has(cart.id) && !recentBuyers.has(cart.userId)) {
-          cartUserIds.add(cart.userId);
-        }
-      }
+      const matched = await db
+        .select({
+          userId: users.id,
+          email: users.email,
+          name: users.name,
+        })
+        .from(users)
+        .where(
+          and(
+            eq(users.isActive, true),
+            isNotNull(users.email),
+            exists(cartSubquery),
+            not(exists(orderSubquery))
+          )
+        );
 
-      return activeUsers
-        .filter((u) => u.email && cartUserIds.has(u.id))
-        .map((u) => ({ userId: u.id, email: u.email!, name: u.name || "Customer" }));
+      return matched.map((u) => ({
+        userId: u.userId,
+        email: u.email!,
+        name: u.name || "Customer",
+      }));
     }
 
     case "wishlist": {
       // Users with items in wishlist
-      const activeWishlists = await db.query.wishlists.findMany();
-      const wishlistItemsList = await db.query.wishlistItems.findMany();
-      const wishlistsWithItems = new Set(wishlistItemsList.map((wi) => wi.wishlistId));
+      const wishlistSubquery = db
+        .select()
+        .from(wishlists)
+        .innerJoin(wishlistItems, eq(wishlistItems.wishlistId, wishlists.id))
+        .where(eq(wishlists.userId, users.id));
 
-      const wishlistUserIds = new Set<string>();
-      for (const wl of activeWishlists) {
-        if (wl.userId && wishlistsWithItems.has(wl.id)) {
-          wishlistUserIds.add(wl.userId);
-        }
-      }
+      const matched = await db
+        .select({
+          userId: users.id,
+          email: users.email,
+          name: users.name,
+        })
+        .from(users)
+        .where(
+          and(
+            eq(users.isActive, true),
+            isNotNull(users.email),
+            exists(wishlistSubquery)
+          )
+        );
 
-      return activeUsers
-        .filter((u) => u.email && wishlistUserIds.has(u.id))
-        .map((u) => ({ userId: u.id, email: u.email!, name: u.name || "Customer" }));
+      return matched.map((u) => ({
+        userId: u.userId,
+        email: u.email!,
+        name: u.name || "Customer",
+      }));
     }
 
     case "launch_subscribers": {
-      const subs = await db.query.launchSubscribers.findMany();
+      const subs = await db
+        .select({
+          email: launchSubscribers.email,
+          name: launchSubscribers.name,
+        })
+        .from(launchSubscribers);
+
       return subs.map((s) => ({
         userId: null,
         email: s.email,
@@ -153,20 +262,41 @@ export async function resolveCampaignAudience(
       if (!segmentDetails) return [];
       try {
         const selectedValues = JSON.parse(segmentDetails) as string[];
-        
+
         // 1. Resolve matching active users
-        const matchedUsers = activeUsers
-          .filter((u) => u.email && (selectedValues.includes(u.id) || selectedValues.includes(u.email)))
-          .map((u) => ({ userId: u.id, email: u.email!, name: u.name || "Customer" }));
+        const matchedUsers = await db
+          .select({
+            userId: users.id,
+            email: users.email,
+            name: users.name,
+          })
+          .from(users)
+          .where(
+            and(
+              eq(users.isActive, true),
+              isNotNull(users.email),
+              or(
+                inArray(users.id, selectedValues),
+                inArray(users.email, selectedValues)
+              )
+            )
+          );
 
         // 2. Resolve matching subscribers
-        const subs = await db.query.launchSubscribers.findMany();
-        const matchedSubs = subs
-          .filter((s) => selectedValues.includes(s.email))
-          .map((s) => ({ userId: null, email: s.email, name: s.name || "Subscriber" }));
+        const matchedSubs = await db
+          .select({
+            email: launchSubscribers.email,
+            name: launchSubscribers.name,
+          })
+          .from(launchSubscribers)
+          .where(inArray(launchSubscribers.email, selectedValues));
 
         // 3. Combine and de-duplicate
-        const combined = [...matchedUsers, ...matchedSubs];
+        const combined = [
+          ...matchedUsers.map((u) => ({ userId: u.userId, email: u.email!, name: u.name || "Customer" })),
+          ...matchedSubs.map((s) => ({ userId: null, email: s.email, name: s.name || "Subscriber" })),
+        ];
+
         const seen = new Set<string>();
         return combined.filter((c) => {
           if (seen.has(c.email)) return false;

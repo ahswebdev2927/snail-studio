@@ -237,8 +237,13 @@ export async function cleanupExpiredReservations(): Promise<number> {
  * Retrieves a filtered and searched list of inventory items joined with variants and products.
  * Includes calculated available stock levels and low-stock statuses.
  */
-export async function getInventoryItems(params: { q?: string; status?: string } = {}) {
-  const { q, status: statusFilter } = params;
+export async function getInventoryItems(params: {
+  q?: string;
+  status?: string;
+  limit?: number | null;
+  offset?: number | null;
+} = {}) {
+  const { q, status: statusFilter, limit = null, offset = null } = params;
 
   // Subquery to calculate active reservation sums grouped by inventory item ID
   const activeReservationsSubquery = db
@@ -250,6 +255,17 @@ export async function getInventoryItems(params: { q?: string; status?: string } 
     .where(gt(inventoryReservations.expiresAt, new Date()))
     .groupBy(inventoryReservations.inventoryItemId)
     .as("active_res");
+
+  const reservedQtyExpression = sql<number>`COALESCE(${activeReservationsSubquery.reservedQuantity}, 0)`;
+  const availableStockExpression = sql<number>`CAST(MAX(0, ${inventoryItems.stockLevel} - ${reservedQtyExpression}) AS INTEGER)`;
+
+  const statusExpression = sql<string>`
+    CASE 
+      WHEN ${availableStockExpression} = 0 THEN 'out-of-stock'
+      WHEN ${availableStockExpression} <= ${inventoryItems.lowStockThreshold} THEN 'low-stock'
+      ELSE 'in-stock'
+    END
+  `;
 
   // Core select query
   const queryBuilder = db
@@ -265,7 +281,9 @@ export async function getInventoryItems(params: { q?: string; status?: string } 
       productName: products.name,
       productSlug: products.slug,
       productId: products.id,
-      reservedQuantity: sql<number>`COALESCE(${activeReservationsSubquery.reservedQuantity}, 0)`.mapWith(Number),
+      reservedQuantity: reservedQtyExpression.mapWith(Number),
+      availableStock: availableStockExpression.mapWith(Number),
+      status: statusExpression.mapWith(String),
       imageUrl: media.url,
     })
     .from(inventoryItems)
@@ -275,42 +293,53 @@ export async function getInventoryItems(params: { q?: string; status?: string } 
     .leftJoin(productMedia, and(eq(products.id, productMedia.productId), eq(productMedia.isFeatured, true)))
     .leftJoin(media, eq(productMedia.mediaId, media.id));
 
+  const countQuery = db
+    .select({ count: sql<number>`count(${inventoryItems.id})` })
+    .from(inventoryItems)
+    .innerJoin(productVariants, eq(inventoryItems.variantId, productVariants.id))
+    .innerJoin(products, eq(productVariants.productId, products.id))
+    .leftJoin(activeReservationsSubquery, eq(inventoryItems.id, activeReservationsSubquery.inventoryItemId));
+
+  const conditions = [];
+
   // If search query is provided
   if (q && q.trim() !== "") {
     const searchVal = `%${q.trim()}%`;
-    queryBuilder.where(
-      or(
-        like(products.name, searchVal),
-        like(productVariants.sku, searchVal),
-        like(productVariants.barcode, searchVal)
-      )
+    const searchCond = or(
+      like(products.name, searchVal),
+      like(productVariants.sku, searchVal),
+      like(productVariants.barcode, searchVal)
     );
+    conditions.push(searchCond);
   }
-
-  const results = await queryBuilder;
-
-  // Map and calculate statuses in memory
-  const mapped = results.map((row) => {
-    const availableStock = Math.max(0, row.stockLevel - row.reservedQuantity);
-    let status: "in-stock" | "low-stock" | "out-of-stock" = "in-stock";
-    if (availableStock === 0) {
-      status = "out-of-stock";
-    } else if (availableStock <= row.lowStockThreshold) {
-      status = "low-stock";
-    }
-    return {
-      ...row,
-      availableStock,
-      status,
-    };
-  });
 
   // Apply status filter if present and not "all"
   if (statusFilter && statusFilter !== "all") {
-    return mapped.filter((item) => item.status === statusFilter);
+    conditions.push(eq(statusExpression, statusFilter));
   }
 
-  return mapped;
+  if (conditions.length > 0) {
+    queryBuilder.where(and(...conditions));
+    countQuery.where(and(...conditions));
+  }
+
+  // Check if paginated or not
+  if (limit !== null && offset !== null) {
+    const totalResult = await countQuery;
+    const totalItems = totalResult[0]?.count || 0;
+
+    queryBuilder.limit(limit).offset(offset);
+    const items = await queryBuilder;
+
+    return {
+      items,
+      totalItems,
+    };
+  }
+
+  // Not paginated (legacy fallback)
+  const items = await queryBuilder;
+  return items;
 }
 
 /**
