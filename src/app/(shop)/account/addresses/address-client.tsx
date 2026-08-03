@@ -3,16 +3,16 @@
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { customConfirm, customAlert } from "@/components/ui/alert-dialog-provider";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { customConfirm } from "@/components/ui/alert-dialog-provider";
 import { 
   MapPin, 
   Plus, 
   Edit2, 
   Trash2, 
-  Check, 
   Loader2, 
   X, 
-  AlertCircle, 
   Sparkles, 
   Home, 
   Info,
@@ -21,8 +21,12 @@ import {
   Tag
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Select } from "@/components/ui/select";
 import { saveUserAddress, deleteUserAddress, setDefaultAddress } from "@/features/account/actions";
+import { Form } from "@/components/forms/form";
+import { FormField } from "@/components/forms/form-field";
+import { InputField, SelectField } from "@/components/forms/fields";
+import { notify } from "@/lib/toast";
+import { addressSchema, type AddressInput } from "@/lib/validators/address";
 
 interface Address {
   id: string;
@@ -47,31 +51,19 @@ export function AddressClient({ initialAddresses }: AddressClientProps) {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
   const [modalMode, setModalMode] = useState<"add" | "edit">("add");
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
 
-  // Form states
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [label, setLabel] = useState("Home"); // Home, Work, Hostel, Other
-  const [addressLine1, setAddressLine1] = useState("");
-  const [addressLine2, setAddressLine2] = useState("");
-  const [city, setCity] = useState("");
-  const [state, setState] = useState("");
-  const [postalCode, setPostalCode] = useState("");
-  const [country, setCountry] = useState("India");
-  const [isDefault, setIsDefault] = useState(false);
-  const [addressType, setAddressType] = useState<"shipping" | "billing">("shipping");
+  // Address label state ("Home", "Work", "Hostel", "Other")
+  const [label, setLabel] = useState("Home");
 
   // UX states
   const [loading, setLoading] = useState(false);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
-  const [formError, setFormError] = useState("");
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Disable background scrolling when modal is open
   useEffect(() => {
@@ -85,100 +77,129 @@ export function AddressClient({ initialAddresses }: AddressClientProps) {
     };
   }, [modalOpen]);
 
-  const resetForm = () => {
-    setName("");
-    setPhone("");
-    setLabel("Home");
-    setAddressLine1("");
-    setAddressLine2("");
-    setCity("");
-    setState("");
-    setPostalCode("");
-    setCountry("India");
-    setIsDefault(false);
-    setAddressType("shipping");
-    setFormError("");
-  };
+  // RHF Setup
+  const form = useForm({
+    resolver: zodResolver(addressSchema),
+    defaultValues: {
+      type: "shipping",
+      name: "",
+      phone: "+91",
+      addressLine1: "",
+      addressLine2: "",
+      city: "",
+      state: "",
+      postalCode: "",
+      country: "India",
+      isDefault: false,
+    },
+    mode: "onBlur",
+  });
 
-  const openAddModal = async () => {
+  const addressType = form.watch("type");
+
+  const openAddModal = () => {
     if (initialAddresses.length >= 5) {
-      await customAlert("Limit Reached", "You cannot add more than 5 addresses. Please delete an address to add a new one.");
+      notify.error("You cannot add more than 5 addresses. Please delete one first.");
       return;
     }
-    resetForm();
+    form.reset({
+      type: "shipping",
+      name: "",
+      phone: "+91",
+      addressLine1: "",
+      addressLine2: "",
+      city: "",
+      state: "",
+      postalCode: "",
+      country: "India",
+      isDefault: false,
+    });
+    setLabel("Home");
     setModalMode("add");
     setModalOpen(true);
   };
 
   const openEditModal = (addr: Address) => {
-    setName(addr.name);
-    setPhone(addr.phone);
-    setAddressLine1(addr.addressLine1);
-    
     // Parse Label and Address Line 2
     const rawLine2 = addr.addressLine2 || "";
     const parts = rawLine2.split(" | ");
     const labels = ["Home", "Work", "Hostel", "Other"];
+    let finalLabel = "Home";
+    let finalLine2 = rawLine2;
+
     if (labels.includes(parts[0])) {
-      setLabel(parts[0]);
-      setAddressLine2(parts.slice(1).join(" | "));
-    } else {
-      setLabel("Home");
-      setAddressLine2(rawLine2);
+      finalLabel = parts[0];
+      finalLine2 = parts.slice(1).join(" | ");
     }
 
-    setCity(addr.city);
-    setState(addr.state);
-    setPostalCode(addr.postalCode);
-    setCountry(addr.country);
-    setIsDefault(addr.isDefault);
-    setAddressType(addr.type);
+    form.reset({
+      type: addr.type,
+      name: addr.name,
+      phone: addr.phone,
+      addressLine1: addr.addressLine1,
+      addressLine2: finalLine2,
+      city: addr.city,
+      state: addr.state,
+      postalCode: addr.postalCode,
+      country: addr.country,
+      isDefault: addr.isDefault,
+    });
+
+    setLabel(finalLabel);
     setSelectedAddressId(addr.id);
-    setFormError("");
     setModalMode("edit");
     setModalOpen(true);
   };
 
-  const handleFormSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setFormError("");
+  const formatPhoneNumber = (val: string) => {
+    let digits = val.replace(/\s+/g, "");
+    if (!digits) return "";
+    if (!digits.startsWith("+91")) {
+      const raw = digits.replace(/[^\d]/g, "");
+      if (raw.startsWith("91") && raw.length > 2) {
+        digits = "+" + raw;
+      } else {
+        digits = "+91" + raw;
+      }
+    }
+    return digits.slice(0, 13);
+  };
 
-    // Simple validations
-    if (!name.trim()) return setFormError("Recipient name is required.");
-    if (!phone.trim()) return setFormError("Mobile number is required.");
-    if (!addressLine1.trim()) return setFormError("Flat/House address line is required.");
-    if (!city.trim()) return setFormError("City is required.");
-    if (!state.trim()) return setFormError("State is required.");
-    if (!postalCode.trim() || postalCode.length < 5) return setFormError("Valid postal / pincode is required.");
-
+  const handleFormSubmit = async (data: AddressInput) => {
     setLoading(true);
+
     try {
       // Package label into Address Line 2
-      const finalAddressLine2 = `${label} | ${addressLine2.trim()}`;
+      const finalAddressLine2 = `${label} | ${(data.addressLine2 || "").trim()}`;
       
       const res = await saveUserAddress({
         id: modalMode === "edit" && selectedAddressId ? selectedAddressId : undefined,
-        type: addressType,
-        name,
-        phone,
-        addressLine1,
+        type: data.type,
+        name: data.name,
+        phone: data.phone,
+        addressLine1: data.addressLine1,
         addressLine2: finalAddressLine2,
-        city,
-        state,
-        postalCode,
-        country,
-        isDefault
+        city: data.city,
+        state: data.state,
+        postalCode: data.postalCode,
+        country: data.country,
+        isDefault: data.isDefault
       });
 
       if (res.success) {
+        notify.success(
+          modalMode === "add" 
+            ? "New address saved successfully." 
+            : "Address changes saved successfully."
+        );
         setModalOpen(false);
         router.refresh();
       } else {
-        setFormError(res.error || "Failed to save address details.");
+        notify.error(res.error || "Failed to save address details.");
       }
     } catch (err: any) {
       console.error(err);
-      setFormError("An unexpected error occurred.");
+      notify.error("An unexpected error occurred saving address.");
     } finally {
       setLoading(false);
     }
@@ -187,16 +208,18 @@ export function AddressClient({ initialAddresses }: AddressClientProps) {
   const handleDelete = async (id: string) => {
     if (!await customConfirm("Delete Address", "Are you sure you want to delete this address?")) return;
     setActionLoadingId(id);
+
     try {
       const res = await deleteUserAddress(id);
       if (res.success) {
+        notify.success("Address deleted successfully.");
         router.refresh();
       } else {
-        await customAlert("Error", res.error || "Failed to delete address.");
+        notify.error(res.error || "Failed to delete address.");
       }
     } catch (err) {
       console.error(err);
-      await customAlert("Error", "Failed to delete address.");
+      notify.error("Failed to delete address.");
     } finally {
       setActionLoadingId(null);
     }
@@ -204,16 +227,18 @@ export function AddressClient({ initialAddresses }: AddressClientProps) {
 
   const handleSetDefault = async (id: string, type: "shipping" | "billing") => {
     setActionLoadingId(id);
+
     try {
       const res = await setDefaultAddress(id, type);
       if (res.success) {
+        notify.success(`Default ${type} address updated successfully.`);
         router.refresh();
       } else {
-        await customAlert("Error", res.error || "Failed to set default address.");
+        notify.error(res.error || "Failed to set default address.");
       }
     } catch (err) {
       console.error(err);
-      await customAlert("Error", "Failed to set default address.");
+      notify.error("Failed to set default address.");
     } finally {
       setActionLoadingId(null);
     }
@@ -343,7 +368,7 @@ export function AddressClient({ initialAddresses }: AddressClientProps) {
                       <button
                         onClick={() => handleSetDefault(addr.id, addr.type)}
                         disabled={isLoading}
-                        className="text-[9px] uppercase font-bold tracking-widest text-primary hover:text-accent disabled:opacity-50 transition-colors flex items-center gap-0.5 cursor-pointer"
+                        className="text-[9px] uppercase font-bold tracking-widest text-primary hover:text-accent disabled:opacity-50 transition-colors flex items-center gap-0.5 cursor-pointer bg-transparent border-none"
                       >
                         Set Default
                       </button>
@@ -355,7 +380,7 @@ export function AddressClient({ initialAddresses }: AddressClientProps) {
                     <button
                       onClick={() => openEditModal(addr)}
                       disabled={isLoading}
-                      className="text-muted-foreground hover:text-foreground p-1 transition-colors disabled:opacity-50 cursor-pointer"
+                      className="text-muted-foreground hover:text-foreground p-1 transition-colors disabled:opacity-50 cursor-pointer bg-transparent border-none"
                       title="Edit Address"
                     >
                       <Edit2 className="w-3.5 h-3.5" />
@@ -363,7 +388,7 @@ export function AddressClient({ initialAddresses }: AddressClientProps) {
                     <button
                       onClick={() => handleDelete(addr.id)}
                       disabled={isLoading}
-                      className="text-muted-foreground hover:text-destructive p-1 transition-colors disabled:opacity-50 cursor-pointer"
+                      className="text-muted-foreground hover:text-destructive p-1 transition-colors disabled:opacity-50 cursor-pointer bg-transparent border-none"
                       title="Delete Address"
                     >
                       {isLoading ? (
@@ -395,52 +420,30 @@ export function AddressClient({ initialAddresses }: AddressClientProps) {
               </h3>
               <button
                 onClick={() => setModalOpen(false)}
-                className="p-1 rounded-lg text-muted-foreground hover:bg-secondary-surface hover:text-text-heading transition-all cursor-pointer"
+                className="p-1 rounded-lg text-muted-foreground hover:bg-secondary/20 hover:text-foreground transition-all cursor-pointer bg-transparent border-none"
               >
                 <X className="w-4.5 h-4.5" />
               </button>
             </div>
 
-            {/* Form Error */}
-            {formError && (
-              <div className="mx-6 mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-xl text-[11px] text-destructive flex items-center gap-1.5">
-                <AlertCircle className="w-4 h-4 shrink-0" />
-                <span>{formError}</span>
-              </div>
-            )}
-
-            {/* Form Body */}
-            <form onSubmit={handleFormSubmit}>
+            {/* Form */}
+            <Form methods={form as any} onSubmit={handleFormSubmit}>
               <div className="px-6 py-5 space-y-4 max-h-[60vh] overflow-y-auto">
                 {/* 2-column details */}
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-semibold text-muted-foreground uppercase pl-0.5">
-                      Recipient Name
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. Jane Doe"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      className="w-full px-3.5 py-2 rounded-xl bg-secondary/35 border border-border/40 focus:border-primary outline-none text-xs"
-                    />
-                  </div>
+                  <FormField name="name" label="Recipient Name" required>
+                    <InputField placeholder="e.g. Jane Doe" />
+                  </FormField>
 
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-semibold text-muted-foreground uppercase pl-0.5">
-                      Contact Mobile
-                    </label>
-                    <input
-                      type="tel"
-                      required
+                  <FormField name="phone" label="Contact Mobile" required>
+                    <InputField
                       placeholder="e.g. +91 9999988888"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      className="w-full px-3.5 py-2 rounded-xl bg-secondary/35 border border-border/40 focus:border-primary outline-none text-xs"
+                      onChange={(e) => {
+                        const formatted = formatPhoneNumber(e.target.value);
+                        form.setValue("phone", formatted, { shouldValidate: true });
+                      }}
                     />
-                  </div>
+                  </FormField>
                 </div>
 
                 {/* Address Label Selector */}
@@ -468,118 +471,53 @@ export function AddressClient({ initialAddresses }: AddressClientProps) {
                 </div>
 
                 {/* Flat details */}
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-semibold text-muted-foreground uppercase pl-0.5">
-                    Address Line 1 (Flat, House, Building)
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Apartment 4B, Emerald Heights"
-                    value={addressLine1}
-                    onChange={(e) => setAddressLine1(e.target.value)}
-                    className="w-full px-3.5 py-2 rounded-xl bg-secondary/35 border border-border/40 focus:border-primary outline-none text-xs"
-                  />
-                </div>
+                <FormField name="addressLine1" label="Address Line 1 (Flat, House, Building)" required>
+                  <InputField placeholder="e.g. Apartment 4B, Emerald Heights" />
+                </FormField>
 
                 {/* Sector / Landmark details */}
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-semibold text-muted-foreground uppercase pl-0.5">
-                    Address Line 2 (Area, Sector, Landmark)
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Near Royal Palms, Goregaon East"
-                    value={addressLine2}
-                    onChange={(e) => setAddressLine2(e.target.value)}
-                    className="w-full px-3.5 py-2 rounded-xl bg-secondary/35 border border-border/40 focus:border-primary outline-none text-xs"
-                  />
-                </div>
+                <FormField name="addressLine2" label="Address Line 2 (Area, Sector, Landmark)">
+                  <InputField placeholder="e.g. Near Royal Palms, Goregaon East" />
+                </FormField>
 
                 {/* 3-column region values */}
                 <div className="grid grid-cols-3 gap-3">
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-semibold text-muted-foreground uppercase pl-0.5">
-                      City
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Mumbai"
-                      value={city}
-                      onChange={(e) => setCity(e.target.value)}
-                      className="w-full px-3.5 py-2 rounded-xl bg-secondary/35 border border-border/40 focus:border-primary outline-none text-xs"
-                    />
-                  </div>
+                  <FormField name="city" label="City" required>
+                    <InputField placeholder="Mumbai" />
+                  </FormField>
 
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-semibold text-muted-foreground uppercase pl-0.5">
-                      State
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Maharashtra"
-                      value={state}
-                      onChange={(e) => setState(e.target.value)}
-                      className="w-full px-3.5 py-2 rounded-xl bg-secondary/35 border border-border/40 focus:border-primary outline-none text-xs"
-                    />
-                  </div>
+                  <FormField name="state" label="State" required>
+                    <InputField placeholder="Maharashtra" />
+                  </FormField>
 
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-semibold text-muted-foreground uppercase pl-0.5">
-                      Postal Code / PIN
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="400063"
-                      value={postalCode}
-                      onChange={(e) => setPostalCode(e.target.value)}
-                      className="w-full px-3.5 py-2 rounded-xl bg-secondary/35 border border-border/40 focus:border-primary outline-none text-xs"
-                    />
-                  </div>
+                  <FormField name="postalCode" label="Postal Code / PIN" required>
+                    <InputField placeholder="400063" />
+                  </FormField>
                 </div>
 
                 {/* Country and Type */}
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-semibold text-muted-foreground uppercase pl-0.5">
-                      Country
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={country}
-                      onChange={(e) => setCountry(e.target.value)}
-                      className="w-full px-3.5 py-2 rounded-xl bg-secondary/35 border border-border/40 focus:border-primary outline-none text-xs"
-                    />
-                  </div>
+                  <FormField name="country" label="Country" required>
+                    <InputField placeholder="India" />
+                  </FormField>
 
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-semibold text-muted-foreground uppercase pl-0.5">
-                      Address Type
-                    </label>
-                    <Select
+                  <FormField name="type" label="Address Type" required>
+                    <SelectField
                       options={[
                         { value: "shipping", label: "Shipping Address" },
                         { value: "billing", label: "Billing Address" },
                       ]}
-                      value={addressType}
-                      onChange={(val) => setAddressType(val as any)}
                       placeholder="Select address type..."
                       label="Address Type"
-                      triggerClassName="w-full px-3.5 py-2 rounded-xl bg-secondary/35 border border-border/40 focus:border-primary text-xs text-foreground cursor-pointer"
                     />
-                  </div>
+                  </FormField>
                 </div>
 
                 {/* Default Checkbox */}
                 <label className="flex items-center gap-2.5 p-1 cursor-pointer select-none">
                   <input
                     type="checkbox"
-                    checked={isDefault}
-                    onChange={(e) => setIsDefault(e.target.checked)}
+                    {...form.register("isDefault")}
                     className="w-4 h-4 rounded border-border text-primary focus:ring-primary cursor-pointer"
                   />
                   <span className="text-xs text-muted-foreground font-light">
@@ -610,7 +548,7 @@ export function AddressClient({ initialAddresses }: AddressClientProps) {
                   )}
                 </Button>
               </div>
-            </form>
+            </Form>
           </div>
         </div>,
         document.body

@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useState, useEffect } from "react";
 import { customConfirm } from "@/components/ui/alert-dialog-provider";
 import { 
@@ -15,6 +13,10 @@ import {
   Eye,
   EyeOff
 } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { createSizeProfileSchema } from "@/lib/validators/settings";
+import { notify } from "@/lib/toast";
 
 interface SizeProfile {
   id: string;
@@ -34,12 +36,28 @@ export default function SizeProfilesTab() {
   const [profiles, setProfiles] = useState<SizeProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [statusMessage, setStatusMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentProfile, setCurrentProfile] = useState<Partial<SizeProfile> | null>(null);
-  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
+  // RHF Setup
+  const form = useForm({
+    resolver: zodResolver(createSizeProfileSchema),
+    defaultValues: {
+      name: "",
+      description: "",
+      thumb: 16,
+      index: 12,
+      middle: 13,
+      ring: 12,
+      pinky: 10,
+      isActive: true,
+    },
+    mode: "onBlur",
+  });
+
+  const formErrors = form.formState.errors;
 
   useEffect(() => {
     fetchProfiles();
@@ -64,14 +82,16 @@ export default function SizeProfilesTab() {
   };
 
   const showStatus = (type: "success" | "error", text: string) => {
-    setStatusMessage({ type, text });
-    setTimeout(() => {
-      setStatusMessage(null);
-    }, 5000);
+    if (type === "success") {
+      notify.success(text);
+    } else {
+      notify.error(text);
+    }
   };
 
   const handleOpenAddModal = () => {
-    setCurrentProfile({
+    setCurrentProfile({} as any);
+    form.reset({
       name: "",
       description: "",
       thumb: 16,
@@ -81,13 +101,21 @@ export default function SizeProfilesTab() {
       pinky: 10,
       isActive: true,
     });
-    setFormErrors({});
     setIsModalOpen(true);
   };
 
   const handleOpenEditModal = (profile: SizeProfile) => {
     setCurrentProfile(profile);
-    setFormErrors({});
+    form.reset({
+      name: profile.name,
+      description: profile.description || "",
+      thumb: profile.thumb,
+      index: profile.index,
+      middle: profile.middle,
+      ring: profile.ring,
+      pinky: profile.pinky,
+      isActive: profile.isActive,
+    });
     setIsModalOpen(true);
   };
 
@@ -110,68 +138,21 @@ export default function SizeProfilesTab() {
     }
   };
 
-  const validateForm = () => {
-    const errors: Record<string, string> = {};
-    if (!currentProfile) return false;
-
-    if (!currentProfile.name || currentProfile.name.trim() === "") {
-      errors.name = "Name is required.";
-    } else if (currentProfile.name.length > 20) {
-      errors.name = "Name must be 20 characters or less.";
-    }
-
-    if (currentProfile.description && currentProfile.description.length > 200) {
-      errors.description = "Description must be 200 characters or less.";
-    }
-
-    const checkFinger = (val: any, label: string) => {
-      const num = Number(val);
-      if (isNaN(num) || !Number.isInteger(num)) {
-        return `${label} must be a whole number.`;
-      }
-      if (num < 5 || num > 25) {
-        return `${label} must be between 5mm and 25mm.`;
-      }
-      return null;
-    };
-
-    const tErr = checkFinger(currentProfile.thumb, "Thumb");
-    if (tErr) errors.thumb = tErr;
-
-    const iErr = checkFinger(currentProfile.index, "Index");
-    if (iErr) errors.index = iErr;
-
-    const mErr = checkFinger(currentProfile.middle, "Middle");
-    if (mErr) errors.middle = mErr;
-
-    const rErr = checkFinger(currentProfile.ring, "Ring");
-    if (rErr) errors.ring = rErr;
-
-    const pErr = checkFinger(currentProfile.pinky, "Pinky");
-    if (pErr) errors.pinky = pErr;
-
-    setFormErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  const handleSaveProfile = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validateForm() || !currentProfile) return;
-
+  const handleSaveProfile = async (data: any) => {
     setIsSaving(true);
-    setStatusMessage(null);
 
-    const isEdit = !!currentProfile.id;
-    const url = isEdit ? `/api/admin/size-profiles/${currentProfile.id}` : "/api/admin/size-profiles";
+    const isEdit = !!currentProfile?.id;
+    const url = isEdit ? `/api/admin/size-profiles/${currentProfile?.id}` : "/api/admin/size-profiles";
     const method = isEdit ? "PUT" : "POST";
 
     const payload = {
-      ...currentProfile,
-      thumb: Number(currentProfile.thumb),
-      index: Number(currentProfile.index),
-      middle: Number(currentProfile.middle),
-      ring: Number(currentProfile.ring),
-      pinky: Number(currentProfile.pinky),
+      ...data,
+      id: currentProfile?.id,
+      thumb: Number(data.thumb),
+      index: Number(data.index),
+      middle: Number(data.middle),
+      ring: Number(data.ring),
+      pinky: Number(data.pinky),
     };
 
     try {
@@ -182,14 +163,14 @@ export default function SizeProfilesTab() {
       });
 
       if (res.ok) {
-        showStatus("success", `Size profile "${currentProfile.name}" successfully ${isEdit ? "updated" : "created"}.`);
+        showStatus("success", `Size profile "${data.name}" successfully ${isEdit ? "updated" : "created"}.`);
         setIsModalOpen(false);
         setCurrentProfile(null);
         fetchProfiles();
       } else {
         const errData = await res.json();
         if (errData.error === "Duplicate name" && errData.details) {
-          setFormErrors(errData.details);
+          form.setError("name", { type: "server", message: errData.error });
         } else {
           showStatus("error", errData.error || "Failed to save size profile.");
         }
@@ -257,22 +238,7 @@ export default function SizeProfilesTab() {
         </div>
       </div>
 
-      {statusMessage && (
-        <div
-          className={`p-4 rounded-2xl flex items-start gap-3 border text-xs leading-relaxed animate-fade-in ${
-            statusMessage.type === "success"
-              ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500"
-              : "bg-destructive/10 border-destructive/20 text-destructive"
-          }`}
-        >
-          {statusMessage.type === "success" ? (
-            <CheckCircle2 className="w-4.5 h-4.5 shrink-0 mt-0.5" />
-          ) : (
-            <AlertCircle className="w-4.5 h-4.5 shrink-0 mt-0.5" />
-          )}
-          <span>{statusMessage.text}</span>
-        </div>
-      )}
+
 
       {/* Profiles Table */}
       {profiles.length === 0 ? (
@@ -388,22 +354,20 @@ export default function SizeProfilesTab() {
               </button>
             </div>
 
-            {/* Modal Form Body */}
-            <form onSubmit={handleSaveProfile} className="p-6 space-y-6">
+            <form onSubmit={form.handleSubmit(handleSaveProfile)} className="p-6 space-y-6">
               <div className="space-y-4">
                 {/* Profile Name */}
                 <div className="space-y-1.5">
                   <label htmlFor="name" className="text-xs font-semibold text-foreground">Profile Name</label>
                   <input
+                    {...form.register("name")}
                     id="name"
                     type="text"
                     placeholder="e.g. XS, S, M, L, XL"
-                    value={currentProfile.name || ""}
-                    onChange={(e) => setCurrentProfile({ ...currentProfile, name: e.target.value })}
                     className="w-full px-3.5 py-2.5 border border-border rounded-xl text-xs bg-background/50 focus:bg-background focus:outline-none focus:ring-1 focus:ring-primary"
                   />
                   {formErrors.name && (
-                    <span className="text-[10px] text-destructive block font-medium">{formErrors.name}</span>
+                    <span className="text-[10px] text-destructive block font-medium">{formErrors.name.message}</span>
                   )}
                 </div>
 
@@ -411,15 +375,14 @@ export default function SizeProfilesTab() {
                 <div className="space-y-1.5">
                   <label htmlFor="description" className="text-xs font-semibold text-foreground">Description</label>
                   <input
+                    {...form.register("description")}
                     id="description"
                     type="text"
                     placeholder="e.g. Petite hands, Average / Standard hands"
-                    value={currentProfile.description || ""}
-                    onChange={(e) => setCurrentProfile({ ...currentProfile, description: e.target.value })}
                     className="w-full px-3.5 py-2.5 border border-border rounded-xl text-xs bg-background/50 focus:bg-background focus:outline-none focus:ring-1 focus:ring-primary"
                   />
                   {formErrors.description && (
-                    <span className="text-[10px] text-destructive block font-medium">{formErrors.description}</span>
+                    <span className="text-[10px] text-destructive block font-medium">{formErrors.description.message}</span>
                   )}
                 </div>
 
@@ -435,18 +398,17 @@ export default function SizeProfilesTab() {
                       <label htmlFor="thumb" className="text-[11px] font-semibold text-muted-foreground">Thumb Width</label>
                       <div className="flex gap-2 items-center">
                         <input
+                          {...form.register("thumb", { valueAsNumber: true })}
                           id="thumb"
                           type="number"
                           min="5"
                           max="25"
-                          value={currentProfile.thumb ?? ""}
-                          onChange={(e) => setCurrentProfile({ ...currentProfile, thumb: parseInt(e.target.value) || 0 })}
                           className="w-full px-3 py-2 border border-border rounded-xl text-xs bg-background/50 focus:outline-none focus:ring-1 focus:ring-primary font-mono"
                         />
                         <span className="text-[11px] text-muted-foreground">mm</span>
                       </div>
                       {formErrors.thumb && (
-                        <span className="text-[9px] text-destructive block font-medium">{formErrors.thumb}</span>
+                        <span className="text-[9px] text-destructive block font-medium">{formErrors.thumb.message}</span>
                       )}
                     </div>
 
@@ -455,18 +417,17 @@ export default function SizeProfilesTab() {
                       <label htmlFor="index" className="text-[11px] font-semibold text-muted-foreground">Index Width</label>
                       <div className="flex gap-2 items-center">
                         <input
+                          {...form.register("index", { valueAsNumber: true })}
                           id="index"
                           type="number"
                           min="5"
                           max="25"
-                          value={currentProfile.index ?? ""}
-                          onChange={(e) => setCurrentProfile({ ...currentProfile, index: parseInt(e.target.value) || 0 })}
                           className="w-full px-3 py-2 border border-border rounded-xl text-xs bg-background/50 focus:outline-none focus:ring-1 focus:ring-primary font-mono"
                         />
                         <span className="text-[11px] text-muted-foreground">mm</span>
                       </div>
                       {formErrors.index && (
-                        <span className="text-[9px] text-destructive block font-medium">{formErrors.index}</span>
+                        <span className="text-[9px] text-destructive block font-medium">{formErrors.index.message}</span>
                       )}
                     </div>
 
@@ -475,18 +436,17 @@ export default function SizeProfilesTab() {
                       <label htmlFor="middle" className="text-[11px] font-semibold text-muted-foreground">Middle Width</label>
                       <div className="flex gap-2 items-center">
                         <input
+                          {...form.register("middle", { valueAsNumber: true })}
                           id="middle"
                           type="number"
                           min="5"
                           max="25"
-                          value={currentProfile.middle ?? ""}
-                          onChange={(e) => setCurrentProfile({ ...currentProfile, middle: parseInt(e.target.value) || 0 })}
                           className="w-full px-3 py-2 border border-border rounded-xl text-xs bg-background/50 focus:outline-none focus:ring-1 focus:ring-primary font-mono"
                         />
                         <span className="text-[11px] text-muted-foreground">mm</span>
                       </div>
                       {formErrors.middle && (
-                        <span className="text-[9px] text-destructive block font-medium">{formErrors.middle}</span>
+                        <span className="text-[9px] text-destructive block font-medium">{formErrors.middle.message}</span>
                       )}
                     </div>
 
@@ -495,18 +455,17 @@ export default function SizeProfilesTab() {
                       <label htmlFor="ring" className="text-[11px] font-semibold text-muted-foreground">Ring Width</label>
                       <div className="flex gap-2 items-center">
                         <input
+                          {...form.register("ring", { valueAsNumber: true })}
                           id="ring"
                           type="number"
                           min="5"
                           max="25"
-                          value={currentProfile.ring ?? ""}
-                          onChange={(e) => setCurrentProfile({ ...currentProfile, ring: parseInt(e.target.value) || 0 })}
                           className="w-full px-3 py-2 border border-border rounded-xl text-xs bg-background/50 focus:outline-none focus:ring-1 focus:ring-primary font-mono"
                         />
                         <span className="text-[11px] text-muted-foreground">mm</span>
                       </div>
                       {formErrors.ring && (
-                        <span className="text-[9px] text-destructive block font-medium">{formErrors.ring}</span>
+                        <span className="text-[9px] text-destructive block font-medium">{formErrors.ring.message}</span>
                       )}
                     </div>
 
@@ -515,18 +474,17 @@ export default function SizeProfilesTab() {
                       <label htmlFor="pinky" className="text-[11px] font-semibold text-muted-foreground">Pinky Width</label>
                       <div className="flex gap-2 items-center">
                         <input
+                          {...form.register("pinky", { valueAsNumber: true })}
                           id="pinky"
                           type="number"
                           min="5"
                           max="25"
-                          value={currentProfile.pinky ?? ""}
-                          onChange={(e) => setCurrentProfile({ ...currentProfile, pinky: parseInt(e.target.value) || 0 })}
                           className="w-full px-3 py-2 border border-border rounded-xl text-xs bg-background/50 focus:outline-none focus:ring-1 focus:ring-primary font-mono"
                         />
                         <span className="text-[11px] text-muted-foreground">mm</span>
                       </div>
                       {formErrors.pinky && (
-                        <span className="text-[9px] text-destructive block font-medium">{formErrors.pinky}</span>
+                        <span className="text-[9px] text-destructive block font-medium">{formErrors.pinky.message}</span>
                       )}
                     </div>
                   </div>
@@ -537,10 +495,9 @@ export default function SizeProfilesTab() {
                 {/* Status Toggle */}
                 <div className="flex items-center gap-3 pt-2">
                   <input
+                    {...form.register("isActive")}
                     id="isActive"
                     type="checkbox"
-                    checked={currentProfile.isActive ?? true}
-                    onChange={(e) => setCurrentProfile({ ...currentProfile, isActive: e.target.checked })}
                     className="w-4.5 h-4.5 accent-primary border border-border rounded-md cursor-pointer"
                   />
                   <label htmlFor="isActive" className="text-xs font-semibold text-foreground cursor-pointer">

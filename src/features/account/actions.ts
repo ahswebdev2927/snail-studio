@@ -23,6 +23,7 @@ import { revalidatePath } from "next/cache";
 import crypto from "crypto";
 import { generateUploadSignature } from "@/lib/cloudinary/signatures";
 import { SignedUploadResponse } from "@/lib/cloudinary/types";
+import { addressSchema } from "@/lib/validators/address";
 
 
 async function getAuthUser() {
@@ -304,43 +305,37 @@ export async function getUserAddresses() {
   }
 }
 
-export async function saveUserAddress(data: {
-  id?: string;
-  type: "shipping" | "billing";
-  name: string;
-  phone: string;
-  addressLine1: string;
-  addressLine2?: string | null;
-  city: string;
-  state: string;
-  postalCode: string;
-  country: string;
-  isDefault: boolean;
-}) {
+export async function saveUserAddress(data: any) {
   try {
+    const parsed = addressSchema.safeParse(data);
+    if (!parsed.success) {
+      return { success: false, error: parsed.error.issues[0]?.message || "Invalid address parameters." };
+    }
+    const validatedData = parsed.data;
+
     const user = await getAuthUser();
     if (!user) return { success: false, error: "Unauthorized" };
 
     const now = new Date();
 
     // If setting as default, clear default status for other addresses of this type
-    if (data.isDefault) {
+    if (validatedData.isDefault) {
       await db
         .update(userAddresses)
         .set({ isDefault: false, updatedAt: now })
         .where(
           and(
             eq(userAddresses.userId, user.id),
-            eq(userAddresses.type, data.type)
+            eq(userAddresses.type, validatedData.type)
           )
         );
     }
 
-    if (data.id) {
+    if (validatedData.id) {
       // Security Check: Make sure the address belongs to the user
       const existing = await db.query.userAddresses.findFirst({
         where: and(
-          eq(userAddresses.id, data.id),
+          eq(userAddresses.id, validatedData.id),
           eq(userAddresses.userId, user.id)
         ),
       });
@@ -353,19 +348,19 @@ export async function saveUserAddress(data: {
       await db
         .update(userAddresses)
         .set({
-          type: data.type,
-          name: data.name,
-          phone: data.phone,
-          addressLine1: data.addressLine1,
-          addressLine2: data.addressLine2 || null,
-          city: data.city,
-          state: data.state,
-          postalCode: data.postalCode,
-          country: data.country,
-          isDefault: data.isDefault,
+          type: validatedData.type,
+          name: validatedData.name,
+          phone: validatedData.phone,
+          addressLine1: validatedData.addressLine1,
+          addressLine2: validatedData.addressLine2 || null,
+          city: validatedData.city,
+          state: validatedData.state,
+          postalCode: validatedData.postalCode,
+          country: validatedData.country,
+          isDefault: validatedData.isDefault,
           updatedAt: now,
         })
-        .where(eq(userAddresses.id, data.id));
+        .where(eq(userAddresses.id, validatedData.id));
     } else {
       // Enforce limit of 5 saved addresses
       const userAddressesCount = await db
@@ -386,16 +381,16 @@ export async function saveUserAddress(data: {
       await db.insert(userAddresses).values({
         id: addressId,
         userId: user.id,
-        type: data.type,
-        name: data.name,
-        phone: data.phone,
-        addressLine1: data.addressLine1,
-        addressLine2: data.addressLine2 || null,
-        city: data.city,
-        state: data.state,
-        postalCode: data.postalCode,
-        country: data.country,
-        isDefault: data.isDefault,
+        type: validatedData.type,
+        name: validatedData.name,
+        phone: validatedData.phone,
+        addressLine1: validatedData.addressLine1,
+        addressLine2: validatedData.addressLine2 || null,
+        city: validatedData.city,
+        state: validatedData.state,
+        postalCode: validatedData.postalCode,
+        country: validatedData.country,
+        isDefault: validatedData.isDefault,
         createdAt: now,
         updatedAt: now,
       });

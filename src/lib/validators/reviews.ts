@@ -27,6 +27,9 @@ export const reviewSubmitSchema = z.object({
         publicId: z.string().min(1, "Public ID is required"),
         fileName: z.string().optional(),
         fileSize: z.number().max(8 * 1024 * 1024, "Image size exceeds the 8MB limit").optional(),
+        format: z.string().optional(),
+        width: z.number().optional(),
+        height: z.number().optional(),
       })
     )
     .max(5, "You can attach up to 5 photos")

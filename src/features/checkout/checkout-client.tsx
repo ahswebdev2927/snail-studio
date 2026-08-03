@@ -28,6 +28,13 @@ import { trackBeginCheckout, trackApplyCoupon, trackAddShippingInfo, trackAddPay
 import { formatPrice, cn } from "@/lib/utils";
 import { calculateBundleDiscount } from "@/lib/bundles";
 import CloudinaryImage from "@/components/media/cloudinary-image";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Form } from "@/components/forms/form";
+import { FormField } from "@/components/forms/form-field";
+import { InputField, TextareaField } from "@/components/forms/fields";
+import { notify } from "@/lib/toast";
 import { 
   getCheckoutCustomer, 
   syncCartToDb, 
@@ -53,29 +60,128 @@ export default function CheckoutClient() {
   const [savedAddresses, setSavedAddresses] = useState<any[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string>("new");
   
-  // Shipping Address Form
-  const [shippingName, setShippingName] = useState("");
-  const [shippingPhone, setShippingPhone] = useState("");
-  const [shippingFlat, setShippingFlat] = useState("");
-  const [shippingArea, setShippingArea] = useState("");
-  const [shippingLandmark, setShippingLandmark] = useState("");
-  const [shippingPincode, setShippingPincode] = useState("");
-  const [shippingCity, setShippingCity] = useState("");
-  const [shippingState, setShippingState] = useState("");
-  const [shippingCountry, setShippingCountry] = useState("India");
-  const [deliveryInstructions, setDeliveryInstructions] = useState("");
-  const [billingSameAsShipping, setBillingSameAsShipping] = useState(true);
+  // RHF Setup
+  const form = useForm({
+    resolver: zodResolver(
+      z.object({
+        shippingAddress: z.object({
+          name: z.string().min(1, "Recipient name is required").max(100),
+          phone: z.string().regex(/^\+91\d{10}$/, "Phone number must start with +91 followed by 10 digits"),
+          addressLine1: z.string().min(1, "Flat/House address details are required").max(250),
+          addressLine2: z.string().min(1, "Area/Sector details are required").max(250),
+          landmark: z.string().max(150).optional().or(z.literal("")),
+          city: z.string().min(1, "City is required").max(100),
+          state: z.string().min(1, "State is required").max(100),
+          postalCode: z.string().regex(/^[1-9][0-9]{5}$/, "Please enter a valid 6-digit Indian PIN code"),
+          country: z.string().default("India"),
+        }),
+        billingSameAsShipping: z.boolean().default(true),
+        billingAddress: z.object({
+          name: z.string().max(100).optional().or(z.literal("")),
+          phone: z.string().optional().or(z.literal("")),
+          addressLine1: z.string().max(250).optional().or(z.literal("")),
+          addressLine2: z.string().max(250).optional().or(z.literal("")),
+          landmark: z.string().max(150).optional().or(z.literal("")),
+          city: z.string().max(100).optional().or(z.literal("")),
+          state: z.string().max(100).optional().or(z.literal("")),
+          postalCode: z.string().optional().or(z.literal("")),
+          country: z.string().default("India"),
+        }),
+        deliveryInstructions: z.string().max(500).optional().or(z.literal("")),
+      }).superRefine((data, ctx) => {
+        if (!data.billingSameAsShipping) {
+          if (!data.billingAddress.name?.trim()) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Recipient name is required", path: ["billingAddress", "name"] });
+          }
+          if (!data.billingAddress.phone?.trim() || !/^\+91\d{10}$/.test(data.billingAddress.phone)) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Valid mobile number is required (+91...)", path: ["billingAddress", "phone"] });
+          }
+          if (!data.billingAddress.addressLine1?.trim()) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Address details are required", path: ["billingAddress", "addressLine1"] });
+          }
+          if (!data.billingAddress.addressLine2?.trim()) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Area details are required", path: ["billingAddress", "addressLine2"] });
+          }
+          if (!data.billingAddress.city?.trim()) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: "City is required", path: ["billingAddress", "city"] });
+          }
+          if (!data.billingAddress.state?.trim()) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: "State is required", path: ["billingAddress", "state"] });
+          }
+          if (!data.billingAddress.postalCode?.trim() || !/^[1-9][0-9]{5}$/.test(data.billingAddress.postalCode)) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Valid 6-digit Indian PIN code is required", path: ["billingAddress", "postalCode"] });
+          }
+        }
+      })
+    ),
+    defaultValues: {
+      shippingAddress: {
+        name: "",
+        phone: "+91",
+        addressLine1: "",
+        addressLine2: "",
+        landmark: "",
+        city: "",
+        state: "",
+        postalCode: "",
+        country: "India",
+      },
+      billingSameAsShipping: true,
+      billingAddress: {
+        name: "",
+        phone: "+91",
+        addressLine1: "",
+        addressLine2: "",
+        landmark: "",
+        city: "",
+        state: "",
+        postalCode: "",
+        country: "India",
+      },
+      deliveryInstructions: "",
+    },
+    mode: "onBlur",
+  });
 
-  // Billing Address Form (if different)
-  const [billingName, setBillingName] = useState("");
-  const [billingPhone, setBillingPhone] = useState("");
-  const [billingFlat, setBillingFlat] = useState("");
-  const [billingArea, setBillingArea] = useState("");
-  const [billingLandmark, setBillingLandmark] = useState("");
-  const [billingPincode, setBillingPincode] = useState("");
-  const [billingCity, setBillingCity] = useState("");
-  const [billingState, setBillingState] = useState("");
-  const [billingCountry, setBillingCountry] = useState("India");
+  const billingSameAsShipping = form.watch("billingSameAsShipping");
+  const shippingAddress = form.watch("shippingAddress") || {};
+  const billingAddress = form.watch("billingAddress") || {};
+  const deliveryInstructions = form.watch("deliveryInstructions") || "";
+
+  // Reactivity aliases
+  const shippingName = shippingAddress.name || "";
+  const shippingPhone = shippingAddress.phone || "";
+  const shippingFlat = shippingAddress.addressLine1 || "";
+  const shippingArea = shippingAddress.addressLine2 || "";
+  const shippingLandmark = shippingAddress.landmark || "";
+  const shippingPincode = shippingAddress.postalCode || "";
+  const shippingCity = shippingAddress.city || "";
+  const shippingState = shippingAddress.state || "";
+  const shippingCountry = shippingAddress.country || "India";
+
+  const billingName = billingAddress.name || "";
+  const billingPhone = billingAddress.phone || "";
+  const billingFlat = billingAddress.addressLine1 || "";
+  const billingArea = billingAddress.addressLine2 || "";
+  const billingLandmark = billingAddress.landmark || "";
+  const billingPincode = billingAddress.postalCode || "";
+  const billingCity = billingAddress.city || "";
+  const billingState = billingAddress.state || "";
+  const billingCountry = billingAddress.country || "India";
+
+  const formatPhoneNumber = (val: string) => {
+    let digits = val.replace(/\s+/g, "");
+    if (!digits) return "";
+    if (!digits.startsWith("+91")) {
+      const raw = digits.replace(/[^\d]/g, "");
+      if (raw.startsWith("91") && raw.length > 2) {
+        digits = "+" + raw;
+      } else {
+        digits = "+91" + raw;
+      }
+    }
+    return digits.slice(0, 13);
+  };
 
   // Shipping Method Step State
   const [shippingRules, setShippingRules] = useState({ standardFee: 99, freeThreshold: 1500, expressFee: 250 });
@@ -167,8 +273,8 @@ export default function CheckoutClient() {
         setSavedAddresses(custRes.savedAddresses || []);
         
         // Pre-fill shipping form with user defaults if available
-        if (custRes.user.name) setShippingName(custRes.user.name);
-        if (custRes.user.phoneNumber) setShippingPhone(custRes.user.phoneNumber);
+        if (custRes.user.name) form.setValue("shippingAddress.name", custRes.user.name);
+        if (custRes.user.phoneNumber) form.setValue("shippingAddress.phone", custRes.user.phoneNumber);
         
         // If user has saved addresses, select the default or first one
         if (custRes.savedAddresses && custRes.savedAddresses.length > 0) {
@@ -220,28 +326,48 @@ export default function CheckoutClient() {
 
   // Apply saved address fields to form state
   const applySavedAddress = (addr: any) => {
-    setShippingName(addr.name);
-    setShippingPhone(addr.phone);
-    setShippingFlat(addr.addressLine1);
-    // Parse area and landmark out of addressLine2 if possible, or just copy it
-    setShippingArea(addr.addressLine2 || "");
-    setShippingPincode(addr.postalCode);
-    setShippingCity(addr.city);
-    setShippingState(addr.state);
-    setShippingCountry(addr.country);
+    form.setValue("shippingAddress.name", addr.name, { shouldValidate: true });
+    form.setValue("shippingAddress.phone", addr.phone, { shouldValidate: true });
+    form.setValue("shippingAddress.addressLine1", addr.addressLine1, { shouldValidate: true });
+    
+    const rawLine2 = addr.addressLine2 || "";
+    const parts = rawLine2.split(" | ");
+    const labels = ["Home", "Work", "Hostel", "Other"];
+    const areaPart = labels.includes(parts[0]) ? parts.slice(1).join(" | ") : rawLine2;
+    
+    const landmarkMatch = areaPart.match(/\s*\(Landmark:\s*([^)]+)\)/i);
+    let area = areaPart;
+    let landmark = "";
+    if (landmarkMatch) {
+      landmark = landmarkMatch[1];
+      area = areaPart.replace(/\s*\(Landmark:\s*[^)]+\)/i, "");
+    }
+    
+    form.setValue("shippingAddress.addressLine2", area, { shouldValidate: true });
+    form.setValue("shippingAddress.landmark", landmark, { shouldValidate: true });
+    form.setValue("shippingAddress.postalCode", addr.postalCode, { shouldValidate: true });
+    form.setValue("shippingAddress.city", addr.city, { shouldValidate: true });
+    form.setValue("shippingAddress.state", addr.state, { shouldValidate: true });
+    form.setValue("shippingAddress.country", addr.country, { shouldValidate: true });
   };
 
   const handleSavedAddressChange = (id: string) => {
     setSelectedAddressId(id);
     if (id === "new") {
-      setShippingName(user?.name || "");
-      setShippingPhone(user?.phoneNumber || "");
-      setShippingFlat("");
-      setShippingArea("");
-      setShippingLandmark("");
-      setShippingPincode("");
-      setShippingCity("");
-      setShippingState("");
+      form.reset({
+        ...form.getValues(),
+        shippingAddress: {
+          name: user?.name || "",
+          phone: user?.phoneNumber || "+91",
+          addressLine1: "",
+          addressLine2: "",
+          landmark: "",
+          city: "",
+          state: "",
+          postalCode: "",
+          country: "India",
+        }
+      });
     } else {
       const addr = savedAddresses.find((a) => a.id === id);
       if (addr) applySavedAddress(addr);
@@ -321,22 +447,6 @@ export default function CheckoutClient() {
     setCouponSuccess("");
   };
 
-  // Form validations for steps
-  const validateAddressStep = () => {
-    if (!shippingName.trim() || !shippingPhone.trim() || !shippingFlat.trim() || !shippingArea.trim() || !shippingPincode.trim() || !shippingCity.trim() || !shippingState.trim()) {
-      setErrorMsg("Please fill out all required shipping address fields.");
-      return false;
-    }
-    if (!billingSameAsShipping) {
-      if (!billingName.trim() || !billingPhone.trim() || !billingFlat.trim() || !billingArea.trim() || !billingPincode.trim() || !billingCity.trim() || !billingState.trim()) {
-        setErrorMsg("Please fill out all required billing address fields.");
-        return false;
-      }
-    }
-    setErrorMsg("");
-    return true;
-  };
-
   const getGA4CartItems = () => {
     return cart.map((item) => ({
       item_id: item.id,
@@ -351,9 +461,38 @@ export default function CheckoutClient() {
     return cart.reduce((acc, curr) => acc + (curr.price / 100) * curr.quantity, 0);
   };
 
-  const handleStepSubmit = (step: CheckoutStep) => {
+  const handleStepSubmit = async (step: CheckoutStep) => {
     if (step === "address") {
-      if (validateAddressStep()) setCurrentStep("shipping");
+      const isValid = await form.trigger([
+        "shippingAddress.name",
+        "shippingAddress.phone",
+        "shippingAddress.addressLine1",
+        "shippingAddress.addressLine2",
+        "shippingAddress.city",
+        "shippingAddress.state",
+        "shippingAddress.postalCode",
+      ]);
+
+      const billingSame = form.getValues("billingSameAsShipping");
+      let isBillingValid = true;
+      if (!billingSame) {
+        isBillingValid = await form.trigger([
+          "billingAddress.name",
+          "billingAddress.phone",
+          "billingAddress.addressLine1",
+          "billingAddress.addressLine2",
+          "billingAddress.city",
+          "billingAddress.state",
+          "billingAddress.postalCode",
+        ]);
+      }
+
+      if (isValid && isBillingValid) {
+        setErrorMsg("");
+        setCurrentStep("shipping");
+      } else {
+        notify.error("Please fill out all required address fields correctly.");
+      }
     } else if (step === "shipping") {
       // Trigger GA4 add_shipping_info event
       trackAddShippingInfo(
@@ -393,31 +532,36 @@ export default function CheckoutClient() {
 
       const cartId = syncRes.cartId;
 
-      // 3. Construct detailed addresses
-      const shippingAddressLine2 = shippingArea + (shippingLandmark.trim() ? ` (Landmark: ${shippingLandmark.trim()})` : "");
+      // 3. Construct detailed addresses from RHF
+      const values = form.getValues();
+      const shippingAddressLine2 = (values.shippingAddress.addressLine2 || "") + 
+        (values.shippingAddress.landmark?.trim() ? ` (Landmark: ${values.shippingAddress.landmark.trim()})` : "");
+      
       const shippingDetails = {
-        name: shippingName,
-        phone: shippingPhone,
-        addressLine1: shippingFlat,
-        addressLine2: shippingAddressLine2,
-        city: shippingCity,
-        state: shippingState,
-        postalCode: shippingPincode,
-        country: shippingCountry
+        name: values.shippingAddress.name || "",
+        phone: values.shippingAddress.phone || "",
+        addressLine1: values.shippingAddress.addressLine1 || "",
+        addressLine2: shippingAddressLine2 || null,
+        city: values.shippingAddress.city || "",
+        state: values.shippingAddress.state || "",
+        postalCode: values.shippingAddress.postalCode || "",
+        country: values.shippingAddress.country || "India"
       };
 
       let billingDetails = shippingDetails;
-      if (!billingSameAsShipping) {
-        const billingAddressLine2 = billingArea + (billingLandmark.trim() ? ` (Landmark: ${billingLandmark.trim()})` : "");
+      if (!values.billingSameAsShipping && values.billingAddress) {
+        const billingAddressLine2 = (values.billingAddress.addressLine2 || "") + 
+          (values.billingAddress.landmark?.trim() ? ` (Landmark: ${values.billingAddress.landmark.trim()})` : "");
+        
         billingDetails = {
-          name: billingName,
-          phone: billingPhone,
-          addressLine1: billingFlat,
-          addressLine2: billingAddressLine2,
-          city: billingCity,
-          state: billingState,
-          postalCode: billingPincode,
-          country: billingCountry
+          name: values.billingAddress.name || "",
+          phone: values.billingAddress.phone || "",
+          addressLine1: values.billingAddress.addressLine1 || "",
+          addressLine2: billingAddressLine2 || null,
+          city: values.billingAddress.city || "",
+          state: values.billingAddress.state || "",
+          postalCode: values.billingAddress.postalCode || "",
+          country: values.billingAddress.country || "India"
         };
       }
 
@@ -426,7 +570,7 @@ export default function CheckoutClient() {
         cartId,
         shippingAddress: shippingDetails,
         billingAddress: billingDetails,
-        notes: deliveryInstructions || undefined,
+        notes: values.deliveryInstructions || undefined,
         couponCode: appliedCoupon ? appliedCoupon.code : undefined,
         discountAmount: (appliedCoupon ? appliedCoupon.discountAmount : 0) + bundleDiscount, // sum of coupon and bundle discounts (paise)
         shippingAmount: shippingCost // already in paise
@@ -551,7 +695,7 @@ export default function CheckoutClient() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground px-4 md:px-8 py-10 max-w-7xl mx-auto">
+    <Form methods={form as any} onSubmit={() => {}} className="min-h-screen bg-background text-foreground px-4 md:px-8 py-10 max-w-7xl mx-auto space-y-0">
       
       {/* Checkout step bar */}
       <div className="mb-10 max-w-xl mx-auto">
@@ -695,130 +839,58 @@ export default function CheckoutClient() {
 
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Full Name *</label>
-                    <input 
-                      type="text" 
-                      required 
-                      value={shippingName}
-                      onChange={(e) => setShippingName(e.target.value)}
-                      placeholder="Jane Doe"
-                      className="w-full px-4 py-2.5 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none transition-all text-foreground"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Mobile number *</label>
-                    <input 
-                      type="tel" 
-                      required 
-                      value={shippingPhone}
-                      onChange={(e) => setShippingPhone(e.target.value)}
+                  <FormField name="shippingAddress.name" label="Full Name" required>
+                    <InputField placeholder="Jane Doe" />
+                  </FormField>
+                  <FormField name="shippingAddress.phone" label="Mobile number" required>
+                    <InputField
                       placeholder="+91 XXXXX XXXXX"
-                      className="w-full px-4 py-2.5 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none transition-all text-foreground font-mono"
+                      onChange={(e) => {
+                        const formatted = formatPhoneNumber(e.target.value);
+                        form.setValue("shippingAddress.phone", formatted, { shouldValidate: true });
+                      }}
                     />
-                  </div>
+                  </FormField>
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Flat, House no, Building, Apartment *</label>
-                  <input 
-                    type="text" 
-                    required 
-                    value={shippingFlat}
-                    onChange={(e) => setShippingFlat(e.target.value)}
-                    placeholder="Apartment 4B, Emerald Heights"
-                    className="w-full px-4 py-2.5 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none transition-all text-foreground"
-                  />
-                </div>
+                <FormField name="shippingAddress.addressLine1" label="Flat, House no, Building, Apartment" required>
+                  <InputField placeholder="Apartment 4B, Emerald Heights" />
+                </FormField>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Area, Street, Sector, Village *</label>
-                    <input 
-                      type="text" 
-                      required 
-                      value={shippingArea}
-                      onChange={(e) => setShippingArea(e.target.value)}
-                      placeholder="MG Road, Sector 15"
-                      className="w-full px-4 py-2.5 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none transition-all text-foreground"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Landmark</label>
-                    <input 
-                      type="text" 
-                      value={shippingLandmark}
-                      onChange={(e) => setShippingLandmark(e.target.value)}
-                      placeholder="Near City Mall"
-                      className="w-full px-4 py-2.5 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none transition-all text-foreground"
-                    />
-                  </div>
+                  <FormField name="shippingAddress.addressLine2" label="Area, Street, Sector, Village" required>
+                    <InputField placeholder="MG Road, Sector 15" />
+                  </FormField>
+                  <FormField name="shippingAddress.landmark" label="Landmark">
+                    <InputField placeholder="Near City Mall" />
+                  </FormField>
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Pincode *</label>
-                    <input 
-                      type="text" 
-                      required 
-                      value={shippingPincode}
-                      onChange={(e) => setShippingPincode(e.target.value)}
-                      placeholder="400001"
-                      className="w-full px-4 py-2.5 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none transition-all text-foreground font-mono"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Town/City *</label>
-                    <input 
-                      type="text" 
-                      required 
-                      value={shippingCity}
-                      onChange={(e) => setShippingCity(e.target.value)}
-                      placeholder="Mumbai"
-                      className="w-full px-4 py-2.5 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none transition-all text-foreground"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">State *</label>
-                    <input 
-                      type="text" 
-                      required 
-                      value={shippingState}
-                      onChange={(e) => setShippingState(e.target.value)}
-                      placeholder="Maharashtra"
-                      className="w-full px-4 py-2.5 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none transition-all text-foreground"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Country *</label>
-                    <input 
-                      type="text" 
-                      required 
-                      disabled
-                      value={shippingCountry}
-                      className="w-full px-4 py-2.5 bg-secondary/10 border border-border rounded-xl text-xs outline-none text-muted-foreground cursor-not-allowed"
-                    />
-                  </div>
+                  <FormField name="shippingAddress.postalCode" label="Pincode" required>
+                    <InputField placeholder="400001" />
+                  </FormField>
+                  <FormField name="shippingAddress.city" label="Town/City" required>
+                    <InputField placeholder="Mumbai" />
+                  </FormField>
+                  <FormField name="shippingAddress.state" label="State" required>
+                    <InputField placeholder="Maharashtra" />
+                  </FormField>
+                  <FormField name="shippingAddress.country" label="Country" required>
+                    <InputField placeholder="India" disabled className="bg-secondary/10 text-muted-foreground cursor-not-allowed" />
+                  </FormField>
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Delivery Instructions (optional)</label>
-                  <textarea 
-                    value={deliveryInstructions}
-                    onChange={(e) => setDeliveryInstructions(e.target.value)}
-                    placeholder="Drop at the front desk, ring bell twice, call before arriving..."
-                    rows={2}
-                    className="w-full px-4 py-2.5 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none transition-all text-foreground resize-none"
-                  />
-                </div>
+                <FormField name="deliveryInstructions" label="Delivery Instructions (optional)">
+                  <TextareaField placeholder="Drop at the front desk, ring bell twice, call before arriving..." rows={2} />
+                </FormField>
 
                 <div className="pt-2">
-                  <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+                  <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer select-none">
                     <input 
                       type="checkbox" 
-                      checked={billingSameAsShipping}
-                      onChange={() => setBillingSameAsShipping(!billingSameAsShipping)}
-                      className="rounded border-border text-primary focus:ring-primary" 
+                      {...form.register("billingSameAsShipping")}
+                      className="rounded border-border text-primary focus:ring-primary w-4 h-4 cursor-pointer" 
                     />
                     <span>My billing address is the same as my shipping address</span>
                   </label>
@@ -836,110 +908,46 @@ export default function CheckoutClient() {
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Full Name *</label>
-                      <input 
-                        type="text" 
-                        required 
-                        value={billingName}
-                        onChange={(e) => setBillingName(e.target.value)}
-                        placeholder="Jane Doe"
-                        className="w-full px-4 py-2.5 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none transition-all text-foreground"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Mobile number *</label>
-                      <input 
-                        type="tel" 
-                        required 
-                        value={billingPhone}
-                        onChange={(e) => setBillingPhone(e.target.value)}
+                    <FormField name="billingAddress.name" label="Full Name" required>
+                      <InputField placeholder="Jane Doe" />
+                    </FormField>
+                    <FormField name="billingAddress.phone" label="Mobile number" required>
+                      <InputField
                         placeholder="+91 XXXXX XXXXX"
-                        className="w-full px-4 py-2.5 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none transition-all text-foreground font-mono"
+                        onChange={(e) => {
+                          const formatted = formatPhoneNumber(e.target.value);
+                          form.setValue("billingAddress.phone", formatted, { shouldValidate: true });
+                        }}
                       />
-                    </div>
+                    </FormField>
                   </div>
 
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Flat, House no, Building, Apartment *</label>
-                    <input 
-                      type="text" 
-                      required 
-                      value={billingFlat}
-                      onChange={(e) => setBillingFlat(e.target.value)}
-                      placeholder="Apartment 4B, Emerald Heights"
-                      className="w-full px-4 py-2.5 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none transition-all text-foreground"
-                    />
-                  </div>
+                  <FormField name="billingAddress.addressLine1" label="Flat, House no, Building, Apartment" required>
+                    <InputField placeholder="Apartment 4B, Emerald Heights" />
+                  </FormField>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Area, Street, Sector, Village *</label>
-                      <input 
-                        type="text" 
-                        required 
-                        value={billingArea}
-                        onChange={(e) => setBillingArea(e.target.value)}
-                        placeholder="MG Road, Sector 15"
-                        className="w-full px-4 py-2.5 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none transition-all text-foreground"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Landmark</label>
-                      <input 
-                        type="text" 
-                        value={billingLandmark}
-                        onChange={(e) => setBillingLandmark(e.target.value)}
-                        placeholder="Near City Mall"
-                        className="w-full px-4 py-2.5 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none transition-all text-foreground"
-                      />
-                    </div>
+                    <FormField name="billingAddress.addressLine2" label="Area, Street, Sector, Village" required>
+                      <InputField placeholder="MG Road, Sector 15" />
+                    </FormField>
+                    <FormField name="billingAddress.landmark" label="Landmark">
+                      <InputField placeholder="Near City Mall" />
+                    </FormField>
                   </div>
 
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Pincode *</label>
-                      <input 
-                        type="text" 
-                        required 
-                        value={billingPincode}
-                        onChange={(e) => setBillingPincode(e.target.value)}
-                        placeholder="400001"
-                        className="w-full px-4 py-2.5 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none transition-all text-foreground font-mono"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Town/City *</label>
-                      <input 
-                        type="text" 
-                        required 
-                        value={billingCity}
-                        onChange={(e) => setBillingCity(e.target.value)}
-                        placeholder="Mumbai"
-                        className="w-full px-4 py-2.5 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none transition-all text-foreground"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">State *</label>
-                      <input 
-                        type="text" 
-                        required 
-                        value={billingState}
-                        onChange={(e) => setBillingState(e.target.value)}
-                        placeholder="Maharashtra"
-                        className="w-full px-4 py-2.5 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none transition-all text-foreground"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Country *</label>
-                      <input 
-                        type="text" 
-                        required 
-                        disabled
-                        value={billingCountry}
-                        className="w-full px-4 py-2.5 bg-secondary/10 border border-border rounded-xl text-xs outline-none text-muted-foreground cursor-not-allowed"
-                      />
-                    </div>
+                    <FormField name="billingAddress.postalCode" label="Pincode" required>
+                      <InputField placeholder="400001" />
+                    </FormField>
+                    <FormField name="billingAddress.city" label="Town/City" required>
+                      <InputField placeholder="Mumbai" />
+                    </FormField>
+                    <FormField name="billingAddress.state" label="State" required>
+                      <InputField placeholder="Maharashtra" />
+                    </FormField>
+                    <FormField name="billingAddress.country" label="Country" required>
+                      <InputField placeholder="India" disabled className="bg-secondary/10 text-muted-foreground cursor-not-allowed" />
+                    </FormField>
                   </div>
                 </div>
               )}
@@ -1267,6 +1275,6 @@ export default function CheckoutClient() {
 
       </div>
       )}
-    </div>
+    </Form>
   );
 }

@@ -9,6 +9,7 @@ import { cookies } from "next/headers";
 import { getSessionUser } from "@/lib/auth/session";
 import { processCheckout } from "@/services/checkout/checkout.service";
 import { reserveStockForCart } from "@/services/checkout/reservation.service";
+import { addressSchema } from "@/lib/validators/address";
 
 /**
  * Helper to get the current authenticated session user from cookies
@@ -132,37 +133,24 @@ export async function getShippingRules() {
 /**
  * Completes stock reservation and order generation, returning a gateway payment session.
  */
-export async function createCheckoutOrder(params: {
-  cartId: string;
-  shippingAddress: {
-    name: string;
-    phone: string;
-    addressLine1: string;
-    addressLine2?: string;
-    city: string;
-    state: string;
-    postalCode: string;
-    country: string;
-  };
-  billingAddress?: {
-    name: string;
-    phone: string;
-    addressLine1: string;
-    addressLine2?: string;
-    city: string;
-    state: string;
-    postalCode: string;
-    country: string;
-  };
-  notes?: string;
-  couponCode?: string;
-  discountAmount?: number;
-  shippingAmount?: number;
-}) {
+export async function createCheckoutOrder(params: any) {
   try {
     const user = await getAuthUser();
     if (!user) {
       return { success: false, error: "Session expired. Please log in again." };
+    }
+
+    // Validate addresses on the server side
+    const shippingParsed = addressSchema.omit({ type: true, isDefault: true }).safeParse(params.shippingAddress);
+    if (!shippingParsed.success) {
+      return { success: false, error: `Shipping Address Validation: ${shippingParsed.error.issues[0]?.message}` };
+    }
+
+    if (params.billingAddress) {
+      const billingParsed = addressSchema.omit({ type: true, isDefault: true }).safeParse(params.billingAddress);
+      if (!billingParsed.success) {
+        return { success: false, error: `Billing Address Validation: ${billingParsed.error.issues[0]?.message}` };
+      }
     }
 
     const result = await processCheckout(params);

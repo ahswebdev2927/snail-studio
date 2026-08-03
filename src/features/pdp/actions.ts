@@ -22,6 +22,7 @@ import { nanoid } from "nanoid";
 import { generateUploadSignature } from "@/lib/cloudinary/signatures";
 import { SignedUploadResponse } from "@/lib/cloudinary/types";
 import { triggerAdminNotification } from "@/services/notifications/notification-service";
+import { reviewSubmitSchema } from "@/lib/validators/reviews";
 
 /**
  * Helper to get the current authenticated session user from cookies
@@ -152,15 +153,7 @@ export async function submitProductReview(
   rating: number,
   title: string,
   comment: string,
-  images?: {
-    url: string;
-    publicId: string;
-    fileName?: string;
-    fileSize?: number;
-    format?: string;
-    width?: number;
-    height?: number;
-  }[]
+  images?: any[]
 ) {
   try {
     const user = await getAuthUser();
@@ -168,17 +161,15 @@ export async function submitProductReview(
       return { success: false, error: "You must be logged in to submit a review." };
     }
 
-    if (rating < 1 || rating > 5) {
-      return { success: false, error: "Rating must be between 1 and 5 stars." };
+    const parsed = reviewSubmitSchema.safeParse({ rating, title, comment, images });
+    if (!parsed.success) {
+      return { success: false, error: parsed.error.issues[0]?.message || "Invalid review parameters." };
     }
-
-    if (!title.trim()) {
-      return { success: false, error: "Review title is required." };
-    }
-
-    if (!comment.trim()) {
-      return { success: false, error: "Review comment body is required." };
-    }
+    const validated = parsed.data;
+    const ratingVal = validated.rating;
+    const titleVal = validated.title;
+    const commentVal = validated.comment;
+    const imagesVal = validated.images || [];
 
     // 1. Get all variant IDs for this product
     const variantsList = await db.query.productVariants.findMany({
@@ -247,14 +238,14 @@ export async function submitProductReview(
         id: reviewId,
         productId,
         userId: user.id,
-        rating,
-        title,
-        comment,
+        rating: ratingVal,
+        title: titleVal,
+        comment: commentVal,
         isApproved: false, // Moderated by default
       });
 
-      if (images && images.length > 0) {
-        for (const img of images) {
+      if (imagesVal && imagesVal.length > 0) {
+        for (const img of imagesVal) {
           const mediaId = `med_${nanoid(15)}`;
           await tx.insert(media).values({
             id: mediaId,
@@ -262,9 +253,9 @@ export async function submitProductReview(
             publicId: img.publicId,
             fileName: img.fileName || null,
             fileSize: img.fileSize || null,
-            format: img.format || null,
-            width: img.width || null,
-            height: img.height || null,
+            format: (img as any).format || null,
+            width: (img as any).width || null,
+            height: (img as any).height || null,
             resourceType: "image",
             folder: "reviews/images",
             altText: `${user.name || "User"}'s review image for ${productId}`,

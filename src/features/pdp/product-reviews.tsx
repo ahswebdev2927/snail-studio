@@ -19,6 +19,13 @@ import {
 import { cn } from "@/lib/utils";
 import { submitProductReview, getReviewImageUploadSignature, checkReviewEligibility } from "./actions";
 import CloudinaryImage from "@/components/media/cloudinary-image";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Form } from "@/components/forms/form";
+import { FormField } from "@/components/forms/form-field";
+import { InputField, TextareaField } from "@/components/forms/fields";
+import { notify } from "@/lib/toast";
+import { reviewSubmitSchema } from "@/lib/validators/reviews";
 
 export interface ReviewItem {
   id: string;
@@ -99,27 +106,28 @@ export function ProductReviews({
   eligibility,
 }: ProductReviewsProps) {
   const [showForm, setShowForm] = useState(false);
-  const [rating, setRating] = useState(5);
   const [hoverRating, setHoverRating] = useState<number | null>(null);
-  const [title, setTitle] = useState("");
-  const [comment, setComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState("");
   const [submitSuccess, setSubmitSuccess] = useState(false);
 
   // Photo Reviews States
-  const [uploadedImages, setUploadedImages] = useState<{
-    url: string;
-    publicId: string;
-    fileName?: string;
-    fileSize?: number;
-    format?: string;
-    width?: number;
-    height?: number;
-  }[]>([]);
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadError, setUploadError] = useState("");
   const [uploadProgress, setUploadProgress] = useState<{ [fileName: string]: number }>({});
+
+  // RHF Setup
+  const form = useForm({
+    resolver: zodResolver(reviewSubmitSchema),
+    defaultValues: {
+      rating: 5,
+      title: "",
+      comment: "",
+      images: [] as any[],
+    },
+    mode: "onBlur",
+  });
+
+  const rating = form.watch("rating");
+  const uploadedImages = form.watch("images") || [];
 
   // Lightbox States
   const [lightboxImages, setLightboxImages] = useState<{ url: string; altText: string | null }[]>([]);
@@ -178,26 +186,30 @@ export function ProductReviews({
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    setUploadError("");
-
     const remainingSlots = 5 - uploadedImages.length;
     if (files.length > remainingSlots) {
-      setUploadError(`You can only upload up to 5 images. You have ${remainingSlots} slots remaining.`);
+      notify.error(`You can only upload up to 5 images. You have ${remainingSlots} slots remaining.`);
       return;
     }
 
     setIsUploading(true);
 
     try {
+      const currentImages = form.getValues("images") || [];
+      const updatedImages = [...currentImages];
+
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
 
-        if (!file.type.startsWith("image/")) {
-          throw new Error(`File "${file.name}" is not an image.`);
+        // JPEG, PNG, WEBP validation
+        const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+        if (!allowedTypes.includes(file.type)) {
+          throw new Error(`File "${file.name}" is not a valid format. Only JPEG, PNG, and WEBP images are allowed.`);
         }
 
-        if (file.size > 5 * 1024 * 1024) {
-          throw new Error(`File "${file.name}" exceeds 5MB size limit.`);
+        // 8MB limit
+        if (file.size > 8 * 1024 * 1024) {
+          throw new Error(`File "${file.name}" exceeds the 8MB size limit.`);
         }
 
         // Initialize progress
@@ -263,18 +275,15 @@ export function ProductReviews({
           xhr.send(formData);
         });
 
-        setUploadedImages((prev) => [
-          ...prev,
-          {
-            url: cloudData.secure_url,
-            publicId: cloudData.public_id,
-            fileName: file.name,
-            fileSize: cloudData.bytes,
-            format: cloudData.format,
-            width: cloudData.width,
-            height: cloudData.height,
-          },
-        ]);
+        updatedImages.push({
+          url: cloudData.secure_url,
+          publicId: cloudData.public_id,
+          fileName: file.name,
+          fileSize: cloudData.bytes,
+          format: cloudData.format,
+          width: cloudData.width,
+          height: cloudData.height,
+        });
 
         // Remove from progress list upon success
         setUploadProgress((prev) => {
@@ -283,9 +292,11 @@ export function ProductReviews({
           return copy;
         });
       }
+
+      form.setValue("images", updatedImages, { shouldValidate: true });
     } catch (err: any) {
       console.error("Upload error:", err);
-      setUploadError(err.message || "Something went wrong during image upload.");
+      notify.error(err.message || "Something went wrong during image upload.");
       setUploadProgress({});
     } finally {
       setIsUploading(false);
@@ -294,7 +305,8 @@ export function ProductReviews({
   };
 
   const handleRemoveUploadedImage = (index: number) => {
-    setUploadedImages((prev) => prev.filter((_, i) => i !== index));
+    const currentImages = form.getValues("images") || [];
+    form.setValue("images", currentImages.filter((_, i) => i !== index), { shouldValidate: true });
   };
 
   // Compute star breakdown percentages
@@ -322,28 +334,29 @@ export function ProductReviews({
     return percentages;
   }, [reviews, ratingDistribution]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleFormSubmit = async (data: any) => {
     if (isUploading) {
-      setSubmitError("Please wait for images to finish uploading before submitting.");
+      notify.error("Please wait for images to finish uploading before submitting.");
       return;
     }
-    setSubmitError("");
     setIsSubmitting(true);
 
     try {
-      const res = await submitProductReview(productId, rating, title, comment, uploadedImages);
+      const res = await submitProductReview(productId, data.rating, data.title, data.comment, data.images);
       if (res.success) {
+        notify.success("Thank you! Your review has been submitted and is currently awaiting moderation.");
         setSubmitSuccess(true);
-        setTitle("");
-        setComment("");
-        setRating(5);
-        setUploadedImages([]);
+        form.reset({
+          rating: 5,
+          title: "",
+          comment: "",
+          images: [],
+        });
       } else {
-        setSubmitError(res.error || "Failed to submit review.");
+        notify.error(res.error || "Failed to submit review.");
       }
     } catch (err: any) {
-      setSubmitError(err.message || "Something went wrong.");
+      notify.error(err.message || "Something went wrong.");
     } finally {
       setIsSubmitting(false);
     }
@@ -478,7 +491,7 @@ export function ProductReviews({
                 </div>
               ) : (
                 /* Write Review Form Block */
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <Form methods={form as any} onSubmit={handleFormSubmit} className="space-y-4">
                   <h3 className="font-serif text-lg font-normal text-foreground text-center mb-4">
                     Share Your Feedback
                   </h3>
@@ -495,8 +508,8 @@ export function ProductReviews({
                           type="button"
                           onMouseEnter={() => setHoverRating(star)}
                           onMouseLeave={() => setHoverRating(null)}
-                          onClick={() => setRating(star)}
-                          className="p-1 cursor-pointer transition-transform hover:scale-110 focus:outline-none"
+                          onClick={() => form.setValue("rating", star, { shouldValidate: true })}
+                          className="p-1 cursor-pointer transition-transform hover:scale-110 focus:outline-none bg-transparent border-none"
                         >
                           <Star
                             className={cn(
@@ -512,34 +525,16 @@ export function ProductReviews({
                   </div>
 
                   {/* Title input */}
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                      Review Title
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                      placeholder="e.g. Absolutely beautiful set! Fits perfectly"
-                      className="w-full px-4 py-2.5 bg-card border border-border rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary placeholder:text-muted-foreground/60 transition-all font-light"
-                    />
-                  </div>
+                  <FormField name="title" label="Review Title" required>
+                    <InputField placeholder="e.g. Absolutely beautiful set! Fits perfectly" />
+                  </FormField>
 
                   {/* Comment input */}
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                      Review Body
-                    </label>
-                    <textarea
-                      required
-                      rows={4}
-                      value={comment}
-                      onChange={(e) => setComment(e.target.value)}
-                      placeholder="Tell us about the application, fit, durability, and style..."
-                      className="w-full px-4 py-2.5 bg-card border border-border rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary placeholder:text-muted-foreground/60 transition-all font-light leading-relaxed resize-none"
-                    />
-                  </div>                  {/* Photo Upload Zone */}
+                  <FormField name="comment" label="Review Body" required>
+                    <TextareaField placeholder="Tell us about the application, fit, durability, and style..." rows={4} />
+                  </FormField>
+
+                  {/* Photo Upload Zone */}
                   <div className="space-y-2">
                     <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
                       Attach Photos (Optional, max 5)
@@ -562,7 +557,7 @@ export function ProductReviews({
                                 <button
                                   type="button"
                                   onClick={() => handleRemoveUploadedImage(index)}
-                                  className="absolute top-1 right-1 p-0.5 rounded-full bg-background/80 hover:bg-rose-500 hover:text-white transition-all text-muted-foreground cursor-pointer flex items-center justify-center"
+                                  className="absolute top-1 right-1 p-0.5 rounded-full bg-background/80 hover:bg-rose-500 hover:text-white transition-all text-muted-foreground cursor-pointer flex items-center justify-center bg-transparent border-none"
                                 >
                                   <X className="w-3.5 h-3.5" />
                                 </button>
@@ -616,27 +611,19 @@ export function ProductReviews({
                           ) : (
                             <>
                               <UploadCloud className="w-5 h-5" />
-                              <span className="text-[10px] font-medium tracking-wide">Upload JPEG, PNG or WEBP (Max 5MB)</span>
+                              <span className="text-[10px] font-medium tracking-wide">Upload JPEG, PNG or WEBP (Max 8MB)</span>
                             </>
                           )}
                         </label>
                       </div>
                     )}
-
-                    {uploadError && (
-                      <p className="text-[11px] text-destructive text-center font-medium mt-1">{uploadError}</p>
-                    )}
                   </div>
-
-                  {submitError && (
-                    <p className="text-xs text-destructive font-medium text-center">{submitError}</p>
-                  )}
 
                   {/* Submit Button */}
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="w-full py-3 bg-primary hover:bg-primary/95 text-primary-foreground text-xs font-bold uppercase tracking-widest rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2"
+                    className="w-full py-3 bg-primary hover:bg-primary/95 text-primary-foreground text-xs font-bold uppercase tracking-widest rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 border-none"
                   >
                     {isSubmitting ? (
                       <>
@@ -647,7 +634,7 @@ export function ProductReviews({
                       "Submit Review"
                     )}
                   </button>
-                </form>
+                </Form>
               )}
             </div>
           )}

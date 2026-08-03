@@ -2,8 +2,15 @@
 
 import React, { useState } from "react";
 import { Mail, Phone, MapPin, Send, MessageSquare, CheckCircle, ArrowRight } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { Form } from "@/components/forms/form";
+import { FormField } from "@/components/forms/form-field";
+import { InputField, TextareaField } from "@/components/forms/fields";
+import { notify } from "@/lib/toast";
+import { contactSupportSchema, type ContactSupportInput } from "@/lib/validators/auth";
 
 interface ContactClientProps {
   storeEmail?: string;
@@ -16,49 +23,20 @@ export function ContactClient({
   storePhone = "+91 99999 99999",
   storeAddress = "Snail Studio, Luxury Craft Center\nNew Delhi, DL 110001, India",
 }: ContactClientProps) {
-  const [form, setForm] = useState({
-    name: "",
-    email: "",
-    subject: "",
-    message: "",
-  });
-
-  const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
-    if (errors[name]) {
-      setErrors((prev) => {
-        const copy = { ...prev };
-        delete copy[name];
-        return copy;
-      });
-    }
-  };
+  const form = useForm<ContactSupportInput>({
+    resolver: zodResolver(contactSupportSchema),
+    defaultValues: {
+      name: "",
+      email: "",
+      subject: "",
+      message: "",
+    },
+    mode: "onBlur",
+  });
 
-  const validate = () => {
-    const newErrors: { [key: string]: string } = {};
-    if (!form.name.trim()) newErrors.name = "Full name is required";
-    if (!form.email.trim()) {
-      newErrors.email = "Email address is required";
-    } else if (!/\S+@\S+\.\S+/.test(form.email)) {
-      newErrors.email = "Please enter a valid email address";
-    }
-    if (!form.subject.trim()) newErrors.subject = "Subject is required";
-    if (!form.message.trim()) newErrors.message = "Message cannot be empty";
-    return newErrors;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const validationErrors = validate();
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors);
-      return;
-    }
-
+  const onSubmit = async (data: any) => {
     setStatus("submitting");
 
     try {
@@ -67,20 +45,23 @@ export function ContactClient({
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(form),
+        body: JSON.stringify(data),
       });
 
       if (res.ok) {
         setStatus("success");
-        setForm({ name: "", email: "", subject: "", message: "" });
+        form.reset();
+        notify.success("Support request submitted successfully!");
       } else {
-        const data = await res.json();
-        console.error("Contact form API submission failed:", data);
+        const resData = await res.json();
+        console.error("Contact form API submission failed:", resData);
         setStatus("error");
+        notify.error("Failed to send message. Please try again.");
       }
     } catch (err) {
       console.error("Network error during contact submission:", err);
       setStatus("error");
+      notify.error("Network error. Please check your connection and try again.");
     }
   };
 
@@ -200,7 +181,7 @@ export function ContactClient({
                 </Button>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="space-y-6">
+              <Form methods={form} onSubmit={onSubmit} className="space-y-6">
                 <h3 className="font-serif text-xl font-medium text-foreground pb-2 border-b border-border/10">
                   Send a Message
                 </h3>
@@ -212,72 +193,29 @@ export function ContactClient({
                 )}
 
                 {/* Name */}
-                <div className="space-y-1">
-                  <label htmlFor="name" className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
-                    Full Name
-                  </label>
-                  <input
-                    type="text"
-                    id="name"
-                    name="name"
-                    value={form.name}
-                    onChange={handleChange}
-                    placeholder="Enter your name"
-                    className="w-full bg-background border border-border/45 rounded-xl px-4 py-3 text-xs text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors placeholder:text-muted-foreground/50 font-light"
-                  />
-                  {errors.name && <p className="text-[10px] text-destructive font-medium">{errors.name}</p>}
-                </div>
+                <FormField name="name" label="Full Name" required>
+                  <InputField placeholder="Enter your name" />
+                </FormField>
 
                 {/* Email */}
-                <div className="space-y-1">
-                  <label htmlFor="email" className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
-                    Email Address
-                  </label>
-                  <input
-                    type="email"
-                    id="email"
-                    name="email"
-                    value={form.email}
-                    onChange={handleChange}
-                    placeholder="Enter your email"
-                    className="w-full bg-background border border-border/45 rounded-xl px-4 py-3 text-xs text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors placeholder:text-muted-foreground/50 font-light"
-                  />
-                  {errors.email && <p className="text-[10px] text-destructive font-medium">{errors.email}</p>}
-                </div>
+                <FormField name="email" label="Email Address" required>
+                  <InputField type="email" placeholder="Enter your email" />
+                </FormField>
 
                 {/* Subject */}
-                <div className="space-y-1">
-                  <label htmlFor="subject" className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
-                    Subject
-                  </label>
-                  <input
-                    type="text"
-                    id="subject"
-                    name="subject"
-                    value={form.subject}
-                    onChange={handleChange}
-                    placeholder="What is your query about?"
-                    className="w-full bg-background border border-border/45 rounded-xl px-4 py-3 text-xs text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors placeholder:text-muted-foreground/50 font-light"
-                  />
-                  {errors.subject && <p className="text-[10px] text-destructive font-medium">{errors.subject}</p>}
-                </div>
+                <FormField name="subject" label="Subject" required>
+                  <InputField placeholder="What is your query about?" />
+                </FormField>
 
                 {/* Message */}
-                <div className="space-y-1">
-                  <label htmlFor="message" className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
-                    Message
-                  </label>
-                  <textarea
-                    id="message"
-                    name="message"
+                <FormField name="message" label="Message" required>
+                  <TextareaField
                     rows={5}
-                    value={form.message}
-                    onChange={handleChange}
                     placeholder="Type your message details here..."
-                    className="w-full bg-background border border-border/45 rounded-xl px-4 py-3 text-xs text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors placeholder:text-muted-foreground/50 font-light resize-none"
+                    maxLength={2000}
+                    showCharCount
                   />
-                  {errors.message && <p className="text-[10px] text-destructive font-medium">{errors.message}</p>}
-                </div>
+                </FormField>
 
                 <Button
                   type="submit"
@@ -287,7 +225,7 @@ export function ContactClient({
                   {status === "submitting" ? "Sending..." : "Submit Message"}
                   <Send className="w-3.5 h-3.5" />
                 </Button>
-              </form>
+              </Form>
             )}
           </div>
         </div>

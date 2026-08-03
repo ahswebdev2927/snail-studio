@@ -12,20 +12,20 @@ import {
   Loader2, 
   CheckCircle2, 
   AlertCircle, 
-  Crown, 
-  Gem, 
-  Star, 
-  Heart,
   ChevronDown,
-  ChevronUp,
-  Image as ImageIcon,
-  X,
   Pencil,
   Camera,
   Trash2
 } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { updateUserProfile, getAvatarUploadSignature } from "@/features/account/actions";
 import { UserAvatar } from "../user-avatar";
+import { Form } from "@/components/forms/form";
+import { FormField } from "@/components/forms/form-field";
+import { InputField } from "@/components/forms/fields";
+import { notify } from "@/lib/toast";
+import { profileCompletionSchema, type ProfileCompletionInput } from "@/lib/validators/auth";
 
 interface UserProfile {
   id: string;
@@ -55,28 +55,11 @@ export function ProfileClient({ user }: ProfileClientProps) {
   const searchParams = useSearchParams();
   const isEmailRequiredError = searchParams.get("error") === "email_required";
 
-  // Form states
-  const [name, setName] = useState(user.name || "");
-  const [email, setEmail] = useState(user.email || "");
-  const [whatsappNumber, setWhatsappNumber] = useState(user.whatsappNumber || "");
-  const [avatar, setAvatar] = useState<string | null>(user.image);
-  const [marketingConsent, setMarketingConsent] = useState(user.marketingConsent);
-
-  // Email Preferences State
-  const [prefNewsletter, setPrefNewsletter] = useState(user.preferences?.newsletter ?? true);
-  const [prefPromotions, setPrefPromotions] = useState(user.preferences?.promotions ?? true);
-  const [prefLaunchNotifications, setPrefLaunchNotifications] = useState(user.preferences?.launchNotifications ?? true);
-  const [prefBackInStock, setPrefBackInStock] = useState(user.preferences?.backInStock ?? true);
-  const [prefProductUpdates, setPrefProductUpdates] = useState(user.preferences?.productUpdates ?? true);
-  const [prefPriceDrops, setPrefPriceDrops] = useState(user.preferences?.priceDrops ?? true);
+  // Accordion UI state
   const [prefAccordionOpen, setPrefAccordionOpen] = useState(false);
 
-  // UI/UX States
+  // Loading, upload & overlay states
   const [loading, setLoading] = useState(false);
-  const [successMessage, setSuccessMessage] = useState("");
-  const [errorMessage, setErrorMessage] = useState("");
-  
-  // Avatar Dropdown Menu & Upload States
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [avatarProgress, setAvatarProgress] = useState<number | null>(null);
@@ -84,20 +67,30 @@ export function ProfileClient({ user }: ProfileClientProps) {
   const avatarMenuRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Clean success/error alerts after a few seconds
-  useEffect(() => {
-    if (successMessage) {
-      const timer = setTimeout(() => setSuccessMessage(""), 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [successMessage]);
+  // RHF Setup with centralized profile schema
+  const form = useForm({
+    resolver: zodResolver(profileCompletionSchema),
+    defaultValues: {
+      name: user.name || "",
+      email: user.email || "",
+      whatsappNumber: user.whatsappNumber || "",
+      image: user.image || "",
+      marketingConsent: user.marketingConsent,
+      preferences: {
+        newsletter: user.preferences?.newsletter ?? true,
+        promotions: user.preferences?.promotions ?? true,
+        launchNotifications: user.preferences?.launchNotifications ?? true,
+        backInStock: user.preferences?.backInStock ?? true,
+        productUpdates: user.preferences?.productUpdates ?? true,
+        priceDrops: user.preferences?.priceDrops ?? true,
+      },
+    },
+    mode: "onBlur",
+  });
 
-  useEffect(() => {
-    if (errorMessage) {
-      const timer = setTimeout(() => setErrorMessage(""), 6000);
-      return () => clearTimeout(timer);
-    }
-  }, [errorMessage]);
+  const marketingConsent = form.watch("marketingConsent");
+  const avatar = form.watch("image");
+  const nameValue = form.watch("name");
 
   // Close avatar menu on click away
   useEffect(() => {
@@ -114,21 +107,35 @@ export function ProfileClient({ user }: ProfileClientProps) {
     };
   }, [avatarMenuOpen]);
 
+  // Format WhatsApp input to enforce +91 prefix E.164 style
+  const formatWhatsappNumber = (val: string) => {
+    let digits = val.replace(/\s+/g, "");
+    if (!digits) return "";
+    if (!digits.startsWith("+91")) {
+      const raw = digits.replace(/[^\d]/g, "");
+      if (raw.startsWith("91") && raw.length > 2) {
+        digits = "+" + raw;
+      } else {
+        digits = "+91" + raw;
+      }
+    }
+    return digits.slice(0, 13);
+  };
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      setErrorMessage("Please select a valid image file.");
+      notify.error("Please select a valid image file.");
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      setErrorMessage("Profile image must be less than 5MB.");
+    if (file.size > 8 * 1024 * 1024) {
+      notify.error("Profile image must be less than 8MB.");
       return;
     }
 
-    setErrorMessage("");
     setAvatarUploading(true);
     setAvatarProgress(0);
 
@@ -186,11 +193,11 @@ export function ProfileClient({ user }: ProfileClientProps) {
         xhr.send(formData);
       });
 
-      setAvatar(cloudData.secure_url);
-      setSuccessMessage("Avatar uploaded successfully. Don't forget to click Save Changes below to save your profile!");
+      form.setValue("image", cloudData.secure_url, { shouldValidate: true });
+      notify.success("Profile picture uploaded. Click Save Changes to save your profile!");
     } catch (err: any) {
       console.error(err);
-      setErrorMessage(err.message || "Failed to upload profile picture.");
+      notify.error(err.message || "Failed to upload profile picture.");
       
       // Report upload failure to backend to generate system notification
       try {
@@ -215,65 +222,31 @@ export function ProfileClient({ user }: ProfileClientProps) {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSuccessMessage("");
-    setErrorMessage("");
-
-    if (!name.trim()) {
-      setErrorMessage("Please enter your full name.");
-      return;
-    }
-
-    if (!email.trim()) {
-      setErrorMessage("Please enter your email address.");
-      return;
-    }
-
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-      setErrorMessage("Please enter a valid email address.");
-      return;
-    }
-
-    if (whatsappNumber.trim()) {
-      const cleanPhone = whatsappNumber.replace(/[\s\-()]/g, "");
-      if (!/^\+?[1-9]\d{1,14}$/.test(cleanPhone)) {
-        setErrorMessage("Invalid WhatsApp number format. E.g., +919876543210");
-        return;
-      }
-    }
-
+  const onSubmit = async (data: any) => {
     setLoading(true);
 
     try {
       const res = await updateUserProfile({
-        name: name.trim(),
-        email: email.trim(),
-        whatsappNumber: whatsappNumber.trim() || null,
-        image: avatar,
-        marketingConsent,
-        preferences: {
-          newsletter: prefNewsletter,
-          promotions: prefPromotions,
-          launchNotifications: prefLaunchNotifications,
-          backInStock: prefBackInStock,
-          productUpdates: prefProductUpdates,
-          priceDrops: prefPriceDrops,
-        },
+        name: data.name,
+        email: data.email,
+        whatsappNumber: data.whatsappNumber || null,
+        image: data.image || null,
+        marketingConsent: data.marketingConsent,
+        preferences: data.preferences,
       });
 
       if (res.success) {
-        setSuccessMessage("Your profile information has been updated successfully.");
+        notify.success("Your profile information has been updated successfully.");
         router.refresh();
         if (isEmailRequiredError) {
           router.push("/account");
         }
       } else {
-        setErrorMessage(res.error || "Failed to update profile settings.");
+        notify.error(res.error || "Failed to update profile settings.");
       }
     } catch (err: any) {
       console.error(err);
-      setErrorMessage(err.message || "An unexpected error occurred. Please try again.");
+      notify.error(err.message || "An unexpected error occurred. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -291,28 +264,8 @@ export function ProfileClient({ user }: ProfileClientProps) {
         </p>
       </div>
 
-      {/* Main Alert Banners */}
-      {successMessage && (
-        <div className="bg-success/15 border border-success/30 text-success p-4 rounded-2xl flex items-start gap-3 text-xs animate-in slide-in-from-top duration-300">
-          <CheckCircle2 className="w-5 h-5 shrink-0 text-success mt-0.5" />
-          <div>
-            <p className="font-semibold">Update Successful</p>
-            <p className="font-light mt-0.5">{successMessage}</p>
-          </div>
-        </div>
-      )}
-
-      {errorMessage && (
-        <div className="bg-rose-500/10 border border-rose-500/20 text-rose-700 dark:text-rose-450 p-4 rounded-2xl flex items-start gap-3 text-xs animate-in slide-in-from-top duration-300">
-          <AlertCircle className="w-5 h-5 shrink-0 text-rose-500 mt-0.5" />
-          <div>
-            <p className="font-semibold">Failed to Save Changes</p>
-            <p className="font-light mt-0.5">{errorMessage}</p>
-          </div>
-        </div>
-      )}
-
-      {isEmailRequiredError && !successMessage && (
+      {/* Required Email Alert Banner */}
+      {isEmailRequiredError && (
         <div className="bg-amber-500/15 border border-amber-500/30 text-amber-800 dark:text-amber-400 p-4 rounded-2xl flex items-start gap-3 text-xs animate-in slide-in-from-top duration-300">
           <AlertCircle className="w-5 h-5 shrink-0 text-amber-500 mt-0.5 animate-pulse" />
           <div>
@@ -324,8 +277,8 @@ export function ProfileClient({ user }: ProfileClientProps) {
         </div>
       )}
 
-      {/* Profile Form Card */}
-      <form onSubmit={handleSubmit} className="space-y-8">
+      {/* Profile Form */}
+      <Form methods={form} onSubmit={onSubmit} className="space-y-8">
         
         {/* Avatar Selection Section */}
         <div className="bg-card border border-border/30 rounded-3xl p-6 flex flex-col items-center justify-center text-center space-y-4">
@@ -333,8 +286,8 @@ export function ProfileClient({ user }: ProfileClientProps) {
             {/* Avatar Circle */}
             <div className="relative w-24 h-24 rounded-full overflow-hidden border border-border bg-secondary/15 flex items-center justify-center shadow-sm">
               <UserAvatar
-                image={avatar}
-                name={name || "U"}
+                image={avatar || null}
+                name={nameValue || "U"}
                 phone={user.phoneNumber}
                 className="w-full h-full rounded-full"
               />
@@ -380,7 +333,7 @@ export function ProfileClient({ user }: ProfileClientProps) {
                     type="button"
                     onClick={() => {
                       setAvatarMenuOpen(false);
-                      setAvatar(null);
+                      form.setValue("image", "", { shouldValidate: true });
                     }}
                     className="w-full flex items-center gap-2 px-4 py-2 text-left text-xs text-destructive hover:bg-destructive/10 transition-all cursor-pointer"
                   >
@@ -412,23 +365,12 @@ export function ProfileClient({ user }: ProfileClientProps) {
         {/* Input fields grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Full Name */}
-          <div className="space-y-2">
-            <label htmlFor="fullName" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-              Full Name
-            </label>
-            <div className="relative">
-              <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <input
-                id="fullName"
-                type="text"
-                required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Jane Doe"
-                className="w-full pl-10 pr-4 py-2.5 border border-border bg-secondary/20 text-foreground text-xs rounded-xl focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
-              />
-            </div>
-          </div>
+          <FormField name="name" label="Full Name" required>
+            <InputField
+              leftIcon={<User className="w-4 h-4 text-muted-foreground/60" />}
+              placeholder="Jane Doe"
+            />
+          </FormField>
 
           {/* Phone Number (Verified, Read-only) */}
           <div className="space-y-2">
@@ -452,47 +394,34 @@ export function ProfileClient({ user }: ProfileClientProps) {
           </div>
 
           {/* Email Address */}
-          <div className="space-y-2">
-            <label htmlFor="emailAddress" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-              Email Address
-            </label>
-            <div className="relative">
-              <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <input
-                id="emailAddress"
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="janedoe@example.com"
-                className="w-full pl-10 pr-4 py-2.5 border border-border bg-secondary/20 text-foreground text-xs rounded-xl focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
-              />
-            </div>
-            <p className="text-[10px] text-muted-foreground/75 font-light">
-              Required for sending order invoices, receipts, order status updates, and package tracking links.
-            </p>
-          </div>
+          <FormField 
+            name="email" 
+            label="Email Address" 
+            required 
+            description="Required for sending order invoices, receipts, order status updates, and package tracking links."
+          >
+            <InputField
+              leftIcon={<Mail className="w-4 h-4 text-muted-foreground/60" />}
+              type="email"
+              placeholder="janedoe@example.com"
+            />
+          </FormField>
 
           {/* WhatsApp Contact */}
-          <div className="space-y-2">
-            <label htmlFor="whatsappNum" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-              WhatsApp Contact <span className="text-[10px] text-muted-foreground/50 font-normal">(Optional)</span>
-            </label>
-            <div className="relative">
-              <MessageSquare className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <input
-                id="whatsappNum"
-                type="text"
-                value={whatsappNumber}
-                onChange={(e) => setWhatsappNumber(e.target.value)}
-                placeholder="+919876543210"
-                className="w-full pl-10 pr-4 py-2.5 border border-border bg-secondary/20 text-foreground text-xs rounded-xl focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
-              />
-            </div>
-            <p className="text-[10px] text-muted-foreground/75 font-light">
-              Specify in E.164 format with country code (e.g. +91...) to receive real-time order alerts.
-            </p>
-          </div>
+          <FormField 
+            name="whatsappNumber" 
+            label="WhatsApp Contact (Optional)" 
+            description="Specify with country code (+91 followed by 10 digits) to receive real-time order alerts."
+          >
+            <InputField
+              leftIcon={<MessageSquare className="w-4 h-4 text-muted-foreground/60" />}
+              placeholder="+919876543210"
+              onChange={(e) => {
+                const formatted = formatWhatsappNumber(e.target.value);
+                form.setValue("whatsappNumber", formatted, { shouldValidate: true });
+              }}
+            />
+          </FormField>
         </div>
 
         {/* Marketing Consent Checkbox */}
@@ -500,8 +429,7 @@ export function ProfileClient({ user }: ProfileClientProps) {
           <label className="flex items-start gap-3.5 text-xs font-light text-muted-foreground select-none cursor-pointer group">
             <input
               type="checkbox"
-              checked={marketingConsent}
-              onChange={(e) => setMarketingConsent(e.target.checked)}
+              {...form.register("marketingConsent")}
               className="mt-0.5 w-4.5 h-4.5 accent-primary rounded border-border transition-all cursor-pointer"
             />
             <span className="leading-normal group-hover:text-foreground transition-colors">
@@ -532,8 +460,7 @@ export function ProfileClient({ user }: ProfileClientProps) {
                 <label className="flex items-start gap-3 p-3 rounded-2xl bg-secondary/5 hover:bg-secondary/15 transition-all cursor-pointer group border border-border/20">
                   <input
                     type="checkbox"
-                    checked={prefNewsletter}
-                    onChange={(e) => setPrefNewsletter(e.target.checked)}
+                    {...form.register("preferences.newsletter")}
                     className="mt-0.5 w-4 h-4 accent-primary rounded border-border cursor-pointer"
                   />
                   <div className="space-y-0.5">
@@ -546,8 +473,7 @@ export function ProfileClient({ user }: ProfileClientProps) {
                 <label className="flex items-start gap-3 p-3 rounded-2xl bg-secondary/5 hover:bg-secondary/15 transition-all cursor-pointer group border border-border/20">
                   <input
                     type="checkbox"
-                    checked={prefPromotions}
-                    onChange={(e) => setPrefPromotions(e.target.checked)}
+                    {...form.register("preferences.promotions")}
                     className="mt-0.5 w-4 h-4 accent-primary rounded border-border cursor-pointer"
                   />
                   <div className="space-y-0.5">
@@ -556,12 +482,11 @@ export function ProfileClient({ user }: ProfileClientProps) {
                   </div>
                 </label>
 
-                {/* Launch Restocks */}
+                {/* Launches & Restocks */}
                 <label className="flex items-start gap-3 p-3 rounded-2xl bg-secondary/5 hover:bg-secondary/15 transition-all cursor-pointer group border border-border/20">
                   <input
                     type="checkbox"
-                    checked={prefLaunchNotifications}
-                    onChange={(e) => setPrefLaunchNotifications(e.target.checked)}
+                    {...form.register("preferences.launchNotifications")}
                     className="mt-0.5 w-4 h-4 accent-primary rounded border-border cursor-pointer"
                   />
                   <div className="space-y-0.5">
@@ -574,8 +499,7 @@ export function ProfileClient({ user }: ProfileClientProps) {
                 <label className="flex items-start gap-3 p-3 rounded-2xl bg-secondary/5 hover:bg-secondary/15 transition-all cursor-pointer group border border-border/20">
                   <input
                     type="checkbox"
-                    checked={prefPriceDrops}
-                    onChange={(e) => setPrefPriceDrops(e.target.checked)}
+                    {...form.register("preferences.priceDrops")}
                     className="mt-0.5 w-4 h-4 accent-primary rounded border-border cursor-pointer"
                   />
                   <div className="space-y-0.5">
@@ -588,8 +512,7 @@ export function ProfileClient({ user }: ProfileClientProps) {
                 <label className="flex items-start gap-3 p-3 rounded-2xl bg-secondary/5 hover:bg-secondary/15 transition-all cursor-pointer group border border-border/20">
                   <input
                     type="checkbox"
-                    checked={prefBackInStock}
-                    onChange={(e) => setPrefBackInStock(e.target.checked)}
+                    {...form.register("preferences.backInStock")}
                     className="mt-0.5 w-4 h-4 accent-primary rounded border-border cursor-pointer"
                   />
                   <div className="space-y-0.5">
@@ -602,8 +525,7 @@ export function ProfileClient({ user }: ProfileClientProps) {
                 <label className="flex items-start gap-3 p-3 rounded-2xl bg-secondary/5 hover:bg-secondary/15 transition-all cursor-pointer group border border-border/20">
                   <input
                     type="checkbox"
-                    checked={prefProductUpdates}
-                    onChange={(e) => setPrefProductUpdates(e.target.checked)}
+                    {...form.register("preferences.productUpdates")}
                     className="mt-0.5 w-4 h-4 accent-primary rounded border-border cursor-pointer"
                   />
                   <div className="space-y-0.5">
@@ -622,20 +544,8 @@ export function ProfileClient({ user }: ProfileClientProps) {
             type="button"
             disabled={loading}
             onClick={() => {
-              setName(user.name || "");
-              setEmail(user.email || "");
-              setWhatsappNumber(user.whatsappNumber || "");
-              setAvatar(user.image);
-              setMarketingConsent(user.marketingConsent);
-              setPrefNewsletter(user.preferences?.newsletter ?? true);
-              setPrefPromotions(user.preferences?.promotions ?? true);
-              setPrefLaunchNotifications(user.preferences?.launchNotifications ?? true);
-              setPrefBackInStock(user.preferences?.backInStock ?? true);
-              setPrefProductUpdates(user.preferences?.productUpdates ?? true);
-              setPrefPriceDrops(user.preferences?.priceDrops ?? true);
-              setSuccessMessage("");
-              setErrorMessage("");
-              setAvatarMenuOpen(false);
+              form.reset();
+              setPrefAccordionOpen(false);
             }}
             className="px-6 py-3 border border-border text-foreground hover:bg-secondary/40 text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -658,7 +568,7 @@ export function ProfileClient({ user }: ProfileClientProps) {
           </button>
         </div>
 
-      </form>
+      </Form>
     </div>
   );
 }

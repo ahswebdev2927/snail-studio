@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { 
   Search, 
   Truck, 
@@ -20,6 +22,16 @@ import {
   Info
 } from "lucide-react";
 import CloudinaryImage from "@/components/media/cloudinary-image";
+import { Form } from "@/components/forms/form";
+import { FormField } from "@/components/forms/form-field";
+import { InputField } from "@/components/forms/fields";
+import { notify } from "@/lib/toast";
+import { 
+  trackingLookupSchema, 
+  orderLookupSchema, 
+  type TrackingLookupInput, 
+  type OrderLookupInput 
+} from "@/lib/validators/auth";
 
 interface TrackingResult {
   success: boolean;
@@ -90,17 +102,30 @@ function TrackingSearchContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<"tracking" | "order">("tracking");
-  
-  // Form values
-  const [trackingNumberInput, setTrackingNumberInput] = useState("");
-  const [orderIdInput, setOrderIdInput] = useState("");
-  const [emailInput, setEmailInput] = useState("");
-  const [phoneInput, setPhoneInput] = useState("");
 
   // UI state
   const [isLoading, setIsLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState("");
   const [result, setResult] = useState<TrackingResult | null>(null);
+
+  // 1. Tracking Number Form
+  const trackingForm = useForm<TrackingLookupInput>({
+    resolver: zodResolver(trackingLookupSchema),
+    defaultValues: {
+      trackingNumber: "",
+    },
+    mode: "onBlur",
+  });
+
+  // 2. Order Number Form
+  const orderForm = useForm<OrderLookupInput>({
+    resolver: zodResolver(orderLookupSchema),
+    defaultValues: {
+      orderId: "",
+      email: "",
+      phone: "",
+    },
+    mode: "onBlur",
+  });
 
   // Auto-run if search parameters are present in the URL
   useEffect(() => {
@@ -110,13 +135,13 @@ function TrackingSearchContent() {
     const phone = searchParams.get("phone");
 
     if (trk) {
-      setTrackingNumberInput(trk);
+      trackingForm.setValue("trackingNumber", trk);
       setActiveTab("tracking");
       fetchTrackingData({ trackingNumber: trk });
     } else if (ord) {
-      setOrderIdInput(ord);
-      setEmailInput(email || "");
-      setPhoneInput(phone || "");
+      orderForm.setValue("orderId", ord);
+      orderForm.setValue("email", email || "");
+      orderForm.setValue("phone", phone || "");
       setActiveTab("order");
       fetchTrackingData({ orderId: ord, email: email || "", phone: phone || "" });
     }
@@ -129,7 +154,6 @@ function TrackingSearchContent() {
     phone?: string;
   }) => {
     setIsLoading(true);
-    setErrorMsg("");
     setResult(null);
 
     try {
@@ -143,39 +167,45 @@ function TrackingSearchContent() {
       const data = await res.json();
 
       if (!res.ok) {
-        setErrorMsg(data.error || "Failed to retrieve tracking details.");
+        notify.error(data.error || "Failed to retrieve tracking details.");
       } else {
         setResult(data);
+        notify.success("Tracking information loaded.");
       }
     } catch (err) {
       console.error(err);
-      setErrorMsg("An unexpected connection error occurred.");
+      notify.error("An unexpected connection error occurred.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleTrackingSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!trackingNumberInput.trim()) {
-      setErrorMsg("Please enter a valid tracking number.");
-      return;
-    }
-    router.replace(`/track?trackingNumber=${encodeURIComponent(trackingNumberInput.trim())}`);
+  const handleTrackingSubmit = (data: any) => {
+    router.replace(`/track?trackingNumber=${encodeURIComponent(data.trackingNumber.trim())}`);
   };
 
-  const handleOrderSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!orderIdInput.trim()) {
-      setErrorMsg("Please enter a valid order number.");
-      return;
-    }
+  const handleOrderSubmit = (data: any) => {
     const query = new URLSearchParams();
-    query.set("orderId", orderIdInput.trim());
-    if (emailInput.trim()) query.set("email", emailInput.trim());
-    if (phoneInput.trim()) query.set("phone", phoneInput.trim());
+    query.set("orderId", data.orderId.trim());
+    if (data.email?.trim()) query.set("email", data.email.trim());
+    if (data.phone?.trim()) query.set("phone", data.phone.trim());
     
     router.replace(`/track?${query.toString()}`);
+  };
+
+  // Format phone inputs dynamically to match +91 prefix requirements
+  const formatPhoneNumber = (val: string) => {
+    let digits = val.replace(/\s+/g, "");
+    if (!digits) return "";
+    if (!digits.startsWith("+91")) {
+      const raw = digits.replace(/[^\d]/g, "");
+      if (raw.startsWith("91") && raw.length > 2) {
+        digits = "+" + raw;
+      } else {
+        digits = "+91" + raw;
+      }
+    }
+    return digits.slice(0, 13);
   };
 
   const formatPrice = (priceInPaise: number) => {
@@ -287,7 +317,6 @@ function TrackingSearchContent() {
           <button
             onClick={() => {
               setActiveTab("tracking");
-              setErrorMsg("");
             }}
             className={`flex-1 py-2.5 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer ${
               activeTab === "tracking"
@@ -300,7 +329,6 @@ function TrackingSearchContent() {
           <button
             onClick={() => {
               setActiveTab("order");
-              setErrorMsg("");
             }}
             className={`flex-1 py-2.5 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer ${
               activeTab === "order"
@@ -314,23 +342,14 @@ function TrackingSearchContent() {
 
         {/* Tab 1: Tracking Number Form */}
         {activeTab === "tracking" && (
-          <form onSubmit={handleTrackingSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <label htmlFor="trackingNumber" className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                Courier Tracking / Waybill Number
-              </label>
-              <div className="relative">
-                <Truck className="absolute left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-muted-foreground/80" />
-                <input
-                  id="trackingNumber"
-                  type="text"
-                  placeholder="e.g. TRK9876543210"
-                  value={trackingNumberInput}
-                  onChange={(e) => setTrackingNumberInput(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3 bg-secondary/20 border border-border/50 focus:border-primary focus:outline-none rounded-xl text-sm font-light text-foreground transition-all"
-                />
-              </div>
-            </div>
+          <Form methods={trackingForm} onSubmit={handleTrackingSubmit} className="space-y-4">
+            <FormField name="trackingNumber" label="Courier Tracking / Waybill Number" required>
+              <InputField
+                leftIcon={<Truck className="w-4.5 h-4.5 text-muted-foreground/80" />}
+                placeholder="e.g. TRK9876543210"
+              />
+            </FormField>
+
             <button
               type="submit"
               disabled={isLoading}
@@ -339,57 +358,35 @@ function TrackingSearchContent() {
               {isLoading ? "Retrieving Details..." : "Track Package"}
               {!isLoading && <ArrowRight className="w-3.5 h-3.5" />}
             </button>
-          </form>
+          </Form>
         )}
 
         {/* Tab 2: Order Number + Email/Phone Form */}
         {activeTab === "order" && (
-          <form onSubmit={handleOrderSubmit} className="space-y-4">
+          <Form methods={orderForm} onSubmit={handleOrderSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2 md:col-span-2">
-                <label htmlFor="orderId" className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                  Order Number
-                </label>
-                <div className="relative">
-                  <Package className="absolute left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-muted-foreground/80" />
-                  <input
-                    id="orderId"
-                    type="text"
+              <div className="md:col-span-2">
+                <FormField name="orderId" label="Order Number" required>
+                  <InputField
+                    leftIcon={<Package className="w-4.5 h-4.5 text-muted-foreground/80" />}
                     placeholder="e.g. ord_B1Kx9P2z"
-                    value={orderIdInput}
-                    onChange={(e) => setOrderIdInput(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3 bg-secondary/20 border border-border/50 focus:border-primary focus:outline-none rounded-xl text-sm font-light text-foreground transition-all"
                   />
-                </div>
+                </FormField>
               </div>
 
-              <div className="space-y-2">
-                <label htmlFor="email" className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                  Email Address (Verification)
-                </label>
-                <input
-                  id="email"
-                  type="email"
-                  placeholder="shopper@email.com"
-                  value={emailInput}
-                  onChange={(e) => setEmailInput(e.target.value)}
-                  className="w-full px-4 py-3 bg-secondary/20 border border-border/50 focus:border-primary focus:outline-none rounded-xl text-sm font-light text-foreground transition-all"
-                />
-              </div>
+              <FormField name="email" label="Email Address (Verification)">
+                <InputField type="email" placeholder="shopper@email.com" />
+              </FormField>
 
-              <div className="space-y-2">
-                <label htmlFor="phone" className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                  Phone Number (Verification)
-                </label>
-                <input
-                  id="phone"
-                  type="text"
-                  placeholder="+91 XXXXX XXXXX"
-                  value={phoneInput}
-                  onChange={(e) => setPhoneInput(e.target.value)}
-                  className="w-full px-4 py-3 bg-secondary/20 border border-border/50 focus:border-primary focus:outline-none rounded-xl text-sm font-light text-foreground transition-all"
+              <FormField name="phone" label="Phone Number (Verification)">
+                <InputField
+                  placeholder="+919876543210"
+                  onChange={(e) => {
+                    const formatted = formatPhoneNumber(e.target.value);
+                    orderForm.setValue("phone", formatted, { shouldValidate: true });
+                  }}
                 />
-              </div>
+              </FormField>
             </div>
             
             <p className="text-[10px] text-muted-foreground/80 font-light flex gap-1.5 items-center pl-1">
@@ -405,15 +402,7 @@ function TrackingSearchContent() {
               {isLoading ? "Retrieving Details..." : "Track Order"}
               {!isLoading && <ArrowRight className="w-3.5 h-3.5" />}
             </button>
-          </form>
-        )}
-
-        {/* Error message panel */}
-        {errorMsg && (
-          <div className="p-4 bg-rose-500/10 border border-rose-500/20 text-rose-500 rounded-2xl flex items-center gap-3 text-xs leading-relaxed">
-            <AlertCircle className="w-5 h-5 shrink-0" />
-            <p>{errorMsg}</p>
-          </div>
+          </Form>
         )}
       </div>
 

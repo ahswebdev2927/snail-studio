@@ -3,9 +3,16 @@
 import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Phone, Lock, Sparkles, Loader2, ArrowRight, CheckCircle2 } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult } from "firebase/auth";
 import { auth } from "@/lib/firebase/client";
+import { Form } from "@/components/forms/form";
+import { FormField } from "@/components/forms/form-field";
+import { InputField } from "@/components/forms/fields";
+import { notify } from "@/lib/toast";
+import { loginPhoneSchema, otpVerificationSchema, type LoginPhoneInput, type OtpVerificationInput } from "@/lib/validators/auth";
 
 function LoginFormContent() {
   const router = useRouter();
@@ -14,30 +21,54 @@ function LoginFormContent() {
 
   const isDev = process.env.APP_ENV !== "production";
 
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const [otp, setOtp] = useState("");
   const [step, setStep] = useState<"phone" | "otp">("phone");
   const [loading, setLoading] = useState(false);
   const [checkingSession, setCheckingSession] = useState(true);
-  const [errorMsg, setErrorMsg] = useState("");
 
   const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
   const [recaptchaVerifier, setRecaptchaVerifier] = useState<RecaptchaVerifier | null>(null);
 
-  // Dev bypass states
-  const [devPhone, setDevPhone] = useState("+91 99999 88888");
-  const [devName, setDevName] = useState("Jane Doe");
-  const [devEmail, setDevEmail] = useState("jane.doe@example.com");
-  const [devWhatsapp, setDevWhatsapp] = useState("+91 99999 88888");
-  const [sameAsMobile, setSameAsMobile] = useState(true);
+  // Dev bypass loading state
   const [devLoading, setDevLoading] = useState(false);
+
+  // 1. Phone Form
+  const phoneForm = useForm<LoginPhoneInput>({
+    resolver: zodResolver(loginPhoneSchema),
+    defaultValues: {
+      phoneNumber: "+91",
+    },
+    mode: "onBlur",
+  });
+
+  // 2. OTP Form
+  const otpForm = useForm<OtpVerificationInput>({
+    resolver: zodResolver(otpVerificationSchema),
+    defaultValues: {
+      otp: "",
+    },
+    mode: "onBlur",
+  });
+
+  // 3. Dev Bypass Form
+  const devForm = useForm({
+    defaultValues: {
+      devName: "Jane Doe",
+      devPhone: "+919999988888",
+      devEmail: "jane.doe@example.com",
+      devWhatsapp: "+919999988888",
+      sameAsMobile: true,
+    },
+  });
+
+  const sameAsMobile = devForm.watch("sameAsMobile");
+  const devPhone = devForm.watch("devPhone");
 
   // Sync whatsapp number if 'same as mobile' is toggled
   useEffect(() => {
     if (sameAsMobile) {
-      setDevWhatsapp(devPhone);
+      devForm.setValue("devWhatsapp", devPhone);
     }
-  }, [devPhone, sameAsMobile]);
+  }, [devPhone, sameAsMobile, devForm]);
 
   // Check if a session already exists to skip login
   useEffect(() => {
@@ -70,20 +101,25 @@ function LoginFormContent() {
     };
   }, [recaptchaVerifier]);
 
-  const handlePhoneSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!phoneNumber) return;
-    setLoading(true);
-    setErrorMsg("");
-
-    // Normalize phone number (must be E.164 format)
-    let formattedPhone = phoneNumber.trim().replace(/\s+/g, "");
-    if (!formattedPhone.startsWith("+")) {
-      if (formattedPhone.startsWith("0")) {
-        formattedPhone = formattedPhone.slice(1);
+  // Format Phone Number on input change to strictly prefix +91
+  const formatPhoneNumber = (val: string) => {
+    let digits = val.replace(/\s+/g, "");
+    if (!digits.startsWith("+91")) {
+      // Remove any non-digits to isolate inputs
+      const raw = digits.replace(/[^\d]/g, "");
+      // If user typed 91 initially, don't duplicate it
+      if (raw.startsWith("91") && raw.length > 2) {
+        digits = "+" + raw;
+      } else {
+        digits = "+91" + raw;
       }
-      formattedPhone = `+91${formattedPhone}`;
     }
+    // Limit to +91 (3 chars) + 10 digits = 13 chars max
+    return digits.slice(0, 13);
+  };
+
+  const handlePhoneSubmit = async (data: any) => {
+    setLoading(true);
 
     try {
       let verifier = recaptchaVerifier;
@@ -99,9 +135,10 @@ function LoginFormContent() {
         setRecaptchaVerifier(verifier);
       }
 
-      const confirmation = await signInWithPhoneNumber(auth, formattedPhone, verifier);
+      const confirmation = await signInWithPhoneNumber(auth, data.phoneNumber, verifier);
       setConfirmationResult(confirmation);
       setStep("otp");
+      notify.success("Verification code sent successfully.");
     } catch (err: any) {
       console.error("Firebase Phone Send OTP failed:", err);
       setRecaptchaVerifier(null);
@@ -111,20 +148,18 @@ function LoginFormContent() {
       } else if (err.code === "auth/too-many-requests") {
         friendlyMsg = "Too many requests. SMS quota exceeded or traffic block. Please try again later or use the Dev Bypass.";
       }
-      setErrorMsg(err.message || friendlyMsg);
+      notify.error(friendlyMsg);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleOtpSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!otp || !confirmationResult) return;
+  const handleOtpSubmit = async (data: any) => {
+    if (!confirmationResult) return;
     setLoading(true);
-    setErrorMsg("");
 
     try {
-      const userCredential = await confirmationResult.confirm(otp);
+      const userCredential = await confirmationResult.confirm(data.otp);
       const idToken = await userCredential.user.getIdToken();
 
       const res = await fetch("/api/auth/login", {
@@ -135,12 +170,13 @@ function LoginFormContent() {
         }),
       });
 
-      const data = await res.json();
-      if (res.ok && data.success) {
+      const resData = await res.json();
+      if (res.ok && resData.success) {
+        notify.success("Log in successful. Redirecting...");
         router.push(callbackUrl);
         router.refresh();
       } else {
-        setErrorMsg(data.error || "Authentication failed on local server.");
+        notify.error(resData.error || "Authentication failed on local server.");
       }
     } catch (err: any) {
       console.error("Firebase OTP Verification failed:", err);
@@ -150,39 +186,42 @@ function LoginFormContent() {
       } else if (err.code === "auth/code-expired") {
         friendlyMsg = "The verification code has expired. Please send a new code.";
       }
-      setErrorMsg(err.message || friendlyMsg);
+      notify.error(friendlyMsg);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDevBypass = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleDevBypass = async (data: any) => {
     setDevLoading(true);
-    setErrorMsg("");
+
+    // Normalize phone numbers for dev bypass
+    const phone = formatPhoneNumber(data.devPhone);
+    const whatsapp = data.sameAsMobile ? phone : formatPhoneNumber(data.devWhatsapp);
 
     try {
       const res = await fetch("/api/auth/login-mock-customer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          phoneNumber: devPhone,
-          name: devName,
-          email: devEmail,
-          whatsappNumber: sameAsMobile ? devPhone : devWhatsapp,
+          phoneNumber: phone,
+          name: data.devName,
+          email: data.devEmail,
+          whatsappNumber: whatsapp,
         }),
       });
 
-      const data = await res.json();
-      if (res.ok && data.success) {
+      const resData = await res.json();
+      if (res.ok && resData.success) {
+        notify.success("Bypass sign-in successful. Redirecting...");
         router.push(callbackUrl);
         router.refresh();
       } else {
-        setErrorMsg(data.error || "Bypass login failed.");
+        notify.error(resData.error || "Bypass login failed.");
       }
     } catch (err: any) {
       console.error(err);
-      setErrorMsg("Failed to connect to dev bypass endpoint.");
+      notify.error("Failed to connect to dev bypass endpoint.");
     } finally {
       setDevLoading(false);
     }
@@ -217,79 +256,65 @@ function LoginFormContent() {
           </p>
         </div>
 
-        {errorMsg && (
-          <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-2xl text-xs text-destructive text-center">
-            {errorMsg}
-          </div>
-        )}
-
         {/* Regular Simulated Firebase Auth Flow */}
-        <form onSubmit={step === "phone" ? handlePhoneSubmit : handleOtpSubmit} className="space-y-4">
-          {step === "phone" ? (
-            <div className="space-y-1.5">
-              <label htmlFor="phone" className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider pl-1">
-                Mobile Number
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-muted-foreground/60">
-                  <Phone className="w-4 h-4" />
-                </div>
-                <input
-                  id="phone"
-                  type="tel"
-                  placeholder="+91 99999 00000"
-                  required
-                  value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 rounded-2xl bg-secondary/30 border border-border/40 focus:border-primary/50 outline-none text-sm transition-all placeholder:text-muted-foreground/45"
-                />
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-1.5">
-              <div className="flex justify-between items-center pl-1">
-                <label htmlFor="otp" className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                  Verification Code
-                </label>
-                <button
-                  type="button"
-                  onClick={() => setStep("phone")}
-                  className="text-[10px] font-medium text-primary hover:underline cursor-pointer"
-                >
-                  Change number
-                </button>
-              </div>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-muted-foreground/60">
-                  <Lock className="w-4 h-4" />
-                </div>
-                <input
-                  id="otp"
-                  type="text"
-                  placeholder="Enter 6-digit OTP"
-                  required
-                  maxLength={6}
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 rounded-2xl bg-secondary/30 border border-border/40 focus:border-primary/50 outline-none text-sm tracking-widest text-center font-mono transition-all placeholder:text-muted-foreground/45 placeholder:tracking-normal"
-                />
-              </div>
-            </div>
-          )}
+        {step === "phone" ? (
+          <Form methods={phoneForm} onSubmit={handlePhoneSubmit} className="space-y-4">
+            <FormField name="phoneNumber" label="Mobile Number" required>
+              <InputField
+                leftIcon={<Phone className="w-4 h-4 text-muted-foreground/60" />}
+                type="tel"
+                placeholder="+919876543210"
+                onChange={(e) => {
+                  const formatted = formatPhoneNumber(e.target.value);
+                  phoneForm.setValue("phoneNumber", formatted, { shouldValidate: true });
+                }}
+              />
+            </FormField>
 
-          <Button type="submit" disabled={loading} className="w-full py-6 rounded-2xl cursor-pointer">
-            {loading ? (
-              <Loader2 className="w-4.5 h-4.5 animate-spin" />
-            ) : step === "phone" ? (
-              <>
-                Send Passcode
-                <ArrowRight className="w-4 h-4 ml-1.5" />
-              </>
-            ) : (
-              "Verify & Sign In"
-            )}
-          </Button>
-        </form>
+            <Button type="submit" disabled={loading} className="w-full py-6 rounded-2xl cursor-pointer">
+              {loading ? (
+                <Loader2 className="w-4.5 h-4.5 animate-spin" />
+              ) : (
+                <>
+                  Send Passcode
+                  <ArrowRight className="w-4 h-4 ml-1.5" />
+                </>
+              )}
+            </Button>
+          </Form>
+        ) : (
+          <Form methods={otpForm} onSubmit={handleOtpSubmit} className="space-y-4">
+            <div className="flex justify-between items-center pl-1">
+              <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                Verification Code
+              </label>
+              <button
+                type="button"
+                onClick={() => setStep("phone")}
+                className="text-[10px] font-medium text-primary hover:underline cursor-pointer bg-transparent border-none outline-none"
+              >
+                Change number
+              </button>
+            </div>
+            <FormField name="otp">
+              <InputField
+                leftIcon={<Lock className="w-4 h-4 text-muted-foreground/60" />}
+                type="text"
+                placeholder="6-digit OTP"
+                maxLength={6}
+                className="text-center font-mono tracking-widest"
+              />
+            </FormField>
+
+            <Button type="submit" disabled={loading} className="w-full py-6 rounded-2xl cursor-pointer">
+              {loading ? (
+                <Loader2 className="w-4.5 h-4.5 animate-spin" />
+              ) : (
+                "Verify & Sign In"
+              )}
+            </Button>
+          </Form>
+        )}
 
         {/* Developer Bypass Panel (Only rendered in local development mode) */}
         {isDev && (
@@ -303,7 +328,7 @@ function LoginFormContent() {
               <div className="flex-1 h-[1px] bg-border/20" />
             </div>
 
-            <form onSubmit={handleDevBypass} className="space-y-3.5 bg-secondary/25 border border-border/30 rounded-2xl p-5">
+            <Form methods={devForm} onSubmit={handleDevBypass} className="space-y-3.5 bg-secondary/25 border border-border/30 rounded-2xl p-5">
               <div className="flex items-center gap-1.5 text-xs text-primary font-medium pb-1.5 border-b border-border/20">
                 <CheckCircle2 className="w-4 h-4" />
                 Instant Customer Login
@@ -318,8 +343,7 @@ function LoginFormContent() {
                     <input
                       type="text"
                       required
-                      value={devName}
-                      onChange={(e) => setDevName(e.target.value)}
+                      {...devForm.register("devName")}
                       className="w-full px-2.5 py-1.5 rounded-lg bg-card border border-border/35 text-[11px] outline-none"
                     />
                   </div>
@@ -330,8 +354,7 @@ function LoginFormContent() {
                     <input
                       type="text"
                       required
-                      value={devPhone}
-                      onChange={(e) => setDevPhone(e.target.value)}
+                      {...devForm.register("devPhone")}
                       className="w-full px-2.5 py-1.5 rounded-lg bg-card border border-border/35 text-[11px] outline-none"
                     />
                   </div>
@@ -344,8 +367,7 @@ function LoginFormContent() {
                   <input
                     type="email"
                     required
-                    value={devEmail}
-                    onChange={(e) => setDevEmail(e.target.value)}
+                    {...devForm.register("devEmail")}
                     className="w-full px-2.5 py-1.5 rounded-lg bg-card border border-border/35 text-[11px] outline-none"
                   />
                 </div>
@@ -355,8 +377,7 @@ function LoginFormContent() {
                     <input
                       id="same-whatsapp"
                       type="checkbox"
-                      checked={sameAsMobile}
-                      onChange={(e) => setSameAsMobile(e.target.checked)}
+                      {...devForm.register("sameAsMobile")}
                       className="rounded border-border text-primary focus:ring-primary w-3 h-3 cursor-pointer"
                     />
                     <label htmlFor="same-whatsapp" className="text-[8px] font-bold text-muted-foreground uppercase cursor-pointer select-none">
@@ -372,8 +393,7 @@ function LoginFormContent() {
                       <input
                         type="text"
                         required
-                        value={devWhatsapp}
-                        onChange={(e) => setDevWhatsapp(e.target.value)}
+                        {...devForm.register("devWhatsapp")}
                         className="w-full px-2.5 py-1.5 rounded-lg bg-card border border-border/35 text-[11px] outline-none"
                       />
                     </div>
@@ -393,7 +413,7 @@ function LoginFormContent() {
                   "Sign In with Mock Details"
                 )}
               </Button>
-            </form>
+            </Form>
           </>
         )}
         <div id="recaptcha-container" className="hidden"></div>
