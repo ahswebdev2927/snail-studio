@@ -60,8 +60,11 @@ export async function searchProducts(params: SearchQueryParams): Promise<SearchR
     ...filterParams
   } = params;
 
-  // 1. Fetch pre-filtered items from database
-  let results = await getFilteredProducts(filterParams);
+  // Extract minPrice and maxPrice to apply in-memory after facets calculation
+  const { minPrice, maxPrice, ...dbFilterParams } = filterParams;
+
+  // 1. Fetch pre-filtered items from database (without price limits to get full facets)
+  let results = await getFilteredProducts(dbFilterParams);
 
   // 2. Perform fuzzy ranking using Fuse.js if a text query exists
   const hasQuery = !!(q && q.trim());
@@ -69,13 +72,21 @@ export async function searchProducts(params: SearchQueryParams): Promise<SearchR
     results = searchWithFuse(results, q!);
   }
 
-  // 3. Compute dynamic facets across all matching records (before pagination)
+  // 3. Compute dynamic facets across all matching records (before pagination and price filters)
   const facets = calculateFacets(results);
 
-  // 4. Sort results
+  // 4. Filter results by price range (Overlaps min/max price boundaries of product)
+  if (minPrice !== undefined) {
+    results = results.filter((p) => p.priceMax >= minPrice);
+  }
+  if (maxPrice !== undefined) {
+    results = results.filter((p) => p.priceMin <= maxPrice);
+  }
+
+  // 5. Sort results
   results = sortProducts(results, sort, hasQuery);
 
-  // 5. Apply pagination offsets
+  // 6. Apply pagination offsets
   const totalItems = results.length;
   const totalPages = Math.ceil(totalItems / limit) || 1;
   const currentPage = Math.max(1, Math.min(page, totalPages));

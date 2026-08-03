@@ -3,6 +3,7 @@
 import { FacetOption, AttributeFacet } from "@/services/search/product-search.service";
 import { ChevronDown, RotateCcw, ShieldCheck, SlidersHorizontal, EyeOff } from "lucide-react";
 import { useState } from "react";
+import { RangeSlider } from "@/components/ui/slider";
 
 export interface FilterState {
   category?: string;
@@ -75,6 +76,21 @@ export function FilterSidebar({ facets, filters, onChange, onClear, onToggleHide
       minPrice: min,
       maxPrice: max,
     });
+  };
+
+  // Dynamic price limits in Rupees calculated from database search facets
+  const dbMin = facets?.priceRange ? Math.floor(facets.priceRange.min / 100) : 0;
+  const dbMax = facets?.priceRange ? Math.ceil(facets.priceRange.max / 100) : 10000;
+  const priceMinLimit = dbMin;
+  const priceMaxLimit = dbMax > dbMin ? dbMax : dbMin + 100;
+
+  const currentMin = filters.minPrice !== undefined ? Math.floor(filters.minPrice / 100) : priceMinLimit;
+  const currentMax = filters.maxPrice !== undefined ? Math.ceil(filters.maxPrice / 100) : priceMaxLimit;
+
+  const handleSliderChange = (minVal: number, maxVal: number) => {
+    const minPrice = minVal === priceMinLimit ? undefined : minVal * 100;
+    const maxPrice = maxVal === priceMaxLimit ? undefined : maxVal * 100;
+    handlePriceChange(minPrice, maxPrice);
   };
 
   const handleAvailabilityToggle = () => {
@@ -210,33 +226,6 @@ export function FilterSidebar({ facets, filters, onChange, onClear, onToggleHide
         </div>
       )}
 
-      {/* Brands Accordion */}
-      {brandsList.length > 0 && (
-        <div className="border-b border-border/20 pb-5">
-          <div className="flex items-center justify-between py-2 cursor-pointer" onClick={() => toggleSection("brands")}>
-            <h3 className="text-sm font-medium text-foreground">Brands</h3>
-            <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-300 ${openSections.brands ? "rotate-180" : ""}`} />
-          </div>
-          {openSections.brands && (
-            <div className="mt-3 space-y-2 max-h-56 overflow-y-auto pr-1">
-              {brandsList.map((brand) => (
-                <label key={brand.id} className="flex items-center justify-between text-sm text-foreground/85 hover:text-foreground cursor-pointer py-0.5">
-                  <span className="flex items-center gap-2.5">
-                    <input
-                      type="checkbox"
-                      checked={filters.brand?.includes(brand.slug) || false}
-                      onChange={() => handleCheckboxToggle("brand", brand.slug)}
-                      className="w-4 h-4 rounded text-primary border-border focus:ring-primary/20 accent-primary cursor-pointer"
-                    />
-                    {brand.name}
-                  </span>
-                  <span className="text-[10px] text-muted-foreground/60">({brand.count})</span>
-                </label>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
 
       {/* Price Accordion */}
       <div className="border-b border-border/20 pb-5">
@@ -245,35 +234,14 @@ export function FilterSidebar({ facets, filters, onChange, onClear, onToggleHide
           <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-300 ${openSections.price ? "rotate-180" : ""}`} />
         </div>
         {openSections.price && (
-          <div className="mt-3 space-y-4">
-            <div className="flex items-center gap-2.5">
-              <div className="flex-1">
-                <span className="text-[10px] text-muted-foreground/60 block mb-1">Min Price</span>
-                <input
-                  type="number"
-                  placeholder="Min"
-                  value={filters.minPrice !== undefined ? Math.floor(filters.minPrice / 100) : ""}
-                  onChange={(e) => {
-                    const val = e.target.value ? parseFloat(e.target.value) * 100 : undefined;
-                    handlePriceChange(val, filters.maxPrice);
-                  }}
-                  className="w-full text-sm bg-secondary/20 border border-border/30 rounded-md py-1.5 px-2.5 outline-none focus:border-primary/50 text-foreground"
-                />
-              </div>
-              <div className="flex-1">
-                <span className="text-[10px] text-muted-foreground/60 block mb-1">Max Price</span>
-                <input
-                  type="number"
-                  placeholder="Max"
-                  value={filters.maxPrice !== undefined ? Math.floor(filters.maxPrice / 100) : ""}
-                  onChange={(e) => {
-                    const val = e.target.value ? parseFloat(e.target.value) * 100 : undefined;
-                    handlePriceChange(filters.minPrice, val);
-                  }}
-                  className="w-full text-sm bg-secondary/20 border border-border/30 rounded-md py-1.5 px-2.5 outline-none focus:border-primary/50 text-foreground"
-                />
-              </div>
-            </div>
+          <div className="mt-3 space-y-4 px-1 pb-1">
+            <RangeSlider
+              min={priceMinLimit}
+              max={priceMaxLimit}
+              valueMin={currentMin}
+              valueMax={currentMax}
+              onChange={handleSliderChange}
+            />
           </div>
         )}
       </div>

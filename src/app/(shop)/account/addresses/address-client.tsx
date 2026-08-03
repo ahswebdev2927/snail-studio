@@ -21,6 +21,7 @@ import {
   Tag
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Select } from "@/components/ui/select";
 import { saveUserAddress, deleteUserAddress, setDefaultAddress } from "@/features/account/actions";
 
 interface Address {
@@ -559,14 +560,17 @@ export function AddressClient({ initialAddresses }: AddressClientProps) {
                     <label className="text-[10px] font-semibold text-muted-foreground uppercase pl-0.5">
                       Address Type
                     </label>
-                    <select
+                    <Select
+                      options={[
+                        { value: "shipping", label: "Shipping Address" },
+                        { value: "billing", label: "Billing Address" },
+                      ]}
                       value={addressType}
-                      onChange={(e) => setAddressType(e.target.value as any)}
-                      className="w-full px-3.5 py-2 rounded-xl bg-secondary/35 border border-border/40 focus:border-primary outline-none text-xs text-foreground cursor-pointer"
-                    >
-                      <option value="shipping">Shipping Address</option>
-                      <option value="billing">Billing Address</option>
-                    </select>
+                      onChange={(val) => setAddressType(val as any)}
+                      placeholder="Select address type..."
+                      label="Address Type"
+                      triggerClassName="w-full px-3.5 py-2 rounded-xl bg-secondary/35 border border-border/40 focus:border-primary text-xs text-foreground cursor-pointer"
+                    />
                   </div>
                 </div>
 

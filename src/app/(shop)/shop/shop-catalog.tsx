@@ -11,6 +11,7 @@ import { SearchResults } from "@/features/catalog/search-results";
 import { SearchPagination } from "@/features/catalog/search-pagination";
 import { SearchEmptyState } from "@/features/catalog/search-empty-state";
 import { SlidersHorizontal, ArrowUpDown, X, Eye, EyeOff } from "lucide-react";
+import { Select } from "@/components/ui/select";
 import { trackSearch, trackViewItemList } from "@/lib/analytics";
 
 // Helper to compile search filters into query string
@@ -492,24 +493,26 @@ export default function ShopCatalog() {
               </button>
 
               {/* Sort Selector */}
-              <div className="relative flex items-center bg-secondary/15 border border-border/30 rounded-full px-3 py-1.5 focus-within:border-primary/50 transition-colors">
-                <ArrowUpDown className="w-3.5 h-3.5 text-muted-foreground/80 mr-2 shrink-0" />
-                <select
-                  value={sort}
-                  onChange={(e) => handleSortChange(e.target.value as "relevance" | "price_asc" | "price_desc" | "newest" | "best_selling" | "featured" | "alpha_asc" | "alpha_desc")}
-                  className="bg-transparent text-xs font-medium pr-6 outline-none appearance-none cursor-pointer border-none text-foreground"
-                >
-                  <option value="relevance">Sort: Relevance</option>
-                  <option value="price_asc">Price: Low to High</option>
-                  <option value="price_desc">Price: High to Low</option>
-                  <option value="newest">Sort: Newest</option>
-                  <option value="best_selling">Best Selling</option>
-                  <option value="featured">Featured First</option>
-                  <option value="alpha_asc">Alphabetical: A-Z</option>
-                  <option value="alpha_desc">Alphabetical: Z-A</option>
-                </select>
-                <ChevronDownIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/80 pointer-events-none" />
-              </div>
+              <Select
+                options={[
+                  { value: "relevance", label: "Sort: Relevance" },
+                  { value: "price_asc", label: "Price: Low to High" },
+                  { value: "price_desc", label: "Price: High to Low" },
+                  { value: "newest", label: "Sort: Newest" },
+                  { value: "best_selling", label: "Best Selling" },
+                  { value: "featured", label: "Featured First" },
+                  { value: "alpha_asc", label: "Alphabetical: A-Z" },
+                  { value: "alpha_desc", label: "Alphabetical: Z-A" },
+                ]}
+                value={sort}
+                onChange={(val) => handleSortChange(val as any)}
+                placeholder="Sort: Relevance"
+                label="Sort Options"
+                leftIcon={<ArrowUpDown className="w-3.5 h-3.5 text-muted-foreground/80 shrink-0" />}
+                className="w-[170px]"
+                triggerClassName="rounded-full bg-secondary/15 border-border/30 px-3 py-1.5 focus:border-primary/50 text-xs font-medium text-foreground hover:bg-secondary/20 h-auto"
+                popoverClassName="w-[185px] right-0"
+              />
             </div>
           </div>
         </div>

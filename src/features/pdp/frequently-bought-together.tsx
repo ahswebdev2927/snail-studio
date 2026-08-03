@@ -5,6 +5,7 @@ import Image from "next/image";
 import { Plus, ShoppingBag, CheckCircle2 } from "lucide-react";
 import { useCartStore } from "@/lib/hooks/use-cart-store";
 import { cn } from "@/lib/utils";
+import { Select } from "@/components/ui/select";
 
 interface VariantInfo {
   id: string;
@@ -302,17 +303,19 @@ export function FrequentlyBoughtTogether({
 
                           {/* Dropdown Selection */}
                           {isChecked && p.variants.length > 1 && (
-                            <select
+                            <Select
+                              options={p.variants.map((v) => ({
+                                value: v.id,
+                                label: `${v.name}${v.stockLevel <= 0 ? " (OOS)" : ""}`,
+                                disabled: v.stockLevel <= 0,
+                              }))}
                               value={vId}
-                              onChange={(e) => handleVariantChange(bundle.id, p.id, e.target.value)}
-                              className="text-[9px] px-2 py-1 bg-card border border-border/50 rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-primary w-full max-w-[110px] cursor-pointer"
-                            >
-                              {p.variants.map((v) => (
-                                <option key={v.id} value={v.id} disabled={v.stockLevel <= 0}>
-                                  {v.name} {v.stockLevel <= 0 && "(OOS)"}
-                                </option>
-                              ))}
-                            </select>
+                              onChange={(value) => handleVariantChange(bundle.id, p.id, value)}
+                              placeholder="Select variant"
+                              label="Variants"
+                              triggerClassName="text-[9px] px-2.5 py-1.5 bg-card border border-border/50 rounded-lg text-foreground focus:border-primary/50 w-full max-w-[110px] cursor-pointer h-auto py-1 leading-none"
+                              popoverClassName="w-[125px] right-0"
+                            />
                           )}
                         </div>
                       </React.Fragment>

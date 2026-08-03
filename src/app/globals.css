@@ -411,3 +411,91 @@ textarea {
   border: 1px solid var(--border) !important;
   color: var(--foreground) !important;
 }
+
+/* Multi-range slider custom styles */
+.price-slider-container {
+  position: relative;
+  width: 100%;
+  height: 24px;
+  display: flex;
+  align-items: center;
+}
+
+.price-slider-input {
+  position: absolute;
+  width: 100%;
+  height: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  pointer-events: none;
+  -webkit-appearance: none;
+  appearance: none;
+  z-index: 20;
+}
+
+/* For Chrome/Safari/Edge/Opera */
+.price-slider-input::-webkit-slider-thumb {
+  pointer-events: auto;
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--primary, #ac5429);
+  border: 2px solid var(--background, #ffffff);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  transition: transform 0.1s ease, background-color 0.1s ease;
+}
+
+.price-slider-input::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+}
+
+.price-slider-input::-webkit-slider-thumb:active {
+  transform: scale(1.15);
+  background: var(--primary-hover, #8f4522);
+}
+
+/* For Firefox */
+.price-slider-input::-moz-range-thumb {
+  pointer-events: auto;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--primary, #ac5429);
+  border: 2px solid var(--background, #ffffff);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  transition: transform 0.1s ease, background-color 0.1s ease;
+}
+
+.price-slider-input::-moz-range-thumb:hover {
+  transform: scale(1.15);
+}
+
+.price-slider-input::-moz-range-thumb:active {
+  transform: scale(1.15);
+  background: var(--primary-hover, #8f4522);
+}
+
+.price-slider-track {
+  position: absolute;
+  width: 100%;
+  height: 4px;
+  border-radius: 9999px;
+  background: var(--secondary, #efd3c9);
+  opacity: 0.35;
+  z-index: 10;
+}
+
+.price-slider-range {
+  position: absolute;
+  height: 4px;
+  border-radius: 9999px;
+  background: var(--primary, #ac5429);
+  z-index: 11;
+}

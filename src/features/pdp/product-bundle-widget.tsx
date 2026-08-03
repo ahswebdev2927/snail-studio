@@ -4,6 +4,7 @@ import React, { useState, useMemo } from "react";
 import { Sparkles, Check, ShoppingBag, Info } from "lucide-react";
 import { useCartStore } from "@/lib/hooks/use-cart-store";
 import CloudinaryImage from "@/components/media/cloudinary-image";
+import { Select } from "@/components/ui/select";
 
 interface AttributeValue {
   id: string;
@@ -374,19 +375,21 @@ export function ProductBundleWidget({ bundles, currentProductId }: ProductBundle
                                   <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                                     {g.name}:
                                   </span>
-                                  <select
+                                  <Select
+                                    options={g.values.map((v) => ({
+                                      value: v.code,
+                                      label: v.name,
+                                    }))}
                                     value={selectedAttrs[g.code] || ""}
-                                    onChange={(e) =>
-                                      handleSelectAttribute(bundle.id, prod.id, g.code, e.target.value)
+                                    onChange={(value) =>
+                                      handleSelectAttribute(bundle.id, prod.id, g.code, value)
                                     }
-                                    className="px-2.5 py-1 border border-border/60 rounded-lg text-[10px] font-medium bg-secondary/40 text-foreground outline-none focus:border-primary/50 transition-colors cursor-pointer"
-                                  >
-                                    {g.values.map((v) => (
-                                      <option key={v.code} value={v.code}>
-                                        {v.name}
-                                      </option>
-                                    ))}
-                                  </select>
+                                    placeholder={`Select ${g.name}...`}
+                                    label={g.name}
+                                    className="w-auto"
+                                    triggerClassName="px-2.5 py-1 border border-border/60 rounded-lg text-[10px] font-medium bg-secondary/40 text-foreground outline-hidden focus:border-primary/50 cursor-pointer h-auto leading-none min-w-[90px]"
+                                    popoverClassName="w-[110px] left-0"
+                                  />
                                 </div>
                               ))}
                             </div>
