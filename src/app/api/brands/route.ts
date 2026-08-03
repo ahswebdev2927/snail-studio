@@ -6,18 +6,7 @@ import { nanoid } from "nanoid";
 import { z } from "zod";
 import { authorize } from "@/middleware/auth";
 import { slugify } from "@/lib/utils";
-
-const createBrandSchema = z.object({
-  name: z.string().min(1, "Name is required").max(100, "Name is too long"),
-  slug: z
-    .string()
-    .max(100, "Slug is too long")
-    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Slug must be lowercase alphanumeric with hyphens")
-    .optional()
-    .or(z.literal("")),
-  description: z.string().max(1000, "Description is too long").optional().nullable(),
-  logoUrl: z.string().url("Invalid logo URL").optional().nullable().or(z.literal("")),
-});
+import { createBrandSchema } from "@/lib/validators/catalog";
 
 // GET /api/brands - list all brands sorted by name ascending
 export async function GET() {

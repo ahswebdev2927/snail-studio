@@ -6,16 +6,7 @@ import { nanoid } from "nanoid";
 import { z } from "zod";
 import { authorize } from "@/middleware/auth";
 import { slugify } from "@/lib/utils";
-
-const createValueSchema = z.object({
-  value: z.string().min(1, "Value is required").max(100, "Value is too long"),
-  code: z
-    .string()
-    .max(100, "Code is too long")
-    .regex(/^[a-z0-9_]+$/, "Code must be lowercase alphanumeric with underscores")
-    .optional()
-    .or(z.literal("")),
-});
+import { createAttributeValueSchema as createValueSchema } from "@/lib/validators/catalog";
 
 // POST /api/admin/attributes/[id]/values - Create a new attribute value under a group (Admin only)
 export async function POST(

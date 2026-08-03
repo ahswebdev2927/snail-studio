@@ -4,14 +4,9 @@ import { coupons } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { authorize } from "@/middleware/auth";
 import { z } from "zod";
+import { createCouponSchema } from "@/lib/validators/catalog";
 
-const updateCouponSchema = z.object({
-  isActive: z.boolean().optional(),
-  discountValue: z.number().int().min(1).optional(),
-  minOrderAmount: z.number().int().min(0).optional().nullable(),
-  maxDiscountAmount: z.number().int().min(0).optional().nullable(),
-  usageLimit: z.number().int().min(1).optional().nullable(),
-});
+const updateCouponSchema = createCouponSchema.partial();
 
 // PATCH /api/coupons/[id] - Update coupon fields or active status toggle (Admin only)
 export async function PATCH(

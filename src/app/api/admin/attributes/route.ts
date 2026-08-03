@@ -6,22 +6,7 @@ import { nanoid } from "nanoid";
 import { z } from "zod";
 import { authorize } from "@/middleware/auth";
 import { slugify } from "@/lib/utils";
-
-const createGroupSchema = z.object({
-  name: z.string().min(1, "Name is required").max(100, "Name is too long"),
-  code: z
-    .string()
-    .max(100, "Code is too long")
-    .regex(/^[a-z0-9]+(?:-[a-z0-9_]+)*$/, "Code must be lowercase alphanumeric with hyphens or underscores")
-    .optional()
-    .or(z.literal("")),
-  attributeType: z.enum(["VARIANT", "CATALOG"]),
-  filterable: z.boolean().default(true),
-  searchable: z.boolean().default(true),
-  visibleOnPdp: z.boolean().default(true),
-  showInDropdown: z.boolean().default(false),
-  displayOrder: z.coerce.number().default(0),
-});
+import { createAttributeGroupSchema as createGroupSchema } from "@/lib/validators/catalog";
 
 // GET /api/admin/attributes - List all attribute groups and values (Admin only)
 export async function GET(req: NextRequest) {

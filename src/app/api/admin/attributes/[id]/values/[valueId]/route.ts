@@ -5,15 +5,7 @@ import { eq, and } from "drizzle-orm";
 import { z } from "zod";
 import { authorize } from "@/middleware/auth";
 import { slugify } from "@/lib/utils";
-
-const updateValueSchema = z.object({
-  value: z.string().min(1, "Value is required").max(100, "Value is too long").optional(),
-  code: z
-    .string()
-    .max(100, "Code is too long")
-    .regex(/^[a-z0-9_]+$/, "Code must be lowercase alphanumeric with underscores")
-    .optional(),
-});
+import { updateAttributeValueSchema as updateValueSchema } from "@/lib/validators/catalog";
 
 // PUT /api/admin/attributes/[id]/values/[valueId] - Update specific attribute value (Admin only)
 export async function PUT(

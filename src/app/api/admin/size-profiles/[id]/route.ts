@@ -4,17 +4,9 @@ import { sizeProfiles } from "@/db/schema";
 import { eq, and, ne } from "drizzle-orm";
 import { authorize } from "@/middleware/auth";
 import { z } from "zod";
+import { createSizeProfileSchema } from "@/lib/validators/settings";
 
-const updateSizeProfileSchema = z.object({
-  name: z.string().min(1, "Name is required").max(20, "Name is too long").optional(),
-  description: z.string().max(200, "Description is too long").optional(),
-  thumb: z.number().int().min(5, "Thumb width must be at least 5mm").max(25, "Thumb width cannot exceed 25mm").optional(),
-  index: z.number().int().min(5, "Index width must be at least 5mm").max(25, "Index width cannot exceed 25mm").optional(),
-  middle: z.number().int().min(5, "Middle width must be at least 5mm").max(25, "Middle width cannot exceed 25mm").optional(),
-  ring: z.number().int().min(5, "Ring width must be at least 5mm").max(25, "Ring width cannot exceed 25mm").optional(),
-  pinky: z.number().int().min(5, "Pinky width must be at least 5mm").max(25, "Pinky width cannot exceed 25mm").optional(),
-  isActive: z.boolean().optional(),
-});
+const updateSizeProfileSchema = createSizeProfileSchema.partial();
 
 /**
  * PUT /api/admin/size-profiles/[id] - Update a size profile (Admin only)

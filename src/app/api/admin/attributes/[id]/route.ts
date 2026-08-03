@@ -5,21 +5,9 @@ import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { authorize } from "@/middleware/auth";
 import { slugify } from "@/lib/utils";
+import { createAttributeGroupSchema } from "@/lib/validators/catalog";
 
-const updateGroupSchema = z.object({
-  name: z.string().min(1, "Name is required").max(100, "Name is too long").optional(),
-  code: z
-    .string()
-    .max(100, "Code is too long")
-    .regex(/^[a-z0-9]+(?:-[a-z0-9_]+)*$/, "Code must be lowercase alphanumeric with hyphens or underscores")
-    .optional(),
-  attributeType: z.enum(["VARIANT", "CATALOG"]).optional(),
-  filterable: z.boolean().optional(),
-  searchable: z.boolean().optional(),
-  visibleOnPdp: z.boolean().optional(),
-  showInDropdown: z.boolean().optional(),
-  displayOrder: z.coerce.number().optional(),
-});
+const updateGroupSchema = createAttributeGroupSchema.partial();
 
 // PUT /api/admin/attributes/[id] - Update attribute group details (Admin only)
 export async function PUT(

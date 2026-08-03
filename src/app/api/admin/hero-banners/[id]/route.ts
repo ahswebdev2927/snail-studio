@@ -4,28 +4,9 @@ import { heroBanners } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { authorize } from "@/middleware/auth";
 import { z } from "zod";
+import { createHeroBannerSchema } from "@/lib/validators/marketing";
 
-const updateBannerSchema = z.object({
-  imageUrl: z.string().min(1, "Image URL is required").refine(
-    (val) => val.startsWith("/") || /^(https?:\/\/)/.test(val),
-    "Must be a relative path starting with '/' or an absolute HTTP(S) URL"
-  ).optional(),
-  title: z.string().min(1, "Title is required").max(100, "Title is too long").optional(),
-  subtitle: z.string().max(200, "Subtitle is too long").optional().nullable(),
-  ctaText: z.string().max(50, "CTA Text is too long").optional().nullable(),
-  ctaLink: z.string().max(200, "CTA Link is too long").optional().nullable(),
-  textColor: z.string().optional().nullable().transform((val) => {
-    if (!val || val.trim() === "") return undefined;
-    return val;
-  }).refine(
-    (val) => val === undefined || /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(val),
-    "Invalid hex color"
-  ),
-  contentAlignment: z.enum(['left', 'center', 'right']).optional(),
-  lineSpacing: z.enum(['tight', 'normal', 'comfortable', 'loose']).optional(),
-  sortOrder: z.number().int().optional(),
-  isActive: z.boolean().optional(),
-});
+const updateBannerSchema = createHeroBannerSchema.partial();
 
 /**
  * PUT /api/admin/hero-banners/[id] - Update a hero banner (Admin only)

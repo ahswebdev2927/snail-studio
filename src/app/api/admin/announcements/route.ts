@@ -5,30 +5,7 @@ import { eq, asc } from "drizzle-orm";
 import { authorize } from "@/middleware/auth";
 import { nanoid } from "nanoid";
 import { z } from "zod";
-
-const createAnnouncementSchema = z.object({
-  text: z.string().min(1, "Text is required").max(200, "Text is too long"),
-  icon: z.string().nullable().optional(),
-  ctaText: z.string().max(50, "CTA text is too long").nullable().optional(),
-  ctaLink: z.string().max(200, "CTA link is too long").nullable().optional(),
-  textColor: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Invalid text color hex code").default("#ffffff"),
-  backgroundColor: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Invalid background color hex code").default("#A95423"),
-  startDate: z.preprocess((val) => (val === "" ? null : val), z.string().transform((v) => new Date(v)).nullable().optional()),
-  endDate: z.preprocess((val) => (val === "" ? null : val), z.string().transform((v) => new Date(v)).nullable().optional()),
-  isActive: z.boolean().default(true),
-  sortOrder: z.number().int().default(0),
-}).refine(
-  (data) => {
-    if (data.startDate && data.endDate) {
-      return data.startDate <= data.endDate;
-    }
-    return true;
-  },
-  {
-    message: "Start date must be before or equal to end date",
-    path: ["endDate"],
-  }
-);
+import { createAnnouncementSchema } from "@/lib/validators/marketing";
 
 /**
  * GET /api/admin/announcements - Get all announcements (Admin only)

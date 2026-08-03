@@ -5,28 +5,7 @@ import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { z } from "zod";
 import { authorize } from "@/middleware/auth";
-
-const createBundleSchema = z.object({
-  name: z.string().min(1, "Bundle name is required").max(100, "Bundle name is too long"),
-  description: z.string().optional().nullable(),
-  discountType: z.enum(["percentage", "fixed"]),
-  discountValue: z.number().int().min(1, "Discount value must be at least 1"),
-  startDate: z.preprocess((val) => (val === "" ? null : val), z.string().transform((v) => new Date(v)).nullable().optional()),
-  endDate: z.preprocess((val) => (val === "" ? null : val), z.string().transform((v) => new Date(v)).nullable().optional()),
-  isActive: z.boolean().default(true),
-  productIds: z.array(z.string()).min(2, "A bundle must contain at least 2 products"),
-}).refine(
-  (data) => {
-    if (data.startDate && data.endDate) {
-      return data.startDate <= data.endDate;
-    }
-    return true;
-  },
-  {
-    message: "Start date must be before or equal to end date",
-    path: ["endDate"],
-  }
-);
+import { createBundleSchema } from "@/lib/validators/catalog";
 
 // GET /api/bundles - List all bundles (Admin only)
 export async function GET(req: NextRequest) {

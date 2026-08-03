@@ -3,11 +3,7 @@ import { db } from "@/db";
 import { coupons } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { z } from "zod";
-
-const validateCouponSchema = z.object({
-  code: z.string().min(1, "Coupon code is required").transform((val) => val.toUpperCase().trim()),
-  subtotal: z.number().int().min(0, "Subtotal must be a positive integer"),
-});
+import { validateCouponSchema } from "@/lib/validators/catalog";
 
 export async function POST(req: NextRequest) {
   try {

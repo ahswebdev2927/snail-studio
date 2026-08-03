@@ -4,28 +4,7 @@ import { productBundles, productBundleItems } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { authorize } from "@/middleware/auth";
-
-const updateBundleSchema = z.object({
-  name: z.string().min(1, "Bundle name is required").max(100, "Bundle name is too long").optional(),
-  description: z.string().optional().nullable(),
-  discountType: z.enum(["percentage", "fixed"]).optional(),
-  discountValue: z.number().int().min(1, "Discount value must be at least 1").optional(),
-  startDate: z.preprocess((val) => (val === "" ? null : val), z.string().transform((v) => new Date(v)).nullable().optional()),
-  endDate: z.preprocess((val) => (val === "" ? null : val), z.string().transform((v) => new Date(v)).nullable().optional()),
-  isActive: z.boolean().optional(),
-  productIds: z.array(z.string()).min(2, "A bundle must contain at least 2 products").optional(),
-}).refine(
-  (data) => {
-    if (data.startDate && data.endDate) {
-      return data.startDate <= data.endDate;
-    }
-    return true;
-  },
-  {
-    message: "Start date must be before or equal to end date",
-    path: ["endDate"],
-  }
-);
+import { updateBundleSchema } from "@/lib/validators/catalog";
 
 // PATCH /api/bundles/[id] - Update a bundle (Admin only)
 export async function PATCH(

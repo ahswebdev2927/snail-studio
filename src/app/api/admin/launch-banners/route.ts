@@ -5,21 +5,7 @@ import { eq, asc, count } from "drizzle-orm";
 import { authorize } from "@/middleware/auth";
 import { nanoid } from "nanoid";
 import { z } from "zod";
-
-const createBannerSchema = z.object({
-  productId: z.string().min(1, "Product ID is required"),
-  title: z.string().min(1, "Title is required").max(100, "Title is too long"),
-  subtitle: z.string().max(200, "Subtitle is too long").optional().nullable(),
-  backgroundImage: z.string().optional().nullable(),
-  productImage: z.string().optional().nullable(),
-  textColor: z.string().default("#ffffff"),
-  contentAlignment: z.enum(["left", "center", "right"]).default("center"),
-  lineSpacing: z.enum(["tight", "normal", "comfortable", "loose"]).default("normal"),
-  ctaBgColor: z.string().default("#8C5230"),
-  ctaTextColor: z.string().default("#ffffff"),
-  sortOrder: z.number().int().default(0),
-  isActive: z.boolean().default(true),
-});
+import { createLaunchBannerSchema as createBannerSchema } from "@/lib/validators/marketing";
 
 /**
  * GET /api/admin/launch-banners - Get all launch banners (Admin only)

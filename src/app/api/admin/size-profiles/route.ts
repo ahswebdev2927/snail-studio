@@ -5,17 +5,7 @@ import { eq, asc } from "drizzle-orm";
 import { authorize } from "@/middleware/auth";
 import { nanoid } from "nanoid";
 import { z } from "zod";
-
-const createSizeProfileSchema = z.object({
-  name: z.string().min(1, "Name is required").max(20, "Name is too long"),
-  description: z.string().max(200, "Description is too long").default(""),
-  thumb: z.number().int().min(5, "Thumb width must be at least 5mm").max(25, "Thumb width cannot exceed 25mm"),
-  index: z.number().int().min(5, "Index width must be at least 5mm").max(25, "Index width cannot exceed 25mm"),
-  middle: z.number().int().min(5, "Middle width must be at least 5mm").max(25, "Middle width cannot exceed 25mm"),
-  ring: z.number().int().min(5, "Ring width must be at least 5mm").max(25, "Ring width cannot exceed 25mm"),
-  pinky: z.number().int().min(5, "Pinky width must be at least 5mm").max(25, "Pinky width cannot exceed 25mm"),
-  isActive: z.boolean().default(true),
-});
+import { createSizeProfileSchema } from "@/lib/validators/settings";
 
 /**
  * GET /api/admin/size-profiles - Get all size profiles sorted by Thumb width (ascending)

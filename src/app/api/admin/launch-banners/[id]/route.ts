@@ -4,21 +4,9 @@ import { launchBanners } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { authorize } from "@/middleware/auth";
 import { z } from "zod";
+import { createLaunchBannerSchema } from "@/lib/validators/marketing";
 
-const updateBannerSchema = z.object({
-  productId: z.string().min(1, "Product ID is required").optional(),
-  title: z.string().min(1, "Title is required").max(100, "Title is too long").optional(),
-  subtitle: z.string().max(200, "Subtitle is too long").optional().nullable(),
-  backgroundImage: z.string().optional().nullable(),
-  productImage: z.string().optional().nullable(),
-  textColor: z.string().optional(),
-  contentAlignment: z.enum(["left", "center", "right"]).optional(),
-  lineSpacing: z.enum(["tight", "normal", "comfortable", "loose"]).optional(),
-  ctaBgColor: z.string().optional(),
-  ctaTextColor: z.string().optional(),
-  sortOrder: z.number().int().optional(),
-  isActive: z.boolean().optional(),
-});
+const updateBannerSchema = createLaunchBannerSchema.partial();
 
 /**
  * PUT /api/admin/launch-banners/[id] - Update a launch banner (Admin only)

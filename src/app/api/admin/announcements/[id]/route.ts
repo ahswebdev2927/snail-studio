@@ -4,30 +4,7 @@ import { announcements } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { authorize } from "@/middleware/auth";
 import { z } from "zod";
-
-const updateAnnouncementSchema = z.object({
-  text: z.string().min(1, "Text is required").max(200, "Text is too long").optional(),
-  icon: z.string().nullable().optional(),
-  ctaText: z.string().max(50, "CTA text is too long").nullable().optional(),
-  ctaLink: z.string().max(200, "CTA link is too long").nullable().optional(),
-  textColor: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Invalid text color hex code").optional(),
-  backgroundColor: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Invalid background color hex code").optional(),
-  startDate: z.preprocess((val) => (val === "" ? null : val), z.string().transform((v) => new Date(v)).nullable().optional()),
-  endDate: z.preprocess((val) => (val === "" ? null : val), z.string().transform((v) => new Date(v)).nullable().optional()),
-  isActive: z.boolean().optional(),
-  sortOrder: z.number().int().optional(),
-}).refine(
-  (data) => {
-    if (data.startDate && data.endDate) {
-      return data.startDate <= data.endDate;
-    }
-    return true;
-  },
-  {
-    message: "Start date must be before or equal to end date",
-    path: ["endDate"],
-  }
-);
+import { updateAnnouncementSchema } from "@/lib/validators/marketing";
 
 /**
  * PUT /api/admin/announcements/[id] - Update an announcement (Admin only)

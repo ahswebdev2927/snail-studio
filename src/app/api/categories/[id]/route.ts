@@ -7,21 +7,9 @@ import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { authorize } from "@/middleware/auth";
 import { slugify } from "@/lib/utils";
+import { createCategorySchema } from "@/lib/validators/catalog";
 
-const updateCategorySchema = z.object({
-  name: z.string().min(1, "Name is required").max(100, "Name is too long").optional(),
-  slug: z
-    .string()
-    .max(100, "Slug is too long")
-    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Slug must be lowercase alphanumeric with hyphens")
-    .optional(),
-  parentId: z.string().max(100).optional().nullable(),
-  description: z.string().max(1000, "Description is too long").optional().nullable(),
-  image: z.string().url("Invalid image URL").optional().nullable().or(z.literal("")),
-  showOnHomepage: z.boolean().optional(),
-  showInDropdown: z.boolean().optional(),
-  sortOrder: z.number().int().optional(),
-});
+const updateCategorySchema = createCategorySchema.partial();
 
 // Helper function to check if setting parentId will create a circular loop
 async function wouldCreateCircularReference(
