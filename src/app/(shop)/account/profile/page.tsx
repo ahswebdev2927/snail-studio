@@ -1,9 +1,9 @@
-import React from "react";
+import React, { Suspense } from "react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/auth/session";
 import { db } from "@/db";
-import { users } from "@/db/schema";
+import { users, emailMarketingPreferences } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { ProfileClient } from "./profile-client";
 
@@ -34,6 +34,19 @@ export default async function ProfilePage() {
     redirect("/login?callbackUrl=/account/profile");
   }
 
+  const dbPrefs = await db.query.emailMarketingPreferences.findFirst({
+    where: eq(emailMarketingPreferences.userId, sessionUser.id),
+  });
+
+  const preferences = {
+    newsletter: dbPrefs ? dbPrefs.newsletter : true,
+    promotions: dbPrefs ? dbPrefs.promotions : true,
+    launchNotifications: dbPrefs ? dbPrefs.launchNotifications : true,
+    backInStock: dbPrefs ? dbPrefs.backInStock : true,
+    productUpdates: dbPrefs ? dbPrefs.productUpdates : true,
+    priceDrops: dbPrefs ? dbPrefs.priceDrops : true,
+  };
+
   const user = {
     id: dbUser.id,
     name: dbUser.name,
@@ -42,7 +55,16 @@ export default async function ProfilePage() {
     whatsappNumber: dbUser.whatsappNumber,
     image: dbUser.image,
     marketingConsent: dbUser.marketingConsent,
+    preferences,
   };
 
-  return <ProfileClient user={user} />;
+  return (
+    <Suspense fallback={
+      <div className="flex flex-col items-center justify-center py-20 text-center text-xs text-muted-foreground/60 font-light">
+        Loading profile settings...
+      </div>
+    }>
+      <ProfileClient user={user} />
+    </Suspense>
+  );
 }

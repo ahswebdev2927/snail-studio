@@ -12,12 +12,39 @@ import {
   Sparkles
 } from "lucide-react";
 import { getDashboardData } from "@/features/account/actions";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import { getSessionUser } from "@/lib/auth/session";
+import { db } from "@/db";
+import { users } from "@/db/schema";
+import { eq } from "drizzle-orm";
 import { formatPrice } from "@/lib/utils";
 import { DashboardClient } from "./dashboard-client";
 import { OrderStatusBadge } from "@/components/orders/order-status-badge";
 
 export default async function AccountPage() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("accessToken")?.value;
+  if (!token) {
+    redirect("/login?callbackUrl=/account");
+  }
+
+  const sessionUser = await getSessionUser(token);
+  if (!sessionUser) {
+    redirect("/login?callbackUrl=/account");
+  }
+
+  const dbUser = await db.query.users.findFirst({
+    where: eq(users.id, sessionUser.id),
+    columns: { email: true }
+  });
+
+  if (!dbUser?.email) {
+    redirect("/account/profile?error=email_required");
+  }
+
   const res = await getDashboardData();
+
 
   if (!res.success || !res.data) {
     return (

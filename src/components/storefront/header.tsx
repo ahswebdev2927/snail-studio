@@ -629,7 +629,7 @@ export function Header({ navigationData, storeLogo = "", storeName = "Snail Stud
                         <div className="pt-1.5 space-y-0.5">
                           <Link
                             prefetch={true}
-                            href="/account"
+                            href={pathname === "/login" ? "/account" : `/login?callbackUrl=${encodeURIComponent(pathname)}`}
                             onClick={() => setUserDropdownOpen(false)}
                             className="w-full flex items-center gap-2 px-3 py-2 text-[11px] font-bold rounded-xl text-primary hover:bg-primary/5 transition-colors"
                           >
@@ -848,7 +848,7 @@ export function Header({ navigationData, storeLogo = "", storeName = "Snail Stud
               </>
             ) : (
               <button
-                onClick={() => handleMobileNav("/account")}
+                onClick={() => handleMobileNav(pathname === "/login" ? "/account" : `/login?callbackUrl=${encodeURIComponent(pathname)}`)}
                 className="w-full text-left font-inter text-sm font-medium text-foreground hover:text-primary transition-colors py-2 border-b border-border/10 cursor-pointer"
               >
                 Sign In / Register

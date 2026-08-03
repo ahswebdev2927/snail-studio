@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { 
   User, 
   Mail, 
@@ -35,6 +35,14 @@ interface UserProfile {
   whatsappNumber: string | null;
   image: string | null;
   marketingConsent: boolean;
+  preferences?: {
+    newsletter: boolean;
+    promotions: boolean;
+    launchNotifications: boolean;
+    backInStock: boolean;
+    productUpdates: boolean;
+    priceDrops: boolean;
+  };
 }
 
 interface ProfileClientProps {
@@ -44,12 +52,24 @@ interface ProfileClientProps {
 export function ProfileClient({ user }: ProfileClientProps) {
   const router = useRouter();
 
+  const searchParams = useSearchParams();
+  const isEmailRequiredError = searchParams.get("error") === "email_required";
+
   // Form states
   const [name, setName] = useState(user.name || "");
   const [email, setEmail] = useState(user.email || "");
   const [whatsappNumber, setWhatsappNumber] = useState(user.whatsappNumber || "");
   const [avatar, setAvatar] = useState<string | null>(user.image);
   const [marketingConsent, setMarketingConsent] = useState(user.marketingConsent);
+
+  // Email Preferences State
+  const [prefNewsletter, setPrefNewsletter] = useState(user.preferences?.newsletter ?? true);
+  const [prefPromotions, setPrefPromotions] = useState(user.preferences?.promotions ?? true);
+  const [prefLaunchNotifications, setPrefLaunchNotifications] = useState(user.preferences?.launchNotifications ?? true);
+  const [prefBackInStock, setPrefBackInStock] = useState(user.preferences?.backInStock ?? true);
+  const [prefProductUpdates, setPrefProductUpdates] = useState(user.preferences?.productUpdates ?? true);
+  const [prefPriceDrops, setPrefPriceDrops] = useState(user.preferences?.priceDrops ?? true);
+  const [prefAccordionOpen, setPrefAccordionOpen] = useState(false);
 
   // UI/UX States
   const [loading, setLoading] = useState(false);
@@ -205,7 +225,12 @@ export function ProfileClient({ user }: ProfileClientProps) {
       return;
     }
 
-    if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+    if (!email.trim()) {
+      setErrorMessage("Please enter your email address.");
+      return;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       setErrorMessage("Please enter a valid email address.");
       return;
     }
@@ -223,15 +248,26 @@ export function ProfileClient({ user }: ProfileClientProps) {
     try {
       const res = await updateUserProfile({
         name: name.trim(),
-        email: email.trim() || null,
+        email: email.trim(),
         whatsappNumber: whatsappNumber.trim() || null,
         image: avatar,
         marketingConsent,
+        preferences: {
+          newsletter: prefNewsletter,
+          promotions: prefPromotions,
+          launchNotifications: prefLaunchNotifications,
+          backInStock: prefBackInStock,
+          productUpdates: prefProductUpdates,
+          priceDrops: prefPriceDrops,
+        },
       });
 
       if (res.success) {
         setSuccessMessage("Your profile information has been updated successfully.");
         router.refresh();
+        if (isEmailRequiredError) {
+          router.push("/account");
+        }
       } else {
         setErrorMessage(res.error || "Failed to update profile settings.");
       }
@@ -272,6 +308,18 @@ export function ProfileClient({ user }: ProfileClientProps) {
           <div>
             <p className="font-semibold">Failed to Save Changes</p>
             <p className="font-light mt-0.5">{errorMessage}</p>
+          </div>
+        </div>
+      )}
+
+      {isEmailRequiredError && !successMessage && (
+        <div className="bg-amber-500/15 border border-amber-500/30 text-amber-800 dark:text-amber-400 p-4 rounded-2xl flex items-start gap-3 text-xs animate-in slide-in-from-top duration-300">
+          <AlertCircle className="w-5 h-5 shrink-0 text-amber-500 mt-0.5 animate-pulse" />
+          <div>
+            <p className="font-semibold">Email Requirement</p>
+            <p className="font-light mt-0.5">
+              An email address is required to proceed to your account dashboard. Please enter a valid email to receive order status updates and notifications.
+            </p>
           </div>
         </div>
       )}
@@ -406,13 +454,14 @@ export function ProfileClient({ user }: ProfileClientProps) {
           {/* Email Address */}
           <div className="space-y-2">
             <label htmlFor="emailAddress" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-              Email Address <span className="text-[10px] text-muted-foreground/50 font-normal">(Optional)</span>
+              Email Address
             </label>
             <div className="relative">
               <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <input
                 id="emailAddress"
                 type="email"
+                required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="janedoe@example.com"
@@ -420,7 +469,7 @@ export function ProfileClient({ user }: ProfileClientProps) {
               />
             </div>
             <p className="text-[10px] text-muted-foreground/75 font-light">
-              Used for sending order invoices, receipts, and package tracking links.
+              Required for sending order invoices, receipts, order status updates, and package tracking links.
             </p>
           </div>
 
@@ -461,6 +510,112 @@ export function ProfileClient({ user }: ProfileClientProps) {
           </label>
         </div>
 
+        {/* Email & Notification Preferences Card */}
+        {marketingConsent && (
+          <div className="bg-card border border-border/30 rounded-3xl p-6 space-y-4 animate-in fade-in duration-300">
+            <div 
+              className="flex items-center justify-between cursor-pointer select-none"
+              onClick={() => setPrefAccordionOpen(!prefAccordionOpen)}
+            >
+              <div className="space-y-1">
+                <h3 className="font-serif text-base font-semibold text-foreground">Email & Notification Preferences</h3>
+                <p className="text-[11px] text-muted-foreground font-light">
+                  Customize how and when you want to receive updates from Snail Studio.
+                </p>
+              </div>
+              <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform duration-300 ${prefAccordionOpen ? "rotate-180" : ""}`} />
+            </div>
+
+            {prefAccordionOpen && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 animate-in fade-in duration-300">
+                {/* Newsletter */}
+                <label className="flex items-start gap-3 p-3 rounded-2xl bg-secondary/5 hover:bg-secondary/15 transition-all cursor-pointer group border border-border/20">
+                  <input
+                    type="checkbox"
+                    checked={prefNewsletter}
+                    onChange={(e) => setPrefNewsletter(e.target.checked)}
+                    className="mt-0.5 w-4 h-4 accent-primary rounded border-border cursor-pointer"
+                  />
+                  <div className="space-y-0.5">
+                    <span className="text-xs font-semibold text-foreground group-hover:text-primary transition-colors">Studio Newsletters</span>
+                    <p className="text-[10px] text-muted-foreground/70 font-light">Get the latest collection releases, designer notes, and studio updates.</p>
+                  </div>
+                </label>
+
+                {/* Promotions */}
+                <label className="flex items-start gap-3 p-3 rounded-2xl bg-secondary/5 hover:bg-secondary/15 transition-all cursor-pointer group border border-border/20">
+                  <input
+                    type="checkbox"
+                    checked={prefPromotions}
+                    onChange={(e) => setPrefPromotions(e.target.checked)}
+                    className="mt-0.5 w-4 h-4 accent-primary rounded border-border cursor-pointer"
+                  />
+                  <div className="space-y-0.5">
+                    <span className="text-xs font-semibold text-foreground group-hover:text-primary transition-colors">Promotional Offers</span>
+                    <p className="text-[10px] text-muted-foreground/70 font-light">Receive discount keys, coupon codes, and exclusive storewide sales.</p>
+                  </div>
+                </label>
+
+                {/* Launch Restocks */}
+                <label className="flex items-start gap-3 p-3 rounded-2xl bg-secondary/5 hover:bg-secondary/15 transition-all cursor-pointer group border border-border/20">
+                  <input
+                    type="checkbox"
+                    checked={prefLaunchNotifications}
+                    onChange={(e) => setPrefLaunchNotifications(e.target.checked)}
+                    className="mt-0.5 w-4 h-4 accent-primary rounded border-border cursor-pointer"
+                  />
+                  <div className="space-y-0.5">
+                    <span className="text-xs font-semibold text-foreground group-hover:text-primary transition-colors">Launches & Restocks</span>
+                    <p className="text-[10px] text-muted-foreground/70 font-light">Be the first to know about new drops and hot item restocks.</p>
+                  </div>
+                </label>
+
+                {/* Price Drops */}
+                <label className="flex items-start gap-3 p-3 rounded-2xl bg-secondary/5 hover:bg-secondary/15 transition-all cursor-pointer group border border-border/20">
+                  <input
+                    type="checkbox"
+                    checked={prefPriceDrops}
+                    onChange={(e) => setPrefPriceDrops(e.target.checked)}
+                    className="mt-0.5 w-4 h-4 accent-primary rounded border-border cursor-pointer"
+                  />
+                  <div className="space-y-0.5">
+                    <span className="text-xs font-semibold text-foreground group-hover:text-primary transition-colors">Price Drop Alerts</span>
+                    <p className="text-[10px] text-muted-foreground/70 font-light">Get alerts when price reductions occur on your favorite items.</p>
+                  </div>
+                </label>
+
+                {/* Back in stock */}
+                <label className="flex items-start gap-3 p-3 rounded-2xl bg-secondary/5 hover:bg-secondary/15 transition-all cursor-pointer group border border-border/20">
+                  <input
+                    type="checkbox"
+                    checked={prefBackInStock}
+                    onChange={(e) => setPrefBackInStock(e.target.checked)}
+                    className="mt-0.5 w-4 h-4 accent-primary rounded border-border cursor-pointer"
+                  />
+                  <div className="space-y-0.5">
+                    <span className="text-xs font-semibold text-foreground group-hover:text-primary transition-colors">Back-In-Stock Alerts</span>
+                    <p className="text-[10px] text-muted-foreground/70 font-light">Automatic alerts when products you view are back in stock.</p>
+                  </div>
+                </label>
+
+                {/* Product care */}
+                <label className="flex items-start gap-3 p-3 rounded-2xl bg-secondary/5 hover:bg-secondary/15 transition-all cursor-pointer group border border-border/20">
+                  <input
+                    type="checkbox"
+                    checked={prefProductUpdates}
+                    onChange={(e) => setPrefProductUpdates(e.target.checked)}
+                    className="mt-0.5 w-4 h-4 accent-primary rounded border-border cursor-pointer"
+                  />
+                  <div className="space-y-0.5">
+                    <span className="text-xs font-semibold text-foreground group-hover:text-primary transition-colors">Product Care & Tips</span>
+                    <p className="text-[10px] text-muted-foreground/70 font-light">Receive detailed guides, application tips, and sizing advice.</p>
+                  </div>
+                </label>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Form Actions Buttons */}
         <div className="pt-4 border-t border-border/20 flex flex-wrap gap-4 items-center justify-end">
           <button
@@ -472,6 +627,12 @@ export function ProfileClient({ user }: ProfileClientProps) {
               setWhatsappNumber(user.whatsappNumber || "");
               setAvatar(user.image);
               setMarketingConsent(user.marketingConsent);
+              setPrefNewsletter(user.preferences?.newsletter ?? true);
+              setPrefPromotions(user.preferences?.promotions ?? true);
+              setPrefLaunchNotifications(user.preferences?.launchNotifications ?? true);
+              setPrefBackInStock(user.preferences?.backInStock ?? true);
+              setPrefProductUpdates(user.preferences?.productUpdates ?? true);
+              setPrefPriceDrops(user.preferences?.priceDrops ?? true);
               setSuccessMessage("");
               setErrorMessage("");
               setAvatarMenuOpen(false);

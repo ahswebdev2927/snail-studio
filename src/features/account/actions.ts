@@ -12,7 +12,8 @@ import {
   wishlistItems,
   reviews,
   users,
-  refreshTokens
+  refreshTokens,
+  emailMarketingPreferences
 } from "@/db/schema";
 import { eq, and, desc, sql, count, gt, isNull } from "drizzle-orm";
 import { cookies } from "next/headers";
@@ -511,6 +512,14 @@ export async function updateUserProfile(data: {
   whatsappNumber: string | null;
   image: string | null;
   marketingConsent: boolean;
+  preferences?: {
+    newsletter: boolean;
+    promotions: boolean;
+    launchNotifications: boolean;
+    backInStock: boolean;
+    productUpdates: boolean;
+    priceDrops: boolean;
+  };
 }) {
   try {
     const user = await getAuthUser();
@@ -522,7 +531,11 @@ export async function updateUserProfile(data: {
       return { success: false, error: "Name is required." };
     }
 
-    if (data.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+    if (!data.email || !data.email.trim()) {
+      return { success: false, error: "Email address is required." };
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email.trim())) {
       return { success: false, error: "Invalid email address format." };
     }
 
@@ -533,17 +546,56 @@ export async function updateUserProfile(data: {
       }
     }
 
+    const cleanEmail = data.email.trim().toLowerCase();
+
+    // 1. Update user profile record
     await db
       .update(users)
       .set({
         name: data.name.trim(),
-        email: data.email?.trim() || null,
+        email: cleanEmail,
         whatsappNumber: data.whatsappNumber?.trim() || null,
         image: data.image || null,
         marketingConsent: data.marketingConsent,
         updatedAt: now,
       })
       .where(eq(users.id, user.id));
+
+    // 2. Upsert email marketing preferences
+    const existingPref = await db.query.emailMarketingPreferences.findFirst({
+      where: eq(emailMarketingPreferences.userId, user.id),
+    });
+
+    if (existingPref) {
+      await db
+        .update(emailMarketingPreferences)
+        .set({
+          email: cleanEmail,
+          newsletter: data.preferences?.newsletter ?? true,
+          promotions: data.preferences?.promotions ?? true,
+          launchNotifications: data.preferences?.launchNotifications ?? true,
+          backInStock: data.preferences?.backInStock ?? true,
+          productUpdates: data.preferences?.productUpdates ?? true,
+          priceDrops: data.preferences?.priceDrops ?? true,
+          unsubscribedAll: false, // Reset opt-out if preferences are manually updated
+          updatedAt: now,
+        })
+        .where(eq(emailMarketingPreferences.userId, user.id));
+    } else {
+      await db.insert(emailMarketingPreferences).values({
+        id: `pref_${nanoid(12)}`,
+        userId: user.id,
+        email: cleanEmail,
+        newsletter: data.preferences?.newsletter ?? true,
+        promotions: data.preferences?.promotions ?? true,
+        launchNotifications: data.preferences?.launchNotifications ?? true,
+        backInStock: data.preferences?.backInStock ?? true,
+        productUpdates: data.preferences?.productUpdates ?? true,
+        priceDrops: data.preferences?.priceDrops ?? true,
+        unsubscribedAll: false,
+        updatedAt: now,
+      });
+    }
 
     revalidatePath("/account");
     revalidatePath("/account/profile");
