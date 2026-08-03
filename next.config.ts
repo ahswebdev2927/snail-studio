@@ -34,7 +34,7 @@ const securityHeaders = [
       "style-src 'self' 'unsafe-inline';",
       "img-src 'self' data: blob: https://res.cloudinary.com https://www.naild.de https://www.google-analytics.com https://*.google-analytics.com https://*.googletagmanager.com;",
       "font-src 'self' data:;",
-      "connect-src 'self' https://api.razorpay.com https://www.google-analytics.com https://*.google-analytics.com https://*.googletagmanager.com;",
+      "connect-src 'self' https://api.cloudinary.com https://*.cloudinary.com https://api.razorpay.com https://www.google-analytics.com https://*.google-analytics.com https://*.googletagmanager.com;",
       "frame-src 'self' https://checkout.razorpay.com https://api.razorpay.com https://*.razorpay.com;",
     ].join(" "),
   },
