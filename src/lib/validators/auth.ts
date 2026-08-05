@@ -2,13 +2,28 @@ import { z } from "zod";
 import { sanitizedStringSchema } from "./sanitize";
 
 /**
- * Validates login input. Requires +91 prefix followed by exactly 10 digits.
+ * Validates login input. Supports E.164 and clean 10-digit formats, automatically formatting to +91.
  */
 export const loginPhoneSchema = z.object({
   phoneNumber: z
     .string()
     .min(1, "Phone number is required")
-    .regex(/^\+91\d{10}$/, "Phone number must be in the format +91 followed by 10 digits (e.g. +919876543210)"),
+    .transform((val) => {
+      // Strip all characters except digits and plus sign
+      const cleaned = val.replace(/[^\d+]/g, "");
+      // Convert 10 digits to +91 E.164 format
+      if (/^\d{10}$/.test(cleaned)) {
+        return `+91${cleaned}`;
+      }
+      // If it starts with 91 followed by 10 digits, prepend +
+      if (/^91\d{10}$/.test(cleaned)) {
+        return `+${cleaned}`;
+      }
+      return cleaned;
+    })
+    .refine((val) => /^\+91\d{10}$/.test(val), {
+      message: "Phone number must be a valid 10-digit mobile number (e.g. 9876543210)",
+    }),
 });
 
 /**
@@ -34,13 +49,26 @@ export const profileCompletionSchema = z.object({
     .string()
     .min(1, "Email address is required")
     .email("Please enter a valid email address")
-    .max(150, "Email address cannot exceed 150 characters"),
+    .transform((val) => val.trim().toLowerCase())
+    .refine((val) => val.length <= 150, {
+      message: "Email address cannot exceed 150 characters",
+    }),
   whatsappNumber: z
     .string()
-    .regex(/^\+91\d{10}$/, "WhatsApp number must start with +91 followed by 10 digits")
-    .optional()
-    .nullable()
-    .or(z.literal("")),
+    .min(1, "WhatsApp number is required")
+    .transform((val) => {
+      const cleaned = val.replace(/[^\d+]/g, "");
+      if (/^\d{10}$/.test(cleaned)) {
+        return `+91${cleaned}`;
+      }
+      if (/^91\d{10}$/.test(cleaned)) {
+        return `+${cleaned}`;
+      }
+      return cleaned;
+    })
+    .refine((val) => /^\+91\d{10}$/.test(val), {
+      message: "WhatsApp number must start with +91 followed by 10 digits",
+    }),
   image: z
     .string()
     .url("Invalid avatar image URL")
