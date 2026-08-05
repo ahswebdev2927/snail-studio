@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { Sparkles, Phone, Lock, ArrowRight, ShieldCheck, Loader2, Sun, Moon } from "lucide-react";
 import { RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult } from "firebase/auth";
 import { auth } from "@/lib/firebase/client";
+import { PhoneInputField, OtpInputField } from "@/components/forms/fields";
 
 export default function AdminLoginPage() {
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -14,6 +15,80 @@ export default function AdminLoginPage() {
   const [devBypassLoading, setDevBypassLoading] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [checkingSession, setCheckingSession] = useState(true);
+
+  // OTP Resend, Rate Limit, and Cooldown state for Admin
+  const [resendTimer, setResendTimer] = useState(0);
+  const [resendCount, setResendCount] = useState(0);
+  const [cooldownExpiry, setCooldownExpiry] = useState<number | null>(null);
+
+  // Monitor resendTimer tick
+  useEffect(() => {
+    if (resendTimer <= 0) return;
+    const interval = setInterval(() => {
+      setResendTimer((prev) => prev - 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [resendTimer]);
+
+  // Monitor cooldownExpiry tick
+  useEffect(() => {
+    if (!cooldownExpiry) return;
+    const interval = setInterval(() => {
+      const now = Date.now();
+      if (now >= cooldownExpiry) {
+        localStorage.removeItem("admin_otp_resend_count");
+        localStorage.removeItem("admin_otp_cooldown_expiry");
+        localStorage.removeItem("admin_otp_last_sent");
+        setResendCount(0);
+        setCooldownExpiry(null);
+        setResendTimer(0);
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [cooldownExpiry]);
+
+  // Initialize/Load OTP resend timers on step change
+  useEffect(() => {
+    if (step === "otp") {
+      const storedCount = localStorage.getItem("admin_otp_resend_count");
+      const storedExpiry = localStorage.getItem("admin_otp_cooldown_expiry");
+      const storedLastSent = localStorage.getItem("admin_otp_last_sent");
+
+      const now = Date.now();
+
+      if (storedExpiry) {
+        const expiryTime = parseInt(storedExpiry, 10);
+        if (now < expiryTime) {
+          setCooldownExpiry(expiryTime);
+          setResendCount(3);
+          return;
+        } else {
+          localStorage.removeItem("admin_otp_resend_count");
+          localStorage.removeItem("admin_otp_cooldown_expiry");
+          localStorage.removeItem("admin_otp_last_sent");
+          setResendCount(0);
+          setCooldownExpiry(null);
+        }
+      }
+
+      if (storedCount) {
+        setResendCount(parseInt(storedCount, 10));
+      }
+
+      if (storedLastSent) {
+        const lastSentTime = parseInt(storedLastSent, 10);
+        const elapsed = Math.floor((now - lastSentTime) / 1000);
+        if (elapsed < 60) {
+          setResendTimer(60 - elapsed);
+        } else {
+          setResendTimer(0);
+        }
+      } else {
+        setResendTimer(60);
+        localStorage.setItem("admin_otp_last_sent", now.toString());
+      }
+    }
+  }, [step]);
 
   const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
   const [recaptchaVerifier, setRecaptchaVerifier] = useState<RecaptchaVerifier | null>(null);
@@ -82,6 +157,18 @@ export default function AdminLoginPage() {
   const handlePhoneSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!phoneNumber) return;
+
+    // Check admin cooldown expiry
+    const storedExpiry = localStorage.getItem("admin_otp_cooldown_expiry");
+    if (storedExpiry) {
+      const expiryTime = parseInt(storedExpiry, 10);
+      if (Date.now() < expiryTime) {
+        const remainingMinutes = Math.ceil((expiryTime - Date.now()) / 60000);
+        setError(`Resend limit reached. Please try again in ${remainingMinutes} minutes.`);
+        return;
+      }
+    }
+
     setLoading(true);
     setError(null);
     
@@ -111,6 +198,7 @@ export default function AdminLoginPage() {
       const confirmation = await signInWithPhoneNumber(auth, formattedPhone, verifier);
       setConfirmationResult(confirmation);
       setStep("otp");
+      localStorage.setItem("admin_otp_last_sent", Date.now().toString());
     } catch (err: any) {
       console.error("Admin Phone Send OTP failed:", err);
       setRecaptchaVerifier(null);
@@ -121,6 +209,82 @@ export default function AdminLoginPage() {
         friendlyMsg = "Too many requests. SMS quota exceeded or traffic block. Please try again later or use the Dev Bypass.";
       }
       setError(err.message || friendlyMsg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    const now = Date.now();
+    
+    // Cooldown check
+    if (cooldownExpiry && now < cooldownExpiry) {
+      const remainingMinutes = Math.ceil((cooldownExpiry - now) / 60000);
+      setError(`Resend limit reached. Please try again in ${remainingMinutes} minutes.`);
+      return;
+    }
+
+    if (resendCount >= 3) {
+      const expiry = now + 60 * 60 * 1000;
+      setCooldownExpiry(expiry);
+      localStorage.setItem("admin_otp_cooldown_expiry", expiry.toString());
+      setError("Resend limit reached. Please wait 1 hour before trying again.");
+      return;
+    }
+
+    if (resendTimer > 0) {
+      setError(`Please wait ${resendTimer} seconds before requesting a new code.`);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    // Normalize phone number
+    let formattedPhone = phoneNumber.trim().replace(/\s+/g, "");
+    if (!formattedPhone.startsWith("+")) {
+      if (formattedPhone.startsWith("0")) {
+        formattedPhone = formattedPhone.slice(1);
+      }
+      formattedPhone = `+91${formattedPhone}`;
+    }
+
+    try {
+      let verifier = recaptchaVerifier;
+      if (!verifier) {
+        const container = document.getElementById("admin-recaptcha-container");
+        if (container) {
+          container.innerHTML = "";
+        }
+        verifier = new RecaptchaVerifier(auth, "admin-recaptcha-container", {
+          size: "invisible",
+          callback: () => {},
+        });
+        setRecaptchaVerifier(verifier);
+      }
+
+      const confirmation = await signInWithPhoneNumber(auth, formattedPhone, verifier);
+      setConfirmationResult(confirmation);
+
+      const nextCount = resendCount + 1;
+      setResendCount(nextCount);
+      localStorage.setItem("admin_otp_resend_count", nextCount.toString());
+      localStorage.setItem("admin_otp_last_sent", Date.now().toString());
+
+      setResendTimer(60);
+      
+      if (nextCount >= 3) {
+        const expiry = Date.now() + 60 * 60 * 1000;
+        setCooldownExpiry(expiry);
+        localStorage.setItem("admin_otp_cooldown_expiry", expiry.toString());
+      }
+    } catch (err: any) {
+      console.error("Admin Phone Resend OTP failed:", err);
+      let friendlyMsg = "Failed to resend code. Please try again.";
+      if (err.code === "auth/too-many-requests") {
+        friendlyMsg = "Too many requests. Please try again later.";
+      }
+      setError(friendlyMsg);
     } finally {
       setLoading(false);
     }
@@ -256,17 +420,12 @@ export default function AdminLoginPage() {
                 <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground ml-1">
                   Mobile Number
                 </label>
-                <div className="relative">
-                  <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/60" />
-                  <input
-                    type="tel"
-                    placeholder="+91 99999 99999"
-                    required
-                    value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
-                    className="w-full pl-11 pr-4 py-3 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-sm outline-none transition-all placeholder:text-muted-foreground/50 text-foreground"
-                  />
-                </div>
+                <PhoneInputField
+                  required
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  className="bg-secondary/30"
+                />
               </div>
 
               <button
@@ -290,18 +449,32 @@ export default function AdminLoginPage() {
                 <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground ml-1">
                   6-Digit OTP Code
                 </label>
-                <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/60" />
-                  <input
-                    type="text"
-                    maxLength={6}
-                    placeholder="Enter code"
-                    required
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value)}
-                    className="w-full pl-11 pr-4 py-3 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-sm outline-none tracking-widest text-center font-medium transition-all placeholder:text-muted-foreground/50 text-foreground"
-                  />
-                </div>
+                <OtpInputField
+                  value={otp}
+                  onChange={(val) => setOtp(val)}
+                />
+              </div>
+
+              {/* Resend Code Trigger */}
+              <div className="flex justify-center items-center text-xs pt-1 pb-2 font-sans select-none min-h-[28px]">
+                {cooldownExpiry ? (
+                  <div className="text-[10px] text-rose-500 font-medium tracking-wide bg-rose-500/10 px-3 py-1 rounded-full border border-rose-500/20 text-center w-full">
+                    Resend limit reached. Try again in {Math.ceil((cooldownExpiry - Date.now()) / 60000)}m
+                  </div>
+                ) : resendTimer > 0 ? (
+                  <span className="text-[10px] text-muted-foreground font-light">
+                    Resend code in <strong className="font-semibold text-foreground/80">{resendTimer}s</strong>
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleResendOtp}
+                    disabled={loading}
+                    className="text-[10px] font-semibold text-primary hover:underline cursor-pointer bg-transparent border-none outline-none transition-all focus:outline-none flex items-center gap-1"
+                  >
+                    Resend Code {resendCount > 0 && <span className="opacity-60">({resendCount}/3)</span>}
+                  </button>
+                )}
               </div>
 
               <button

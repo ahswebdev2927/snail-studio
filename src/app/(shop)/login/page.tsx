@@ -10,7 +10,7 @@ import { RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult } fro
 import { auth } from "@/lib/firebase/client";
 import { Form } from "@/components/forms/form";
 import { FormField } from "@/components/forms/form-field";
-import { InputField } from "@/components/forms/fields";
+import { InputField, PhoneInputField, OtpInputField } from "@/components/forms/fields";
 import { notify } from "@/lib/toast";
 import { loginPhoneSchema, otpVerificationSchema, type LoginPhoneInput, type OtpVerificationInput } from "@/lib/validators/auth";
 
@@ -30,6 +30,80 @@ function LoginFormContent() {
 
   // Dev bypass loading state
   const [devLoading, setDevLoading] = useState(false);
+
+  // OTP Resend, Rate Limit, and Cooldown state
+  const [resendTimer, setResendTimer] = useState(0);
+  const [resendCount, setResendCount] = useState(0);
+  const [cooldownExpiry, setCooldownExpiry] = useState<number | null>(null);
+
+  // Monitor resendTimer tick
+  useEffect(() => {
+    if (resendTimer <= 0) return;
+    const interval = setInterval(() => {
+      setResendTimer((prev) => prev - 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [resendTimer]);
+
+  // Monitor cooldownExpiry tick
+  useEffect(() => {
+    if (!cooldownExpiry) return;
+    const interval = setInterval(() => {
+      const now = Date.now();
+      if (now >= cooldownExpiry) {
+        localStorage.removeItem("customer_otp_resend_count");
+        localStorage.removeItem("customer_otp_cooldown_expiry");
+        localStorage.removeItem("customer_otp_last_sent");
+        setResendCount(0);
+        setCooldownExpiry(null);
+        setResendTimer(0);
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [cooldownExpiry]);
+
+  // Initialize/Load OTP resend timers on step change
+  useEffect(() => {
+    if (step === "otp") {
+      const storedCount = localStorage.getItem("customer_otp_resend_count");
+      const storedExpiry = localStorage.getItem("customer_otp_cooldown_expiry");
+      const storedLastSent = localStorage.getItem("customer_otp_last_sent");
+
+      const now = Date.now();
+
+      if (storedExpiry) {
+        const expiryTime = parseInt(storedExpiry, 10);
+        if (now < expiryTime) {
+          setCooldownExpiry(expiryTime);
+          setResendCount(3);
+          return;
+        } else {
+          localStorage.removeItem("customer_otp_resend_count");
+          localStorage.removeItem("customer_otp_cooldown_expiry");
+          localStorage.removeItem("customer_otp_last_sent");
+          setResendCount(0);
+          setCooldownExpiry(null);
+        }
+      }
+
+      if (storedCount) {
+        setResendCount(parseInt(storedCount, 10));
+      }
+
+      if (storedLastSent) {
+        const lastSentTime = parseInt(storedLastSent, 10);
+        const elapsed = Math.floor((now - lastSentTime) / 1000);
+        if (elapsed < 60) {
+          setResendTimer(60 - elapsed);
+        } else {
+          setResendTimer(0);
+        }
+      } else {
+        setResendTimer(60);
+        localStorage.setItem("customer_otp_last_sent", now.toString());
+      }
+    }
+  }, [step]);
 
   // 1. Phone Form
   const phoneForm = useForm<LoginPhoneInput>({
@@ -119,6 +193,17 @@ function LoginFormContent() {
   };
 
   const handlePhoneSubmit = async (data: any) => {
+    // Check local cooldown before triggering API
+    const storedExpiry = localStorage.getItem("customer_otp_cooldown_expiry");
+    if (storedExpiry) {
+      const expiryTime = parseInt(storedExpiry, 10);
+      if (Date.now() < expiryTime) {
+        const remainingMinutes = Math.ceil((expiryTime - Date.now()) / 60000);
+        notify.error(`Resend limit reached. Please try again in ${remainingMinutes} minutes.`);
+        return;
+      }
+    }
+
     setLoading(true);
 
     try {
@@ -138,6 +223,7 @@ function LoginFormContent() {
       const confirmation = await signInWithPhoneNumber(auth, data.phoneNumber, verifier);
       setConfirmationResult(confirmation);
       setStep("otp");
+      localStorage.setItem("customer_otp_last_sent", Date.now().toString());
       notify.success("Verification code sent successfully.");
     } catch (err: any) {
       console.error("Firebase Phone Send OTP failed:", err);
@@ -147,6 +233,73 @@ function LoginFormContent() {
         friendlyMsg = "Invalid phone number format. Please check the number and try again.";
       } else if (err.code === "auth/too-many-requests") {
         friendlyMsg = "Too many requests. SMS quota exceeded or traffic block. Please try again later or use the Dev Bypass.";
+      }
+      notify.error(friendlyMsg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    const now = Date.now();
+    
+    // Cooldown check
+    if (cooldownExpiry && now < cooldownExpiry) {
+      const remainingMinutes = Math.ceil((cooldownExpiry - now) / 60000);
+      notify.error(`Resend limit reached. Please try again in ${remainingMinutes} minutes.`);
+      return;
+    }
+
+    if (resendCount >= 3) {
+      const expiry = now + 60 * 60 * 1000;
+      setCooldownExpiry(expiry);
+      localStorage.setItem("customer_otp_cooldown_expiry", expiry.toString());
+      notify.error("Resend limit reached. Please wait 1 hour before trying again.");
+      return;
+    }
+
+    if (resendTimer > 0) {
+      notify.error(`Please wait ${resendTimer} seconds before requesting a new code.`);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const phoneNumber = phoneForm.getValues("phoneNumber");
+      let verifier = recaptchaVerifier;
+      if (!verifier) {
+        const container = document.getElementById("recaptcha-container");
+        if (container) {
+          container.innerHTML = "";
+        }
+        verifier = new RecaptchaVerifier(auth, "recaptcha-container", {
+          size: "invisible",
+          callback: () => {},
+        });
+        setRecaptchaVerifier(verifier);
+      }
+
+      const confirmation = await signInWithPhoneNumber(auth, phoneNumber, verifier);
+      setConfirmationResult(confirmation);
+
+      const nextCount = resendCount + 1;
+      setResendCount(nextCount);
+      localStorage.setItem("customer_otp_resend_count", nextCount.toString());
+      localStorage.setItem("customer_otp_last_sent", Date.now().toString());
+
+      setResendTimer(60);
+      notify.success(`Verification code resent successfully (Attempt ${nextCount}/3).`);
+
+      if (nextCount >= 3) {
+        const expiry = Date.now() + 60 * 60 * 1000;
+        setCooldownExpiry(expiry);
+        localStorage.setItem("customer_otp_cooldown_expiry", expiry.toString());
+      }
+    } catch (err: any) {
+      console.error("Firebase Phone Resend OTP failed:", err);
+      let friendlyMsg = "Failed to resend code. Please try again.";
+      if (err.code === "auth/too-many-requests") {
+        friendlyMsg = "Too many requests. Please try again later.";
       }
       notify.error(friendlyMsg);
     } finally {
@@ -260,15 +413,7 @@ function LoginFormContent() {
         {step === "phone" ? (
           <Form methods={phoneForm} onSubmit={handlePhoneSubmit} className="space-y-4">
             <FormField name="phoneNumber" label="Mobile Number" required>
-              <InputField
-                leftIcon={<Phone className="w-4 h-4 text-muted-foreground/60" />}
-                type="tel"
-                placeholder="+919876543210"
-                onChange={(e) => {
-                  const formatted = formatPhoneNumber(e.target.value);
-                  phoneForm.setValue("phoneNumber", formatted, { shouldValidate: true });
-                }}
-              />
+              <PhoneInputField />
             </FormField>
 
             <Button type="submit" disabled={loading} className="w-full py-6 rounded-2xl cursor-pointer">
@@ -297,14 +442,30 @@ function LoginFormContent() {
               </button>
             </div>
             <FormField name="otp">
-              <InputField
-                leftIcon={<Lock className="w-4 h-4 text-muted-foreground/60" />}
-                type="text"
-                placeholder="6-digit OTP"
-                maxLength={6}
-                className="text-center font-mono tracking-widest"
-              />
+              <OtpInputField />
             </FormField>
+
+            {/* Resend Code Trigger */}
+            <div className="flex justify-center items-center text-xs pt-1 pb-2 font-sans select-none min-h-[28px]">
+              {cooldownExpiry ? (
+                <div className="text-[10px] text-rose-500 font-medium tracking-wide bg-rose-500/10 px-3 py-1 rounded-full border border-rose-500/20 text-center w-full">
+                  Resend limit reached. Try again in {Math.ceil((cooldownExpiry - Date.now()) / 60000)}m
+                </div>
+              ) : resendTimer > 0 ? (
+                <span className="text-[10px] text-muted-foreground font-light">
+                  Resend code in <strong className="font-semibold text-foreground/80">{resendTimer}s</strong>
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleResendOtp}
+                  disabled={loading}
+                  className="text-[10px] font-semibold text-primary hover:underline cursor-pointer bg-transparent border-none outline-none transition-all focus:outline-none flex items-center gap-1"
+                >
+                  Resend Code {resendCount > 0 && <span className="opacity-60">({resendCount}/3)</span>}
+                </button>
+              )}
+            </div>
 
             <Button type="submit" disabled={loading} className="w-full py-6 rounded-2xl cursor-pointer">
               {loading ? (

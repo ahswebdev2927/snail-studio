@@ -33,7 +33,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Form } from "@/components/forms/form";
 import { FormField } from "@/components/forms/form-field";
-import { InputField, TextareaField } from "@/components/forms/fields";
+import { InputField, TextareaField, PhoneInputField } from "@/components/forms/fields";
 import { notify } from "@/lib/toast";
 import { 
   getCheckoutCustomer, 
@@ -854,13 +854,7 @@ export default function CheckoutClient() {
                     <InputField placeholder="Jane Doe" />
                   </FormField>
                   <FormField name="shippingAddress.phone" label="Mobile number" required>
-                    <InputField
-                      placeholder="+91 XXXXX XXXXX"
-                      onChange={(e) => {
-                        const formatted = formatPhoneNumber(e.target.value);
-                        form.setValue("shippingAddress.phone", formatted, { shouldValidate: true });
-                      }}
-                    />
+                    <PhoneInputField />
                   </FormField>
                 </div>
 
@@ -923,13 +917,7 @@ export default function CheckoutClient() {
                       <InputField placeholder="Jane Doe" />
                     </FormField>
                     <FormField name="billingAddress.phone" label="Mobile number" required>
-                      <InputField
-                        placeholder="+91 XXXXX XXXXX"
-                        onChange={(e) => {
-                          const formatted = formatPhoneNumber(e.target.value);
-                          form.setValue("billingAddress.phone", formatted, { shouldValidate: true });
-                        }}
-                      />
+                      <PhoneInputField />
                     </FormField>
                   </div>
 

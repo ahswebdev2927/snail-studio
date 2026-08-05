@@ -24,7 +24,7 @@ import {
 import CloudinaryImage from "@/components/media/cloudinary-image";
 import { Form } from "@/components/forms/form";
 import { FormField } from "@/components/forms/form-field";
-import { InputField } from "@/components/forms/fields";
+import { InputField, PhoneInputField } from "@/components/forms/fields";
 import { notify } from "@/lib/toast";
 import { 
   trackingLookupSchema, 
@@ -379,13 +379,7 @@ function TrackingSearchContent() {
               </FormField>
 
               <FormField name="phone" label="Phone Number (Verification)">
-                <InputField
-                  placeholder="+919876543210"
-                  onChange={(e) => {
-                    const formatted = formatPhoneNumber(e.target.value);
-                    orderForm.setValue("phone", formatted, { shouldValidate: true });
-                  }}
-                />
+                <PhoneInputField />
               </FormField>
             </div>
             

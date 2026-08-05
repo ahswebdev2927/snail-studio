@@ -24,7 +24,7 @@ import { Button } from "@/components/ui/button";
 import { saveUserAddress, deleteUserAddress, setDefaultAddress } from "@/features/account/actions";
 import { Form } from "@/components/forms/form";
 import { FormField } from "@/components/forms/form-field";
-import { InputField, SelectField } from "@/components/forms/fields";
+import { InputField, SelectField, PhoneInputField } from "@/components/forms/fields";
 import { notify } from "@/lib/toast";
 import { addressSchema, type AddressInput } from "@/lib/validators/address";
 
@@ -436,13 +436,7 @@ export function AddressClient({ initialAddresses }: AddressClientProps) {
                   </FormField>
 
                   <FormField name="phone" label="Contact Mobile" required>
-                    <InputField
-                      placeholder="e.g. +91 9999988888"
-                      onChange={(e) => {
-                        const formatted = formatPhoneNumber(e.target.value);
-                        form.setValue("phone", formatted, { shouldValidate: true });
-                      }}
-                    />
+                    <PhoneInputField />
                   </FormField>
                 </div>
 

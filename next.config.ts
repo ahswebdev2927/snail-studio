@@ -30,12 +30,12 @@ const securityHeaders = [
     key: "Content-Security-Policy",
     value: [
       "default-src 'self';",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://checkout.razorpay.com https://www.google-analytics.com https://*.google-analytics.com https://*.googletagmanager.com;",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://checkout.razorpay.com https://www.google-analytics.com https://*.google-analytics.com https://*.googletagmanager.com https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/ https://apis.google.com;",
       "style-src 'self' 'unsafe-inline';",
       "img-src 'self' data: blob: https://res.cloudinary.com https://www.naild.de https://www.google-analytics.com https://*.google-analytics.com https://*.googletagmanager.com;",
       "font-src 'self' data:;",
-      "connect-src 'self' https://api.cloudinary.com https://*.cloudinary.com https://api.razorpay.com https://www.google-analytics.com https://*.google-analytics.com https://*.googletagmanager.com;",
-      "frame-src 'self' https://checkout.razorpay.com https://api.razorpay.com https://*.razorpay.com;",
+      "connect-src 'self' https://api.cloudinary.com https://*.cloudinary.com https://api.razorpay.com https://www.google-analytics.com https://*.google-analytics.com https://*.googletagmanager.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://*.googleapis.com https://*.firebaseapp.com;",
+      "frame-src 'self' https://checkout.razorpay.com https://api.razorpay.com https://*.razorpay.com https://www.google.com/recaptcha/ https://recaptcha.google.com/ https://*.firebaseapp.com;",,
     ].join(" "),
   },
 ];

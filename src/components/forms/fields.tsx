@@ -5,7 +5,7 @@ import { useFormContext, Controller } from "react-hook-form";
 import { useFormField } from "./form-field";
 import { Select, SelectOption } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { UploadCloud, X, FileIcon, Film, Loader2 } from "lucide-react";
+import { UploadCloud, X, FileIcon, Film, Loader2, Phone } from "lucide-react";
 
 // ==========================================
 // 1. INPUT FIELD
@@ -515,3 +515,321 @@ export function FileUploadField({
     />
   );
 }
+
+// ==========================================
+// 8. PHONE INPUT FIELD
+// ==========================================
+export interface PhoneInputFieldProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "value" | "onChange"> {
+  value?: string;
+  onChange?: (val: any) => void;
+}
+
+const PhoneInputFieldWithForm = React.forwardRef<HTMLInputElement, Omit<PhoneInputFieldProps, "value" | "onChange">>(
+  ({ className, ...props }, ref) => {
+    const { control } = useFormContext();
+    const { id, errorId, descriptionId, error, name } = useFormField();
+
+    return (
+      <Controller
+        name={name}
+        control={control}
+        render={({ field }) => {
+          // Extract the 10 digits from the +91 prefixed phone number
+          const displayValue = (field.value || "").replace(/^\+91/, "");
+
+          const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+            let digits = e.target.value.replace(/[^\d]/g, "");
+            digits = digits.slice(0, 10);
+            const newValue = digits ? `+91${digits}` : "";
+            field.onChange(newValue);
+          };
+
+          return (
+            <div
+              className={cn(
+                "relative flex items-center w-full border border-border bg-secondary/20 text-foreground text-xs rounded-xl focus-within:ring-1 focus-within:ring-primary focus-within:border-primary transition-all",
+                error && "border-rose-500 focus-within:ring-rose-500 focus-within:border-rose-500",
+                className
+              )}
+            >
+              <div className="flex items-center gap-1.5 pl-3 pr-1.5 select-none text-muted-foreground shrink-0">
+                <Phone className="w-3.5 h-3.5 text-muted-foreground/60" />
+                <span className="text-[11px] font-semibold text-foreground/80">+91</span>
+              </div>
+              <div className="h-4 w-[1px] bg-border/80 self-center" />
+              <input
+                id={id}
+                type="tel"
+                aria-invalid={!!error}
+                aria-describedby={error ? errorId : descriptionId}
+                value={displayValue}
+                onChange={handleInputChange}
+                className="w-full !bg-transparent !border-none py-2.5 px-3 text-xs focus:outline-none outline-none font-sans text-foreground placeholder:text-muted-foreground/40 rounded-r-xl"
+                placeholder="99999 99999"
+                ref={(e) => {
+                  field.ref(e);
+                  if (typeof ref === "function") ref(e);
+                  else if (ref) ref.current = e;
+                }}
+                {...props}
+              />
+            </div>
+          );
+        }}
+      />
+    );
+  }
+);
+PhoneInputFieldWithForm.displayName = "PhoneInputFieldWithForm";
+
+const PhoneInputFieldPlain = React.forwardRef<HTMLInputElement, PhoneInputFieldProps>(
+  ({ className, value, onChange, ...props }, ref) => {
+    const displayValue = (value || "").replace(/^\+91/, "");
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      let digits = e.target.value.replace(/[^\d]/g, "");
+      digits = digits.slice(0, 10);
+      if (onChange) {
+        const newValue = digits ? `+91${digits}` : "";
+        // Support both simulated event format or direct string format
+        onChange({
+          target: {
+            value: newValue,
+          },
+        } as any);
+      }
+    };
+
+    return (
+      <div
+        className={cn(
+          "relative flex items-center w-full border border-border bg-secondary/20 text-foreground text-xs rounded-xl focus-within:ring-1 focus-within:ring-primary focus-within:border-primary transition-all",
+          className
+        )}
+      >
+        <div className="flex items-center gap-1.5 pl-3 pr-1.5 select-none text-muted-foreground shrink-0">
+          <Phone className="w-3.5 h-3.5 text-muted-foreground/60" />
+          <span className="text-[11px] font-semibold text-foreground/80">+91</span>
+        </div>
+        <div className="h-4 w-[1px] bg-border/80 self-center" />
+        <input
+          type="tel"
+          value={displayValue}
+          onChange={handleInputChange}
+          className="w-full !bg-transparent !border-none py-2.5 px-3 text-xs focus:outline-none outline-none font-sans text-foreground placeholder:text-muted-foreground/40 rounded-r-xl"
+          placeholder="99999 99999"
+          ref={ref}
+          {...props}
+        />
+      </div>
+    );
+  }
+);
+PhoneInputFieldPlain.displayName = "PhoneInputFieldPlain";
+
+export const PhoneInputField = React.forwardRef<HTMLInputElement, PhoneInputFieldProps>(
+  ({ className, value, onChange, ...props }, ref) => {
+    const formContext = useFormContext();
+    let isInsideFormField = false;
+    try {
+      isInsideFormField = !!useFormField();
+    } catch {
+      // Ignored
+    }
+
+    if (formContext && isInsideFormField) {
+      return <PhoneInputFieldWithForm {...props} ref={ref} className={className} />;
+    }
+
+    return (
+      <PhoneInputFieldPlain
+        {...props}
+        ref={ref}
+        value={value}
+        onChange={onChange}
+        className={className}
+      />
+    );
+  }
+);
+PhoneInputField.displayName = "PhoneInputField";
+
+// ==========================================
+// 9. OTP INPUT FIELD (6 Digits)
+// ==========================================
+export interface OtpInputFieldProps {
+  value?: string;
+  onChange?: (val: string) => void;
+  className?: string;
+  disabled?: boolean;
+}
+
+const OtpInputFieldWithForm = ({ className, disabled }: { className?: string; disabled?: boolean }) => {
+  const { control } = useFormContext();
+  const { id, errorId, descriptionId, error, name } = useFormField();
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  return (
+    <Controller
+      name={name}
+      control={control}
+      render={({ field }) => {
+        const rawValue = field.value || "";
+        const otpArray = new Array(6).fill("").map((_, i) => rawValue[i] || "");
+
+        const updateOtpValue = (newArray: string[]) => {
+          const joined = newArray.join("");
+          field.onChange(joined);
+        };
+
+        const handleOtpChange = (element: HTMLInputElement, index: number) => {
+          const value = element.value;
+          if (value && isNaN(Number(value))) return;
+
+          const newOtp = [...otpArray];
+          newOtp[index] = value.substring(value.length - 1);
+          updateOtpValue(newOtp);
+
+          if (value && index < 5 && inputRefs.current[index + 1]) {
+            inputRefs.current[index + 1]?.focus();
+          }
+        };
+
+        const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
+          if (e.key === "Backspace") {
+            if (!otpArray[index] && index > 0 && inputRefs.current[index - 1]) {
+              inputRefs.current[index - 1]?.focus();
+            }
+          }
+        };
+
+        const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+          e.preventDefault();
+          const pastedData = e.clipboardData.getData("text").trim();
+          if (pastedData.length !== 6 || isNaN(Number(pastedData))) return;
+
+          const newOtp = pastedData.split("");
+          updateOtpValue(newOtp);
+          inputRefs.current[5]?.focus();
+        };
+
+        return (
+          <div 
+            className="flex justify-between w-full max-w-xs mx-auto gap-2"
+            onPaste={handlePaste}
+          >
+            {otpArray.map((digit, index) => (
+              <input
+                key={index}
+                id={index === 0 ? id : undefined}
+                type="text"
+                maxLength={1}
+                value={digit}
+                disabled={disabled}
+                ref={(el) => { inputRefs.current[index] = el; }}
+                onChange={(e) => handleOtpChange(e.target, index)}
+                onKeyDown={(e) => handleKeyDown(e, index)}
+                aria-invalid={!!error}
+                aria-describedby={index === 0 ? (error ? errorId : descriptionId) : undefined}
+                className={cn(
+                  "w-10 h-12 md:w-12 md:h-14 bg-secondary/20 dark:bg-secondary/10 border border-border/60 focus:border-primary text-center text-lg md:text-xl font-mono font-bold rounded-xl focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all outline-none",
+                  error && "border-rose-500 focus:border-rose-500 focus:ring-rose-500/20",
+                  className
+                )}
+              />
+            ))}
+          </div>
+        );
+      }}
+    />
+  );
+};
+
+const OtpInputFieldPlain = ({ value = "", onChange, className, disabled }: OtpInputFieldProps) => {
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const otpArray = new Array(6).fill("").map((_, i) => value[i] || "");
+
+  const handleOtpChange = (element: HTMLInputElement, index: number) => {
+    const val = element.value;
+    if (val && isNaN(Number(val))) return;
+
+    const newOtp = [...otpArray];
+    newOtp[index] = val.substring(val.length - 1);
+    const joined = newOtp.join("");
+    
+    if (onChange) {
+      onChange(joined);
+    }
+
+    if (val && index < 5 && inputRefs.current[index + 1]) {
+      inputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
+    if (e.key === "Backspace") {
+      if (!otpArray[index] && index > 0 && inputRefs.current[index - 1]) {
+        inputRefs.current[index - 1]?.focus();
+      }
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData("text").trim();
+    if (pastedData.length !== 6 || isNaN(Number(pastedData))) return;
+
+    if (onChange) {
+      onChange(pastedData);
+    }
+    inputRefs.current[5]?.focus();
+  };
+
+  return (
+    <div 
+      className="flex justify-between w-full max-w-xs mx-auto gap-2"
+      onPaste={handlePaste}
+    >
+      {otpArray.map((digit, index) => (
+        <input
+          key={index}
+          type="text"
+          maxLength={1}
+          value={digit}
+          disabled={disabled}
+          ref={(el) => { inputRefs.current[index] = el; }}
+          onChange={(e) => handleOtpChange(e.target, index)}
+          onKeyDown={(e) => handleKeyDown(e, index)}
+          className={cn(
+            "w-10 h-12 md:w-12 md:h-14 bg-secondary/20 dark:bg-secondary/10 border border-border/60 focus:border-primary text-center text-lg md:text-xl font-mono font-bold rounded-xl focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all outline-none",
+            className
+          )}
+        />
+      ))}
+    </div>
+  );
+};
+
+export const OtpInputField = ({ className, value, onChange, disabled }: OtpInputFieldProps) => {
+  const formContext = useFormContext();
+  let isInsideFormField = false;
+  try {
+    isInsideFormField = !!useFormField();
+  } catch {
+    // Ignored
+  }
+
+  if (formContext && isInsideFormField) {
+    return <OtpInputFieldWithForm className={className} disabled={disabled} />;
+  }
+
+  return (
+    <OtpInputFieldPlain
+      value={value}
+      onChange={onChange}
+      className={className}
+      disabled={disabled}
+    />
+  );
+};
+
