@@ -45,7 +45,7 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
 
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploadFolder, setUploadFolder] = useState<
-    "products/images" | "products/videos" | "collections/banners" | "categories/banners" | "store/logo"
+    "products/images" | "products/videos" | "collections/banners" | "categories/banners" | "store/logo" | "others"
   >("products/images");
   const [altText, setAltText] = useState("");
   const [isUploading, setIsUploading] = useState(false);
@@ -145,7 +145,7 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
       if (uploadFolder === "products/videos" && fileType !== "video") {
         throw new Error("Folder 'products/videos' requires a video file.");
       }
-      if (uploadFolder !== "products/videos" && fileType !== "image") {
+      if (uploadFolder !== "products/videos" && uploadFolder !== "others" && fileType !== "image") {
         throw new Error("Target folder requires an image file.");
       }
 
@@ -379,6 +379,7 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
                 <option value="collections/banners" className="bg-card text-foreground">Collection Banners</option>
                 <option value="categories/banners" className="bg-card text-foreground">Category Banners</option>
                 <option value="store/logo" className="bg-card text-foreground">Store Logos</option>
+                <option value="others" className="bg-card text-foreground">Others</option>
               </select>
             </div>
 
@@ -511,6 +512,7 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
                 <option value="collections/banners" className="bg-card text-foreground">Collection Banners</option>
                 <option value="categories/banners" className="bg-card text-foreground">Category Banners</option>
                 <option value="store/logo" className="bg-card text-foreground">Store Logos</option>
+                <option value="others" className="bg-card text-foreground">Others</option>
               </select>
             </div>
  

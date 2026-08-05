@@ -17,6 +17,7 @@ const signUploadSchema = z
       "collections/banners",
       "categories/banners",
       "store/logo",
+      "others",
     ]),
     resourceType: z.enum(["image", "video"]),
     fileSize: z.number().int().positive("File size must be positive"),
@@ -32,7 +33,7 @@ const signUploadSchema = z
           path: ["folder"],
         });
       }
-    } else {
+    } else if (data.folder !== "others") {
       if (data.resourceType !== "image") {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
