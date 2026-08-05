@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { CloudinaryImage } from "./cloudinary-image";
-import { Search, Upload, Check, Loader2, X, Film, Trash2 } from "lucide-react";
+import { Search, Upload, Check, Loader2, X, Film, Trash2, Eye } from "lucide-react";
 
 interface MediaItem {
   id: string;
@@ -425,21 +425,43 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
                           </div>
                         )}
 
-                        {/* Delete button (only for logged-in admin managing files) */}
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setDeletingItem(item);
-                          }}
-                          className="absolute top-2 left-2 p-1.5 rounded-full bg-destructive/95 hover:bg-destructive text-white shadow-md border border-white/20 transition-all duration-200 opacity-75 hover:opacity-100 z-10"
-                          title="Delete media asset"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        {/* Hover Overlay with controls and filename */}
+                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10 flex flex-col justify-between p-2">
+                          <div className="flex justify-between items-start">
+                            {/* Delete button (only for logged-in admin managing files) */}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDeletingItem(item);
+                              }}
+                              className="p-1.5 rounded-lg bg-destructive hover:bg-destructive-hover text-white transition-colors duration-150"
+                              title="Delete media asset"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+
+                            {/* View button to open full asset in a new tab */}
+                            <a
+                              href={item.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="p-1.5 rounded-lg bg-white/20 hover:bg-white/30 text-white transition-colors duration-150"
+                              title="View full asset"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                            </a>
+                          </div>
+
+                          {/* Filename display */}
+                          <p className="text-[10px] text-white font-medium truncate w-full" title={item.fileName || "Unnamed File"}>
+                            {item.fileName || "Unnamed File"}
+                          </p>
+                        </div>
 
                         {isSelected && (
-                          <div className="absolute top-2 right-2 p-1 rounded-full bg-primary text-primary-foreground shadow-md border border-white z-10">
+                          <div className="absolute top-2 right-2 p-1 rounded-full bg-primary text-primary-foreground shadow-md border border-white z-20">
                             <Check className="w-3.5 h-3.5 stroke-[3]" />
                           </div>
                         )}

@@ -5,6 +5,9 @@ import { SearchOverlay } from "@/components/storefront/search-overlay";
 import { CartDrawer } from "@/components/storefront/cart-drawer";
 import { BottomNav } from "@/components/storefront/bottom-nav";
 import dynamic from "next/dynamic";
+import Script from "next/script";
+import { GA_MEASUREMENT_ID } from "@/lib/analytics";
+import { AnalyticsTracker } from "@/components/analytics-tracker";
 
 const Footer = dynamic(
   () => import("@/components/storefront/footer").then(mod => mod.Footer),
@@ -63,6 +66,27 @@ export default async function StorefrontLayout({
 
   return (
     <>
+      {GA_MEASUREMENT_ID && (
+        <>
+          <Script
+            async
+            src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
+            strategy="afterInteractive"
+          />
+          <Script id="google-analytics" strategy="afterInteractive">
+            {`
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              window.gtag = gtag;
+              gtag('js', new Date());
+              gtag('config', '${GA_MEASUREMENT_ID}', {
+                send_page_view: false
+              });
+            `}
+          </Script>
+        </>
+      )}
+      <AnalyticsTracker />
       <AnnouncementBar announcements={activeAnnouncements} settings={barSettings} />
       <Header navigationData={navigationData} storeLogo={storeLogo} storeName={storeName} />
       <main className="flex-1 flex flex-col transition-colors duration-300 pb-16 md:pb-0">

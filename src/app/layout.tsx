@@ -1,11 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
-import Script from "next/script";
-import { GoogleAnalytics } from "@next/third-parties/google";
 import "./globals.css";
 import { getSiteUrl, getOrganizationJsonLd, getWebsiteJsonLd } from "@/lib/seo";
-import { GA_MEASUREMENT_ID } from "@/lib/analytics";
-import { AnalyticsTracker } from "@/components/analytics-tracker";
 import { AlertDialogProvider } from "@/components/ui/alert-dialog-provider";
 import { Toaster } from "@/components/ui/toaster";
 
@@ -64,27 +60,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} ${playfair.variable}`} suppressHydrationWarning>
       <body className="font-sans antialiased min-h-screen flex flex-col">
-        {GA_MEASUREMENT_ID && (
-          <>
-            <Script
-              async
-              src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
-              strategy="afterInteractive"
-            />
-            <Script id="google-analytics" strategy="afterInteractive">
-              {`
-                window.dataLayer = window.dataLayer || [];
-                function gtag(){dataLayer.push(arguments);}
-                window.gtag = gtag;
-                gtag('js', new Date());
-                gtag('config', '${GA_MEASUREMENT_ID}', {
-                  send_page_view: false
-                });
-              `}
-            </Script>
-          </>
-        )}
-        <AnalyticsTracker />
+
         {/* Sitewide JSON-LD structured data */}
         <script
           id="ld-json-org"
