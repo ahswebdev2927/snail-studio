@@ -384,7 +384,8 @@ export const reviewImagesRelations = relations(schema.reviewImages, ({ one }) =>
 // --- MARKETING MAPPINGS ---
 
 export const couponsRelations = relations(schema.coupons, ({ many }) => ({
-  usages: many(schema.couponUsage)
+  usages: many(schema.couponUsage),
+  reservations: many(schema.couponReservations)
 }));
 
 export const couponUsageRelations = relations(schema.couponUsage, ({ one }) => ({
@@ -398,6 +399,21 @@ export const couponUsageRelations = relations(schema.couponUsage, ({ one }) => (
   }),
   user: one(schema.users, {
     fields: [schema.couponUsage.userId],
+    references: [schema.users.id]
+  })
+}));
+
+export const couponReservationsRelations = relations(schema.couponReservations, ({ one }) => ({
+  coupon: one(schema.coupons, {
+    fields: [schema.couponReservations.couponId],
+    references: [schema.coupons.id]
+  }),
+  order: one(schema.orders, {
+    fields: [schema.couponReservations.orderId],
+    references: [schema.orders.id]
+  }),
+  user: one(schema.users, {
+    fields: [schema.couponReservations.userId],
     references: [schema.users.id]
   })
 }));

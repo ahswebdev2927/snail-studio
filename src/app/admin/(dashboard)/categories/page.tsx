@@ -14,6 +14,7 @@ import {
   Pencil
 } from "lucide-react";
 import MediaPicker from "@/components/media/media-picker";
+import { Select } from "@/components/ui/select";
 
 interface Category {
   id: string;
@@ -351,20 +352,19 @@ export default function AdminCategoriesPage() {
 
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Parent Node Category</label>
-                  <select
+                  <Select
+                    options={[
+                      { value: "", label: "No Parent (Root Node)" },
+                      ...categoriesFlat
+                        .filter((c) => !editingCategory || c.id !== editingCategory.id)
+                        .map((cat) => ({
+                          value: cat.id,
+                          label: `${cat.name} (${cat.slug})`,
+                        })),
+                    ]}
                     value={catParentId}
-                    onChange={(e) => setCatParentId(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-card border border-border focus:border-primary focus:outline-none rounded-xl text-xs font-light text-foreground"
-                  >
-                    <option value="">No Parent (Root Node)</option>
-                    {categoriesFlat
-                      .filter((c) => !editingCategory || c.id !== editingCategory.id)
-                      .map((cat) => (
-                        <option key={cat.id} value={cat.id}>
-                          {cat.name} ({cat.slug})
-                        </option>
-                      ))}
-                  </select>
+                    onChange={(val) => setCatParentId(val)}
+                  />
                 </div>
 
                  <div className="space-y-1.5">

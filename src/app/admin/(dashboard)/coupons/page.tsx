@@ -2,22 +2,45 @@
 
 import React, { useState, useEffect } from "react";
 import { customConfirm, customAlert } from "@/components/ui/alert-dialog-provider";
-import { 
-  Ticket, 
-  Plus, 
-  Search, 
-  Trash2, 
-  Loader2, 
-  Check, 
-  X, 
-  AlertCircle, 
-  Calendar, 
-  UserCheck, 
-  Percent, 
-  DollarSign, 
+import {
+  Ticket,
+  Plus,
+  Search,
+  Trash2,
+  Loader2,
+  Check,
+  X,
+  AlertCircle,
+  Calendar,
+  UserCheck,
+  Percent,
+  DollarSign,
   ShieldAlert,
-  ArrowRight
+  ArrowRight,
+  Tag,
+  User as UserIcon,
+  Bookmark,
+  HelpCircle
 } from "lucide-react";
+
+interface TooltipProps {
+  content: string;
+  children: React.ReactNode;
+}
+
+function Tooltip({ content, children }: TooltipProps) {
+  return (
+    <div className="group relative inline-block">
+      {children}
+      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col items-center z-[60] w-64 transition-all duration-200 pointer-events-none">
+        <div className="bg-popover text-popover-foreground text-[10px] font-medium leading-relaxed p-2.5 rounded-xl shadow-xl border border-border text-left whitespace-pre-line">
+          {content}
+        </div>
+        <div className="w-2 h-2 bg-popover rotate-45 -mt-1 border-r border-b border-border" />
+      </div>
+    </div>
+  );
+}
 
 interface Coupon {
   id: string;
@@ -67,6 +90,19 @@ export default function AdminCouponsPage() {
   const [newUsageLimit, setNewUsageLimit] = useState<number | "">("");
   const [formError, setFormError] = useState<string | null>(null);
 
+  // V2 targeting and eligibility states
+  const [customerEligibility, setCustomerEligibility] = useState("everyone");
+  const [applicableProducts, setApplicableProducts] = useState("");
+  const [applicableCategories, setApplicableCategories] = useState("");
+  const [applicableCollections, setApplicableCollections] = useState("");
+  const [excludedProducts, setExcludedProducts] = useState("");
+  const [excludedCategories, setExcludedCategories] = useState("");
+  const [excludedCollections, setExcludedCollections] = useState("");
+  const [eligibleUserIds, setEligibleUserIds] = useState("");
+  const [eligibleSegments, setEligibleSegments] = useState("");
+  const [eligibleTags, setEligibleTags] = useState("");
+  const [perUserLimit, setPerUserLimit] = useState<number | "">("");
+
   // Fetch Coupons on Mount
   const fetchCoupons = async () => {
     setIsLoading(true);
@@ -86,7 +122,7 @@ export default function AdminCouponsPage() {
 
   useEffect(() => {
     fetchCoupons();
-    
+
     // Set default dates for modal to today and next month
     const today = new Date().toISOString().split("T")[0];
     const nextMonth = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
@@ -108,6 +144,7 @@ export default function AdminCouponsPage() {
         setCoupons(prev =>
           prev.map(c => (c.id === couponId ? { ...c, isActive: !currentStatus } : c))
         );
+      } else {
         await customAlert("Error", "Failed to update status");
       }
     } catch (error) {
@@ -129,6 +166,7 @@ export default function AdminCouponsPage() {
 
       if (res.ok) {
         setCoupons(prev => prev.filter(c => c.id !== couponId));
+      } else {
         await customAlert("Error", "Failed to delete coupon");
       }
     } catch (error) {
@@ -172,6 +210,13 @@ export default function AdminCouponsPage() {
       const maxDiscountAmount = newMaxDiscount !== "" ? Math.round(Number(newMaxDiscount) * 100) : null;
       const usageLimit = newUsageLimit !== "" ? Number(newUsageLimit) : null;
 
+      const parseCommaList = (str: string): string[] => {
+        return str
+          .split(",")
+          .map(s => s.trim())
+          .filter(s => s.length > 0);
+      };
+
       const res = await fetch("/api/coupons", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -184,7 +229,18 @@ export default function AdminCouponsPage() {
           startDate: newStartDate,
           endDate: newEndDate,
           usageLimit,
-          isActive: true
+          isActive: true,
+          applicableProducts: parseCommaList(applicableProducts),
+          applicableCategories: parseCommaList(applicableCategories),
+          applicableCollections: parseCommaList(applicableCollections),
+          excludedProducts: parseCommaList(excludedProducts),
+          excludedCategories: parseCommaList(excludedCategories),
+          excludedCollections: parseCommaList(excludedCollections),
+          customerEligibility,
+          eligibleUserIds: parseCommaList(eligibleUserIds),
+          eligibleSegments: parseCommaList(eligibleSegments),
+          eligibleTags: parseCommaList(eligibleTags),
+          perUserLimit: perUserLimit !== "" ? Number(perUserLimit) : null,
         })
       });
 
@@ -196,6 +252,18 @@ export default function AdminCouponsPage() {
         setNewValue("");
         setNewMinOrder("");
         setNewMaxDiscount("");
+        setNewUsageLimit("");
+        setCustomerEligibility("everyone");
+        setApplicableProducts("");
+        setApplicableCategories("");
+        setApplicableCollections("");
+        setExcludedProducts("");
+        setExcludedCategories("");
+        setExcludedCollections("");
+        setEligibleUserIds("");
+        setEligibleSegments("");
+        setEligibleTags("");
+        setPerUserLimit("");
         fetchCoupons(); // Refresh list
       } else {
         const errData = await res.json();
@@ -228,7 +296,7 @@ export default function AdminCouponsPage() {
   // Filtering Logic
   const filteredCoupons = coupons.filter(coupon => {
     const matchesSearch = coupon.code.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = 
+    const matchesStatus =
       statusFilter === "all" ||
       (statusFilter === "active" && coupon.isActive) ||
       (statusFilter === "inactive" && !coupon.isActive);
@@ -239,7 +307,7 @@ export default function AdminCouponsPage() {
   // Metrics summary
   const activeCouponsCount = coupons.filter(c => c.isActive).length;
   const totalRedemptions = coupons.reduce((sum, c) => sum + c.usageCount, 0);
-  const avgDiscountValue = coupons.length > 0 
+  const avgDiscountValue = coupons.length > 0
     ? Math.round(coupons.reduce((sum, c) => sum + (c.discountType === "percentage" ? c.discountValue : c.discountValue / 100), 0) / coupons.length)
     : 0;
 
@@ -353,7 +421,7 @@ export default function AdminCouponsPage() {
             <div className="space-y-1 max-w-sm">
               <h3 className="text-sm font-semibold tracking-wide">No Coupons Configured</h3>
               <p className="text-xs text-muted-foreground font-light leading-relaxed">
-                {coupons.length === 0 
+                {coupons.length === 0
                   ? "Build coupon campaigns to drive checkout sales."
                   : "We couldn't find any coupon campaigns matching your search code or status filters."}
               </p>
@@ -385,17 +453,17 @@ export default function AdminCouponsPage() {
               </thead>
               <tbody>
                 {filteredCoupons.map((coupon) => {
-                  const displayValue = 
+                  const displayValue =
                     coupon.discountType === "percentage"
                       ? `${coupon.discountValue}%`
                       : `₹${(coupon.discountValue / 100).toLocaleString()}`;
-                      
+
                   const isExpired = new Date(coupon.endDate) < new Date();
                   const isUpcoming = new Date(coupon.startDate) > new Date();
 
                   return (
-                    <tr 
-                      key={coupon.id} 
+                    <tr
+                      key={coupon.id}
                       className="border-b border-border/10 last:border-0 hover:bg-secondary/15 transition-all group"
                     >
                       {/* Code */}
@@ -460,11 +528,10 @@ export default function AdminCouponsPage() {
                         <button
                           disabled={isActionId === coupon.id}
                           onClick={() => handleToggleStatus(coupon.id, coupon.isActive)}
-                          className={`inline-flex px-2 py-0.5 rounded-full text-[9px] font-bold uppercase border tracking-wider transition-all cursor-pointer disabled:opacity-50 ${
-                            coupon.isActive
+                          className={`inline-flex px-2 py-0.5 rounded-full text-[9px] font-bold uppercase border tracking-wider transition-all cursor-pointer disabled:opacity-50 ${coupon.isActive
                               ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20"
                               : "bg-muted text-muted-foreground border-border hover:bg-muted/70"
-                          }`}
+                            }`}
                         >
                           {isActionId === coupon.id && <Loader2 className="w-2.5 h-2.5 animate-spin mr-1" />}
                           {coupon.isActive ? "Active" : "Inactive"}
@@ -498,8 +565,8 @@ export default function AdminCouponsPage() {
       {/* Create Coupon Modal */}
       {isOpenModal && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-background/80 backdrop-blur-sm p-4 flex items-center justify-center animate-fade-in">
-          <div 
-            className="w-full max-w-lg bg-card border border-border rounded-3xl shadow-xl overflow-hidden scale-in p-6 space-y-6 my-auto"
+          <div
+            className="w-full max-w-2xl bg-card border border-border rounded-3xl shadow-xl overflow-hidden scale-in p-6 space-y-6 my-auto"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
@@ -507,10 +574,10 @@ export default function AdminCouponsPage() {
               <div className="space-y-0.5">
                 <h3 className="text-base font-semibold text-foreground">Create Coupon Rule</h3>
                 <p className="text-[10px] text-muted-foreground font-light">
-                  Define discount properties, validity constraints, and usage limits.
+                  Define discount properties, validity scope, targeting exclusions, and user restrictions.
                 </p>
               </div>
-              <button 
+              <button
                 onClick={() => setIsOpenModal(false)}
                 className="p-1 text-muted-foreground hover:text-foreground hover:bg-secondary/15 rounded-lg transition-colors cursor-pointer"
               >
@@ -519,150 +586,346 @@ export default function AdminCouponsPage() {
             </div>
 
             {/* Form */}
-            <form onSubmit={handleSubmitCoupon} className="space-y-4">
-              {/* Row 1: Code and Type */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
-                    Coupon Code
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. FESTIVE20"
-                    value={newCode}
-                    onChange={(e) => setNewCode(e.target.value.toUpperCase())}
-                    className="w-full px-3.5 py-2.5 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none text-foreground font-mono font-bold transition-all placeholder:text-muted-foreground/35"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
-                    Discount Type
-                  </label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setNewType("percentage");
-                        setNewValue("");
-                      }}
-                      className={`py-2.5 px-3 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                        newType === "percentage"
-                          ? "bg-accent text-accent-foreground border-accent"
-                          : "bg-secondary/35 border-border hover:bg-muted text-muted-foreground hover:text-foreground"
-                      }`}
-                    >
-                      <Percent className="w-3.5 h-3.5" />
-                      Percentage
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setNewType("fixed");
-                        setNewValue("");
-                      }}
-                      className={`py-2.5 px-3 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                        newType === "fixed"
-                          ? "bg-accent text-accent-foreground border-accent"
-                          : "bg-secondary/35 border-border hover:bg-muted text-muted-foreground hover:text-foreground"
-                      }`}
-                    >
-                      <DollarSign className="w-3.5 h-3.5" />
-                      Fixed INR
-                    </button>
+            <form onSubmit={handleSubmitCoupon} className="space-y-5">
+              <div className="max-h-[58vh] overflow-y-auto pr-2 space-y-6">
+
+                {/* Section 1: Basic Information */}
+                <div className="bg-secondary/10 p-4 rounded-2xl border border-border/20 space-y-3">
+                  <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                    <Tag className="w-3.5 h-3.5 text-primary" /> Basic Information
+                  </h4>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+                      Coupon Code
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. WELCOME200"
+                      value={newCode}
+                      onChange={(e) => setNewCode(e.target.value.toUpperCase())}
+                      className="w-full px-3.5 py-2 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none text-foreground font-mono font-bold transition-all placeholder:text-muted-foreground/35"
+                    />
                   </div>
                 </div>
-              </div>
 
-              {/* Row 2: Discount Value and Min Order */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
-                    {newType === "percentage" ? "Discount Percentage (%)" : "Discount Amount (INR)"}
-                  </label>
-                  <input
-                    type="number"
-                    required
-                    min="1"
-                    max={newType === "percentage" ? 100 : undefined}
-                    placeholder={newType === "percentage" ? "e.g. 15" : "e.g. 250"}
-                    value={newValue}
-                    onChange={(e) => setNewValue(e.target.value === "" ? "" : Math.max(1, parseInt(e.target.value) || 1))}
-                    className="w-full px-3.5 py-2.5 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none text-foreground font-medium transition-all"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
-                    Min Order Requirement (INR)
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    placeholder="Optional (e.g. 999)"
-                    value={newMinOrder}
-                    onChange={(e) => setNewMinOrder(e.target.value === "" ? "" : Math.max(0, parseInt(e.target.value) || 0))}
-                    className="w-full px-3.5 py-2.5 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none text-foreground font-medium transition-all"
-                  />
-                </div>
-              </div>
+                {/* Section 2: Discount Configurations */}
+                <div className="bg-secondary/10 p-4 rounded-2xl border border-border/20 space-y-4">
+                  <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                    <Percent className="w-3.5 h-3.5 text-primary" /> Discount Settings
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+                        Discount Type
+                      </label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setNewType("percentage");
+                            setNewValue("");
+                          }}
+                          className={`py-2 px-3 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${newType === "percentage"
+                              ? "bg-accent text-accent-foreground border-accent"
+                              : "bg-secondary/35 border-border hover:bg-muted text-muted-foreground hover:text-foreground"
+                            }`}
+                        >
+                          <Percent className="w-3.5 h-3.5" />
+                          Percentage
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setNewType("fixed");
+                            setNewValue("");
+                          }}
+                          className={`py-2 px-3 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${newType === "fixed"
+                              ? "bg-accent text-accent-foreground border-accent"
+                              : "bg-secondary/35 border-border hover:bg-muted text-muted-foreground hover:text-foreground"
+                            }`}
+                        >
+                          <DollarSign className="w-3.5 h-3.5" />
+                          Fixed INR
+                        </button>
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+                        {newType === "percentage" ? "Discount Percentage (%)" : "Discount Amount (INR)"}
+                      </label>
+                      <input
+                        type="number"
+                        required
+                        min="1"
+                        max={newType === "percentage" ? 100 : undefined}
+                        placeholder={newType === "percentage" ? "e.g. 15" : "e.g. 250"}
+                        value={newValue}
+                        onChange={(e) => setNewValue(e.target.value === "" ? "" : Math.max(1, parseInt(e.target.value) || 1))}
+                        className="w-full px-3.5 py-2 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none text-foreground font-medium transition-all"
+                      />
+                    </div>
+                  </div>
 
-              {/* Row 3: Max Discount (for Percentages) and Usage Limit */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
-                    Max Discount Cap (INR)
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    disabled={newType === "fixed"}
-                    placeholder={newType === "fixed" ? "Disabled for Fixed INR" : "Optional (e.g. 500)"}
-                    value={newType === "fixed" ? "" : newMaxDiscount}
-                    onChange={(e) => setNewMaxDiscount(e.target.value === "" ? "" : Math.max(0, parseInt(e.target.value) || 0))}
-                    className="w-full px-3.5 py-2.5 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none text-foreground font-medium transition-all disabled:opacity-40"
-                  />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+                        Min Order Subtotal (INR)
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="Optional (e.g. 999)"
+                        value={newMinOrder}
+                        onChange={(e) => setNewMinOrder(e.target.value === "" ? "" : Math.max(0, parseInt(e.target.value) || 0))}
+                        className="w-full px-3.5 py-2 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none text-foreground font-medium transition-all"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+                        Max Discount Cap (INR)
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        disabled={newType === "fixed"}
+                        placeholder={newType === "fixed" ? "Disabled for Fixed INR" : "Optional (e.g. 500)"}
+                        value={newType === "fixed" ? "" : newMaxDiscount}
+                        onChange={(e) => setNewMaxDiscount(e.target.value === "" ? "" : Math.max(0, parseInt(e.target.value) || 0))}
+                        className="w-full px-3.5 py-2 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none text-foreground font-medium transition-all disabled:opacity-40"
+                      />
+                    </div>
+                  </div>
                 </div>
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
-                    Global Usage Limit
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    placeholder="Unlimited if empty"
-                    value={newUsageLimit}
-                    onChange={(e) => setNewUsageLimit(e.target.value === "" ? "" : Math.max(1, parseInt(e.target.value) || 1))}
-                    className="w-full px-3.5 py-2.5 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none text-foreground font-medium transition-all"
-                  />
-                </div>
-              </div>
 
-              {/* Row 4: Dates */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
-                    Start Validity Date
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    value={newStartDate}
-                    onChange={(e) => setNewStartDate(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none text-foreground font-medium transition-all"
-                  />
+                {/* Section 3: Eligibility Rules */}
+                <div className="bg-secondary/10 p-4 rounded-2xl border border-border/20 space-y-4">
+                  <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                    <UserIcon className="w-3.5 h-3.5 text-primary" /> Eligibility & Targeting
+                  </h4>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+                      Target Audience
+                    </label>
+                    <select
+                      value={customerEligibility}
+                      onChange={(e) => {
+                        setCustomerEligibility(e.target.value);
+                        setEligibleUserIds("");
+                        setEligibleSegments("");
+                        setEligibleTags("");
+                      }}
+                      className="w-full px-3 py-2 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none text-foreground transition-all"
+                    >
+                      <option value="everyone">Everyone (Public)</option>
+                      <option value="first_purchase">First-time Buyers Only</option>
+                      <option value="returning">Returning Buyers Only</option>
+                      <option value="specific_users">Specific Users (by ID)</option>
+                      <option value="segments">CRM Segments</option>
+                      <option value="tags">Customer tags</option>
+                    </select>
+                  </div>
+
+                  {customerEligibility === "specific_users" && (
+                    <div className="space-y-1.5 animate-fade-in">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+                        Eligible User IDs (comma-separated)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. usr_123, usr_456"
+                        value={eligibleUserIds}
+                        onChange={(e) => setEligibleUserIds(e.target.value)}
+                        className="w-full px-3.5 py-2 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none text-foreground font-mono transition-all"
+                      />
+                    </div>
+                  )}
+
+                  {customerEligibility === "segments" && (
+                    <div className="space-y-1.5 animate-fade-in">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+                        <span>Eligible CRM Segments (comma-separated)</span>
+                        <Tooltip content={"Available Customer Segments:\n• VIP Customers\n• Frequent Buyers\n• One-Time Buyers\n• Cart Abandoners\n• Wishlist Heavy Users\n• High Lifetime Value\n• New Customers\n• Inactive Customers"}>
+                          <HelpCircle className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground cursor-help" />
+                        </Tooltip>
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. VIP Customers, Frequent Buyers"
+                        value={eligibleSegments}
+                        onChange={(e) => setEligibleSegments(e.target.value)}
+                        className="w-full px-3.5 py-2 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none text-foreground transition-all"
+                      />
+                    </div>
+                  )}
+
+                  {customerEligibility === "tags" && (
+                    <div className="space-y-1.5 animate-fade-in">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+                        Eligible Customer Tags (comma-separated)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. influencer, loyal, wholesale"
+                        value={eligibleTags}
+                        onChange={(e) => setEligibleTags(e.target.value)}
+                        className="w-full px-3.5 py-2 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none text-foreground transition-all"
+                      />
+                    </div>
+                  )}
                 </div>
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
-                    End Expiry Date
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    value={newEndDate}
-                    onChange={(e) => setNewEndDate(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none text-foreground font-medium transition-all"
-                  />
+
+                {/* Section 4: Target Scope & Exclusions */}
+                <div className="bg-secondary/10 p-4 rounded-2xl border border-border/20 space-y-4">
+                  <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                    <Bookmark className="w-3.5 h-3.5 text-primary" /> Scope Targeting (Products / Categories)
+                  </h4>
+                  <p className="text-[9px] text-muted-foreground font-light leading-relaxed">
+                    Leave Scope empty to apply store-wide. Enter comma-separated IDs to restrict discounts.
+                  </p>
+
+                  <div className="space-y-3">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+                        Applicable Products (Product IDs)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Optional (e.g. prod_01, prod_02)"
+                        value={applicableProducts}
+                        onChange={(e) => setApplicableProducts(e.target.value)}
+                        className="w-full px-3.5 py-2 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none text-foreground font-mono transition-all"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+                        Applicable Categories (Category IDs)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Optional (e.g. cat_nails, cat_kits)"
+                        value={applicableCategories}
+                        onChange={(e) => setApplicableCategories(e.target.value)}
+                        className="w-full px-3.5 py-2 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none text-foreground font-mono transition-all"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+                        Applicable Collections (Collection IDs)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Optional (e.g. col_winter, col_retro)"
+                        value={applicableCollections}
+                        onChange={(e) => setApplicableCollections(e.target.value)}
+                        className="w-full px-3.5 py-2 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none text-foreground font-mono transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="border-t border-border/40 pt-3 space-y-3">
+                    <h5 className="text-[10px] font-bold text-rose-500 uppercase tracking-wider">Exclusion Rules</h5>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+                        Excluded Products (Product IDs)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Optional (e.g. prod_sale1, prod_sale2)"
+                        value={excludedProducts}
+                        onChange={(e) => setExcludedProducts(e.target.value)}
+                        className="w-full px-3.5 py-2 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none text-foreground font-mono transition-all"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+                        Excluded Categories (Category IDs)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Optional (e.g. cat_clearance)"
+                        value={excludedCategories}
+                        onChange={(e) => setExcludedCategories(e.target.value)}
+                        className="w-full px-3.5 py-2 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none text-foreground font-mono transition-all"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+                        Excluded Collections (Collection IDs)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Optional (e.g. col_outlet)"
+                        value={excludedCollections}
+                        onChange={(e) => setExcludedCollections(e.target.value)}
+                        className="w-full px-3.5 py-2 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none text-foreground font-mono transition-all"
+                      />
+                    </div>
+                  </div>
                 </div>
+
+                {/* Section 5: Limits and Scheduling */}
+                <div className="bg-secondary/10 p-4 rounded-2xl border border-border/20 space-y-4">
+                  <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                    <Calendar className="w-3.5 h-3.5 text-primary" /> Limits & Scheduling
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+                        Global Usage Limit
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        placeholder="Unlimited if empty"
+                        value={newUsageLimit}
+                        onChange={(e) => setNewUsageLimit(e.target.value === "" ? "" : Math.max(1, parseInt(e.target.value) || 1))}
+                        className="w-full px-3.5 py-2 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none text-foreground font-medium transition-all"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+                        Per-User Usage Limit
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        placeholder="Unlimited if empty (e.g. 1)"
+                        value={perUserLimit}
+                        onChange={(e) => setPerUserLimit(e.target.value === "" ? "" : Math.max(1, parseInt(e.target.value) || 1))}
+                        className="w-full px-3.5 py-2 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none text-foreground font-medium transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+                        Start Validity Date
+                      </label>
+                      <input
+                        type="date"
+                        required
+                        value={newStartDate}
+                        onChange={(e) => setNewStartDate(e.target.value)}
+                        className="w-full px-3.5 py-2 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none text-foreground font-medium transition-all"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+                        End Expiry Date
+                      </label>
+                      <input
+                        type="date"
+                        required
+                        value={newEndDate}
+                        onChange={(e) => setNewEndDate(e.target.value)}
+                        className="w-full px-3.5 py-2 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none text-foreground font-medium transition-all"
+                      />
+                    </div>
+                  </div>
+                </div>
+
               </div>
 
               {/* Error area */}

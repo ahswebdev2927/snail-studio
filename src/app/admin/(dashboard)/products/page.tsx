@@ -22,6 +22,7 @@ import {
   ChevronLeft
 } from "lucide-react";
 import Link from "next/link";
+import { Select } from "@/components/ui/select";
 
 interface Brand {
   id: string;
@@ -293,46 +294,42 @@ export default function AdminProductsPage() {
 
         {/* Category Filter */}
         <div>
-          <select
+          <Select
+            options={[
+              { value: "all", label: "All Categories" },
+              ...categories.map((c) => ({ value: c.id, label: c.name })),
+            ]}
             value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-            className="w-full px-3.5 py-2 bg-card border border-border text-foreground rounded-xl text-xs font-semibold outline-none focus:border-primary cursor-pointer hover:bg-secondary/40 transition-colors"
-          >
-            <option value="all">All Categories</option>
-            {categories.map(c => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
+            onChange={(val) => setSelectedCategory(val)}
+          />
         </div>
 
         {/* Brand Filter */}
         <div>
-          <select
+          <Select
+            options={[
+              { value: "all", label: "All Brands" },
+              ...brands.map((b) => ({ value: b.id, label: b.name })),
+            ]}
             value={selectedBrand}
-            onChange={(e) => setSelectedBrand(e.target.value)}
-            className="w-full px-3.5 py-2 bg-card border border-border text-foreground rounded-xl text-xs font-semibold outline-none focus:border-primary cursor-pointer hover:bg-secondary/40 transition-colors"
-          >
-            <option value="all">All Brands</option>
-            {brands.map(b => (
-              <option key={b.id} value={b.id}>{b.name}</option>
-            ))}
-          </select>
+            onChange={(val) => setSelectedBrand(val)}
+          />
         </div>
 
         {/* Sort select */}
         <div>
-          <select
+          <Select
+            options={[
+              { value: "newest", label: "Newest First" },
+              { value: "oldest", label: "Oldest First" },
+              { value: "name_asc", label: "Name (A-Z)" },
+              { value: "name_desc", label: "Name (Z-A)" },
+              { value: "price_asc", label: "Price (Low to High)" },
+              { value: "price_desc", label: "Price (High to Low)" },
+            ]}
             value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-            className="w-full px-3.5 py-2 bg-card border border-border text-foreground rounded-xl text-xs font-semibold outline-none focus:border-primary cursor-pointer hover:bg-secondary/40 transition-colors"
-          >
-            <option value="newest">Newest First</option>
-            <option value="oldest">Oldest First</option>
-            <option value="name_asc">Name (A-Z)</option>
-            <option value="name_desc">Name (Z-A)</option>
-            <option value="price_asc">Price (Low to High)</option>
-            <option value="price_desc">Price (High to Low)</option>
-          </select>
+            onChange={(val) => setSortBy(val)}
+          />
         </div>
       </div>
 
@@ -381,20 +378,21 @@ export default function AdminProductsPage() {
                   {/* Page Size Selector */}
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-light text-muted-foreground">Show</span>
-                    <select
-                      value={limit}
-                      onChange={(e) => {
-                        setLimit(Number(e.target.value));
+                    <Select
+                      options={[
+                        { value: "25", label: "25" },
+                        { value: "50", label: "50" },
+                        { value: "75", label: "75" },
+                        { value: "100", label: "100" },
+                      ]}
+                      value={limit.toString()}
+                      onChange={(val) => {
+                        setLimit(Number(val));
                         setCurrentPage(1);
                       }}
-                      className="bg-muted text-foreground border border-border text-xs rounded-lg px-2 py-1 focus:ring-1 focus:ring-primary focus:outline-none cursor-pointer font-medium"
-                    >
-                      {[25, 50, 75, 100].map((size) => (
-                        <option key={size} value={size}>
-                          {size}
-                        </option>
-                      ))}
-                    </select>
+                      className="w-20"
+                      triggerClassName="py-1 px-2.5 text-[11px] rounded-lg"
+                    />
                   </div>
                   {/* Page Nav */}
                   <div className="flex items-center gap-1.5">
@@ -653,20 +651,21 @@ export default function AdminProductsPage() {
                 {/* Page Size Selector */}
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-light text-muted-foreground">Show</span>
-                  <select
-                    value={limit}
-                    onChange={(e) => {
-                      setLimit(Number(e.target.value));
+                  <Select
+                    options={[
+                      { value: "25", label: "25" },
+                      { value: "50", label: "50" },
+                      { value: "75", label: "75" },
+                      { value: "100", label: "100" },
+                    ]}
+                    value={limit.toString()}
+                    onChange={(val) => {
+                      setLimit(Number(val));
                       setCurrentPage(1);
                     }}
-                    className="bg-muted text-foreground border border-border text-xs rounded-lg px-2 py-1 focus:ring-1 focus:ring-primary focus:outline-none cursor-pointer font-medium"
-                  >
-                    {[25, 50, 75, 100].map((size) => (
-                      <option key={size} value={size}>
-                        {size}
-                      </option>
-                    ))}
-                  </select>
+                    className="w-20"
+                    triggerClassName="py-1 px-2.5 text-[11px] rounded-lg"
+                  />
                 </div>
                 {/* Page Nav */}
                 <div className="flex items-center gap-1.5">

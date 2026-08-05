@@ -5,6 +5,7 @@ import { nanoid } from "nanoid";
 import { sendMail } from "@/services/email/email.service";
 import { getOrderConfirmationTemplate } from "@/services/email/templates/order-confirmation.template";
 import { getOrderStatusUpdateTemplate } from "@/services/email/templates/order-status-update.template";
+import { releaseCouponReservation } from "./coupon-engine.service";
 
 /**
  * Creates a pending order in the database with associated items and shipping/billing addresses.
@@ -189,6 +190,10 @@ export async function updateOrderStatus(orderId: string, status: string, notes?:
     status,
     notes: notes || `Order status transitioned to ${status}.`,
   });
+
+  if (status === "cancelled") {
+    await releaseCouponReservation(orderId, client);
+  }
 
   // EMAIL NOTIFICATION TRIGGER
   // Fired asynchronously in the background so it doesn't block the request lifecycle

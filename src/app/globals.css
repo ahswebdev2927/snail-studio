@@ -499,3 +499,127 @@ textarea {
   background: var(--primary, #ac5429);
   z-index: 11;
 }
+
+/* ==========================================================================
+   TOAST STATUS NOTIFICATIONS HIGH CONTRAST STYLING OVERRIDES
+   ========================================================================== */
+
+/* 1. Success Toast */
+.toaster .toast.success {
+  background-color: color-mix(in srgb, var(--success) 8%, #ffffff) !important;
+  border-color: color-mix(in srgb, var(--success) 20%, transparent) !important;
+}
+.toaster .toast.success [data-title] {
+  color: var(--success) !important;
+}
+.toaster .toast.success [data-description] {
+  color: color-mix(in srgb, var(--success) 70%, #000000) !important;
+}
+.toaster .toast.success [data-icon] {
+  color: var(--success) !important;
+}
+
+/* Dark Mode Success Toast */
+.dark .toaster .toast.success {
+  background-color: color-mix(in srgb, var(--success) 12%, #120f10) !important;
+  border-color: color-mix(in srgb, var(--success) 25%, transparent) !important;
+}
+.dark .toaster .toast.success [data-title] {
+  color: #81c784 !important; /* Lighter high contrast green */
+}
+.dark .toaster .toast.success [data-description] {
+  color: #a5d6a7 !important;
+}
+.dark .toaster .toast.success [data-icon] {
+  color: #81c784 !important;
+}
+
+/* 2. Error Toast */
+.toaster .toast.error {
+  background-color: color-mix(in srgb, var(--error) 8%, #ffffff) !important;
+  border-color: color-mix(in srgb, var(--error) 20%, transparent) !important;
+}
+.toaster .toast.error [data-title] {
+  color: var(--error) !important;
+}
+.toaster .toast.error [data-description] {
+  color: color-mix(in srgb, var(--error) 70%, #000000) !important;
+}
+.toaster .toast.error [data-icon] {
+  color: var(--error) !important;
+}
+
+/* Dark Mode Error Toast */
+.dark .toaster .toast.error {
+  background-color: color-mix(in srgb, var(--error) 12%, #120f10) !important;
+  border-color: color-mix(in srgb, var(--error) 25%, transparent) !important;
+}
+.dark .toaster .toast.error [data-title] {
+  color: #e57373 !important; /* Lighter high contrast red */
+}
+.dark .toaster .toast.error [data-description] {
+  color: #ef9a9a !important;
+}
+.dark .toaster .toast.error [data-icon] {
+  color: #e57373 !important;
+}
+
+/* 3. Warning Toast */
+.toaster .toast.warning {
+  background-color: color-mix(in srgb, var(--warning) 8%, #ffffff) !important;
+  border-color: color-mix(in srgb, var(--warning) 20%, transparent) !important;
+}
+.toaster .toast.warning [data-title] {
+  color: var(--warning) !important;
+}
+.toaster .toast.warning [data-description] {
+  color: color-mix(in srgb, var(--warning) 70%, #000000) !important;
+}
+.toaster .toast.warning [data-icon] {
+  color: var(--warning) !important;
+}
+
+/* Dark Mode Warning Toast */
+.dark .toaster .toast.warning {
+  background-color: color-mix(in srgb, var(--warning) 12%, #120f10) !important;
+  border-color: color-mix(in srgb, var(--warning) 25%, transparent) !important;
+}
+.dark .toaster .toast.warning [data-title] {
+  color: #ffb74d !important; /* Lighter high contrast orange */
+}
+.dark .toaster .toast.warning [data-description] {
+  color: #ffe0b2 !important;
+}
+.dark .toaster .toast.warning [data-icon] {
+  color: #ffb74d !important;
+}
+
+/* 4. Info Toast */
+.toaster .toast.info {
+  background-color: color-mix(in srgb, var(--info) 8%, #ffffff) !important;
+  border-color: color-mix(in srgb, var(--info) 20%, transparent) !important;
+}
+.toaster .toast.info [data-title] {
+  color: var(--info) !important;
+}
+.toaster .toast.info [data-description] {
+  color: color-mix(in srgb, var(--info) 70%, #000000) !important;
+}
+.toaster .toast.info [data-icon] {
+  color: var(--info) !important;
+}
+
+/* Dark Mode Info Toast */
+.dark .toaster .toast.info {
+  background-color: color-mix(in srgb, var(--info) 12%, #120f10) !important;
+  border-color: color-mix(in srgb, var(--info) 25%, transparent) !important;
+}
+.dark .toaster .toast.info [data-title] {
+  color: #64b5f6 !important; /* Lighter high contrast blue */
+}
+.dark .toaster .toast.info [data-description] {
+  color: #90caf9 !important;
+}
+.dark .toaster .toast.info [data-icon] {
+  color: #64b5f6 !important;
+}

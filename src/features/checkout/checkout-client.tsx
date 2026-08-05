@@ -415,13 +415,25 @@ export default function CheckoutClient() {
     setCouponSuccess("");
 
     try {
-      const res = await fetch("/api/admin/settings"); // dummy check to get credentials or similar, wait, validate endpoint exists
+      // Sync client cart state with database to obtain a valid cartId
+      let cartId = null;
+      const variantItems = cart.map((item) => ({
+        variantId: item.id,
+        quantity: item.quantity
+      }));
+      const syncRes = await syncCartToDb(variantItems);
+      if (syncRes.success && syncRes.cartId) {
+        cartId = syncRes.cartId;
+      }
+
       const valRes = await fetch("/api/coupons/validate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           code: couponCode,
-          subtotal: cartSubtotal // validate api takes paise
+          subtotal: cartSubtotal, // validate api takes paise
+          cartId: cartId,
+          userId: user?.id || null,
         })
       });
 
@@ -572,7 +584,6 @@ export default function CheckoutClient() {
         billingAddress: billingDetails,
         notes: values.deliveryInstructions || undefined,
         couponCode: appliedCoupon ? appliedCoupon.code : undefined,
-        discountAmount: (appliedCoupon ? appliedCoupon.discountAmount : 0) + bundleDiscount, // sum of coupon and bundle discounts (paise)
         shippingAmount: shippingCost // already in paise
       });
 

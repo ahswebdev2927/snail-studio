@@ -16,6 +16,22 @@ export const coupons = sqliteTable('coupons', {
   usageLimit: integer('usage_limit'),
   usageCount: integer('usage_count').notNull().default(0),
   isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
+  
+  // V2 Scope & Exclusions targeting
+  applicableProducts: text('applicable_products'), // JSON string array of product IDs
+  applicableCategories: text('applicable_categories'), // JSON string array of category IDs
+  applicableCollections: text('applicable_collections'), // JSON string array of collection IDs
+  excludedProducts: text('excluded_products'), // JSON string array of product IDs
+  excludedCategories: text('excluded_categories'), // JSON string array of category IDs
+  excludedCollections: text('excluded_collections'), // JSON string array of collection IDs
+  
+  // V2 Customer Eligibility targeting
+  customerEligibility: text('customer_eligibility').notNull().default('everyone'), // everyone, logged_in, guest, first_purchase, returning, specific_users, segments, tags
+  eligibleUserIds: text('eligible_user_ids'), // JSON string array of user IDs
+  eligibleSegments: text('eligible_segments'), // JSON string array of segment names
+  eligibleTags: text('eligible_tags'), // JSON string array of customer tags
+  perUserLimit: integer('per_user_limit'), // limit per user (e.g. 1)
+
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)
 });
 
@@ -23,10 +39,23 @@ export const couponUsage = sqliteTable('coupon_usage', {
   id: text('id').primaryKey(),
   couponId: text('coupon_id').notNull().references(() => coupons.id, { onDelete: 'cascade' }),
   orderId: text('order_id').notNull().references(() => orders.id, { onDelete: 'cascade' }),
-  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  userId: text('user_id').references(() => users.id, { onDelete: 'cascade' }), // Made Nullable for guests
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)
 }, (table) => [
   index('coupon_usage_user_id_idx').on(table.userId)
+]);
+
+export const couponReservations = sqliteTable('coupon_reservations', {
+  id: text('id').primaryKey(),
+  couponId: text('coupon_id').notNull().references(() => coupons.id, { onDelete: 'cascade' }),
+  orderId: text('order_id').notNull().references(() => orders.id, { onDelete: 'cascade' }),
+  userId: text('user_id').references(() => users.id, { onDelete: 'cascade' }), // Nullable for guest checkouts
+  expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)
+}, (table) => [
+  index('coupon_reservations_coupon_id_idx').on(table.couponId),
+  index('coupon_reservations_order_id_idx').on(table.orderId),
+  index('coupon_reservations_expires_at_idx').on(table.expiresAt)
 ]);
 
 export const heroBanners = sqliteTable('hero_banners', {

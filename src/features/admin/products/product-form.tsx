@@ -4,8 +4,9 @@ import React, { useState, useEffect, useMemo } from "react";
 import { customConfirm } from "@/components/ui/alert-dialog-provider";
 import Link from "next/link";
 import { toast } from "sonner";
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Select } from "@/components/ui/select";
 import * as z from "zod";
 import { 
   ArrowLeft, 
@@ -141,6 +142,43 @@ export default function ProductForm({ mode, productId, initialData }: ProductFor
   const catalogAttributes = useMemo(() => {
     return attributes.filter((g) => g.attributeType === "CATALOG");
   }, [attributes]);
+
+  const categoryOptions = useMemo(() => {
+    const parents = categories.filter((c) => !c.parentId);
+    const childrenMap = categories.reduce((acc: any, c) => {
+      if (c.parentId) {
+        if (!acc[c.parentId]) acc[c.parentId] = [];
+        acc[c.parentId].push(c);
+      }
+      return acc;
+    }, {});
+
+    const options: { value: string; label: string; disabled?: boolean }[] = [
+      { value: "", label: "Select Category" }
+    ];
+
+    parents.forEach((parent) => {
+      const children = childrenMap[parent.id] || [];
+      if (children.length > 0) {
+        options.push({ value: `group-${parent.id}`, label: parent.name, disabled: true });
+        options.push({ value: parent.id, label: `\u00A0\u00A0${parent.name} (Parent)` });
+        children.forEach((child: any) => {
+          options.push({ value: child.id, label: `\u00A0\u00A0\u00A0\u00A0${child.name}` });
+        });
+      } else {
+        options.push({ value: parent.id, label: parent.name });
+      }
+    });
+
+    return options;
+  }, [categories]);
+
+  const brandOptions = useMemo(() => {
+    return [
+      { value: "", label: "Select Brand" },
+      ...brands.map((b) => ({ value: b.id, label: b.name }))
+    ];
+  }, [brands]);
 
   const [loadingLookups, setLoadingLookups] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -734,63 +772,36 @@ export default function ProductForm({ mode, productId, initialData }: ProductFor
                 <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground ml-1">
                   Category
                 </label>
-                <select
-                  {...register("categoryId")}
-                  className="w-full px-4 py-3 bg-white border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-2xl text-xs outline-none transition-all text-foreground"
-                >
-                  <option value="" className="bg-card text-foreground">Select Category</option>
-                  {(() => {
-                    const parents = categories.filter((c) => !c.parentId);
-                    const childrenMap = categories.reduce((acc: any, c) => {
-                      if (c.parentId) {
-                        if (!acc[c.parentId]) acc[c.parentId] = [];
-                        acc[c.parentId].push(c);
-                      }
-                      return acc;
-                    }, {});
-
-                    return parents.map((parent) => {
-                      const children = childrenMap[parent.id] || [];
-                      if (children.length > 0) {
-                        return (
-                          <optgroup key={parent.id} label={parent.name} className="bg-card text-foreground font-semibold">
-                            <option value={parent.id} className="bg-card text-foreground font-normal">
-                              {parent.name} (Parent)
-                            </option>
-                            {children.map((child: any) => (
-                              <option key={child.id} value={child.id} className="bg-card text-foreground font-normal">
-                                {child.name}
-                              </option>
-                            ))}
-                          </optgroup>
-                        );
-                      } else {
-                        return (
-                          <option key={parent.id} value={parent.id} className="bg-card text-foreground">
-                            {parent.name}
-                          </option>
-                        );
-                      }
-                    });
-                  })()}
-                </select>
+                <Controller
+                  name="categoryId"
+                  control={control}
+                  render={({ field }) => (
+                    <Select
+                      options={categoryOptions}
+                      value={field.value || ""}
+                      onChange={field.onChange}
+                      placeholder="Select Category"
+                    />
+                  )}
+                />
               </div>
 
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground ml-1">
                   Brand
                 </label>
-                <select
-                  {...register("brandId")}
-                  className="w-full px-4 py-3 bg-white border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-2xl text-xs outline-none transition-all text-foreground"
-                >
-                  <option value="" className="bg-card text-foreground">Select Brand</option>
-                  {brands.map((b) => (
-                    <option key={b.id} value={b.id} className="bg-card text-foreground">
-                      {b.name}
-                    </option>
-                  ))}
-                </select>
+                <Controller
+                  name="brandId"
+                  control={control}
+                  render={({ field }) => (
+                    <Select
+                      options={brandOptions}
+                      value={field.value || ""}
+                      onChange={field.onChange}
+                      placeholder="Select Brand"
+                    />
+                  )}
+                />
               </div>
             </div>
           </div>
@@ -1454,18 +1465,25 @@ export default function ProductForm({ mode, productId, initialData }: ProductFor
                 <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground ml-1">
                   Product Status
                 </label>
-                <select
-                  {...register("status")}
-                  className="w-full px-4 py-3 bg-white border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-2xl text-xs outline-none transition-all text-foreground font-semibold"
-                >
-                  <option value="Active">Active (Visible Everywhere)</option>
-                  <option value="Draft">Draft (Admin Only)</option>
-                  <option value="Hidden">Hidden (Active, Direct Link Only)</option>
-                  <option value="Coming Soon">Coming Soon (Preview Only - No Scheduler / No Signups)</option>
-                  <option value="Launching Soon">Launching Soon (Scheduled Drop - Countdowns & Signups)</option>
-                  <option value="Out Of Stock">Out Of Stock (Storefront View Only)</option>
-                  <option value="Archived">Archived (Hidden from Storefront/Search)</option>
-                </select>
+                <Controller
+                  name="status"
+                  control={control}
+                  render={({ field }) => (
+                    <Select
+                      options={[
+                        { value: "Active", label: "Active (Visible Everywhere)" },
+                        { value: "Draft", label: "Draft (Admin Only)" },
+                        { value: "Hidden", label: "Hidden (Active, Direct Link Only)" },
+                        { value: "Coming Soon", label: "Coming Soon (Preview Only)" },
+                        { value: "Launching Soon", label: "Launching Soon (Scheduled Drop)" },
+                        { value: "Out Of Stock", label: "Out Of Stock (Storefront View Only)" },
+                        { value: "Archived", label: "Archived (Hidden from Storefront/Search)" },
+                      ]}
+                      value={field.value}
+                      onChange={field.onChange}
+                    />
+                  )}
+                />
               </div>
 
               {watch("status") === "Launching Soon" && (
@@ -1832,15 +1850,15 @@ function VariantEditDialog({ variant, onClose, onSave, saving }: VariantEditDial
             </div>
             <div className="space-y-1">
               <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground ml-0.5">Status</label>
-              <select
+              <Select
+                options={[
+                  { value: "Active", label: "Active" },
+                  { value: "Disabled", label: "Disabled" },
+                  { value: "Archived", label: "Archived" },
+                ]}
                 value={status}
-                onChange={(e) => setStatus(e.target.value as any)}
-                className="w-full px-3 py-2 bg-white border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl outline-none text-foreground font-semibold"
-              >
-                <option value="Active">Active</option>
-                <option value="Disabled">Disabled</option>
-                <option value="Archived">Archived</option>
-              </select>
+                onChange={(val) => setStatus(val as any)}
+              />
             </div>
           </div>
 

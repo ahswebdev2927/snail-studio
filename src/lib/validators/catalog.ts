@@ -270,7 +270,7 @@ export const updateBundleSchema = bundleFieldsSchema
 // 7. COUPON SCHEMAS
 // ==========================================
 
-export const createCouponSchema = z
+export const createCouponSchemaBase = z
   .object({
     code: z
       .string()
@@ -285,13 +285,29 @@ export const createCouponSchema = z
     endDate: z.string().transform((val) => new Date(val)),
     usageLimit: z.number().int().min(1).optional().nullable(),
     isActive: z.boolean().default(true),
-  })
-  .refine((data) => data.startDate <= data.endDate, {
-    message: "Start date must be before or equal to end date",
-    path: ["startDate"],
+
+    // V2 targeting arrays, serialized as JSON strings for SQLite storage
+    applicableProducts: z.array(z.string()).optional().nullable().transform((val) => (val ? JSON.stringify(val) : null)),
+    applicableCategories: z.array(z.string()).optional().nullable().transform((val) => (val ? JSON.stringify(val) : null)),
+    applicableCollections: z.array(z.string()).optional().nullable().transform((val) => (val ? JSON.stringify(val) : null)),
+    excludedProducts: z.array(z.string()).optional().nullable().transform((val) => (val ? JSON.stringify(val) : null)),
+    excludedCategories: z.array(z.string()).optional().nullable().transform((val) => (val ? JSON.stringify(val) : null)),
+    excludedCollections: z.array(z.string()).optional().nullable().transform((val) => (val ? JSON.stringify(val) : null)),
+
+    // V2 customer eligibility criteria
+    customerEligibility: z.enum(["everyone", "first_purchase", "returning", "specific_users", "segments", "tags"]).default("everyone"),
+    eligibleUserIds: z.array(z.string()).optional().nullable().transform((val) => (val ? JSON.stringify(val) : null)),
+    eligibleSegments: z.array(z.string()).optional().nullable().transform((val) => (val ? JSON.stringify(val) : null)),
+    eligibleTags: z.array(z.string()).optional().nullable().transform((val) => (val ? JSON.stringify(val) : null)),
+    perUserLimit: z.number().int().min(1).optional().nullable(),
   });
 
-export const updateCouponSchema = createCouponSchema;
+export const createCouponSchema = createCouponSchemaBase.refine((data) => data.startDate <= data.endDate, {
+  message: "Start date must be before or equal to end date",
+  path: ["startDate"],
+});
+
+export const updateCouponSchema = createCouponSchemaBase.partial();
 
 export const validateCouponSchema = z.object({
   code: z
@@ -299,4 +315,6 @@ export const validateCouponSchema = z.object({
     .min(1, "Coupon code is required")
     .transform((val) => val.toUpperCase().trim()),
   subtotal: z.number().int().min(0, "Subtotal must be a positive integer"),
+  cartId: z.string().optional().nullable(),
+  userId: z.string().optional().nullable(),
 });

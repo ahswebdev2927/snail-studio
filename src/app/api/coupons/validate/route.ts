@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db";
-import { coupons } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
-import { z } from "zod";
 import { validateCouponSchema } from "@/lib/validators/catalog";
+import { validateCoupon } from "@/services/checkout/coupon-engine.service";
 
 export async function POST(req: NextRequest) {
   try {
@@ -22,83 +19,25 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { code, subtotal } = result.data;
+    const { code, subtotal, cartId, userId } = result.data;
 
-    // 1. Try querying the database
-    let coupon = await db.query.coupons.findFirst({
-      where: and(eq(coupons.code, code), eq(coupons.isActive, true)),
-    });
+    // Call Coupon Engine
+    const validationResult = await validateCoupon(code, subtotal, cartId, userId);
 
-    // 2. Fallback to hardcoded promo codes if DB does not have it
-    if (!coupon) {
-      if (code === "SNAILGLAM" || code === "LUXENAILS10") {
-        coupon = {
-          id: `fallback_${code.toLowerCase()}`,
-          code: code,
-          discountType: "percentage",
-          discountValue: 10, // 10% off
-          minOrderAmount: 0,
-          maxDiscountAmount: null,
-          startDate: new Date("2026-01-01"),
-          endDate: new Date("2030-12-31"),
-          usageLimit: null,
-          usageCount: 0,
-          isActive: true,
-          createdAt: new Date(),
-        };
-      }
-    }
-
-    // 3. Check if coupon exists
-    if (!coupon) {
-      return NextResponse.json({ error: "Invalid coupon code or coupon has expired" }, { status: 404 });
-    }
-
-    // 4. Validate dates
-    const now = new Date();
-    if (coupon.startDate && now < new Date(coupon.startDate)) {
-      return NextResponse.json({ error: "Coupon is not active yet" }, { status: 400 });
-    }
-    if (coupon.endDate && now > new Date(coupon.endDate)) {
-      return NextResponse.json({ error: "Coupon has expired" }, { status: 400 });
-    }
-
-    // 5. Validate usage limits
-    if (coupon.usageLimit && coupon.usageCount >= coupon.usageLimit) {
-      return NextResponse.json({ error: "Coupon usage limit has been reached" }, { status: 400 });
-    }
-
-    // 6. Validate minimum order subtotal requirement
-    if (coupon.minOrderAmount && subtotal < coupon.minOrderAmount) {
-      const minAmountInRupees = (coupon.minOrderAmount / 100).toLocaleString("en-IN", {
-        style: "currency",
-        currency: "INR",
-      });
-      return NextResponse.json(
-        { error: `This coupon requires a minimum subtotal of ${minAmountInRupees}` },
-        { status: 400 }
-      );
-    }
-
-    // 7. Calculate discount
-    let discountAmount = 0;
-    if (coupon.discountType === "percentage") {
-      discountAmount = Math.floor((subtotal * coupon.discountValue) / 100);
-      if (coupon.maxDiscountAmount) {
-        discountAmount = Math.min(discountAmount, coupon.maxDiscountAmount);
-      }
-    } else if (coupon.discountType === "fixed") {
-      discountAmount = Math.min(coupon.discountValue, subtotal);
+    if (!validationResult.valid) {
+      // Return 404 if coupon is not found, or 400 if validation constraints fail
+      const statusCode = validationResult.error?.includes("Invalid coupon code") ? 404 : 400;
+      return NextResponse.json({ error: validationResult.error }, { status: statusCode });
     }
 
     return NextResponse.json(
       {
         valid: true,
-        code: coupon.code,
-        discountType: coupon.discountType,
-        discountValue: coupon.discountValue,
-        discountAmount: discountAmount,
-        newTotal: subtotal - discountAmount,
+        code: validationResult.coupon.code,
+        discountType: validationResult.coupon.discountType,
+        discountValue: validationResult.coupon.discountValue,
+        discountAmount: validationResult.discountAmount,
+        newTotal: validationResult.newTotal,
       },
       { status: 200 }
     );

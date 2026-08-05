@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { payments, orders, refunds, inventoryItems, inventoryReservations, inventoryTransactions, cartItems, carts, productVariants } from "@/db/schema";
+import { payments, orders, refunds, inventoryItems, inventoryReservations, inventoryTransactions, cartItems, carts, productVariants, coupons } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { getPaymentProvider } from "@/lib/payments/payment-factory";
@@ -7,6 +7,7 @@ import { PaymentSession, PaymentVerificationResult, RefundResult } from "@/lib/p
 import { updateOrderStatus } from "../checkout/order.service";
 import { triggerAdminNotification } from "../notifications/notification-service";
 import { logger } from "@/lib/logger/logger";
+import { redeemCoupon } from "../checkout/coupon-engine.service";
 
 /**
  * Creates a payment session with the active gateway and logs a pending payment record in the DB.
@@ -236,6 +237,16 @@ export async function confirmOrderPayment(
 
     // 4. Mark the order as paid in the database (which also inserts into order status history)
     await updateOrderStatus(params.orderId, "paid", "Payment verified and confirmed successfully.", tx);
+
+    // Redeem Coupon if applied
+    if (orderRecord.couponCode) {
+      const couponObj = await tx.query.coupons.findFirst({
+        where: eq(coupons.code, orderRecord.couponCode)
+      });
+      if (couponObj) {
+        await redeemCoupon(couponObj.id, orderRecord.id, orderRecord.userId, tx);
+      }
+    }
 
     // 5. Resolve the cart ID
     let resolvedCartId = params.cartId;

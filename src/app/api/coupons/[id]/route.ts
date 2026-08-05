@@ -4,9 +4,7 @@ import { coupons } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { authorize } from "@/middleware/auth";
 import { z } from "zod";
-import { createCouponSchema } from "@/lib/validators/catalog";
-
-const updateCouponSchema = createCouponSchema.partial();
+import { createCouponSchema, updateCouponSchema } from "@/lib/validators/catalog";
 
 // PATCH /api/coupons/[id] - Update coupon fields or active status toggle (Admin only)
 export async function PATCH(

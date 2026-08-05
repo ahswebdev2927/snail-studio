@@ -91,6 +91,17 @@ export async function POST(req: NextRequest) {
       endDate,
       usageLimit,
       isActive,
+      applicableProducts,
+      applicableCategories,
+      applicableCollections,
+      excludedProducts,
+      excludedCategories,
+      excludedCollections,
+      customerEligibility,
+      eligibleUserIds,
+      eligibleSegments,
+      eligibleTags,
+      perUserLimit,
     } = result.data;
 
     // Validate percentage constraint
@@ -127,6 +138,17 @@ export async function POST(req: NextRequest) {
       usageLimit: usageLimit || null,
       isActive,
       usageCount: 0,
+      applicableProducts: applicableProducts || null,
+      applicableCategories: applicableCategories || null,
+      applicableCollections: applicableCollections || null,
+      excludedProducts: excludedProducts || null,
+      excludedCategories: excludedCategories || null,
+      excludedCollections: excludedCollections || null,
+      customerEligibility: customerEligibility || "everyone",
+      eligibleUserIds: eligibleUserIds || null,
+      eligibleSegments: eligibleSegments || null,
+      eligibleTags: eligibleTags || null,
+      perUserLimit: perUserLimit || null,
       createdAt: new Date(),
     }).returning();
 
