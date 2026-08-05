@@ -35,8 +35,8 @@ export const InputField = React.forwardRef<HTMLInputElement, InputFieldProps>(
           aria-describedby={error ? errorId : descriptionId}
           className={cn(
             "w-full py-2.5 border border-border bg-secondary/20 text-foreground text-xs rounded-xl focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none font-sans",
-            leftIcon ? "pl-10" : "px-4",
-            rightIcon ? "pr-10" : "px-4",
+            leftIcon ? "pl-10" : "pl-4",
+            rightIcon ? "pr-10" : "pr-4",
             error && "border-rose-500 focus:ring-rose-500 focus:border-rose-500",
             className
           )}
