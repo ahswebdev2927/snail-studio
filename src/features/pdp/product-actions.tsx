@@ -538,7 +538,7 @@ export function ProductActions({
             threshold={selectedVariant?.lowStockThreshold ?? 5}
           />
         ) : (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold bg-secondary text-muted-foreground border border-border">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold bg-muted text-muted-foreground border border-border">
             Select options to check availability
           </span>
         )}

@@ -124,7 +124,7 @@ export default async function MarketingDashboardPage() {
                             ? "bg-amber-500/10 border-amber-500/20 text-amber-500"
                             : campaign.status === "scheduled"
                             ? "bg-sky-500/10 border-sky-500/20 text-sky-500"
-                            : "bg-secondary text-muted-foreground border-border/50"
+                            : "bg-muted text-muted-foreground border-border/50"
                         }`}>
                           {campaign.status}
                         </span>

@@ -146,7 +146,7 @@ export default function CampaignDetailClient({ campaign, runs, snapshots, delive
                     ? "bg-amber-500/10 border-amber-500/20 text-amber-500"
                     : campaign.status === "scheduled"
                     ? "bg-sky-500/10 border-sky-500/20 text-sky-500"
-                    : "bg-secondary text-muted-foreground border-border/50"
+                    : "bg-muted text-muted-foreground border-border/50"
                 }`}>
                   {campaign.status}
                 </span>
@@ -254,7 +254,7 @@ export default function CampaignDetailClient({ campaign, runs, snapshots, delive
                             ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500"
                             : dlv.status === "bounced" || dlv.status === "complained" || dlv.status === "failed"
                             ? "bg-rose-500/10 border-rose-500/20 text-rose-500"
-                            : "bg-secondary text-muted-foreground border-border/50"
+                            : "bg-muted text-muted-foreground border-border/50"
                         }`}>
                           {dlv.status}
                         </span>

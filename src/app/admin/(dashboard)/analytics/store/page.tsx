@@ -1257,7 +1257,7 @@ export default function AnalyticsPage() {
                             ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" 
                             : p.conversionRate > 0 
                               ? "bg-primary/10 text-primary border-primary/20" 
-                              : "bg-secondary text-muted-foreground border-border/40"
+                              : "bg-muted text-muted-foreground border-border/40"
                         }`}>
                           {p.conversionRate}%
                         </span>

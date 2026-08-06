@@ -416,7 +416,7 @@ export default function NotificationsInboxPage() {
                          className={cn(
                            "p-2 rounded-lg border transition-all cursor-pointer flex items-center justify-center",
                            n.read
-                             ? "bg-secondary text-muted-foreground border-border/40 hover:bg-muted"
+                             ? "bg-muted text-muted-foreground border-border/40 hover:bg-muted/70"
                              : "bg-primary/5 text-primary border-primary/20 hover:bg-primary/10 hover:border-primary/40"
                          )}
                        >
