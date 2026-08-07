@@ -407,8 +407,11 @@ export default function CheckoutClient() {
   const finalTotal = Math.max(0, cartSubtotal + shippingCost - discountVal - bundleDiscount);
 
   // Validate coupon
-  const handleValidateCoupon = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleValidateCoupon = async (e?: React.FormEvent | React.MouseEvent | React.KeyboardEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     if (!couponCode) return;
     setValidatingCoupon(true);
     setCouponError("");
@@ -1137,23 +1140,31 @@ export default function CheckoutClient() {
           {/* Coupon Code Entry */}
           <div className="border-t border-b border-border/20 py-4.5 space-y-3">
             {!appliedCoupon ? (
-              <form onSubmit={handleValidateCoupon} className="flex gap-2">
+              <div className="flex gap-2">
                 <input 
                   type="text" 
                   value={couponCode}
                   onChange={(e) => setCouponCode(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleValidateCoupon(e);
+                    }
+                  }}
                   placeholder="PROMO CODE"
                   className="flex-1 px-3 py-2 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-[11px] outline-none text-foreground font-mono uppercase tracking-wider placeholder:normal-case placeholder:tracking-normal"
                 />
                 <button
-                  type="submit"
+                  type="button"
+                  onClick={handleValidateCoupon}
                   disabled={validatingCoupon || !couponCode}
                   className="px-4 py-2 bg-secondary text-secondary-foreground hover:bg-secondary/80 disabled:opacity-50 rounded-xl text-[11px] font-bold transition-all cursor-pointer flex items-center justify-center gap-1 shrink-0"
                 >
                   {validatingCoupon ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Tag className="w-3.5 h-3.5" />}
                   <span>Apply</span>
                 </button>
-              </form>
+              </div>
             ) : (
               <div className="flex items-center justify-between bg-emerald-500/5 border border-emerald-500/10 p-3 rounded-xl">
                 <div className="flex items-center gap-2">
