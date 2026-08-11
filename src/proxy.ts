@@ -139,29 +139,52 @@ export async function proxy(request: NextRequest) {
         const isVercel = !!process.env.VERCEL;
         const localPort = process.env.PORT || request.nextUrl.port || "3000";
 
-        // Vercel serverless functions require public URLs; Hostinger/VPS environments require localhost loopbacks
+        // Vercel serverless functions require public URLs; Hostinger/VPS environments require local loopbacks.
+        // We use 127.0.0.1 instead of localhost to bypass Node 18+ IPv6 (::1) DNS preference.
         const refreshUrl = isVercel
           ? new URL("/api/auth/refresh", request.url)
-          : new URL("/api/auth/refresh", `http://localhost:${localPort}`);
+          : new URL("/api/auth/refresh", `http://127.0.0.1:${localPort}`);
 
         const protocol = request.url.startsWith("https") ? "https" : "http";
         const dummyOrigin = isVercel
           ? `${protocol}://${host}`
-          : `http://localhost:${localPort}`;
+          : `http://127.0.0.1:${localPort}`;
 
-        const dummyHost = isVercel ? host : `localhost:${localPort}`;
+        const dummyHost = isVercel ? host : `127.0.0.1:${localPort}`;
 
-        const refreshRes = await fetch(refreshUrl, {
-          method: "POST",
-          headers: {
-            "Cookie": `refreshToken=${refreshToken}`,
-            "Origin": dummyOrigin,
-            "Host": dummyHost,
-            "User-Agent": request.headers.get("user-agent") || "",
-            "X-Forwarded-For": request.headers.get("x-forwarded-for") || "",
-            "X-Real-IP": request.headers.get("x-real-ip") || "",
-          },
-        });
+        let refreshRes;
+        try {
+          refreshRes = await fetch(refreshUrl, {
+            method: "POST",
+            headers: {
+              "Cookie": `refreshToken=${refreshToken}`,
+              "Origin": dummyOrigin,
+              "Host": dummyHost,
+              "User-Agent": request.headers.get("user-agent") || "",
+              "X-Forwarded-For": request.headers.get("x-forwarded-for") || "",
+              "X-Real-IP": request.headers.get("x-real-ip") || "",
+            },
+          });
+        } catch (localFetchErr) {
+          // If local loopback fails (e.g. port mismatch or loopback blocking), fallback to public URL
+          console.warn("Proxy local refresh failed, attempting public URL fallback:", (localFetchErr as Error).message);
+          
+          const publicRefreshUrl = new URL("/api/auth/refresh", request.url);
+          const publicOrigin = request.nextUrl.origin;
+          const publicHost = host;
+
+          refreshRes = await fetch(publicRefreshUrl, {
+            method: "POST",
+            headers: {
+              "Cookie": `refreshToken=${refreshToken}`,
+              "Origin": publicOrigin,
+              "Host": publicHost,
+              "User-Agent": request.headers.get("user-agent") || "",
+              "X-Forwarded-For": request.headers.get("x-forwarded-for") || "",
+              "X-Real-IP": request.headers.get("x-real-ip") || "",
+            },
+          });
+        }
 
         if (refreshRes.ok) {
           let setCookieHeaders: string[] = [];
