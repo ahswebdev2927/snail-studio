@@ -1,7 +1,22 @@
 import { BetaAnalyticsDataClient } from "@google-analytics/data";
 
+function cleanPrivateKey(key: string | undefined): string | undefined {
+  if (!key) return undefined;
+  let cleaned = key.trim();
+  while (
+    (cleaned.startsWith('"') && cleaned.endsWith('"')) ||
+    (cleaned.startsWith("'") && cleaned.endsWith("'")) ||
+    (cleaned.startsWith("`") && cleaned.endsWith("`"))
+  ) {
+    cleaned = cleaned.slice(1, -1).trim();
+  }
+  // Replace escaped \n with actual newlines
+  cleaned = cleaned.replace(/\\n/g, "\n");
+  return cleaned;
+}
+
 const clientEmail = process.env.GA_CLIENT_EMAIL;
-const privateKey = process.env.GA_PRIVATE_KEY?.replace(/\\n/g, "\n");
+const privateKey = cleanPrivateKey(process.env.GA_PRIVATE_KEY);
 const propertyId = process.env.GA_PROPERTY_ID;
 
 // Instantiate the GA4 Data API client if credentials are provided
