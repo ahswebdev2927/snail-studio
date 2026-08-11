@@ -220,9 +220,10 @@ export async function proxy(request: NextRequest) {
   // 3. CSRF Verification for state-changing methods (POST, PUT, DELETE, PATCH)
   if (pathname.startsWith("/api")) {
     const isWebhook = pathname.startsWith("/api/webhooks");
+    const isCron = pathname.startsWith("/api/cron");
     const isMutative = ["POST", "PUT", "DELETE", "PATCH"].includes(request.method);
 
-    if (isMutative && !isWebhook) {
+    if (isMutative && !isWebhook && !isCron) {
       if (!verifyCsrf(request)) {
         return NextResponse.json(
           { error: "Forbidden: CSRF verification failed" },
