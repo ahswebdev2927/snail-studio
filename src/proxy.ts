@@ -10,9 +10,9 @@ const ALLOWED_ORIGINS = [
 ];
 
 // Dynamically load the site URL from env for CORS checks
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
-if (siteUrl && !ALLOWED_ORIGINS.includes
-  (siteUrl)) {
+const rawSiteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+const siteUrl = rawSiteUrl && !/^https?:\/\//i.test(rawSiteUrl) ? `https://${rawSiteUrl}` : rawSiteUrl;
+if (siteUrl && !ALLOWED_ORIGINS.includes(siteUrl)) {
   ALLOWED_ORIGINS.push(siteUrl);
 }
 

@@ -5,7 +5,11 @@ import type { Metadata } from "next";
  * Defaults to the production URL with a local fallback.
  */
 export function getSiteUrl(): string {
-  return process.env.NEXT_PUBLIC_SITE_URL || "https://snailstudio.in";
+  let url = process.env.NEXT_PUBLIC_SITE_URL || "https://snailstudio.in";
+  if (url && !/^https?:\/\//i.test(url)) {
+    url = `https://${url}`;
+  }
+  return url;
 }
 
 /**
