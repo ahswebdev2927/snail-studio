@@ -12,6 +12,8 @@ function cleanPrivateKey(key: string | undefined): string | undefined {
   }
   // Replace escaped \n with actual newlines
   cleaned = cleaned.replace(/\\n/g, "\n");
+  // Remove backslashes preceding a newline or at the end of the string
+  cleaned = cleaned.replace(/\\+(\r?\n|$)/g, "$1");
   return cleaned;
 }
 
