@@ -91,6 +91,9 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  experimental: {
+    scrollRestoration: true,
+  },
 };
 
 const withAnalyzer = withBundleAnalyzer({
