@@ -166,12 +166,13 @@ export async function proxy(request: NextRequest) {
             },
           });
         } catch (localFetchErr) {
-          // If local loopback fails (e.g. port mismatch or loopback blocking), fallback to public URL
-          console.warn("Proxy local refresh failed, attempting public URL fallback:", (localFetchErr as Error).message);
+          // If local loopback fails, fall back to the public URL (using NEXT_PUBLIC_SITE_URL or request.url)
+          const fallbackBase = siteUrl || request.url;
+          console.warn(`Proxy local refresh failed, attempting public URL fallback (${fallbackBase}):`, (localFetchErr as Error).message);
           
-          const publicRefreshUrl = new URL("/api/auth/refresh", request.url);
-          const publicOrigin = request.nextUrl.origin;
-          const publicHost = host;
+          const publicRefreshUrl = new URL("/api/auth/refresh", fallbackBase);
+          const publicOrigin = siteUrl ? new URL(siteUrl).origin : request.nextUrl.origin;
+          const publicHost = siteUrl ? new URL(siteUrl).host : host;
 
           refreshRes = await fetch(publicRefreshUrl, {
             method: "POST",
@@ -209,7 +210,9 @@ export async function proxy(request: NextRequest) {
           shouldClearCookies = true;
         }
       } catch (err) {
-        console.error("Proxy automatic token refresh failed:", err);
+        // In some environments, loopback fetches to both local and public URLs are blocked by network policies.
+        // We log a simple warning instead of a stack trace since the client-side shell handles token refresh on 401 automatically.
+        console.warn("Proxy automatic token refresh bypassed (local/public loopbacks restricted):", (err as Error).message);
       }
     }
   }
