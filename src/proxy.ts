@@ -169,7 +169,7 @@ export async function proxy(request: NextRequest) {
           // If local loopback fails, fall back to the public URL (using NEXT_PUBLIC_SITE_URL or request.url)
           const fallbackBase = siteUrl || request.url;
           console.warn(`Proxy local refresh failed, attempting public URL fallback (${fallbackBase}):`, (localFetchErr as Error).message);
-          
+
           const publicRefreshUrl = new URL("/api/auth/refresh", fallbackBase);
           const publicOrigin = siteUrl ? new URL(siteUrl).origin : request.nextUrl.origin;
           const publicHost = siteUrl ? new URL(siteUrl).host : host;
