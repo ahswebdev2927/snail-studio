@@ -147,7 +147,7 @@ export async function verifySensitiveAction(
     try {
       otpCode = await generateAndSendSecurityOtp(adminUser.id, adminUser.email);
 
-      if (process.env.NODE_ENV === "development") {
+      if (process.env.NODE_ENV === "development" || process.env.APP_ENV === "development") {
         console.log(`\n🔑 [DEV ONLY] SECURITY OTP GENERATED FOR ${adminUser.email}: ${otpCode}\n`);
       }
       
@@ -175,7 +175,7 @@ export async function verifySensitiveAction(
         verificationRequired: true, 
         message: "This sensitive action requires email OTP re-authentication.",
         action: actionName,
-        devOtp: process.env.NODE_ENV === "development" ? otpCode : undefined
+        devOtp: (process.env.NODE_ENV === "development" || process.env.APP_ENV === "development") ? otpCode : undefined
       },
       { status: 403 }
     ),
