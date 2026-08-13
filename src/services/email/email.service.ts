@@ -18,43 +18,21 @@ export interface SmtpConfig {
  * falling back to application environment variables.
  */
 export async function getSmtpConfig(): Promise<SmtpConfig | null> {
-  try {
-    const configMap = await getSystemSettingsMap();
+  const host = process.env.SMTP_HOST || "";
+  const portStr = process.env.SMTP_PORT || "465";
+  const user = process.env.SMTP_USER || "";
+  const pass = process.env.SMTP_PASSWORD || "";
 
-    const host = configMap["smtp_host"] || process.env.SMTP_HOST || "";
-    const portStr = configMap["smtp_port"] || process.env.SMTP_PORT || "465";
-    const user = configMap["smtp_user"] || process.env.SMTP_USER || "";
-    const pass = configMap["smtp_password"] || process.env.SMTP_PASSWORD || "";
-
-    if (!host || !user) {
-      return null;
-    }
-
-    return {
-      host,
-      port: parseInt(portStr, 10) || 465,
-      user,
-      pass,
-    };
-  } catch (error) {
-    console.error("Failed to load SMTP config from DB, checking environment:", error);
-    
-    const host = process.env.SMTP_HOST || "";
-    const portStr = process.env.SMTP_PORT || "465";
-    const user = process.env.SMTP_USER || "";
-    const pass = process.env.SMTP_PASSWORD || "";
-
-    if (!host || !user) {
-      return null;
-    }
-
-    return {
-      host,
-      port: parseInt(portStr, 10) || 465,
-      user,
-      pass,
-    };
+  if (!host || !user) {
+    return null;
   }
+
+  return {
+    host,
+    port: parseInt(portStr, 10) || 465,
+    user,
+    pass,
+  };
 }
 
 /**

@@ -5,7 +5,7 @@ import { nanoid } from "nanoid";
 import { Resend } from "resend";
 
 // Initialize Resend Client
-const resendApiKey = process.env.RESEND_API_KEY || "re_L8JTJdTa_CMRjPrvgVgePYbC2JaQuqK9f";
+const resendApiKey = process.env.RESEND_API_KEY || "";
 export const resend = new Resend(resendApiKey);
 
 // Helper to determine the From address
