@@ -43,17 +43,21 @@ export function FilterDrawer({ isOpen, onClose, facets, filters, onChange, onCle
 
   if (!isOpen) return null;
 
+  const coreParams = ["category", "collection", "minPrice", "maxPrice", "availability", "rating"];
+  let dynamicCount = 0;
+  Object.keys(filters).forEach((key) => {
+    if (coreParams.includes(key)) return;
+    const val = filters[key];
+    if (Array.isArray(val)) {
+      dynamicCount += val.length;
+    }
+  });
+
   const activeFiltersCount = 
     (filters.category ? 1 : 0) +
-    (filters.brand?.length || 0) +
-    (filters.shape?.length || 0) +
-    (filters.length?.length || 0) +
-    (filters.colour?.length || 0) +
-    (filters.texture?.length || 0) +
-    (filters.style?.length || 0) +
     (filters.minPrice !== undefined || filters.maxPrice !== undefined ? 1 : 0) +
-    (filters.availability ? 1 : 0) +
-    (filters.rating ? 1 : 0);
+    (filters.rating ? 1 : 0) +
+    dynamicCount;
 
   return (
     <div className="fixed inset-0 z-50 flex justify-start lg:hidden">

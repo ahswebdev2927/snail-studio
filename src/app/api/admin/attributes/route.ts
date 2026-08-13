@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { db } from "@/db";
 import { attributeGroups } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -7,6 +8,7 @@ import { z } from "zod";
 import { authorize } from "@/middleware/auth";
 import { slugify } from "@/lib/utils";
 import { createAttributeGroupSchema as createGroupSchema } from "@/lib/validators/catalog";
+import { CACHE_TAGS } from "@/lib/cache-tags";
 
 // GET /api/admin/attributes - List all attribute groups and values (Admin only)
 export async function GET(req: NextRequest) {
@@ -100,6 +102,8 @@ export async function POST(req: NextRequest) {
         displayOrder,
       })
       .returning();
+
+    revalidateTag(CACHE_TAGS.NAVIGATION, "max");
 
     return NextResponse.json({ ...inserted[0], values: [] }, { status: 201 });
   } catch (error: any) {

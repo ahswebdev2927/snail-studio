@@ -189,11 +189,10 @@ export function ProductCard({ product }: ProductCardProps) {
           alt={product.name}
           fill
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
-          className={`object-cover transition-all duration-700 ease-out group-hover:scale-105 ${
-            images.length > 1 ? "group-hover:opacity-0" : ""
-          }`}
+          className={`object-cover transition-all duration-700 ease-out group-hover:scale-105 ${images.length > 1 ? "group-hover:opacity-0" : ""
+            }`}
         />
-        
+
         {/* Secondary image (hover crossfade) */}
         {images.length > 1 && (
           <Image
@@ -223,9 +222,8 @@ export function ProductCard({ product }: ProductCardProps) {
           aria-label="Toggle Wishlist"
         >
           <Heart
-            className={`w-3.5 h-3.5 transition-all duration-300 ${
-              favorite ? "fill-rose-500 text-rose-500 scale-105" : ""
-            }`}
+            className={`w-3.5 h-3.5 transition-all duration-300 ${favorite ? "fill-rose-500 text-rose-500 scale-105" : ""
+              }`}
           />
         </button>
 
@@ -295,7 +293,7 @@ export function ProductCard({ product }: ProductCardProps) {
       <div className="p-4 flex-1 flex flex-col justify-between">
         <div className="space-y-1">
           {/* Title */}
-          <h3 className="font-serif text-sm sm:text-base text-foreground font-medium group-hover:text-primary transition-colors line-clamp-1">
+          <h3 className="text-sm sm:text-base text-foreground font-medium group-hover:text-primary transition-colors line-clamp-1">
             <Link prefetch={true} href={`/products/${product.slug}`}>{product.name}</Link>
           </h3>
 

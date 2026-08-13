@@ -27,34 +27,32 @@ function buildQueryString(filters: FilterState, q: string, page: number, sort: s
   if (sort && sort !== "relevance") params.set("sort", sort);
   if (page > 1) params.set("page", page.toString());
   
-  const appendArray = (name: string, arr?: string[]) => {
-    if (arr && arr.length > 0) {
-      params.set(name, arr.join(","));
+  const coreKeys = ["category", "collection", "minPrice", "maxPrice", "availability", "rating"] as const;
+  
+  Object.keys(filters).forEach((key) => {
+    if (coreKeys.includes(key as any)) return;
+    const val = filters[key];
+    if (Array.isArray(val) && val.length > 0) {
+      params.set(key, val.join(","));
     }
-  };
-
-  appendArray("brand", filters.brand);
-  appendArray("shape", filters.shape);
-  appendArray("length", filters.length);
-  appendArray("colour", filters.colour);
-  appendArray("texture", filters.texture);
-  appendArray("style", filters.style);
+  });
 
   return params.toString();
 }
 
 function areFiltersEqual(a: FilterState, b: FilterState) {
-  const keys = ["category", "collection", "minPrice", "maxPrice", "availability", "rating"] as const;
-  for (const key of keys) {
+  const coreKeys = ["category", "collection", "minPrice", "maxPrice", "availability", "rating"] as const;
+  for (const key of coreKeys) {
     const valA = a[key] === null ? undefined : a[key];
     const valB = b[key] === null ? undefined : b[key];
     if (valA !== valB) return false;
   }
   
-  const arrayKeys = ["brand", "shape", "length", "colour", "texture", "style"] as const;
-  for (const key of arrayKeys) {
-    const arrA = a[key];
-    const arrB = b[key];
+  const allKeys = new Set([...Object.keys(a), ...Object.keys(b)]);
+  for (const key of allKeys) {
+    if (coreKeys.includes(key as any)) continue;
+    const arrA = a[key] as string[] | undefined;
+    const arrB = b[key] as string[] | undefined;
     const hasA = arrA && arrA.length > 0;
     const hasB = arrB && arrB.length > 0;
     if (!hasA && !hasB) continue;
@@ -97,20 +95,31 @@ export default function ShopCatalog() {
   const [searchQuery, setSearchQuery] = useState(initialQ);
   const [sort, setSort] = useState(initialSort);
   const [page, setPage] = useState(initialPage);
-  const [filters, setFilters] = useState<FilterState>({
-    category: initialCategory,
-    collection: initialCollection,
-    brand: parseArray("brand"),
-    shape: parseArray("shape"),
-    length: parseArray("length"),
-    colour: parseArray("colour"),
-    texture: parseArray("texture"),
-    style: parseArray("style"),
-    minPrice: initialMinPrice,
-    maxPrice: initialMaxPrice,
-    availability: initialAvailability,
-    rating: initialRating,
-  });
+
+  const getInitialFilters = useCallback(() => {
+    const initFilters: FilterState = {
+      category: initialCategory,
+      collection: initialCollection,
+      minPrice: initialMinPrice,
+      maxPrice: initialMaxPrice,
+      availability: initialAvailability,
+      rating: initialRating,
+    };
+
+    const coreParams = ["q", "page", "limit", "sort", "category", "collection", "minPrice", "maxPrice", "availability", "rating"];
+    searchParams.forEach((value, key) => {
+      if (!coreParams.includes(key)) {
+        const arr = parseArray(key);
+        if (arr) {
+          initFilters[key] = arr;
+        }
+      }
+    });
+
+    return initFilters;
+  }, [initialCategory, initialCollection, initialMinPrice, initialMaxPrice, initialAvailability, initialRating, searchParams, parseArray]);
+
+  const [filters, setFilters] = useState<FilterState>(getInitialFilters());
 
   const [data, setData] = useState<SearchResponse | null>(null);
   const [productsList, setProductsList] = useState<ProductSearchItem[]>([]);
@@ -157,17 +166,21 @@ export default function ShopCatalog() {
     const nextFilters: FilterState = {
       category: searchParams.get("category") || undefined,
       collection: searchParams.get("collection") || undefined,
-      brand: parseArray("brand"),
-      shape: parseArray("shape"),
-      length: parseArray("length"),
-      colour: parseArray("colour"),
-      texture: parseArray("texture"),
-      style: parseArray("style"),
       minPrice: searchParams.get("minPrice") ? parseInt(searchParams.get("minPrice")!, 10) : undefined,
       maxPrice: searchParams.get("maxPrice") ? parseInt(searchParams.get("maxPrice")!, 10) : undefined,
       availability: searchParams.get("availability") === "in_stock" ? "in_stock" : undefined,
       rating: searchParams.get("rating") ? parseInt(searchParams.get("rating")!, 10) : undefined,
     };
+
+    const coreParams = ["q", "page", "limit", "sort", "category", "collection", "minPrice", "maxPrice", "availability", "rating"];
+    searchParams.forEach((value, key) => {
+      if (!coreParams.includes(key)) {
+        const arr = parseArray(key);
+        if (arr) {
+          nextFilters[key] = arr;
+        }
+      }
+    });
 
     if (!areFiltersEqual(filtersRef.current, nextFilters)) {
       setFilters(nextFilters);
@@ -430,32 +443,44 @@ export default function ShopCatalog() {
     });
   }
 
-  const addArrayChips = (field: keyof FilterState, name: string) => {
-    const arr = filters[field] as string[] | undefined;
-    if (arr && arr.length > 0) {
+  const attributeNamesMap = new Map<string, string>();
+  attributeNamesMap.set("brand", "Brand");
+  if (data?.facets?.attributes) {
+    data.facets.attributes.forEach((attr) => {
+      attributeNamesMap.set(attr.groupCode, attr.groupName);
+    });
+  }
+
+  const coreParams = ["category", "collection", "minPrice", "maxPrice", "availability", "rating"];
+  Object.keys(filters).forEach((key) => {
+    if (coreParams.includes(key)) return;
+    const arr = filters[key];
+    if (Array.isArray(arr) && arr.length > 0) {
+      const displayName = attributeNamesMap.get(key) || (key.charAt(0).toUpperCase() + key.slice(1));
       arr.forEach((val) => {
-        const capLabel = val.charAt(0).toUpperCase() + val.slice(1);
+        let valueLabel = val.charAt(0).toUpperCase() + val.slice(1);
+        if (key !== "brand" && data?.facets?.attributes) {
+          const groupFacet = data.facets.attributes.find((a) => a.groupCode === key);
+          const valFacet = groupFacet?.values?.find((v) => v.code === val);
+          if (valFacet) {
+            valueLabel = valFacet.value;
+          }
+        }
+
         activeChips.push({
-          id: `${field}-${val}`,
-          label: `${name}: ${capLabel}`,
+          id: `${key}-${val}`,
+          label: `${displayName}: ${valueLabel}`,
           onRemove: () => {
             const updated = arr.filter((x) => x !== val);
             handleFiltersChange({
               ...filters,
-              [field]: updated.length > 0 ? updated : undefined,
+              [key]: updated.length > 0 ? updated : undefined,
             });
           },
         });
       });
     }
-  };
-
-  addArrayChips("brand", "Brand");
-  addArrayChips("shape", "Shape");
-  addArrayChips("length", "Length");
-  addArrayChips("colour", "Color");
-  addArrayChips("texture", "Finish");
-  addArrayChips("style", "Style");
+  });
 
   return (
     <div className="flex-1 bg-background text-foreground flex flex-col">
@@ -464,7 +489,7 @@ export default function ShopCatalog() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
           <div className="text-center md:text-left space-y-2">
             <h1 className="font-serif text-3xl md:text-4xl font-normal tracking-wide text-foreground">
-              Our Nail <span className="font-serif italic font-light text-primary">Catalog</span>
+              Our Nail Catalog
             </h1>
             <p className="text-sm text-muted-foreground/80 font-light max-w-xl">
               Explore reusable, handcrafted salon-quality press-on nail sets, tailored to you.
@@ -500,7 +525,6 @@ export default function ShopCatalog() {
                   { value: "price_desc", label: "Price: High to Low" },
                   { value: "newest", label: "Sort: Newest" },
                   { value: "best_selling", label: "Best Selling" },
-                  { value: "featured", label: "Featured First" },
                   { value: "alpha_asc", label: "Alphabetical: A-Z" },
                   { value: "alpha_desc", label: "Alphabetical: Z-A" },
                 ]}

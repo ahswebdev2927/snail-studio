@@ -86,9 +86,8 @@ export function getOrganizationJsonLd(input?: OrganizationInput) {
   const name = input?.name || "Snail Studio";
   const logoUrl = input?.logoUrl || getAbsoluteUrl("/logo.png");
   const socials = input?.socials || [
-    "https://www.instagram.com/snailstudio.in",
-    "https://www.facebook.com/snailstudio",
-    "https://pinterest.com/snailstudio"
+    "https://www.instagram.com/snailstudio.in?igsh=aXR6Zmw0a293anNo",
+    "https://www.facebook.com/profile.php?id=61593206786806&mibextid=wwXIfr"
   ];
 
   return {

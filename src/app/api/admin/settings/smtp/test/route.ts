@@ -3,7 +3,7 @@ import { db } from "@/db";
 import { systemSettings } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { authorize } from "@/middleware/auth";
-import { verifySmtpConnection, sendMail } from "@/services/email/email.service";
+import { verifySmtpConnection, sendMail, getSmtpConfig } from "@/services/email/email.service";
 import { getTestEmailTemplate } from "@/services/email/templates/test-email.template";
 
 const MASK_VALUE = "••••••••••••";
@@ -27,22 +27,41 @@ export async function POST(req: NextRequest) {
 
     const { smtp_host, smtp_port, smtp_user, smtp_password, test_recipient } = body;
 
-    if (!smtp_host || !smtp_port || !smtp_user || !test_recipient) {
+    if (!test_recipient) {
       return NextResponse.json(
-        { error: "SMTP host, port, user, and test recipient are required" },
+        { error: "Test recipient email is required" },
         { status: 400 }
       );
     }
 
+    let host = smtp_host;
+    let portStr = smtp_port;
+    let user = smtp_user;
+    let actualPassword = smtp_password;
+
+    // If host/user are missing, load active configuration from server settings / env
+    if (!host || !user) {
+      const activeConfig = await getSmtpConfig();
+      if (!activeConfig) {
+        return NextResponse.json(
+          { error: "No active SMTP configuration is set up on the server." },
+          { status: 400 }
+        );
+      }
+      host = activeConfig.host;
+      portStr = String(activeConfig.port);
+      user = activeConfig.user;
+      actualPassword = activeConfig.pass;
+    }
+
     // Resolve port number
-    const portNum = parseInt(smtp_port, 10);
+    const portNum = parseInt(portStr, 10);
     if (isNaN(portNum)) {
       return NextResponse.json({ error: "SMTP port must be a valid number" }, { status: 400 });
     }
 
-    // Resolve the actual password
-    let actualPassword = smtp_password;
-    if (smtp_password === MASK_VALUE || !smtp_password) {
+    // Resolve the actual password if we did receive a payload and it was masked
+    if (smtp_host && (smtp_password === MASK_VALUE || !smtp_password)) {
       // Load from DB
       const dbRow = await db.query.systemSettings.findFirst({
         where: eq(systemSettings.key, "smtp_password"),
@@ -57,9 +76,9 @@ export async function POST(req: NextRequest) {
     }
 
     const config = {
-      host: smtp_host.trim(),
+      host: host.trim(),
       port: portNum,
-      user: smtp_user.trim(),
+      user: user.trim(),
       pass: actualPassword,
     };
 

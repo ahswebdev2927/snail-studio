@@ -35,13 +35,6 @@ export async function GET(request: NextRequest) {
       return val.split(",").map((item) => item.trim()).filter(Boolean);
     };
 
-    const brands = parseCommaSeparated("brand");
-    const shapes = parseCommaSeparated("shape");
-    const lengths = parseCommaSeparated("length");
-    const colours = parseCommaSeparated("colour");
-    const textures = parseCommaSeparated("texture");
-    const styles = parseCommaSeparated("style");
-
     const minPriceVal = searchParams.get("minPrice");
     const minPrice = minPriceVal ? parseInt(minPriceVal, 10) : undefined;
 
@@ -73,17 +66,12 @@ export async function GET(request: NextRequest) {
     const limitVal = searchParams.get("limit");
     const limit = limitVal ? Math.max(1, parseInt(limitVal, 10)) : 24;
 
-    // Call orchestrator
-    const result = await searchProducts({
+    const coreParams = ["q", "page", "limit", "sort", "category", "collection", "minPrice", "maxPrice", "availability", "rating", "featured", "bestSeller", "newArrival", "trending"];
+
+    const filterParams: Record<string, any> = {
       q,
       category,
       collection,
-      brands,
-      shapes,
-      lengths,
-      colours,
-      textures,
-      styles,
       minPrice,
       maxPrice,
       availability,
@@ -95,7 +83,25 @@ export async function GET(request: NextRequest) {
       sort,
       page,
       limit,
+    };
+
+    // Parse 'brand' parameter as 'brands'
+    const brand = parseCommaSeparated("brand");
+    if (brand && brand.length > 0) {
+      filterParams.brands = brand;
+    }
+
+    // Any query parameter not in coreParams and not 'brand' is treated as an array of attribute values
+    searchParams.forEach((value, key) => {
+      if (!coreParams.includes(key) && key !== "brand") {
+        const arr = parseCommaSeparated(key);
+        if (arr && arr.length > 0) {
+          filterParams[key] = arr;
+        }
+      }
     });
+
+    const result = await searchProducts(filterParams as any);
 
     return NextResponse.json({
       success: true,

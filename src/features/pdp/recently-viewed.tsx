@@ -129,28 +129,28 @@ export function RecentlyViewed({ currentSlug }: RecentlyViewedProps) {
               Recently Viewed Products
             </h2>
           </div>
-
-          {/* Navigation Arrows */}
-          <div className="flex gap-2">
-            <button
-              onClick={() => handleScroll("left")}
-              aria-label="Scroll left"
-              className="w-10 h-10 rounded-full border border-border flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary hover:bg-primary/5 transition-all cursor-pointer focus:outline-none"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => handleScroll("right")}
-              aria-label="Scroll right"
-              className="w-10 h-10 rounded-full border border-border flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary hover:bg-primary/5 transition-all cursor-pointer focus:outline-none"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
         </div>
 
         {/* Scroll Rail */}
-        <div className="relative">
+        <div className="relative group/slider">
+          {/* Left Arrow Button */}
+          <button
+            onClick={() => handleScroll("left")}
+            aria-label="Scroll left"
+            className="absolute left-[-12px] lg:left-[-24px] top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full border border-border bg-card shadow-md flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary hover:bg-primary/5 transition-all cursor-pointer focus:outline-none hidden md:flex"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+
+          {/* Right Arrow Button */}
+          <button
+            onClick={() => handleScroll("right")}
+            aria-label="Scroll right"
+            className="absolute right-[-12px] lg:right-[-24px] top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full border border-border bg-card shadow-md flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary hover:bg-primary/5 transition-all cursor-pointer focus:outline-none hidden md:flex"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+
           <div
             ref={scrollRef}
             className="flex gap-6 overflow-x-auto scrollbar-none snap-x snap-mandatory scroll-smooth pb-4"

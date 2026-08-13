@@ -11,7 +11,8 @@ import {
   inventoryItems,
   reviews,
   collections,
-  productCollections
+  productCollections,
+  variantAttributeValues
 } from "@/db/schema";
 import { ProductSearchItem } from "./fuse-search.service";
 
@@ -25,6 +26,7 @@ export interface FilterParams {
   colours?: string[];    // Array of attribute value codes (e.g. ['pink', 'nude'])
   textures?: string[];   // Array of attribute value codes (e.g. ['matte', 'glossy'])
   styles?: string[];     // Array of attribute value codes (e.g. ['classic', 'minimalist'])
+  occasions?: string[];  // Array of attribute value codes (e.g. ['wedding', 'party'])
   minPrice?: number;     // in Paise
   maxPrice?: number;     // in Paise
   availability?: "in_stock" | "out_of_stock"; // Inventory availability status
@@ -34,6 +36,7 @@ export interface FilterParams {
   trending?: boolean;
   rating?: number;       // Minimum rating
   isActive?: boolean;    // Defaults to true for customer-facing search
+  [key: string]: any;
 }
 
 /**
@@ -51,6 +54,7 @@ export async function getFilteredProducts(params: FilterParams): Promise<Product
     colours,
     textures,
     styles,
+    occasions,
     minPrice,
     maxPrice,
     availability,
@@ -59,7 +63,8 @@ export async function getFilteredProducts(params: FilterParams): Promise<Product
     newArrival,
     trending,
     rating,
-    isActive = true
+    isActive = true,
+    ...dynamicAttributes
   } = params;
 
   const conditions = [];
@@ -207,7 +212,7 @@ export async function getFilteredProducts(params: FilterParams): Promise<Product
 
   // 8. Attribute Filters (Exists subqueries for Shape, Length, Colour, Texture)
   const buildAttributeFilter = (groupCode: string, valueCodes: string[]) => {
-    return exists(
+    const matchProductLevel = exists(
       db.select()
         .from(productAttributeValues)
         .innerJoin(attributeValues, eq(productAttributeValues.attributeValueId, attributeValues.id))
@@ -220,23 +225,41 @@ export async function getFilteredProducts(params: FilterParams): Promise<Product
           )
         )
     );
+
+    const matchVariantLevel = exists(
+      db.select()
+        .from(productVariants)
+        .innerJoin(variantAttributeValues, eq(productVariants.id, variantAttributeValues.variantId))
+        .innerJoin(attributeValues, eq(variantAttributeValues.attributeValueId, attributeValues.id))
+        .innerJoin(attributeGroups, eq(attributeValues.groupId, attributeGroups.id))
+        .where(
+          and(
+            eq(productVariants.productId, products.id),
+            eq(attributeGroups.code, groupCode),
+            inArray(attributeValues.code, valueCodes)
+          )
+        )
+    );
+
+    return or(matchProductLevel, matchVariantLevel);
   };
 
-  if (shapes && shapes.length > 0) {
-    conditions.push(buildAttributeFilter("shape", shapes));
-  }
-  if (lengths && lengths.length > 0) {
-    conditions.push(buildAttributeFilter("length", lengths));
-  }
-  if (colours && colours.length > 0) {
-    conditions.push(buildAttributeFilter("colour", colours));
-  }
-  if (textures && textures.length > 0) {
-    conditions.push(buildAttributeFilter("texture", textures));
-  }
-  if (styles && styles.length > 0) {
-    conditions.push(buildAttributeFilter("style", styles));
-  }
+  // 8. Attribute Filters (dynamic & legacy compatible)
+  const keyMapping: Record<string, string> = {
+    shapes: "shape",
+    lengths: "length",
+    colours: "colour",
+    textures: "texture",
+    styles: "style",
+    occasions: "occasion"
+  };
+
+  Object.entries(dynamicAttributes).forEach(([key, value]) => {
+    if (Array.isArray(value) && value.length > 0) {
+      const groupCode = keyMapping[key] || key;
+      conditions.push(buildAttributeFilter(groupCode, value));
+    }
+  });
 
   // 9. Execute Drizzle Query with relations (including media)
   const rawProducts = await db.query.products.findMany({
@@ -249,6 +272,19 @@ export async function getFilteredProducts(params: FilterParams): Promise<Product
           attributeValue: {
             with: {
               group: true
+            }
+          }
+        }
+      },
+      variants: {
+        with: {
+          attributes: {
+            with: {
+              attributeValue: {
+                with: {
+                  group: true
+                }
+              }
             }
           }
         }
@@ -294,6 +330,27 @@ export async function getFilteredProducts(params: FilterParams): Promise<Product
         searchable: val.group.searchable,
         filterable: val.group.filterable,
       };
+    });
+
+    p.variants?.forEach((v) => {
+      v.attributes?.forEach((va) => {
+        const val = va.attributeValue;
+        if (val && val.group) {
+          const isDuplicate = attributeList.some(
+            (existing) => existing.groupCode === val.group.code && existing.valueCode === val.code
+          );
+          if (!isDuplicate) {
+            attributeList.push({
+              groupCode: val.group.code,
+              groupName: val.group.name,
+              value: val.value,
+              valueCode: val.code,
+              searchable: val.group.searchable,
+              filterable: val.group.filterable,
+            });
+          }
+        }
+      });
     });
 
     const imagesList = p.media.map((pm) => ({

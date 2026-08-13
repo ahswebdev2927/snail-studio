@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Mail, Save, RefreshCw, Send, CheckCircle2, XCircle, AlertCircle, Eye, EyeOff } from "lucide-react";
+import { Mail, RefreshCw, Send, CheckCircle2, XCircle, AlertCircle, Lock, Zap } from "lucide-react";
 
 interface EmailLog {
   id: string;
@@ -17,21 +17,27 @@ export default function AdminSmtpSettingsPage() {
   // Tabs: 'settings' | 'logs'
   const [activeTab, setActiveTab] = useState<"settings" | "logs">("settings");
 
-  // Form State
+  // Read-only server status states
   const [smtpHost, setSmtpHost] = useState("");
   const [smtpPort, setSmtpPort] = useState("465");
   const [smtpUser, setSmtpUser] = useState("");
-  const [smtpPassword, setSmtpPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
+  const [smtpConfigured, setSmtpConfigured] = useState(false);
 
-  // Connection Test State
-  const [testRecipient, setTestRecipient] = useState("");
-  const [isTesting, setIsTesting] = useState(false);
-  const [testResult, setTestResult] = useState<{ success: boolean; message: string; details?: string } | null>(null);
+  const [resendFromEmail, setResendFromEmail] = useState("");
+  const [resendConfigured, setResendConfigured] = useState(false);
+
+  // SMTP Test State
+  const [smtpTestRecipient, setSmtpTestRecipient] = useState("");
+  const [isSmtpTesting, setIsSmtpTesting] = useState(false);
+  const [smtpTestResult, setSmtpTestResult] = useState<{ success: boolean; message: string; details?: string } | null>(null);
+
+  // Resend Test State
+  const [resendTestRecipient, setResendTestRecipient] = useState("");
+  const [isResendTesting, setIsResendTesting] = useState(false);
+  const [resendTestResult, setResendTestResult] = useState<{ success: boolean; message: string; details?: string } | null>(null);
 
   // Global State
   const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
   const [statusMessage, setStatusMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   // Logs state
@@ -47,19 +53,22 @@ export default function AdminSmtpSettingsPage() {
   const fetchSettings = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch("/api/admin/settings");
+      const res = await fetch("/api/admin/settings/email/status");
       if (res.ok) {
         const data = await res.json();
-        setSmtpHost(data.smtp_host || "");
-        setSmtpPort(data.smtp_port || "465");
-        setSmtpUser(data.smtp_user || "");
-        setSmtpPassword(data.smtp_password || "");
+        setSmtpHost(data.smtp.host);
+        setSmtpPort(String(data.smtp.port));
+        setSmtpUser(data.smtp.user);
+        setSmtpConfigured(data.smtp.isConfigured);
+        
+        setResendFromEmail(data.resend.fromEmail);
+        setResendConfigured(data.resend.isConfigured);
       } else {
-        showStatus("error", "Failed to retrieve configuration settings.");
+        showStatus("error", "Failed to retrieve configuration status settings.");
       }
     } catch (err) {
       console.error(err);
-      showStatus("error", "An error occurred while fetching settings.");
+      showStatus("error", "An error occurred while fetching status settings.");
     } finally {
       setIsLoading(false);
     }
@@ -95,85 +104,91 @@ export default function AdminSmtpSettingsPage() {
     }, 5000);
   };
 
-  const handleSave = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    setIsSaving(true);
-    setStatusMessage(null);
-
-    try {
-      const res = await fetch("/api/admin/settings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          smtp_host: smtpHost,
-          smtp_port: smtpPort,
-          smtp_user: smtpUser,
-          smtp_password: smtpPassword,
-        }),
-      });
-
-      if (res.ok) {
-        showStatus("success", "SMTP configuration successfully updated and verified!");
-        // Refresh to get masked passwords
-        fetchSettings();
-      } else {
-        const errData = await res.json();
-        showStatus("error", errData.error || "Failed to save configuration settings.");
-      }
-    } catch (err) {
-      console.error(err);
-      showStatus("error", "An error occurred while saving the configuration.");
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleTestConnection = async (e: React.FormEvent) => {
+  const handleTestSmtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!testRecipient) {
-      setTestResult({ success: false, message: "Please specify a recipient email address for the test." });
+    if (!smtpTestRecipient) {
+      setSmtpTestResult({ success: false, message: "Please specify a recipient email address for the test." });
       return;
     }
 
-    setIsTesting(true);
-    setTestResult(null);
+    setIsSmtpTesting(true);
+    setSmtpTestResult(null);
 
     try {
       const res = await fetch("/api/admin/settings/smtp/test", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          smtp_host: smtpHost,
-          smtp_port: smtpPort,
-          smtp_user: smtpUser,
-          smtp_password: smtpPassword,
-          test_recipient: testRecipient,
+          test_recipient: smtpTestRecipient,
         }),
       });
 
       const data = await res.json();
       if (res.ok && data.success) {
-        setTestResult({
+        setSmtpTestResult({
           success: true,
-          message: data.message || "Test email dispatched successfully!",
+          message: data.message || "Test SMTP email dispatched successfully!",
         });
-        // Refresh logs in case they are active
         if (activeTab === "logs") fetchLogs();
       } else {
-        setTestResult({
+        setSmtpTestResult({
           success: false,
           message: data.error || "SMTP test failed.",
           details: data.details,
         });
       }
     } catch (err: any) {
-      setTestResult({
+      setSmtpTestResult({
         success: false,
-        message: "An unexpected error occurred during connection testing.",
+        message: "An unexpected error occurred during SMTP testing.",
         details: err.message || String(err),
       });
     } finally {
-      setIsTesting(false);
+      setIsSmtpTesting(false);
+    }
+  };
+
+  const handleTestResend = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resendTestRecipient) {
+      setResendTestResult({ success: false, message: "Please specify a recipient email address for the test." });
+      return;
+    }
+
+    setIsResendTesting(true);
+    setResendTestResult(null);
+
+    try {
+      const res = await fetch("/api/admin/settings/resend/test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          test_recipient: resendTestRecipient,
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setResendTestResult({
+          success: true,
+          message: data.message || "Test Resend email dispatched successfully!",
+        });
+        if (activeTab === "logs") fetchLogs();
+      } else {
+        setResendTestResult({
+          success: false,
+          message: data.error || "Resend test failed.",
+          details: data.details,
+        });
+      }
+    } catch (err: any) {
+      setResendTestResult({
+        success: false,
+        message: "An unexpected error occurred during Resend testing.",
+        details: err.message || String(err),
+      });
+    } finally {
+      setIsResendTesting(false);
     }
   };
 
@@ -182,7 +197,7 @@ export default function AdminSmtpSettingsPage() {
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="flex flex-col items-center gap-3">
           <RefreshCw className="w-8 h-8 text-primary animate-spin" />
-          <p className="text-xs text-muted-foreground font-light">Loading SMTP mail settings...</p>
+          <p className="text-xs text-muted-foreground font-light">Loading email service status...</p>
         </div>
       </div>
     );
@@ -193,9 +208,9 @@ export default function AdminSmtpSettingsPage() {
       {/* Title Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-6 bg-card border border-border/40 rounded-3xl">
         <div className="space-y-1">
-          <h1 className="font-serif text-2xl font-normal text-foreground">SMTP Mailer Settings</h1>
+          <h1 className="font-serif text-2xl font-normal text-foreground">Email Service Status</h1>
           <p className="text-xs text-muted-foreground font-light">
-            Set up Nodemailer Hostinger SMTP credentials for transactional store emails.
+            Review active SMTP / Resend integrations and trigger connection diagnostics.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -240,149 +255,186 @@ export default function AdminSmtpSettingsPage() {
       )}
 
       {activeTab === "settings" && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Configuration Form Card */}
-          <div className="lg:col-span-2 bg-card border border-border/40 rounded-3xl p-6 space-y-6">
-            <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <Mail className="w-4 h-4 text-primary" /> SMTP Server Setup
-            </h2>
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* SMTP Server Details Card */}
+            <div className="bg-card border border-border/40 rounded-3xl p-6 space-y-4">
+              <div className="flex items-center justify-between border-b border-border/10 pb-3">
+                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <Mail className="w-4.5 h-4.5 text-primary" /> SMTP Server Setup
+                </h3>
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                  smtpConfigured ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/15" : "bg-destructive/10 text-destructive border border-destructive/15"
+                }`}>
+                  {smtpConfigured ? "Active" : "Inactive"}
+                </span>
+              </div>
+              
+              <div className="space-y-3 pt-1 text-xs">
+                <div className="grid grid-cols-3 py-1.5 border-b border-border/5">
+                  <span className="text-muted-foreground font-medium">SMTP Host</span>
+                  <span className="col-span-2 font-mono text-foreground break-all">{smtpHost || "Not Configured"}</span>
+                </div>
+                <div className="grid grid-cols-3 py-1.5 border-b border-border/5">
+                  <span className="text-muted-foreground font-medium">SMTP Port</span>
+                  <span className="col-span-2 font-mono text-foreground">{smtpPort || "Not Configured"}</span>
+                </div>
+                <div className="grid grid-cols-3 py-1.5">
+                  <span className="text-muted-foreground font-medium">Username / Sender</span>
+                  <span className="col-span-2 font-mono text-foreground break-all">{smtpUser || "Not Configured"}</span>
+                </div>
+              </div>
+            </div>
 
-            <form onSubmit={handleSave} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                    SMTP Host
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={smtpHost}
-                    onChange={(e) => setSmtpHost(e.target.value)}
-                    placeholder="smtp.hostinger.com"
-                    className="w-full px-4 py-2.5 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none transition-all text-foreground"
-                  />
+            {/* Resend Service Details Card */}
+            <div className="bg-card border border-border/40 rounded-3xl p-6 space-y-4">
+              <div className="flex items-center justify-between border-b border-border/10 pb-3">
+                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <Zap className="w-4.5 h-4.5 text-primary" /> Resend Setup
+                </h3>
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                  resendConfigured ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/15" : "bg-destructive/10 text-destructive border border-destructive/15"
+                }`}>
+                  {resendConfigured ? "Active" : "Inactive"}
+                </span>
+              </div>
+
+              <div className="space-y-3 pt-1 text-xs">
+                <div className="grid grid-cols-3 py-1.5 border-b border-border/5">
+                  <span className="text-muted-foreground font-medium">Sender Domain / From</span>
+                  <span className="col-span-2 font-mono text-foreground break-all">{resendFromEmail || "Not Configured"}</span>
                 </div>
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                    SMTP Port
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={smtpPort}
-                    onChange={(e) => setSmtpPort(e.target.value)}
-                    placeholder="465"
-                    className="w-full px-4 py-2.5 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none transition-all text-foreground"
-                  />
+                <div className="grid grid-cols-3 py-1.5">
+                  <span className="text-muted-foreground font-medium">API Key Status</span>
+                  <span className="col-span-2 font-mono text-foreground">
+                    {resendConfigured ? "Configured & Hidden" : "Not Configured"}
+                  </span>
                 </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Test SMTP Delivery Card */}
+            <div className="bg-card border border-border/40 rounded-3xl p-6 space-y-4 flex flex-col justify-between">
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <Send className="w-4.5 h-4.5 text-primary" /> Test SMTP Delivery
+                </h3>
+                <p className="text-xs font-light text-muted-foreground leading-relaxed">
+                  Dispatch an elegant system greetings email to verify if your server hosts accept Nodemailer connections securely.
+                </p>
+
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                    SMTP Username / Sender
+                    Recipient Test Address
                   </label>
                   <input
                     type="email"
-                    required
-                    value={smtpUser}
-                    onChange={(e) => setSmtpUser(e.target.value)}
-                    placeholder="noreply@snailstudio.com"
+                    value={smtpTestRecipient}
+                    onChange={(e) => setSmtpTestRecipient(e.target.value)}
+                    placeholder="recipient@example.com"
                     className="w-full px-4 py-2.5 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none transition-all text-foreground"
                   />
                 </div>
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                    SMTP Password
-                  </label>
-                  <div className="relative">
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      required
-                      value={smtpPassword}
-                      onChange={(e) => setSmtpPassword(e.target.value)}
-                      placeholder="••••••••••••"
-                      className="w-full pl-4 pr-10 py-2.5 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none transition-all text-foreground"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/80 hover:text-foreground cursor-pointer"
-                    >
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
+
+                {smtpTestResult && (
+                  <div
+                    className={`p-4 rounded-xl flex items-start gap-2.5 border text-[11px] leading-relaxed animate-fade-in ${
+                      smtpTestResult.success
+                        ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500"
+                        : "bg-destructive/10 border-destructive/20 text-destructive"
+                    }`}
+                  >
+                    {smtpTestResult.success ? (
+                      <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
+                    ) : (
+                      <XCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                    )}
+                    <div className="space-y-1">
+                      <p className="font-semibold">{smtpTestResult.message}</p>
+                      {smtpTestResult.details && (
+                        <p className="font-mono text-[9px] break-all opacity-85 leading-normal bg-secondary/20 p-1.5 rounded-md mt-1">
+                          {smtpTestResult.details}
+                        </p>
+                      )}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
 
-              <div className="pt-2">
+              <div className="pt-4">
                 <button
-                  type="submit"
-                  disabled={isSaving}
-                  className="inline-flex items-center gap-1.5 px-4.5 py-2.5 bg-primary text-primary-foreground hover:bg-primary/95 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:scale-100 rounded-xl text-xs font-medium transition-all shadow-sm cursor-pointer"
+                  type="button"
+                  onClick={handleTestSmtp}
+                  disabled={isSmtpTesting}
+                  className="w-full inline-flex items-center justify-center gap-1.5 px-4.5 py-2.5 bg-primary text-primary-foreground hover:bg-primary/95 active:scale-[0.99] disabled:opacity-50 disabled:scale-100 rounded-xl text-xs font-medium transition-all cursor-pointer"
                 >
-                  {isSaving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                  {isSaving ? "Saving Configuration..." : "Save Configuration"}
+                  {isSmtpTesting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                  {isSmtpTesting ? "Testing Connection..." : "Test Connection"}
                 </button>
               </div>
-            </form>
-          </div>
-
-          {/* Test connection panel */}
-          <div className="bg-card border border-border/40 rounded-3xl p-6 space-y-5 flex flex-col justify-between">
-            <div className="space-y-4">
-              <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                <Send className="w-4 h-4 text-primary" /> Test SMTP Delivery
-              </h2>
-              <p className="text-xs font-light text-muted-foreground leading-relaxed">
-                Dispatch an elegant system greetings email to verify if your server hosts accept Nodemailer connections securely.
-              </p>
-
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                  Recipient Test Address
-                </label>
-                <input
-                  type="email"
-                  value={testRecipient}
-                  onChange={(e) => setTestRecipient(e.target.value)}
-                  placeholder="recipient@example.com"
-                  className="w-full px-4 py-2.5 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none transition-all text-foreground"
-                />
-              </div>
-
-              {testResult && (
-                <div
-                  className={`p-4 rounded-xl flex items-start gap-2.5 border text-[11px] leading-relaxed animate-fade-in ${
-                    testResult.success
-                      ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500"
-                      : "bg-destructive/10 border-destructive/20 text-destructive"
-                  }`}
-                >
-                  {testResult.success ? (
-                    <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
-                  ) : (
-                    <XCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                  )}
-                  <div className="space-y-1">
-                    <p className="font-semibold">{testResult.message}</p>
-                    {testResult.details && (
-                      <p className="font-mono text-[9px] break-all opacity-85 leading-normal bg-secondary/20 p-1.5 rounded-md mt-1">
-                        {testResult.details}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              )}
             </div>
 
-            <div className="pt-4 lg:pt-0">
-              <button
-                type="button"
-                onClick={handleTestConnection}
-                disabled={isTesting}
-                className="w-full inline-flex items-center justify-center gap-1.5 px-4.5 py-2.5 bg-secondary text-secondary-foreground border border-border hover:bg-secondary/80 active:scale-[0.99] disabled:opacity-50 disabled:scale-100 rounded-xl text-xs font-medium transition-all cursor-pointer"
-              >
-                {isTesting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                {isTesting ? "Testing Connection..." : "Test Connection"}
-              </button>
+            {/* Test Resend Delivery Card */}
+            <div className="bg-card border border-border/40 rounded-3xl p-6 space-y-4 flex flex-col justify-between">
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <Zap className="w-4.5 h-4.5 text-primary" /> Test Resend Delivery
+                </h3>
+                <p className="text-xs font-light text-muted-foreground leading-relaxed">
+                  Dispatch a marketing testing email to verify if your Resend domain settings and API key are configured correctly.
+                </p>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                    Recipient Test Address
+                  </label>
+                  <input
+                    type="email"
+                    value={resendTestRecipient}
+                    onChange={(e) => setResendTestRecipient(e.target.value)}
+                    placeholder="recipient@example.com"
+                    className="w-full px-4 py-2.5 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none transition-all text-foreground"
+                  />
+                </div>
+
+                {resendTestResult && (
+                  <div
+                    className={`p-4 rounded-xl flex items-start gap-2.5 border text-[11px] leading-relaxed animate-fade-in ${
+                      resendTestResult.success
+                        ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500"
+                        : "bg-destructive/10 border-destructive/20 text-destructive"
+                    }`}
+                  >
+                    {resendTestResult.success ? (
+                      <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
+                    ) : (
+                      <XCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                    )}
+                    <div className="space-y-1">
+                      <p className="font-semibold">{resendTestResult.message}</p>
+                      {resendTestResult.details && (
+                        <p className="font-mono text-[9px] break-all opacity-85 leading-normal bg-secondary/20 p-1.5 rounded-md mt-1">
+                          {resendTestResult.details}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="pt-4">
+                <button
+                  type="button"
+                  onClick={handleTestResend}
+                  disabled={isResendTesting}
+                  className="w-full inline-flex items-center justify-center gap-1.5 px-4.5 py-2.5 bg-primary text-primary-foreground hover:bg-primary/95 active:scale-[0.99] disabled:opacity-50 disabled:scale-100 rounded-xl text-xs font-medium transition-all cursor-pointer"
+                >
+                  {isResendTesting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                  {isResendTesting ? "Testing Resend..." : "Test Resend"}
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -397,7 +449,7 @@ export default function AdminSmtpSettingsPage() {
             <button
               onClick={fetchLogs}
               disabled={logsLoading}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs bg-secondary border border-border rounded-xl text-muted-foreground hover:text-foreground transition-all cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs bg-card border border-border rounded-xl text-muted-foreground hover:text-foreground hover:bg-secondary/15 transition-all cursor-pointer"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${logsLoading ? "animate-spin" : ""}`} />
               Refresh Logs

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { db } from "@/db";
 import { attributeGroups, attributeValues } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
@@ -7,6 +8,7 @@ import { z } from "zod";
 import { authorize } from "@/middleware/auth";
 import { slugify } from "@/lib/utils";
 import { createAttributeValueSchema as createValueSchema } from "@/lib/validators/catalog";
+import { CACHE_TAGS } from "@/lib/cache-tags";
 
 // POST /api/admin/attributes/[id]/values - Create a new attribute value under a group (Admin only)
 export async function POST(
@@ -84,6 +86,8 @@ export async function POST(
         code,
       })
       .returning();
+
+    revalidateTag(CACHE_TAGS.NAVIGATION, "max");
 
     return NextResponse.json(inserted[0], { status: 201 });
   } catch (error: any) {

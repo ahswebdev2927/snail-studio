@@ -240,8 +240,6 @@ export default function Sidebar({ isCollapsed, isMobileOpen, closeMobileSidebar,
         { name: "Storefront", href: "/admin/settings/storefront", icon: Store },
         { name: "Shipping", href: "/admin/settings/shipping", icon: Truck },
         { name: "SMTP Mailer", href: "/admin/settings/smtp", icon: Mail },
-        { name: "Payments", href: "/admin/settings/payments", icon: CreditCard },
-        { name: "Search Sync", href: "/admin/settings/search", icon: Search },
         { name: "Security & Roles", href: "/admin/settings/security", icon: Shield }
       ]
     }

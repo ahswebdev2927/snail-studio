@@ -27,7 +27,7 @@ interface SendSingleParams {
  * Sends a single email via the Resend API.
  * Includes suppression list checks, timeline logging, and sandbox mocks.
  */
-export async function sendResendEmail(params: SendSingleParams): Promise<{ success: boolean; id?: string; error?: string }> {
+export async function sendResendEmail(params: SendSingleParams): Promise<{ success: boolean; id?: string; error?: string; isBypassed?: boolean }> {
   const timestamp = new Date();
   const deliveryId = `dlv_${nanoid(12)}`;
   const emailLogId = `eml_${nanoid(12)}`;
@@ -77,6 +77,7 @@ export async function sendResendEmail(params: SendSingleParams): Promise<{ succe
       } catch (apiError: any) {
         // Catch sandbox restrictions or invalid keys in development
         const msg = apiError.message || String(apiError);
+        errorMessage = msg;
         if (
           msg.includes("Invalid to field") ||
           msg.includes("unverified") ||
@@ -99,7 +100,7 @@ export async function sendResendEmail(params: SendSingleParams): Promise<{ succe
       subject: params.subject,
       templateName: params.campaignId ? `campaign_${params.campaignId}` : params.templateName,
       status: "success",
-      errorMessage: isBypassed ? "Mock sandbox delivery" : errorMessage,
+      errorMessage: isBypassed ? `Mock sandbox delivery (Caught error: ${errorMessage || "None"})` : errorMessage,
       sentAt: timestamp,
     });
 
@@ -118,7 +119,7 @@ export async function sendResendEmail(params: SendSingleParams): Promise<{ succe
       });
     }
 
-    return { success: true, id: resendMessageId };
+    return { success: true, id: resendMessageId, isBypassed, error: errorMessage || undefined };
   } catch (error: any) {
     console.error(`[Resend Service] Send failed for ${params.to}:`, error);
 

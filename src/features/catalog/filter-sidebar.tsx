@@ -14,10 +14,12 @@ export interface FilterState {
   colour?: string[];
   texture?: string[];
   style?: string[];
+  occasion?: string[];
   minPrice?: number;
   maxPrice?: number;
   availability?: "in_stock";
   rating?: number;
+  [key: string]: string[] | string | number | undefined;
 }
 
 interface FilterSidebarProps {
@@ -38,12 +40,12 @@ export function FilterSidebar({ facets, filters, onChange, onClear, onToggleHide
     categories: true,
     brands: true,
     price: true,
-    availability: true,
     shapes: true,
     lengths: true,
     colours: true,
     textures: true,
     style: true,
+    occasion: true,
     rating: true,
   });
 
@@ -93,23 +95,14 @@ export function FilterSidebar({ facets, filters, onChange, onClear, onToggleHide
     handlePriceChange(minPrice, maxPrice);
   };
 
-  const handleAvailabilityToggle = () => {
-    onChange({
-      ...filters,
-      availability: filters.availability ? undefined : "in_stock",
-    });
-  };
+
 
   // Safe checks for rendering facets
   const categoriesList = facets?.categories || [];
   const brandsList = facets?.brands || [];
   const attributesList = facets?.attributes || [];
   
-  const shapesFacet = attributesList.find(a => a.groupCode === "shape");
-  const lengthsFacet = attributesList.find(a => a.groupCode === "length");
-  const coloursFacet = attributesList.find(a => a.groupCode === "colour");
-  const texturesFacet = attributesList.find(a => a.groupCode === "texture");
-  const stylesFacet = attributesList.find(a => a.groupCode === "style");
+
 
   const activeFiltersCount = 
     (filters.category ? 1 : 0) +
@@ -119,8 +112,8 @@ export function FilterSidebar({ facets, filters, onChange, onClear, onToggleHide
     (filters.colour?.length || 0) +
     (filters.texture?.length || 0) +
     (filters.style?.length || 0) +
+    (filters.occasion?.length || 0) +
     (filters.minPrice !== undefined || filters.maxPrice !== undefined ? 1 : 0) +
-    (filters.availability ? 1 : 0) +
     (filters.rating ? 1 : 0);
 
   return (
@@ -176,26 +169,7 @@ export function FilterSidebar({ facets, filters, onChange, onClear, onToggleHide
         </div>
       </div>
 
-      {/* Stock Availability */}
-      <div className="border-b border-border/20 pb-5">
-        <div className="flex items-center justify-between py-2 cursor-pointer" onClick={() => toggleSection("availability")}>
-          <h3 className="text-sm font-medium text-foreground">Availability</h3>
-          <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-300 ${openSections.availability ? "rotate-180" : ""}`} />
-        </div>
-        {openSections.availability && (
-          <div className="mt-3">
-            <label className="flex items-center gap-2.5 text-sm text-foreground/80 hover:text-foreground cursor-pointer">
-              <input
-                type="checkbox"
-                checked={filters.availability === "in_stock"}
-                onChange={handleAvailabilityToggle}
-                className="w-4 h-4 rounded text-primary border-border focus:ring-primary/20 accent-primary cursor-pointer"
-              />
-              In Stock Only
-            </label>
-          </div>
-        )}
-      </div>
+
 
       {/* Categories Accordion */}
       {categoriesList.length > 0 && (
@@ -246,167 +220,54 @@ export function FilterSidebar({ facets, filters, onChange, onClear, onToggleHide
         )}
       </div>
 
-      {/* Shapes (Toggle Pills) */}
-      {shapesFacet && shapesFacet.values.length > 0 && (
-        <div className="border-b border-border/20 pb-5">
-          <div className="flex items-center justify-between py-2 cursor-pointer" onClick={() => toggleSection("shapes")}>
-            <h3 className="text-sm font-medium text-foreground">Nail Shape</h3>
-            <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-300 ${openSections.shapes ? "rotate-180" : ""}`} />
-          </div>
-          {openSections.shapes && (
-            <div className="mt-3 flex flex-wrap gap-2">
-              {shapesFacet.values.map((v) => {
-                const isSelected = filters.shape?.includes(v.code) || false;
-                return (
-                  <button
-                    key={v.code}
-                    onClick={() => handleCheckboxToggle("shape", v.code)}
-                    className={`text-xs px-3 py-1.5 rounded-full border transition-all duration-300 cursor-pointer ${
-                      isSelected
-                        ? "bg-primary border-primary text-primary-foreground shadow-sm font-medium"
-                        : "bg-secondary/20 hover:bg-secondary/40 border-border/30 text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {v.value} ({v.count})
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
+      {/* Dynamic Attribute Filter Accordions */}
+      {attributesList.map((facet) => {
+        const groupCode = facet.groupCode;
+        const groupName = facet.groupName;
+        const isOpen = openSections[groupCode] ?? true;
 
-      {/* Lengths (Toggle Pills) */}
-      {lengthsFacet && lengthsFacet.values.length > 0 && (
-        <div className="border-b border-border/20 pb-5">
-          <div className="flex items-center justify-between py-2 cursor-pointer" onClick={() => toggleSection("lengths")}>
-            <h3 className="text-sm font-medium text-foreground">Nail Length</h3>
-            <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-300 ${openSections.lengths ? "rotate-180" : ""}`} />
-          </div>
-          {openSections.lengths && (
-            <div className="mt-3 flex flex-wrap gap-2">
-              {lengthsFacet.values.map((v) => {
-                const isSelected = filters.length?.includes(v.code) || false;
-                return (
-                  <button
-                    key={v.code}
-                    onClick={() => handleCheckboxToggle("length", v.code)}
-                    className={`text-xs px-3 py-1.5 rounded-full border transition-all duration-300 cursor-pointer ${
-                      isSelected
-                        ? "bg-primary border-primary text-primary-foreground shadow-sm font-medium"
-                        : "bg-secondary/20 hover:bg-secondary/40 border-border/30 text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {v.value} ({v.count})
-                  </button>
-                );
-              })}
+        return (
+          <div key={groupCode} className="border-b border-border/20 pb-5">
+            <div className="flex items-center justify-between py-2 cursor-pointer" onClick={() => toggleSection(groupCode)}>
+              <h3 className="text-sm font-medium text-foreground">{groupName}</h3>
+              <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-300 ${isOpen ? "rotate-180" : ""}`} />
             </div>
-          )}
-        </div>
-      )}
+            {isOpen && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {facet.values.map((v) => {
+                  const isSelected = (filters[groupCode] as string[])?.includes(v.code) || false;
+                  const isColourGroup = groupCode === "colour";
+                  const colorHexes: Record<string, string> = {
+                    pink: "bg-pink-300",
+                    nude: "bg-amber-100",
+                    red: "bg-red-500",
+                    blue: "bg-blue-400",
+                    white: "bg-slate-50 border border-slate-300",
+                    black: "bg-neutral-900 border border-neutral-700",
+                  };
 
-      {/* Colours (Toggle Pills with Swatch hints) */}
-      {coloursFacet && coloursFacet.values.length > 0 && (
-        <div className="border-b border-border/20 pb-5">
-          <div className="flex items-center justify-between py-2 cursor-pointer" onClick={() => toggleSection("colours")}>
-            <h3 className="text-sm font-medium text-foreground">Color</h3>
-            <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-300 ${openSections.colours ? "rotate-180" : ""}`} />
+                  return (
+                    <button
+                      key={v.code}
+                      onClick={() => handleCheckboxToggle(groupCode, v.code)}
+                      className={`text-xs flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-all duration-300 cursor-pointer ${
+                        isSelected
+                          ? "bg-primary border-primary text-primary-foreground shadow-sm font-medium"
+                          : "bg-secondary/20 hover:bg-secondary/40 border-border/30 text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {isColourGroup && (
+                        <span className={`w-2.5 h-2.5 rounded-full ${colorHexes[v.code] || "bg-secondary-foreground/30"}`} />
+                      )}
+                      {v.value} ({v.count})
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
-          {openSections.colours && (
-            <div className="mt-3 flex flex-wrap gap-2">
-              {coloursFacet.values.map((v) => {
-                const isSelected = filters.colour?.includes(v.code) || false;
-                
-                // Luxury dynamic dot mapping
-                const colorHexes: Record<string, string> = {
-                  pink: "bg-pink-300",
-                  nude: "bg-amber-100",
-                  red: "bg-red-500",
-                  blue: "bg-blue-400",
-                  white: "bg-slate-50 border border-slate-300",
-                  black: "bg-neutral-900 border border-neutral-700",
-                };
-
-                return (
-                  <button
-                    key={v.code}
-                    onClick={() => handleCheckboxToggle("colour", v.code)}
-                    className={`text-xs flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-all duration-300 cursor-pointer ${
-                      isSelected
-                        ? "bg-primary border-primary text-primary-foreground shadow-sm font-medium"
-                        : "bg-secondary/20 hover:bg-secondary/40 border-border/30 text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    <span className={`w-2.5 h-2.5 rounded-full ${colorHexes[v.code] || "bg-secondary-foreground/30"}`} />
-                    {v.value} ({v.count})
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Styles (Toggle Pills) */}
-      {stylesFacet && stylesFacet.values.length > 0 && (
-        <div className="border-b border-border/20 pb-5">
-          <div className="flex items-center justify-between py-2 cursor-pointer" onClick={() => toggleSection("style")}>
-            <h3 className="text-sm font-medium text-foreground">Style</h3>
-            <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-300 ${openSections.style ? "rotate-180" : ""}`} />
-          </div>
-          {openSections.style && (
-            <div className="mt-3 flex flex-wrap gap-2">
-              {stylesFacet.values.map((v) => {
-                const isSelected = filters.style?.includes(v.code) || false;
-                return (
-                  <button
-                    key={v.code}
-                    onClick={() => handleCheckboxToggle("style", v.code)}
-                    className={`text-xs px-3 py-1.5 rounded-full border transition-all duration-300 cursor-pointer ${
-                      isSelected
-                        ? "bg-primary border-primary text-primary-foreground shadow-sm font-medium"
-                        : "bg-secondary/20 hover:bg-secondary/40 border-border/30 text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {v.value} ({v.count})
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Textures */}
-      {texturesFacet && texturesFacet.values.length > 0 && (
-        <div className="border-b border-border/20 pb-5">
-          <div className="flex items-center justify-between py-2 cursor-pointer" onClick={() => toggleSection("textures")}>
-            <h3 className="text-sm font-medium text-foreground">Finish / Texture</h3>
-            <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-300 ${openSections.textures ? "rotate-180" : ""}`} />
-          </div>
-          {openSections.textures && (
-            <div className="mt-3 flex flex-wrap gap-2">
-              {texturesFacet.values.map((v) => {
-                const isSelected = filters.texture?.includes(v.code) || false;
-                return (
-                  <button
-                    key={v.code}
-                    onClick={() => handleCheckboxToggle("texture", v.code)}
-                    className={`text-xs px-3 py-1.5 rounded-full border transition-all duration-300 cursor-pointer ${
-                      isSelected
-                        ? "bg-primary border-primary text-primary-foreground shadow-sm font-medium"
-                        : "bg-secondary/20 hover:bg-secondary/40 border-border/30 text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {v.value} ({v.count})
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
+        );
+      })}
 
       {/* Rating Filter */}
       <div className="pb-5">

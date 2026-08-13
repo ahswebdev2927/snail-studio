@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { db } from "@/db";
 import { attributeGroups } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -6,6 +7,7 @@ import { z } from "zod";
 import { authorize } from "@/middleware/auth";
 import { slugify } from "@/lib/utils";
 import { createAttributeGroupSchema } from "@/lib/validators/catalog";
+import { CACHE_TAGS } from "@/lib/cache-tags";
 
 const updateGroupSchema = createAttributeGroupSchema.partial();
 
@@ -87,6 +89,8 @@ export async function PUT(
       .where(eq(attributeGroups.id, id))
       .returning();
 
+    revalidateTag(CACHE_TAGS.NAVIGATION, "max");
+
     return NextResponse.json(updated[0], { status: 200 });
   } catch (error: any) {
     console.error("PUT /api/admin/attributes/[id] error:", error);
@@ -123,6 +127,8 @@ export async function DELETE(
 
     // Deleting the group will cascade delete all linked values
     await db.delete(attributeGroups).where(eq(attributeGroups.id, id));
+
+    revalidateTag(CACHE_TAGS.NAVIGATION, "max");
 
     return NextResponse.json(
       { success: true, message: "Attribute group deleted successfully" },

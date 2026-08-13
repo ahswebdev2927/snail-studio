@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { db } from "@/db";
 import { attributeValues } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
@@ -6,6 +7,7 @@ import { z } from "zod";
 import { authorize } from "@/middleware/auth";
 import { slugify } from "@/lib/utils";
 import { updateAttributeValueSchema as updateValueSchema } from "@/lib/validators/catalog";
+import { CACHE_TAGS } from "@/lib/cache-tags";
 
 // PUT /api/admin/attributes/[id]/values/[valueId] - Update specific attribute value (Admin only)
 export async function PUT(
@@ -78,6 +80,8 @@ export async function PUT(
       .where(eq(attributeValues.id, valueId))
       .returning();
 
+    revalidateTag(CACHE_TAGS.NAVIGATION, "max");
+
     return NextResponse.json(updated[0], { status: 200 });
   } catch (error: any) {
     console.error("PUT /api/admin/attributes/[id]/values/[valueId] error:", error);
@@ -117,6 +121,8 @@ export async function DELETE(
 
     // Deleting the value will cascade delete associations in product/variant attribute tables
     await db.delete(attributeValues).where(eq(attributeValues.id, valueId));
+
+    revalidateTag(CACHE_TAGS.NAVIGATION, "max");
 
     return NextResponse.json(
       { success: true, message: "Attribute value deleted successfully" },

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useRef } from "react";
 import { Star, ChevronLeft, ChevronRight, Check } from "lucide-react";
 
 interface Testimonial {
@@ -78,95 +78,24 @@ const TESTIMONIALS: Testimonial[] = [
 ];
 
 export function CustomerTestimonials() {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [visibleCards, setVisibleCards] = useState(3);
-  const [touchStart, setTouchStart] = useState<number | null>(null);
-  const [touchEnd, setTouchEnd] = useState<number | null>(null);
-  const [isHovered, setIsHovered] = useState(false);
-  const autoSlideTimer = useRef<NodeJS.Timeout | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Minimum swipe distance to trigger slide
-  const minSwipeDistance = 50;
-
-  // Handle responsive visible card counts
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth < 640) {
-        setVisibleCards(1);
-      } else if (window.innerWidth < 1024) {
-        setVisibleCards(2);
-      } else {
-        setVisibleCards(3);
-      }
-    };
-
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  const maxIndex = TESTIMONIALS.length - visibleCards;
-
-  const handlePrev = useCallback(() => {
-    setCurrentIndex((prev) => (prev > 0 ? prev - 1 : maxIndex));
-  }, [maxIndex]);
-
-  const handleNext = useCallback(() => {
-    setCurrentIndex((prev) => (prev < maxIndex ? prev + 1 : 0));
-  }, [maxIndex]);
-
-  // Adjust index if visible cards count changes and pushes current index out of bounds
-  useEffect(() => {
-    if (currentIndex > maxIndex) {
-      setCurrentIndex(maxIndex >= 0 ? maxIndex : 0);
-    }
-  }, [visibleCards, maxIndex, currentIndex]);
-
-  // Touch handlers for mobile swipe navigation
-  const onTouchStart = (e: React.TouchEvent) => {
-    setTouchEnd(null);
-    setTouchStart(e.targetTouches[0].clientX);
-  };
-
-  const onTouchMove = (e: React.TouchEvent) => {
-    setTouchEnd(e.targetTouches[0].clientX);
-  };
-
-  const onTouchEnd = () => {
-    if (!touchStart || !touchEnd) return;
-    const distance = touchStart - touchEnd;
-    const isLeftSwipe = distance > minSwipeDistance;
-    const isRightSwipe = distance < -minSwipeDistance;
-
-    if (isLeftSwipe) {
-      handleNext();
-    } else if (isRightSwipe) {
-      handlePrev();
+  const handleScroll = (direction: "left" | "right") => {
+    if (scrollRef.current) {
+      const { scrollLeft, clientWidth } = scrollRef.current;
+      const offset = direction === "left" ? -clientWidth * 0.8 : clientWidth * 0.8;
+      
+      scrollRef.current.scrollTo({
+        left: scrollLeft + offset,
+        behavior: "smooth",
+      });
     }
   };
-
-  // Auto scroll logic
-  useEffect(() => {
-    if (isHovered) {
-      if (autoSlideTimer.current) clearInterval(autoSlideTimer.current);
-      return;
-    }
-
-    autoSlideTimer.current = setInterval(() => {
-      handleNext();
-    }, 6000);
-
-    return () => {
-      if (autoSlideTimer.current) clearInterval(autoSlideTimer.current);
-    };
-  }, [handleNext, isHovered]);
 
   return (
     <section 
       id="reviews" 
       className="py-16 bg-[#EFD3C9] dark:bg-[#1C1819] border-t border-border/20 relative overflow-hidden"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
     >
       {/* Visual Background Accent Glow */}
       <div className="absolute top-1/2 left-1/4 -translate-y-1/2 w-96 h-96 rounded-full bg-primary/5 blur-3xl pointer-events-none" />
@@ -184,46 +113,36 @@ export function CustomerTestimonials() {
               Discover real experiences from our clients who swapped time-consuming salon visits for premium, salon-grade press-ons.
             </p>
           </div>
-
-          {/* Navigation Arrows */}
-          <div className="flex gap-3">
-            <button
-              onClick={handlePrev}
-              className="p-3 rounded-full border border-border/40 bg-card text-foreground hover:bg-primary/10 hover:border-primary/30 active:scale-95 transition-all shadow-xs cursor-pointer focus:outline-none"
-              aria-label="Previous Testimonials"
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-            <button
-              onClick={handleNext}
-              className="p-3 rounded-full border border-border/40 bg-card text-foreground hover:bg-primary/10 hover:border-primary/30 active:scale-95 transition-all shadow-xs cursor-pointer focus:outline-none"
-              aria-label="Next Testimonials"
-            >
-              <ChevronRight className="w-5 h-5" />
-            </button>
-          </div>
         </div>
 
         {/* Carousel Slider Track */}
-        <div 
-          className="overflow-hidden touch-pan-y"
-          onTouchStart={onTouchStart}
-          onTouchMove={onTouchMove}
-          onTouchEnd={onTouchEnd}
-        >
+        <div className="relative group/slider">
+          {/* Left Arrow Button */}
+          <button
+            onClick={() => handleScroll("left")}
+            className="absolute left-[-12px] lg:left-[-24px] top-1/2 -translate-y-1/2 z-20 p-3 rounded-full border border-border/40 bg-card text-foreground hover:bg-primary/10 hover:border-primary/30 active:scale-95 transition-all shadow-md cursor-pointer focus:outline-none hidden md:flex items-center justify-center"
+            aria-label="Previous Testimonials"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+
+          {/* Right Arrow Button */}
+          <button
+            onClick={() => handleScroll("right")}
+            className="absolute right-[-12px] lg:right-[-24px] top-1/2 -translate-y-1/2 z-20 p-3 rounded-full border border-border/40 bg-card text-foreground hover:bg-primary/10 hover:border-primary/30 active:scale-95 transition-all shadow-md cursor-pointer focus:outline-none hidden md:flex items-center justify-center"
+            aria-label="Next Testimonials"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+
           <div 
-            className="flex transition-transform duration-500 ease-out gap-6"
-            style={{
-              transform: `translateX(-${currentIndex * (100 / visibleCards)}%)`,
-            }}
+            ref={scrollRef}
+            className="flex gap-6 overflow-x-auto scrollbar-none snap-x snap-mandatory scroll-smooth pb-4"
           >
             {TESTIMONIALS.map((testimonial) => (
               <div
                 key={testimonial.id}
-                className="w-full flex-shrink-0 bg-card border border-border/30 rounded-3xl p-8 sm:p-10 flex flex-col justify-between space-y-6 shadow-xs hover:shadow-md transition-all duration-300 relative group"
-                style={{
-                  width: `calc(${100 / visibleCards}% - ${(visibleCards - 1) * 24 / visibleCards}px)`
-                }}
+                className="w-[280px] xs:w-[310px] sm:w-[360px] md:w-[calc((100%-24px)/2)] lg:w-[calc((100%-48px)/3)] shrink-0 snap-start snap-always bg-card border border-border/30 rounded-3xl p-8 sm:p-10 flex flex-col justify-between space-y-6 shadow-xs hover:shadow-md transition-all duration-300 relative group"
               >
                 {/* Gold Stars & Verification */}
                 <div className="flex justify-between items-start">
@@ -270,24 +189,6 @@ export function CustomerTestimonials() {
             ))}
           </div>
         </div>
-
-        {/* Indicators Dots */}
-        {maxIndex > 0 && (
-          <div className="flex justify-center gap-2 pt-4">
-            {[...Array(maxIndex + 1)].map((_, idx) => (
-              <button
-                key={idx}
-                onClick={() => setCurrentIndex(idx)}
-                className={`h-2 rounded-full transition-all duration-300 ${
-                  currentIndex === idx 
-                    ? "w-8 bg-primary" 
-                    : "w-2 bg-border/80 hover:bg-border-hover"
-                }`}
-                aria-label={`Go to slide ${idx + 1}`}
-              />
-            ))}
-          </div>
-        )}
       </div>
     </section>
   );
