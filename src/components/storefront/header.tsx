@@ -10,8 +10,6 @@ import {
   Heart,
   ShoppingBag,
   User,
-  Sun,
-  Moon,
   ChevronDown,
   Sparkles,
   ArrowRight,
@@ -36,7 +34,6 @@ interface HeaderProps {
 export function Header({ navigationData, storeLogo = "", storeName = "Snail Studio" }: HeaderProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const [theme, setTheme] = useState<"light" | "dark">("light");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [nav, setNav] = useState<StorefrontNavigation | null>(navigationData || null);
   const [currentUser, setCurrentUser] = useState<{ id: string; name: string | null; email: string | null; role: string; image: string | null; phoneNumber: string } | null>(null);
@@ -192,33 +189,10 @@ export function Header({ navigationData, storeLogo = "", storeName = "Snail Stud
     };
   }, [navigationData]);
 
-  // Handle Theme
+  // Ensure Storefront is always in Light Theme
   useEffect(() => {
-    const savedTheme = localStorage.getItem("theme") || localStorage.getItem("admin-theme");
-    if (savedTheme === "dark" || savedTheme === "light") {
-      setTheme(savedTheme);
-      if (savedTheme === "dark") {
-        document.documentElement.classList.add("dark");
-      } else {
-        document.documentElement.classList.remove("dark");
-      }
-    } else {
-      setTheme("light");
-      document.documentElement.classList.remove("dark");
-    }
+    document.documentElement.classList.remove("dark");
   }, []);
-
-  const toggleTheme = () => {
-    const nextTheme = theme === "light" ? "dark" : "light";
-    setTheme(nextTheme);
-    localStorage.setItem("theme", nextTheme);
-    localStorage.setItem("admin-theme", nextTheme);
-    if (nextTheme === "dark") {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  };
 
   const handleMobileNav = (url: string) => {
     setMobileMenuOpen(false);
@@ -484,18 +458,7 @@ export function Header({ navigationData, storeLogo = "", storeName = "Snail Stud
 
           {/* Right: Actions */}
           <div className="flex items-center gap-2">
-            {/* Theme Toggle */}
-            <button
-              onClick={toggleTheme}
-              className="p-2 rounded-full text-foreground hover:bg-primary/10 hover:text-primary transition-all duration-300 hover:rotate-12 cursor-pointer"
-              aria-label="Toggle Theme"
-            >
-              {theme === "light" ? (
-                <Moon className="w-4 h-4 text-foreground" />
-              ) : (
-                <Sun className="w-4 h-4 text-accent" />
-              )}
-            </button>
+
 
             {/* Search Trigger */}
             <button

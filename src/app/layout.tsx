@@ -93,9 +93,14 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `
               try {
-                const savedTheme = localStorage.getItem("theme") || localStorage.getItem("admin-theme");
-                if (savedTheme === "dark") {
-                  document.documentElement.classList.add("dark");
+                const isAdmin = window.location.pathname.startsWith('/admin');
+                if (isAdmin) {
+                  const savedTheme = localStorage.getItem("admin-theme") || localStorage.getItem("theme");
+                  if (savedTheme === "dark") {
+                    document.documentElement.classList.add("dark");
+                  } else {
+                    document.documentElement.classList.remove("dark");
+                  }
                 } else {
                   document.documentElement.classList.remove("dark");
                 }

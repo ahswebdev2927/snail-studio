@@ -126,7 +126,7 @@ export default function AdminLoginPage() {
   }, [recaptchaVerifier]);
 
   useEffect(() => {
-    const savedTheme = localStorage.getItem("theme") || localStorage.getItem("admin-theme");
+    const savedTheme = localStorage.getItem("admin-theme") || localStorage.getItem("theme");
     if (savedTheme === "dark" || savedTheme === "light") {
       setTheme(savedTheme);
       if (savedTheme === "dark") {
@@ -143,7 +143,6 @@ export default function AdminLoginPage() {
   const toggleTheme = () => {
     const nextTheme = theme === "light" ? "dark" : "light";
     setTheme(nextTheme);
-    localStorage.setItem("theme", nextTheme);
     localStorage.setItem("admin-theme", nextTheme);
     if (nextTheme === "dark") {
       document.documentElement.classList.add("dark");
