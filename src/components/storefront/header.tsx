@@ -310,7 +310,7 @@ export function Header({ navigationData, storeLogo = "", storeName = "Snail Stud
             {/* Shop dropdown (Mega Menu) */}
             <div className="group py-2.5">
               <button className="flex items-center gap-1.5 px-4 py-2.5 rounded-full hover:text-primary transition-all cursor-pointer">
-                Shop
+                SHOP
                 <ChevronDown className="w-3.5 h-3.5 group-hover:rotate-180 transition-transform duration-200" />
               </button>
 
