@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
 import { db } from "@/db";
-import { attributeValues } from "@/db/schema";
+import { attributeGroups, attributeValues } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { z } from "zod";
 import { authorize } from "@/middleware/auth";
@@ -40,7 +40,17 @@ export async function PUT(
       );
     }
 
-    const { value, code } = result.data;
+    const { value, colorHex } = result.data;
+    let code = result.data.code;
+
+    // Check if group exists
+    const group = await db.query.attributeGroups.findFirst({
+      where: eq(attributeGroups.id, groupId),
+    });
+
+    if (!group) {
+      return NextResponse.json({ error: "Attribute Group not found" }, { status: 404 });
+    }
 
     // Check existence
     const existing = await db.query.attributeValues.findFirst({
@@ -52,6 +62,11 @@ export async function PUT(
 
     if (!existing) {
       return NextResponse.json({ error: "Attribute value not found under this group" }, { status: 404 });
+    }
+
+    // Normalize code to lowercase to ensure consistency (e.g. PINK -> pink)
+    if (code) {
+      code = code.toLowerCase();
     }
 
     // Check conflict of code if code is changed
@@ -71,11 +86,29 @@ export async function PUT(
       }
     }
 
+    let normalizedColorHex = undefined;
+    if (colorHex !== undefined) {
+      if (group.code === "colour") {
+        if (!colorHex) {
+          return NextResponse.json({ error: "Hex code is required for Colour attribute values" }, { status: 400 });
+        }
+        const cleanHex = colorHex.trim();
+        const hexRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
+        if (!hexRegex.test(cleanHex)) {
+          return NextResponse.json({ error: "Invalid hex color format" }, { status: 400 });
+        }
+        normalizedColorHex = "#" + cleanHex.replace("#", "").toUpperCase();
+      } else {
+        normalizedColorHex = colorHex ? colorHex.trim() : null;
+      }
+    }
+
     const updated = await db
       .update(attributeValues)
       .set({
         ...(value !== undefined && { value }),
         ...(code !== undefined && { code }),
+        ...(normalizedColorHex !== undefined && { colorHex: normalizedColorHex }),
       })
       .where(eq(attributeValues.id, valueId))
       .returning();

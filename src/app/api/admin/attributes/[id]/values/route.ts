@@ -50,7 +50,7 @@ export async function POST(
       );
     }
 
-    const { value } = result.data;
+    const { value, colorHex } = result.data;
     let code = result.data.code;
 
     if (!code) {
@@ -59,6 +59,24 @@ export async function POST(
 
     if (!code) {
       return NextResponse.json({ error: "Could not generate a valid code from value" }, { status: 400 });
+    }
+
+    // Normalize code to lowercase to ensure consistency (e.g. PINK -> pink)
+    code = code.toLowerCase();
+
+    let normalizedColorHex = null;
+    if (group.code === "colour") {
+      if (!colorHex) {
+        return NextResponse.json({ error: "Hex code is required for Colour attribute values" }, { status: 400 });
+      }
+      const cleanHex = colorHex.trim();
+      const hexRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
+      if (!hexRegex.test(cleanHex)) {
+        return NextResponse.json({ error: "Invalid hex color format" }, { status: 400 });
+      }
+      normalizedColorHex = "#" + cleanHex.replace("#", "").toUpperCase();
+    } else {
+      normalizedColorHex = colorHex ? colorHex.trim() : null;
     }
 
     // Check conflict of value or code under the same group
@@ -84,6 +102,7 @@ export async function POST(
         groupId,
         value,
         code,
+        colorHex: normalizedColorHex,
       })
       .returning();
 

@@ -55,6 +55,16 @@ export const createProductSchema = z.object({
       })
     )
     .default([]),
+  colorMedia: z
+    .array(
+      z.object({
+        attributeValueId: z.string(),
+        mediaId: z.string(),
+        isFeatured: z.boolean().default(false),
+        sortOrder: z.number().default(0),
+      })
+    )
+    .default([]),
   variants: z.array(variantSchema).min(1, "At least one variant is required"),
 });
 
@@ -81,6 +91,16 @@ export const updateProductSchema = z.object({
   media: z
     .array(
       z.object({
+        mediaId: z.string(),
+        isFeatured: z.boolean().default(false),
+        sortOrder: z.number().default(0),
+      })
+    )
+    .default([]),
+  colorMedia: z
+    .array(
+      z.object({
+        attributeValueId: z.string(),
         mediaId: z.string(),
         isFeatured: z.boolean().default(false),
         sortOrder: z.number().default(0),
@@ -204,6 +224,12 @@ export const createAttributeValueSchema = z.object({
     .max(100, "Code is too long")
     .regex(/^[a-z0-9_]+$/, "Code must be lowercase alphanumeric with underscores")
     .optional()
+    .or(z.literal("")),
+  colorHex: z
+    .string()
+    .regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, "Invalid hex color format")
+    .optional()
+    .nullable()
     .or(z.literal("")),
 });
 

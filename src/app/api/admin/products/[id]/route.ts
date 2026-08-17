@@ -7,6 +7,7 @@ import {
   productAttributeValues, 
   productVariants, 
   productMedia,
+  productAttributeMedia,
   userAuditLogs
 } from "@/db/schema";
 import { eq, inArray } from "drizzle-orm";
@@ -36,6 +37,12 @@ const updateProductSchema = z.object({
   ogImage: z.string().optional().nullable(),
   attributeValueIds: z.array(z.string()).default([]),
   media: z.array(z.object({
+    mediaId: z.string(),
+    isFeatured: z.boolean().default(false),
+    sortOrder: z.number().default(0)
+  })).default([]),
+  colorMedia: z.array(z.object({
+    attributeValueId: z.string(),
     mediaId: z.string(),
     isFeatured: z.boolean().default(false),
     sortOrder: z.number().default(0)
@@ -74,6 +81,12 @@ export async function GET(
           with: {
             media: true,
           },
+        },
+        productAttributeMedia: {
+          with: {
+            media: true,
+          },
+          orderBy: (pam, { asc }) => [asc(pam.sortOrder)],
         },
         attributeValues: true,
       },
@@ -129,6 +142,14 @@ export async function GET(
         attributeValueIds: v.attributes.map(a => a.attributeValueId),
       })),
       attributes: productData.attributeValues.map(av => av.attributeValueId),
+      colorMedia: productData.productAttributeMedia?.map(pam => ({
+        attributeValueId: pam.attributeValueId,
+        mediaId: pam.mediaId,
+        url: pam.media?.url,
+        isFeatured: pam.isFeatured,
+        sortOrder: pam.sortOrder,
+        resourceType: pam.media?.resourceType || "image",
+      })) || [],
       brand: productData.brand,
       category: productData.category,
     };
@@ -186,6 +207,7 @@ export async function PATCH(
       with: {
         media: true,
         attributeValues: true,
+        productAttributeMedia: true,
       }
     });
 
@@ -228,6 +250,24 @@ export async function PATCH(
     const newAttrs = [...data.attributeValueIds].sort();
     if (JSON.stringify(oldAttrs) !== JSON.stringify(newAttrs)) {
       auditChanges.attributes = { old: oldAttrs, new: newAttrs };
+    }
+
+    const oldColorMedia = (oldProduct.productAttributeMedia || []).map(pam => ({
+      attributeValueId: pam.attributeValueId,
+      mediaId: pam.mediaId,
+      isFeatured: pam.isFeatured,
+      sortOrder: pam.sortOrder
+    })).sort((a, b) => a.mediaId.localeCompare(b.mediaId));
+
+    const newColorMedia = (data.colorMedia || []).map(cm => ({
+      attributeValueId: cm.attributeValueId,
+      mediaId: cm.mediaId,
+      isFeatured: cm.isFeatured,
+      sortOrder: cm.sortOrder
+    })).sort((a, b) => a.mediaId.localeCompare(b.mediaId));
+
+    if (JSON.stringify(oldColorMedia) !== JSON.stringify(newColorMedia)) {
+      auditChanges.colorMedia = { old: oldColorMedia, new: newColorMedia };
     }
 
     // Basic fields changes
@@ -309,6 +349,26 @@ export async function PATCH(
               mediaId: m.mediaId,
               isFeatured: m.isFeatured,
               sortOrder: m.sortOrder,
+            }))
+          );
+      }
+
+      // C.2 Update product color-specific media connections (Delete & Insert)
+      await tx
+        .delete(productAttributeMedia)
+        .where(eq(productAttributeMedia.productId, productId));
+
+      if (data.colorMedia && data.colorMedia.length > 0) {
+        await tx
+          .insert(productAttributeMedia)
+          .values(
+            data.colorMedia.map((cm) => ({
+              id: `pam_${nanoid(10)}`,
+              productId,
+              attributeValueId: cm.attributeValueId,
+              mediaId: cm.mediaId,
+              isFeatured: cm.isFeatured,
+              sortOrder: cm.sortOrder,
             }))
           );
       }

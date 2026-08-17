@@ -8,7 +8,8 @@ import {
   productVariants, 
   variantAttributeValues, 
   inventoryItems, 
-  productMedia 
+  productMedia,
+  productAttributeMedia
 } from "@/db/schema";
 import { eq, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
@@ -45,6 +46,12 @@ const createProductSchema = z.object({
   metaDescription: z.string().max(250).optional().nullable(),
   attributeValueIds: z.array(z.string()).default([]),
   media: z.array(z.object({
+    mediaId: z.string(),
+    isFeatured: z.boolean().default(false),
+    sortOrder: z.number().default(0)
+  })).default([]),
+  colorMedia: z.array(z.object({
+    attributeValueId: z.string(),
     mediaId: z.string(),
     isFeatured: z.boolean().default(false),
     sortOrder: z.number().default(0)
@@ -162,6 +169,7 @@ export async function POST(req: NextRequest) {
       metaDescription,
       attributeValueIds,
       media, 
+      colorMedia,
       variants 
     } = result.data;
 
@@ -249,6 +257,22 @@ export async function POST(req: NextRequest) {
               mediaId: m.mediaId,
               isFeatured: m.isFeatured,
               sortOrder: m.sortOrder,
+            }))
+          );
+      }
+
+      // C.2 Insert product color-specific media connections
+      if (colorMedia && colorMedia.length > 0) {
+        await tx
+          .insert(productAttributeMedia)
+          .values(
+            colorMedia.map((cm) => ({
+              id: `pam_${nanoid(10)}`,
+              productId,
+              attributeValueId: cm.attributeValueId,
+              mediaId: cm.mediaId,
+              isFeatured: cm.isFeatured,
+              sortOrder: cm.sortOrder,
             }))
           );
       }
