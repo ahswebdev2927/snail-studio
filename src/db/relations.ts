@@ -111,7 +111,8 @@ export const productsRelations = relations(schema.products, ({ one, many }) => (
   bundles: many(schema.productBundleItems),
   launchBanners: many(schema.launchBanners),
   launchSubscribers: many(schema.launchSubscribers),
-  launchEvents: many(schema.launchEvents)
+  launchEvents: many(schema.launchEvents),
+  productAttributeMedia: many(schema.productAttributeMedia)
 }));
 
 export const attributeGroupsRelations = relations(schema.attributeGroups, ({ many }) => ({
@@ -124,7 +125,8 @@ export const attributeValuesRelations = relations(schema.attributeValues, ({ one
     references: [schema.attributeGroups.id]
   }),
   products: many(schema.productAttributeValues),
-  variants: many(schema.variantAttributeValues)
+  variants: many(schema.variantAttributeValues),
+  productAttributeMedia: many(schema.productAttributeMedia)
 }));
 
 export const productAttributeValuesRelations = relations(schema.productAttributeValues, ({ one }) => ({
@@ -331,7 +333,8 @@ export const orderStatusHistoryRelations = relations(schema.orderStatusHistory, 
 export const mediaRelations = relations(schema.media, ({ many }) => ({
   productMedia: many(schema.productMedia),
   collectionMedia: many(schema.collectionMedia),
-  reviewImages: many(schema.reviewImages)
+  reviewImages: many(schema.reviewImages),
+  productAttributeMedia: many(schema.productAttributeMedia)
 }));
 
 export const productMediaRelations = relations(schema.productMedia, ({ one }) => ({
@@ -352,6 +355,21 @@ export const collectionMediaRelations = relations(schema.collectionMedia, ({ one
   }),
   media: one(schema.media, {
     fields: [schema.collectionMedia.mediaId],
+    references: [schema.media.id]
+  })
+}));
+
+export const productAttributeMediaRelations = relations(schema.productAttributeMedia, ({ one }) => ({
+  product: one(schema.products, {
+    fields: [schema.productAttributeMedia.productId],
+    references: [schema.products.id]
+  }),
+  attributeValue: one(schema.attributeValues, {
+    fields: [schema.productAttributeMedia.attributeValueId],
+    references: [schema.attributeValues.id]
+  }),
+  media: one(schema.media, {
+    fields: [schema.productAttributeMedia.mediaId],
     references: [schema.media.id]
   })
 }));

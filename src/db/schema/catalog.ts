@@ -81,7 +81,8 @@ export const attributeValues = sqliteTable('attribute_values', {
   id: text('id').primaryKey(),
   groupId: text('group_id').notNull().references(() => attributeGroups.id, { onDelete: 'cascade' }),
   value: text('value').notNull(),
-  code: text('code').notNull() // e.g. "short", "coffin"
+  code: text('code').notNull(), // e.g. "short", "coffin"
+  colorHex: text('color_hex')
 });
 
 export const productAttributeValues = sqliteTable('product_attribute_values', {
