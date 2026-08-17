@@ -70,9 +70,16 @@ const schema = z.object({
     mediaId: z.string(),
     url: z.string(),
     isFeatured: z.boolean(),
+    resourceType: z.enum(["image", "video"])
+  })).default([]),
+  colorMedia: z.array(z.object({
+    attributeValueId: z.string(),
+    mediaId: z.string(),
+    url: z.string(),
+    isFeatured: z.boolean(),
     sortOrder: z.number(),
     resourceType: z.enum(["image", "video"])
-  })),
+  })).default([]),
   variants: z.array(z.object({
     sku: z.string().min(1, "SKU is required"),
     name: z.string().min(1, "Name is required"),
@@ -127,6 +134,8 @@ interface ProductFormProps {
     seo: any;
     variants: any[];
     attributes: string[];
+    attributeValueIds: string[];
+    colorMedia: any[];
   };
 }
 
@@ -193,7 +202,7 @@ export default function ProductForm({ mode, productId, initialData }: ProductFor
   // Media picker modal states
   const [showMediaPicker, setShowMediaPicker] = useState(false);
   const [showHelpModal, setShowHelpModal] = useState(false);
-  const [pickerTarget, setPickerTarget] = useState<"featured" | "gallery" | "ogImage">("featured");
+  const [pickerTarget, setPickerTarget] = useState<"featured" | "gallery" | "ogImage" | string>("featured");
 
   // Selected values for variant generator checkboxes
   const [selectedVariantAttrs, setSelectedVariantAttrs] = useState<Record<string, string[]>>({});
@@ -231,6 +240,7 @@ export default function ProductForm({ mode, productId, initialData }: ProductFor
       ogImage: null,
       attributeValueIds: [],
       media: [],
+      colorMedia: [],
       variants: [],
     }
   });
@@ -245,9 +255,22 @@ export default function ProductForm({ mode, productId, initialData }: ProductFor
     name: "variants",
   });
 
+  const { fields: colorMediaFields, append: appendColorMedia, remove: removeColorMedia, replace: replaceColorMedia } = useFieldArray({
+    control,
+    name: "colorMedia",
+  });
+
   const watchName = watch("name");
   const watchMedia = watch("media");
   const watchVariants = watch("variants");
+  const watchColorMedia = watch("colorMedia") || [];
+
+  const selectedColorValues = useMemo(() => {
+    const colorGroup = attributes.find(g => g.code === "colour");
+    if (!colorGroup) return [];
+    const selectedIds = watch("attributeValueIds") || [];
+    return colorGroup.values.filter(v => selectedIds.includes(v.id));
+  }, [attributes, watch("attributeValueIds")]);
 
   // Fetch Category, Brand, and Attribute lookups
   useEffect(() => {
@@ -299,8 +322,10 @@ export default function ProductForm({ mode, productId, initialData }: ProductFor
         metaTitle: initialData.seo?.metaTitle || "",
         metaDescription: initialData.seo?.metaDescription || "",
         ogImage: initialData.seo?.ogImage || null,
-        attributeValueIds: initialData.attributes || [],
+        attributeValueIds: initialData.attributeValueIds || [],
         media: initialData.media || [],
+        colorMedia: initialData.colorMedia || [],
+        variants: initialData.variants || [],
       });
       setExistingVariants(initialData.variants || []);
 
@@ -361,6 +386,24 @@ export default function ProductForm({ mode, productId, initialData }: ProductFor
     } else if (pickerTarget === "ogImage") {
       // Set OG Image URL
       setValue("ogImage", selected[0].url, { shouldValidate: true });
+    } else if (pickerTarget.startsWith("color_")) {
+      const colorValId = pickerTarget.replace("color_", "");
+      const existingIds = watchColorMedia.filter(cm => cm.attributeValueId === colorValId).map(cm => cm.mediaId);
+      const newColorItems = selected
+        .filter(item => !existingIds.includes(item.id))
+        .map((item, index) => ({
+          attributeValueId: colorValId,
+          mediaId: item.id,
+          url: item.url,
+          isFeatured: false,
+          sortOrder: index + 1,
+          resourceType: item.resourceType,
+        }));
+      const hasFeatured = watchColorMedia.some(cm => cm.attributeValueId === colorValId && cm.isFeatured);
+      if (!hasFeatured && newColorItems.length > 0) {
+        newColorItems[0].isFeatured = true;
+      }
+      appendColorMedia(newColorItems);
     } else {
       // Append selected image/s to gallery
       const existingIds = watchMedia.map(m => m.mediaId);
@@ -376,6 +419,17 @@ export default function ProductForm({ mode, productId, initialData }: ProductFor
       appendMedia(newItems);
     }
     setShowMediaPicker(false);
+  };
+
+  const makeColorFeatured = (colorValId: string, globalIdx: number) => {
+    const updated = watchColorMedia.map((item, idx) => {
+      if (item.attributeValueId !== colorValId) return item;
+      return {
+        ...item,
+        isFeatured: idx === globalIdx,
+      };
+    });
+    replaceColorMedia(updated);
   };
 
   // Set selected item as featured, and downgrade previous featured item
@@ -454,7 +508,19 @@ export default function ProductForm({ mode, productId, initialData }: ProductFor
     });
 
     if (activeGroupsCount === 0) {
-      setGlobalError("Please select at least one attribute value to generate variant options.");
+      // Generate one Default Variant with empty attributes
+      const defaultVariant = {
+        sku: baseSku || `SNAIL-${watchName.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 4)}-DEFAULT`,
+        name: watchName,
+        price: 1499, // default base price
+        compareAtPrice: 1999,
+        barcode: generateUPCBarcode(),
+        stock: 50,
+        lowStockThreshold: 5,
+        attributeValueIds: [],
+      };
+      replaceVariants([defaultVariant]);
+      setGlobalError(null);
       return;
     }
 
@@ -600,10 +666,14 @@ export default function ProductForm({ mode, productId, initialData }: ProductFor
     setGlobalSuccess(null);
 
     try {
+      const selectedColorIds = selectedColorValues.map(v => v.id);
+      const filteredColorMedia = (data.colorMedia || []).filter(cm => selectedColorIds.includes(cm.attributeValueId));
+
       if (mode === "create") {
         // Transform price inputs (decimal INR) into paise (integer cents)
         const payload = {
           ...data,
+          colorMedia: filteredColorMedia,
           variants: data.variants?.map(v => ({
             ...v,
             price: Math.round(v.price * 100), 
@@ -630,10 +700,14 @@ export default function ProductForm({ mode, productId, initialData }: ProductFor
         window.location.href = "/admin/products";
       } else {
         // PATCH edit details
+        const payload = {
+          ...data,
+          colorMedia: filteredColorMedia,
+        };
         const res = await fetch(`/api/admin/products/${productId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(data)
+          body: JSON.stringify(payload)
         });
 
         if (!res.ok) {
@@ -1377,6 +1451,96 @@ export default function ProductForm({ mode, productId, initialData }: ProductFor
               )}
             </div>
           </div>
+
+          {/* Card 5.5: Colour Media Management */}
+          {selectedColorValues.length > 0 && (
+            <div className="bg-card border border-border/40 rounded-3xl p-6 space-y-4 hover:border-primary/10 transition-all">
+              <div>
+                <h3 className="text-sm font-semibold tracking-wide flex items-center gap-1.5">
+                  <ImageIcon className="w-4.5 h-4.5 text-primary animate-pulse" />
+                  Colour Media Management
+                </h3>
+                <p className="text-[10px] text-muted-foreground font-light mt-0.5">
+                  Select and arrange gallery images for each color.
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                {selectedColorValues.map((colorVal) => {
+                  const colorMediaItems = watchColorMedia.filter(cm => cm.attributeValueId === colorVal.id);
+
+                  return (
+                    <div key={colorVal.id} className="space-y-3 p-4 bg-secondary/10 dark:bg-secondary/5 rounded-2xl border border-border/30">
+                      <div className="flex items-center justify-between border-b border-border/30 pb-2">
+                        <div className="flex items-center gap-2">
+                          {colorVal.colorHex && (
+                            <span 
+                              className="w-3.5 h-3.5 rounded-full border border-black/10 shadow-sm"
+                              style={{ backgroundColor: colorVal.colorHex }}
+                            />
+                          )}
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-primary">
+                            {colorVal.value} ({colorVal.code})
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPickerTarget(`color_${colorVal.id}`);
+                            setShowMediaPicker(true);
+                          }}
+                          className="text-[10px] font-semibold text-primary hover:underline flex items-center gap-1 cursor-pointer"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          Add Images
+                        </button>
+                      </div>
+
+                      {colorMediaItems.length > 0 ? (
+                        <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+                          {colorMediaItems.map((cm) => {
+                            const globalIdx = watchColorMedia.findIndex(item => item.mediaId === cm.mediaId && item.attributeValueId === colorVal.id);
+                            return (
+                              <div key={cm.mediaId} className="relative aspect-square rounded-xl overflow-hidden border border-border group bg-secondary/20">
+                                <img src={cm.url} alt="Colour asset" className="w-full h-full object-cover animate-fade-in" />
+                                {cm.isFeatured && (
+                                  <div className="absolute top-1.5 left-1.5 bg-primary text-primary-foreground text-[8px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
+                                    Featured
+                                  </div>
+                                )}
+                                <div className="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-1.5 transition-all">
+                                  <button
+                                    type="button"
+                                    onClick={() => makeColorFeatured(colorVal.id, globalIdx)}
+                                    className="p-1 bg-background/90 hover:bg-background text-primary rounded-lg transition-colors cursor-pointer"
+                                    title="Make Featured for this Colour"
+                                  >
+                                    <ImageIcon className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => removeColorMedia(globalIdx)}
+                                    className="p-1 bg-background/90 hover:bg-background text-destructive rounded-lg transition-colors cursor-pointer"
+                                    title="Remove"
+                                  >
+                                    <X className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <p className="text-[10px] text-muted-foreground font-light text-center py-4 border border-dashed border-border/50 rounded-xl">
+                          No images selected for {colorVal.value} yet. Fallbacks to default Product Gallery on storefront.
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Card 6: SEO */}
           <div className="bg-card border border-border/40 rounded-3xl p-6 space-y-4 hover:border-primary/10 transition-all">

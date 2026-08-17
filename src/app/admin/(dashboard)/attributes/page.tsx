@@ -43,6 +43,7 @@ interface AttributeValue {
   groupId: string;
   value: string;
   code: string;
+  colorHex?: string | null;
 }
 
 interface AttributeGroup {
@@ -97,9 +98,12 @@ export default function AdminAttributesPage() {
   const [selectedLabel, setSelectedLabel] = useState<AttributeValue | null>(null);
   const [editLabelValue, setEditLabelValue] = useState("");
   const [editLabelCode, setEditLabelCode] = useState("");
+  const [editLabelColorHex, setEditLabelColorHex] = useState("");
 
   // Inline Value Adding State (keyed by groupId)
   const [inlineValueText, setInlineValueText] = useState<Record<string, string>>({});
+  const [inlineValueColorHex, setInlineValueColorHex] = useState<Record<string, string>>({});
+  const [inlineValueCode, setInlineValueCode] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState<string | null>(null); // tracks active operation (like value adding)
 
   const loadAttributes = async () => {
@@ -245,6 +249,16 @@ export default function AdminAttributesPage() {
     const text = inlineValueText[groupId] || "";
     if (!text.trim()) return;
 
+    const group = groups.find(g => g.id === groupId);
+    const isColor = group?.code === "colour";
+    const hex = inlineValueColorHex[groupId] || "";
+    const valCode = inlineValueCode[groupId] || "";
+
+    if (isColor && !hex.trim()) {
+      await customAlert("Validation Error", "Please select a hex color code.");
+      return;
+    }
+
     setIsSubmitting(`value-add-${groupId}`);
     try {
       const res = await fetch(`/api/admin/attributes/${groupId}/values`, {
@@ -252,11 +266,15 @@ export default function AdminAttributesPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           value: text.trim(),
+          code: valCode.trim() || undefined,
+          colorHex: isColor ? hex.trim() : undefined,
         }),
       });
 
       if (res.ok) {
         setInlineValueText(prev => ({ ...prev, [groupId]: "" }));
+        setInlineValueColorHex(prev => ({ ...prev, [groupId]: "" }));
+        setInlineValueCode(prev => ({ ...prev, [groupId]: "" }));
         await loadAttributes();
       } else {
         const err = await res.json();
@@ -274,6 +292,14 @@ export default function AdminAttributesPage() {
     e.preventDefault();
     if (!selectedLabel || !editLabelValue.trim()) return;
 
+    const group = groups.find(g => g.id === selectedLabel.groupId);
+    const isColor = group?.code === "colour";
+
+    if (isColor && !editLabelColorHex.trim()) {
+      await customAlert("Validation Error", "Please provide a hex color code.");
+      return;
+    }
+
     setIsSubmitting(`label-edit-${selectedLabel.id}`);
     try {
       const res = await fetch(`/api/admin/attributes/${selectedLabel.groupId}/values/${selectedLabel.id}`, {
@@ -282,6 +308,7 @@ export default function AdminAttributesPage() {
         body: JSON.stringify({
           value: editLabelValue.trim(),
           code: editLabelCode.trim() || undefined,
+          colorHex: isColor ? editLabelColorHex.trim() : undefined,
         }),
       });
 
@@ -340,6 +367,7 @@ export default function AdminAttributesPage() {
     setSelectedLabel(val);
     setEditLabelValue(val.value);
     setEditLabelCode(val.code);
+    setEditLabelColorHex(val.colorHex || "");
   };
 
   // Compute metrics
@@ -530,6 +558,12 @@ export default function AdminAttributesPage() {
                           onClick={() => openLabelEditModal(val)}
                           title="Click to rename"
                         >
+                          {group.code === "colour" && val.colorHex && (
+                            <span 
+                              className="w-2.5 h-2.5 rounded-full border border-black/10 shrink-0" 
+                              style={{ backgroundColor: val.colorHex }}
+                            />
+                          )}
                           <span>{val.value}</span>
                           <span className="text-[8px] font-mono text-muted-foreground opacity-60">({val.code})</span>
                           <button
@@ -556,29 +590,81 @@ export default function AdminAttributesPage() {
 
               {/* Inline input */}
               <div className="pt-3.5 border-t border-border/20">
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="Quick add label..."
-                    value={inlineValueText[group.id] || ""}
-                    onChange={(e) => setInlineValueText(prev => ({ ...prev, [group.id]: e.target.value }))}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") handleAddValueInline(group.id);
-                    }}
-                    className="flex-1 px-3 py-1.5 bg-secondary/15 border border-border/50 focus:border-primary focus:outline-none rounded-xl text-[10px] font-light text-foreground"
-                  />
-                  <button
-                    onClick={() => handleAddValueInline(group.id)}
-                    disabled={isSubmitting === `value-add-${group.id}`}
-                    className="p-1.5 bg-primary text-primary-foreground hover:bg-primary/90 disabled:bg-muted rounded-xl transition-all cursor-pointer flex items-center justify-center shrink-0"
-                  >
-                    {isSubmitting === `value-add-${group.id}` ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    ) : (
-                      <Plus className="w-3.5 h-3.5" />
-                    )}
-                  </button>
-                </div>
+                {group.code === "colour" ? (
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      <input
+                        type="text"
+                        placeholder="Color name (e.g. Pink)"
+                        value={inlineValueText[group.id] || ""}
+                        onChange={(e) => setInlineValueText(prev => ({ ...prev, [group.id]: e.target.value }))}
+                        className="px-3 py-1.5 bg-secondary/15 border border-border/50 focus:border-primary focus:outline-none rounded-xl text-[10px] font-light text-foreground"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Code slug (e.g. pink)"
+                        value={inlineValueCode[group.id] || ""}
+                        onChange={(e) => setInlineValueCode(prev => ({ ...prev, [group.id]: e.target.value }))}
+                        className="px-3 py-1.5 bg-secondary/15 border border-border/50 focus:border-primary focus:outline-none rounded-xl text-[10px] font-light text-foreground"
+                      />
+                    </div>
+                    <div className="flex gap-2 items-center">
+                      <div className="flex-1 flex gap-1.5 items-center">
+                        <input
+                          type="color"
+                          value={inlineValueColorHex[group.id] || "#ffffff"}
+                          onChange={(e) => setInlineValueColorHex(prev => ({ ...prev, [group.id]: e.target.value }))}
+                          className="w-6 h-6 rounded-lg border border-border/60 cursor-pointer overflow-hidden bg-transparent"
+                        />
+                        <input
+                          type="text"
+                          placeholder="#F6C8BB"
+                          value={inlineValueColorHex[group.id] || ""}
+                          onChange={(e) => setInlineValueColorHex(prev => ({ ...prev, [group.id]: e.target.value }))}
+                          className="flex-1 px-3 py-1.5 bg-secondary/15 border border-border/50 focus:border-primary focus:outline-none rounded-xl text-[10px] font-light text-foreground uppercase"
+                        />
+                      </div>
+                      <button
+                        onClick={() => handleAddValueInline(group.id)}
+                        disabled={isSubmitting === `value-add-${group.id}`}
+                        className="px-3 py-1.5 bg-primary text-primary-foreground hover:bg-primary/90 disabled:bg-muted rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1 text-[10px] font-semibold shrink-0"
+                      >
+                        {isSubmitting === `value-add-${group.id}` ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <>
+                            <Plus className="w-3.5 h-3.5" />
+                            Add Color
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Quick add label..."
+                      value={inlineValueText[group.id] || ""}
+                      onChange={(e) => setInlineValueText(prev => ({ ...prev, [group.id]: e.target.value }))}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") handleAddValueInline(group.id);
+                      }}
+                      className="flex-1 px-3 py-1.5 bg-secondary/15 border border-border/50 focus:border-primary focus:outline-none rounded-xl text-[10px] font-light text-foreground"
+                    />
+                    <button
+                      onClick={() => handleAddValueInline(group.id)}
+                      disabled={isSubmitting === `value-add-${group.id}`}
+                      className="p-1.5 bg-primary text-primary-foreground hover:bg-primary/90 disabled:bg-muted rounded-xl transition-all cursor-pointer flex items-center justify-center shrink-0"
+                    >
+                      {isSubmitting === `value-add-${group.id}` ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Plus className="w-3.5 h-3.5" />
+                      )}
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           ))}
@@ -974,6 +1060,28 @@ export default function AdminAttributesPage() {
                     className="w-full px-3.5 py-2.5 bg-secondary/20 border border-border/70 focus:border-primary focus:outline-none rounded-xl text-xs font-light text-foreground"
                   />
                 </div>
+
+                {selectedLabel.groupId && groups.find(g => g.id === selectedLabel.groupId)?.code === "colour" && (
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Colour Hex *</label>
+                    <div className="flex gap-2 items-center">
+                      <input
+                        type="color"
+                        value={editLabelColorHex || "#ffffff"}
+                        onChange={(e) => setEditLabelColorHex(e.target.value)}
+                        className="w-9 h-9 rounded-xl border border-border/70 cursor-pointer overflow-hidden bg-transparent shrink-0"
+                      />
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. #F6C8BB"
+                        value={editLabelColorHex}
+                        onChange={(e) => setEditLabelColorHex(e.target.value)}
+                        className="w-full px-3.5 py-2.5 bg-secondary/20 border border-border/70 focus:border-primary focus:outline-none rounded-xl text-xs font-light text-foreground uppercase"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="p-6 border-t border-border/40 bg-secondary/10 flex justify-end gap-2.5">
