@@ -24,7 +24,9 @@ import {
   MapPin,
   Truck,
   Calendar,
+  Check,
 } from "lucide-react";
+import { findMatchingVariant } from "@/lib/catalog/variants";
 import { useCartStore } from "@/lib/hooks/use-cart-store";
 import { formatPrice } from "@/lib/utils";
 import { cn } from "@/lib/utils";
@@ -41,6 +43,7 @@ export interface VariantAttribute {
   valueName: string;   // e.g. "Short"
   valueId: string;
   visibleOnPdp?: boolean;
+  colorHex?: string | null;
 }
 
 export interface ProductVariantFull {
@@ -217,7 +220,7 @@ export function ProductActions({
         code: string;
         name: string;
         order: number;
-        values: Map<string, { code: string; name: string; id: string }>;
+        values: Map<string, { code: string; name: string; id: string; colorHex?: string | null }>;
       }
     >();
 
@@ -239,6 +242,7 @@ export function ProductActions({
             code: attr.valueCode,
             name: attr.valueName,
             id:   attr.valueId,
+            colorHex: attr.colorHex,
           });
         }
       }
@@ -270,23 +274,31 @@ export function ProductActions({
 
   /* ----- Resolve selected variant from chosen attribute combination ----- */
   const selectedVariant = useMemo(() => {
-    if (isSimpleProduct) {
-      return variants.find((v) => v.status !== "Archived") ?? null;
+    return findMatchingVariant(variants, selectedAttributes, attributeGroups);
+  }, [variants, selectedAttributes, attributeGroups]);
+
+  const selectedColorVal = useMemo(() => {
+    const colorGroup = attributeGroups.find(g => g.code === "colour" || g.code === "color");
+    if (!colorGroup) return null;
+    const valueCode = selectedAttributes[colorGroup.code];
+    return colorGroup.values.find(v => v.code === valueCode);
+  }, [selectedAttributes, attributeGroups]);
+
+  useEffect(() => {
+    if (selectedColorVal) {
+      window.dispatchEvent(
+        new CustomEvent("product-color-changed", {
+          detail: { colorValueId: selectedColorVal.id },
+        })
+      );
+    } else {
+      window.dispatchEvent(
+        new CustomEvent("product-color-changed", {
+          detail: { colorValueId: null },
+        })
+      );
     }
-    const groupCodes = attributeGroups.map((g) => g.code);
-    if (groupCodes.some((g) => !selectedAttributes[g])) return null;
-    return (
-      variants.find(
-        (v) =>
-          v.status !== "Archived" &&
-          groupCodes.every((g) =>
-            v.attributes.some(
-              (a) => a.groupCode === g && a.valueCode === selectedAttributes[g]
-            )
-          )
-      ) ?? null
-    );
-  }, [variants, selectedAttributes, attributeGroups, isSimpleProduct]);
+  }, [selectedColorVal]);
 
   /* ----- Clamp quantity when variant changes ----- */
   useEffect(() => {
@@ -577,12 +589,71 @@ export function ProductActions({
                   )}
                 </div>
 
-                {/* Value chips */}
                 <div className="flex flex-wrap gap-2">
                   {group.values.map((value) => {
                     const isSelected  = selectedValue === value.code;
                     const available   = isValueAvailable(group.code, value.code);
                     const inStock     = isValueInStock(group.code, value.code);
+                    const isColorGroup = group.code === "colour" || group.code === "color";
+
+                    if (isColorGroup) {
+                      return (
+                        <button
+                          key={value.code}
+                          type="button"
+                          onClick={() =>
+                            available && handleSelectAttribute(group.code, value.code)
+                          }
+                          disabled={!available}
+                          aria-pressed={isSelected}
+                          aria-label={`${group.name}: ${value.name}${
+                            !inStock && available ? " (out of stock)" : ""
+                          }${!available ? " (unavailable)" : ""}`}
+                          title={value.name}
+                          className={cn(
+                            "relative p-1 rounded-full border transition-all duration-200 select-none",
+                            isSelected
+                              ? "border-primary scale-110 ring-2 ring-primary/20"
+                              : "border-border hover:border-primary/60"
+                          )}
+                        >
+                          <span
+                            className={cn(
+                              "block w-8 h-8 rounded-full border border-black/10 relative",
+                              !available && "opacity-45"
+                            )}
+                            style={{ backgroundColor: value.colorHex || "#e2e8f0" }}
+                          >
+                            {isSelected && (
+                              <span className="absolute inset-0 flex items-center justify-center">
+                                <Check className="w-4 h-4 text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]" />
+                              </span>
+                            )}
+                          </span>
+
+                          {/* Diagonal line for out of stock but available */}
+                          {available && !inStock && (
+                            <span className="absolute inset-0 overflow-hidden rounded-full pointer-events-none">
+                              <svg
+                                className="absolute inset-0 w-full h-full"
+                                viewBox="0 0 100 100"
+                                preserveAspectRatio="none"
+                              >
+                                <line
+                                  x1="15"
+                                  y1="85"
+                                  x2="85"
+                                  y2="15"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  className="text-rose-500"
+                                />
+                              </svg>
+                            </span>
+                          )}
+                        </button>
+                      );
+                    }
 
                     return (
                       <button

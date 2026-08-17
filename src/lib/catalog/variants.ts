@@ -135,3 +135,39 @@ export function generateVariants(
     };
   });
 }
+
+export interface BaseVariantAttribute {
+  groupCode: string;
+  valueCode: string;
+}
+
+export interface BaseVariant {
+  id: string;
+  status: string;
+  attributes: BaseVariantAttribute[];
+}
+
+export function findMatchingVariant<T extends BaseVariant>(
+  variants: T[],
+  selectedAttributes: Record<string, string>,
+  attributeGroups: Array<{ code: string }>
+): T | null {
+  if (attributeGroups.length === 0) {
+    return variants.find((v) => v.status !== "Archived") ?? null;
+  }
+
+  const groupCodes = attributeGroups.map((g) => g.code);
+  if (groupCodes.some((g) => !selectedAttributes[g])) return null;
+
+  return (
+    variants.find(
+      (v) =>
+        v.status !== "Archived" &&
+        groupCodes.every((g) =>
+          v.attributes.some(
+            (a) => a.groupCode === g && a.valueCode === selectedAttributes[g]
+          )
+        )
+    ) ?? null
+  );
+}

@@ -1497,7 +1497,7 @@ export default function ProductForm({ mode, productId, initialData }: ProductFor
                       </div>
 
                       {colorMediaItems.length > 0 ? (
-                        <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+                        <div className="grid grid-cols-3 gap-2">
                           {colorMediaItems.map((cm) => {
                             const globalIdx = watchColorMedia.findIndex(item => item.mediaId === cm.mediaId && item.attributeValueId === colorVal.id);
                             return (

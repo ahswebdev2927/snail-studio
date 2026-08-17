@@ -5,6 +5,7 @@ import React, {
   useCallback,
   useEffect,
   useRef,
+  useMemo,
 } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
@@ -34,6 +35,7 @@ export interface GalleryMediaItem {
   height?: number | null;
   isFeatured?: boolean;
   sortOrder?: number;
+  colorValueId?: string | null;
 }
 
 interface ProductGalleryProps {
@@ -245,16 +247,45 @@ function Lightbox({
  * Main Gallery Component
  * --------------------------------------------------------------------- */
 export function ProductGallery({ media, productName }: ProductGalleryProps) {
-  // Sort: featured first, then by sortOrder
-  const sortedMedia = [...media].sort((a, b) => {
-    if (a.isFeatured && !b.isFeatured) return -1;
-    if (!a.isFeatured && b.isFeatured) return 1;
-    return (a.sortOrder ?? 0) - (b.sortOrder ?? 0);
-  });
-
+  const [selectedColorId, setSelectedColorId] = useState<string | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
+
+  useEffect(() => {
+    const handleColorChange = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      setSelectedColorId(customEvent.detail.colorValueId);
+    };
+    window.addEventListener("product-color-changed", handleColorChange);
+    return () => window.removeEventListener("product-color-changed", handleColorChange);
+  }, []);
+
+  const resolvedMedia = useMemo(() => {
+    const defaultMedia = media.filter(item => item.colorValueId === null);
+    if (selectedColorId) {
+      const colorSpecific = media.filter(item => item.colorValueId === selectedColorId);
+      if (colorSpecific.length > 0) {
+        const colorMediaIds = new Set(colorSpecific.map(item => item.id));
+        const filteredDefault = defaultMedia.filter(item => !colorMediaIds.has(item.id));
+        return [...colorSpecific, ...filteredDefault];
+      }
+    }
+    return defaultMedia;
+  }, [media, selectedColorId]);
+
+  const sortedMedia = useMemo(() => {
+    return [...resolvedMedia].sort((a, b) => {
+      if (a.isFeatured && !b.isFeatured) return -1;
+      if (!a.isFeatured && b.isFeatured) return 1;
+      return (a.sortOrder ?? 0) - (b.sortOrder ?? 0);
+    });
+  }, [resolvedMedia]);
+
+  // Reset active index when media list changes
+  useEffect(() => {
+    setActiveIndex(0);
+  }, [sortedMedia]);
 
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);

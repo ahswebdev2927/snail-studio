@@ -75,6 +75,12 @@ const getCachedProductBySlug = cache(async (slug: string) => {
         with:    { media: true },
         orderBy: (pm, { asc }) => [asc(pm.sortOrder)],
       },
+      productAttributeMedia: {
+        with: {
+          media: true,
+        },
+        orderBy: (pam, { asc }) => [asc(pam.sortOrder)],
+      },
     },
   });
 });
@@ -307,7 +313,7 @@ export default async function ProductPage({
     b.items.some((item) => item.productId === product.id)
   );
   const rawBundles = relevantBundles as any;
-  const galleryMedia: GalleryMediaItem[] = product.media
+  const defaultMedia = product.media
     .filter((pm) => pm.media)
     .map((pm) => ({
       id:           pm.media.id,
@@ -320,7 +326,26 @@ export default async function ProductPage({
       height:       pm.media.height,
       isFeatured:   pm.isFeatured,
       sortOrder:    pm.sortOrder,
+      colorValueId: null,
     }));
+
+  const colorMedia = (product.productAttributeMedia || [])
+    .filter((pam) => pam.media)
+    .map((pam) => ({
+      id:           pam.media.id,
+      url:          pam.media.url,
+      publicId:     pam.media.publicId,
+      resourceType: pam.media.resourceType,
+      format:       pam.media.format,
+      altText:      pam.media.altText,
+      width:        pam.media.width,
+      height:       pam.media.height,
+      isFeatured:   pam.isFeatured,
+      sortOrder:    pam.sortOrder,
+      colorValueId: pam.attributeValueId,
+    }));
+
+  const galleryMedia = [...defaultMedia, ...colorMedia];
 
   /* ----- 4. Shape full variants (with attribute details for selector) ----- */
   const fullVariants: ProductVariantFull[] = product.variants
@@ -341,6 +366,7 @@ export default async function ProductPage({
         valueName: a.attributeValue.value,
         valueId:   a.attributeValue.id,
         visibleOnPdp: a.attributeValue.group.visibleOnPdp,
+        colorHex:  a.attributeValue.colorHex,
       })),
     }));
 
