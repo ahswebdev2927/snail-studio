@@ -110,6 +110,7 @@ interface AttributeValue {
   groupId: string;
   value: string;
   code: string;
+  colorHex?: string | null;
 }
 
 interface AttributeGroup {
