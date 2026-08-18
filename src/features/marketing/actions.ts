@@ -8,6 +8,7 @@ import { redirect } from "next/navigation";
 import { nanoid } from "nanoid";
 import { executeCampaignRun, personalizeTemplate } from "@/services/email/scheduler.service";
 import { sendResendEmail } from "@/services/email/resend.service";
+import { getAbsoluteUrl } from "@/lib/seo";
 
 export interface CreateCampaignInput {
   name: string;
@@ -151,7 +152,7 @@ export async function sendTargetedWishlistEmailAction(
             }
 
             <p style="text-align: center; margin: 30px 0;">
-              <a href="${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/shop" style="background-color: #A95423; color: white; padding: 12px 30px; border-radius: 25px; text-decoration: none; font-weight: bold; font-size: 14px;">Return & Order Now</a>
+              <a href="${getAbsoluteUrl("/shop")}" style="background-color: #A95423; color: white; padding: 12px 30px; border-radius: 25px; text-decoration: none; font-weight: bold; font-size: 14px;">Return & Order Now</a>
             </p>
             <p style="font-size: 12px; color: #666666; text-align: center; margin-top: 40px; border-top: 1px solid #E7DDD7; padding-top: 15px;">
               Snail Studios &bull; Premium Reusable Handcrafted Press-On Nails
@@ -286,7 +287,7 @@ export async function sendTargetedCartAbandonedEmailAction(
             }
 
             <p style="text-align: center; margin: 30px 0;">
-              <a href="${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/cart" style="background-color: #A95423; color: white; padding: 12px 30px; border-radius: 25px; text-decoration: none; font-weight: bold; font-size: 14px;">Complete My Checkout</a>
+              <a href="${getAbsoluteUrl("/cart")}" style="background-color: #A95423; color: white; padding: 12px 30px; border-radius: 25px; text-decoration: none; font-weight: bold; font-size: 14px;">Complete My Checkout</a>
             </p>
             <p style="font-size: 12px; color: #666666; text-align: center; margin-top: 40px; border-top: 1px solid #E7DDD7; padding-top: 15px;">
               Snail Studios &bull; Premium Reusable Handcrafted Press-On Nails

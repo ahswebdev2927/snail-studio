@@ -1,3 +1,5 @@
+import { getAbsoluteUrl } from "@/lib/seo";
+
 /**
  * Order Status Update HTML email template
  */
@@ -284,7 +286,7 @@ export function getOrderStatusUpdateTemplate(params: OrderStatusUpdateParams): s
           </div>
 
           <div class="btn-container">
-            <a href="http://localhost:3000/shop/orders/${params.orderId}" class="btn">View Order Dashboard</a>
+            <a href="${getAbsoluteUrl(`/shop/orders/${params.orderId}`)}" class="btn">View Order Dashboard</a>
           </div>
         </td>
       </tr>

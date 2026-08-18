@@ -1,3 +1,5 @@
+import { getAbsoluteUrl } from "@/lib/seo";
+
 /**
  * SMTP connection test HTML email template
  */
@@ -133,6 +135,24 @@ export function getTestEmailTemplate(senderEmail: string): string {
       letter-spacing: 0.05em;
       margin-top: 10px;
     }
+    .btn-container {
+      text-align: center;
+      margin-top: 25px;
+      margin-bottom: 25px;
+    }
+    .btn {
+      display: inline-block;
+      padding: 12px 30px;
+      background: #A95423;
+      color: #ffffff !important;
+      text-decoration: none;
+      border-radius: 14px;
+      font-size: 12px;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      box-shadow: 0 5px 15px rgba(169, 84, 35, 0.2);
+    }
     .footer {
       padding: 30px;
       background-color: #FEFFF6;
@@ -174,6 +194,10 @@ export function getTestEmailTemplate(senderEmail: string): string {
             <center>
               <span class="badge">Connection Active</span>
             </center>
+          </div>
+          
+          <div class="btn-container">
+            <a href="${getAbsoluteUrl('/')}" class="btn">Visit Website</a>
           </div>
           
           <p style="margin-bottom: 0; font-size: 12px; color: #8c8585;">You can close this window. This is a system-generated message to verify your settings.</p>
@@ -327,6 +351,24 @@ export function getResendTestEmailTemplate(senderEmail: string): string {
       letter-spacing: 0.05em;
       margin-top: 10px;
     }
+    .btn-container {
+      text-align: center;
+      margin-top: 25px;
+      margin-bottom: 25px;
+    }
+    .btn {
+      display: inline-block;
+      padding: 12px 30px;
+      background: #A95423;
+      color: #ffffff !important;
+      text-decoration: none;
+      border-radius: 14px;
+      font-size: 12px;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      box-shadow: 0 5px 15px rgba(169, 84, 35, 0.2);
+    }
     .footer {
       padding: 30px;
       background-color: #FEFFF6;
@@ -368,6 +410,10 @@ export function getResendTestEmailTemplate(senderEmail: string): string {
             <center>
               <span class="badge">API Active</span>
             </center>
+          </div>
+          
+          <div class="btn-container">
+            <a href="${getAbsoluteUrl('/')}" class="btn">Visit Website</a>
           </div>
           
           <p style="margin-bottom: 0; font-size: 12px; color: #8c8585;">You can close this window. This is a system-generated message to verify your settings.</p>

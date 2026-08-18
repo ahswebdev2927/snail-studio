@@ -1,3 +1,5 @@
+import { getAbsoluteUrl } from "@/lib/seo";
+
 /**
  * Order Confirmation HTML email template
  */
@@ -354,7 +356,7 @@ export function getOrderConfirmationTemplate(params: OrderConfirmationParams): s
           </table>
 
           <div class="btn-container">
-            <a href="http://localhost:3000/shop/orders/${params.orderId}" class="btn">Track Your Order</a>
+            <a href="${getAbsoluteUrl(`/shop/orders/${params.orderId}`)}" class="btn">Track Your Order</a>
           </div>
         </td>
       </tr>

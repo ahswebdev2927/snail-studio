@@ -18,6 +18,7 @@ import {
 import { eq, and, lte, inArray, lt, isNotNull, exists, not, gte, or, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { sendResendBatch, sendResendEmail } from "./resend.service";
+import { getAbsoluteUrl } from "@/lib/seo";
 
 /**
  * Resolves the audience list based on the campaign's segment configuration.
@@ -336,7 +337,7 @@ export async function personalizeTemplate(
   personalized = personalized.replaceAll("{{favorite_category}}", "Handcrafted Press-Ons");
 
   // Substitute Unsubscribe Link
-  const unsubUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/unsubscribe?email=${encodeURIComponent(recipientEmail)}`;
+  const unsubUrl = getAbsoluteUrl(`/unsubscribe?email=${encodeURIComponent(recipientEmail)}`);
   personalized = personalized.replaceAll("{{unsubscribe_url}}", unsubUrl);
 
   // Substitute Wishlist Products
@@ -358,7 +359,7 @@ export async function personalizeTemplate(
         const html = prodList
           .map(
             (p) =>
-              `<div style="margin: 10px 0;"><a href="/products/${p.id}" style="color: #A95423; font-weight: bold;">${p.name}</a> - ${p.description || "Artisan nails"}</div>`
+              `<div style="margin: 10px 0;"><a href="${getAbsoluteUrl(`/products/${p.id}`)}" style="color: #A95423; font-weight: bold;">${p.name}</a> - ${p.description || "Artisan nails"}</div>`
           )
           .join("");
         personalized = personalized.replaceAll("{{wishlist_products}}", html);
@@ -404,7 +405,7 @@ export async function personalizeTemplate(
         (p) =>
           `<div style="display: inline-block; width: 140px; margin: 10px; text-align: center;">
             <p style="margin: 5px 0 0 0; font-size: 13px; font-weight: bold;">${p.name}</p>
-            <a href="/products/${p.id}" style="font-size: 11px; color: #A95423; text-decoration: none;">View Detail &rarr;</a>
+            <a href="${getAbsoluteUrl(`/products/${p.id}`)}" style="font-size: 11px; color: #A95423; text-decoration: none;">View Detail &rarr;</a>
           </div>`
       )
       .join("");

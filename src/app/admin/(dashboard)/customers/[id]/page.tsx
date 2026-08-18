@@ -145,6 +145,14 @@ interface Customer360Payload {
 
 const PREDEFINED_TAGS = ["VIP", "Influencer", "Wholesale", "Staff", "Tester"];
 
+const getSiteUrl = () => {
+  let url = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+  if (url && !/^https?:\/\//i.test(url)) {
+    url = `https://${url}`;
+  }
+  return url.replace(/\/$/, "");
+};
+
 const DEFAULT_WISHLIST_HTML = `<html>
   <body style="font-family: Arial, sans-serif; color: #222222; background-color: #FEFFF6; padding: 20px;">
     <div style="max-width: 600px; margin: 0 auto; background-color: #FFFFFF; border: 1px solid #E7DDD7; border-radius: 15px; padding: 30px; box-shadow: 0 4px 10px rgba(0,0,0,0.02);">
@@ -160,7 +168,7 @@ const DEFAULT_WISHLIST_HTML = `<html>
       {{coupon_block}}
 
       <p style="text-align: center; margin: 30px 0;">
-        <a href="http://localhost:3000/shop" style="background-color: #A95423; color: white; padding: 12px 30px; border-radius: 25px; text-decoration: none; font-weight: bold; font-size: 14px;">Return & Order Now</a>
+        <a href="${getSiteUrl()}/shop" style="background-color: #A95423; color: white; padding: 12px 30px; border-radius: 25px; text-decoration: none; font-weight: bold; font-size: 14px;">Return & Order Now</a>
       </p>
       <p style="font-size: 12px; color: #666666; text-align: center; margin-top: 40px; border-top: 1px solid #E7DDD7; padding-top: 15px;">
         Snail Studios &bull; Premium Reusable Handcrafted Press-On Nails
@@ -184,7 +192,7 @@ const DEFAULT_CART_HTML = `<html>
       {{coupon_block}}
 
       <p style="text-align: center; margin: 30px 0;">
-        <a href="http://localhost:3000/cart" style="background-color: #A95423; color: white; padding: 12px 30px; border-radius: 25px; text-decoration: none; font-weight: bold; font-size: 14px;">Complete My Checkout</a>
+        <a href="${getSiteUrl()}/cart" style="background-color: #A95423; color: white; padding: 12px 30px; border-radius: 25px; text-decoration: none; font-weight: bold; font-size: 14px;">Complete My Checkout</a>
       </p>
       <p style="font-size: 12px; color: #666666; text-align: center; margin-top: 40px; border-top: 1px solid #E7DDD7; padding-top: 15px;">
         Snail Studios &bull; Premium Reusable Handcrafted Press-On Nails
