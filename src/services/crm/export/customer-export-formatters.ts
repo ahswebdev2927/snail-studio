@@ -39,6 +39,27 @@ export function formatDate(date: Date | string | number | null | undefined): str
   }); // returns e.g. "19 Aug 2026"
 }
 
+export function formatPhoneNumber(value: any): string {
+  if (!value) return "";
+  const cleaned = String(value).replace(/\D/g, "");
+  if (cleaned.length === 10) {
+    return `+91 ${cleaned.slice(0, 3)} ${cleaned.slice(3, 6)} ${cleaned.slice(6)}`;
+  }
+  if (cleaned.length === 12 && cleaned.startsWith("91")) {
+    const last10 = cleaned.slice(2);
+    return `+91 ${last10.slice(0, 3)} ${last10.slice(3, 6)} ${last10.slice(6)}`;
+  }
+  if (cleaned.length > 10) {
+    const countryCodeLength = cleaned.length - 10;
+    const countryCode = cleaned.slice(0, countryCodeLength);
+    const last10 = cleaned.slice(countryCodeLength);
+    return `+${countryCode} ${last10.slice(0, 3)} ${last10.slice(3, 6)} ${last10.slice(6)}`;
+  }
+  const originalStr = String(value).trim();
+  if (originalStr.startsWith("+")) return originalStr;
+  return originalStr ? `+${originalStr}` : "";
+}
+
 export function formatExportField(key: string, value: any): string {
   if (value === null || value === undefined) {
     return "";
@@ -51,6 +72,10 @@ export function formatExportField(key: string, value: any): string {
 
   if (["createdAt", "updatedAt", "lastLoginAt", "firstOrderDate", "lastOrderDate"].includes(key)) {
     return formatDate(value);
+  }
+
+  if (key === "phoneNumber" || key === "whatsappNumber") {
+    return formatPhoneNumber(value);
   }
 
   if (key === "marketingConsent") {

@@ -23,7 +23,9 @@ async function runTests() {
     { key: "createdAt", val: 1776991200, expected: "24 Apr 2026" }, // 2026-04-24
     { key: "marketingConsent", val: true, expected: "Yes" },
     { key: "accountStatus", val: false, expected: "Banned" },
-    { key: "name", val: "Nail Enthusiast", expected: "Nail Enthusiast" }
+    { key: "name", val: "Nail Enthusiast", expected: "Nail Enthusiast" },
+    { key: "phoneNumber", val: "918888899999", expected: "+91 888 889 9999" },
+    { key: "whatsappNumber", val: "8888899999", expected: "+91 888 889 9999" }
   ];
 
   for (const t of tests) {
