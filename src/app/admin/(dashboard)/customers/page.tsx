@@ -14,7 +14,8 @@ import {
   Award,
   MessageSquare,
   ChevronRight,
-  ChevronLeft
+  ChevronLeft,
+  Download
 } from "lucide-react";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 
@@ -56,6 +57,22 @@ export default function AdminCustomersPage() {
   const [limit, setLimit] = useState(25);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
+  
+  const [selectedCustomerIds, setSelectedCustomerIds] = useState<string[]>([]);
+
+  const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.checked) {
+      setSelectedCustomerIds(customers.map(c => c.id));
+    } else {
+      setSelectedCustomerIds([]);
+    }
+  };
+
+  const handleSelectCustomer = (id: string) => {
+    setSelectedCustomerIds(prev => 
+      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+    );
+  };
 
   // Parse initial query params on mount
   useEffect(() => {
@@ -107,6 +124,7 @@ export default function AdminCustomersPage() {
       if (res.ok) {
         const data = await res.json();
         setCustomers(data.customers || []);
+        setSelectedCustomerIds([]); // Reset selection when query results change
         if (data.segmentCounts) {
           setSegmentCounts(data.segmentCounts);
         }
@@ -161,6 +179,28 @@ export default function AdminCustomersPage() {
           <p className="text-xs text-muted-foreground font-light">
             Monitor client shopper registrations, lifetime orders, behavioral segmentations, and user profiles.
           </p>
+        </div>
+        
+        <div className="flex items-center gap-3 relative z-10 shrink-0">
+          {selectedCustomerIds.length > 0 && (
+            <Link
+              prefetch={false}
+              href={`/admin/customers/export?mode=selected&ids=${selectedCustomerIds.join(",")}`}
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-800 bg-amber-500/10 hover:bg-amber-500/20 px-4 py-2.5 rounded-full border border-amber-500/20 transition-all cursor-pointer dark:text-amber-300 dark:bg-amber-500/20 dark:hover:bg-amber-500/30"
+            >
+              <Users className="w-4 h-4" />
+              Export Selected ({selectedCustomerIds.length})
+            </Link>
+          )}
+          
+          <Link
+            prefetch={false}
+            href="/admin/customers/export"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:text-primary-foreground hover:bg-primary px-4 py-2.5 rounded-full border border-primary/20 hover:border-primary transition-all cursor-pointer"
+          >
+            <Download className="w-4 h-4" />
+            Export Customers
+          </Link>
         </div>
       </div>
 
@@ -330,6 +370,14 @@ export default function AdminCustomersPage() {
             <table className="w-full text-left text-xs font-light border-collapse">
               <thead>
                 <tr className="border-b border-border/40 text-muted-foreground uppercase text-[9px] font-bold tracking-wider bg-secondary/10">
+                  <th className="py-3 px-5 w-10">
+                    <input
+                      type="checkbox"
+                      checked={customers.length > 0 && selectedCustomerIds.length === customers.length}
+                      onChange={handleSelectAll}
+                      className="rounded border-border/60 text-primary focus:ring-primary focus:ring-offset-0 cursor-pointer"
+                    />
+                  </th>
                   <th className="py-3 px-5">Shopper Profile</th>
                   <th className="py-3 px-5">Contact Details</th>
                   <th className="py-3 px-5">WhatsApp</th>
@@ -351,6 +399,14 @@ export default function AdminCustomersPage() {
                       key={c.id} 
                       className="border-b border-border/10 last:border-0 hover:bg-secondary/15 transition-all"
                     >
+                      <td className="py-4 px-5 w-10">
+                        <input
+                          type="checkbox"
+                          checked={selectedCustomerIds.includes(c.id)}
+                          onChange={() => handleSelectCustomer(c.id)}
+                          className="rounded border-border/60 text-primary focus:ring-primary focus:ring-offset-0 cursor-pointer"
+                        />
+                      </td>
                       <td className="py-4 px-5">
                         <div className="flex items-center gap-3">
                           {c.image ? (
