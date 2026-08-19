@@ -123,6 +123,31 @@ async function runTests() {
     process.exit(1);
   }
 
+  // Test 6: Selected IDs Mode
+  console.log("\n[Test 6] Fetching Preview in Selected Mode...");
+  try {
+    const preview = await getExportPreview({
+      fields: ["customerId", "name", "email"],
+      filters: {
+        operator: "AND",
+        conditions: []
+      },
+      selection: {
+        mode: "selected",
+        selectedIds: ["usr_IcETEf7DFh"]
+      },
+      page: 1,
+      pageSize: 5
+    });
+
+    console.log(`Successfully fetched selected preview! Matches: ${preview.pagination.total}`);
+    console.log("Matches rows:", preview.rows);
+    console.log("✅ Selected Mode Query executed successfully.");
+  } catch (err) {
+    console.error("❌ Selected Mode Query failed:", err);
+    process.exit(1);
+  }
+
   console.log("\n=== ALL CRM EXPORT BACKEND TESTS PASSED ===");
 }
 

@@ -94,16 +94,19 @@ export default function CustomerExportBuilderPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
+  const modeParam = searchParams.get("mode");
+  const idsParam = searchParams.get("ids");
+
   // Sync state if URL query parameters change (e.g. from parent redirection)
   useEffect(() => {
-    const mode = searchParams.get("mode") as "all" | "filtered" | "selected";
-    const ids = searchParams.get("ids") ? searchParams.get("ids")!.split(",") : [];
+    const mode = modeParam as "all" | "filtered" | "selected";
+    const ids = idsParam ? idsParam.split(",") : [];
     if (mode) setSelectionMode(mode);
     if (ids.length > 0) {
       setSelectedIds(ids);
       setSelectionMode("selected");
     }
-  }, [searchParams]);
+  }, [modeParam, idsParam]);
 
   // Load Preview from Database
   const fetchPreview = async () => {
@@ -418,9 +421,11 @@ export default function CustomerExportBuilderPage() {
             <div className="space-y-3">
               {[
                 { value: "all", label: "All Customers", desc: "Export complete active shopper database", icon: Users },
-                { value: "filtered", label: "Filtered Customers", desc: "Apply custom rules and segment filters", icon: Sliders },
-                { value: "selected", label: "Selected Customers", desc: selectedIds.length > 0 ? `${selectedIds.length} checked from list` : "Check specific customer rows first", icon: CheckCircle }
-              ].map(item => {
+                { value: "filtered", label: "Filtered Customers", desc: "Apply custom rules and segment filters", icon: Sliders, show: selectedIds.length === 0 },
+                { value: "selected", label: "Selected Customers", desc: `${selectedIds.length} checked from list`, icon: CheckCircle, show: selectedIds.length > 0 }
+              ]
+              .filter(item => item.show !== false)
+              .map(item => {
                 const isActive = selectionMode === item.value;
                 return (
                   <button

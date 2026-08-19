@@ -152,13 +152,41 @@ async function translateConditionToSql(subqueryAlias: any, cond: CustomerFilterC
     return null;
   }
 
-  // 2. Handle monetary unit conversions (Rupees to paise)
+  // 2. Handle numeric/monetary conversions to numbers for SQLite type affinity safety
+  const numericFields = [
+    "totalOrders",
+    "completedOrders",
+    "cancelledOrders",
+    "wishlistCount",
+    "recentlyViewedCount",
+    "searchCount",
+    "couponsUsed",
+    "launchSubscriptions"
+  ];
+
   if (field === "lifetimeValue" || field === "averageOrderValue") {
-    if (typeof value === "string") {
-      const numericString = value.replace(/[₹$,]/g, "").trim();
-      value = Math.round(Number(numericString) * 100);
-    } else if (typeof value === "number") {
-      value = Math.round(value * 100);
+    if (Array.isArray(value)) {
+      value = value.map((v: any) => {
+        const str = String(v).replace(/[₹$,]/g, "").trim();
+        return Math.round(Number(str) * 100);
+      });
+    } else {
+      if (typeof value === "string") {
+        const numericString = value.replace(/[₹$,]/g, "").trim();
+        value = Math.round(Number(numericString) * 100);
+      } else if (typeof value === "number") {
+        value = Math.round(value * 100);
+      }
+    }
+  } else if (numericFields.includes(field)) {
+    if (Array.isArray(value)) {
+      value = value.map((v: any) => {
+        const num = Number(v);
+        return isNaN(num) ? 0 : num;
+      });
+    } else {
+      const num = Number(value);
+      value = isNaN(num) ? 0 : num;
     }
   }
 
