@@ -54,9 +54,9 @@ export async function checkDelhiveryServiceability(
     }
 
     const pincodeObj = codes[0]?.postal_code;
-    const remark = pincodeObj?.remark || "";
+    const remark = pincodeObj?.remarks || pincodeObj?.remark || "";
     const isEmbargo = remark.toLowerCase().includes("embargo");
-    const isPrepaidServiceable = pincodeObj?.prepaid === "Y";
+    const isPrepaidServiceable = pincodeObj?.pre_paid === "Y" || pincodeObj?.prepaid === "Y";
 
     if (isEmbargo || !isPrepaidServiceable) {
       return {
@@ -82,7 +82,9 @@ export async function checkDelhiveryServiceability(
 
       if (tatRes.ok) {
         const tatData = await tatRes.json();
-        if (typeof tatData?.tat === "number") {
+        if (tatData?.success && typeof tatData?.data?.tat === "number") {
+          estimatedDeliveryDays = tatData.data.tat;
+        } else if (typeof tatData?.tat === "number") {
           estimatedDeliveryDays = tatData.tat;
         }
       }
