@@ -85,12 +85,43 @@ export const refunds = sqliteTable('refunds', {
 export const shipments = sqliteTable('shipments', {
   id: text('id').primaryKey(),
   orderId: text('order_id').notNull().references(() => orders.id, { onDelete: 'cascade' }),
-  carrier: text('carrier').notNull(), // e.g. "Delhivery", "BlueDart"
+  carrier: text('carrier').notNull().default('Delhivery'),
+
+  // Provider Abstraction Fields
+  provider: text('provider', { enum: ['delhivery', 'external'] }).notNull().default('delhivery'),
+  courierOrderId: text('courier_order_id').notNull(),
+  attemptNumber: integer('attempt_number').notNull().default(1),
+
+  // Waybill & Tracking Fields
+  waybill: text('waybill'),
   trackingNumber: text('tracking_number').notNull(),
-  status: text('status').notNull(),
+  trackingUrl: text('tracking_url'),
+
+  // Status & Timestamps
+  status: text('status', {
+    enum: ['pending', 'manifested', 'ready_to_ship', 'pickup_scheduled', 'picked_up', 'in_transit', 'out_for_delivery', 'delivered', 'ndr', 'cancelled', 'rto']
+  }).notNull().default('pending'),
+
+  // Pincode Serviceability Log
+  serviceabilityStatus: text('serviceability_status', { enum: ['serviceable', 'non_serviceable', 'unknown'] }).default('unknown'),
+  serviceabilityCheckedAt: integer('serviceability_checked_at', { mode: 'timestamp' }),
+
+  // External Courier Overrides
+  isExternal: integer('is_external', { mode: 'boolean' }).notNull().default(false),
+  externalCourierName: text('external_courier_name'),
+  externalMetadata: text('external_metadata'),
+
   shippedAt: integer('shipped_at', { mode: 'timestamp' }),
-  estimatedDeliveryAt: integer('estimated_delivery_at', { mode: 'timestamp' })
-});
+  estimatedDeliveryAt: integer('estimated_delivery_at', { mode: 'timestamp' }),
+  cancelledAt: integer('cancelled_at', { mode: 'timestamp' }),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)
+}, (table) => [
+  index('shipments_order_id_idx').on(table.orderId),
+  index('shipments_courier_order_id_idx').on(table.courierOrderId),
+  index('shipments_waybill_idx').on(table.waybill),
+  index('shipments_status_idx').on(table.status),
+]);
 
 export const trackingEvents = sqliteTable('tracking_events', {
   id: text('id').primaryKey(),
