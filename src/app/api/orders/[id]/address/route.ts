@@ -235,9 +235,13 @@ export async function POST(
         newShipmentId = `ship_${nanoid(10)}`;
         const newTrackingNumber = `TRK${nanoid(10).toUpperCase()}`;
 
+        const nextAttempt = (activeShipment.attemptNumber || 1) + 1;
         await tx.insert(shipments).values({
           id: newShipmentId,
           orderId,
+          provider: (activeShipment.provider || "delhivery") as "delhivery" | "external",
+          courierOrderId: `${orderId}-R${nextAttempt - 1}`,
+          attemptNumber: nextAttempt,
           carrier: activeShipment.carrier,
           trackingNumber: newTrackingNumber,
           status: "ready_to_ship",

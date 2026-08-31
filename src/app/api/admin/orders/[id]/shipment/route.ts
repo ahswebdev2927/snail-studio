@@ -135,6 +135,9 @@ export async function POST(
       await tx.insert(shipments).values({
         id: shipmentId,
         orderId,
+        provider: "delhivery",
+        courierOrderId: orderId,
+        attemptNumber: 1,
         carrier,
         trackingNumber,
         status: "ready_to_ship",
@@ -237,7 +240,23 @@ export async function PATCH(
     const now = new Date();
 
     // 1. Update the shipment status
-    const updateFields: { status: string; updatedAt: Date; shippedAt?: Date } = { status, updatedAt: now };
+    const statusMap: Record<string, "pending" | "ready_to_ship" | "in_transit" | "out_for_delivery" | "delivered" | "ndr" | "cancelled" | "rto" | "manifested" | "pickup_scheduled" | "picked_up"> = {
+      pickup_requested: "pickup_scheduled",
+      pickup_scheduled: "pickup_scheduled",
+      pickup_completed: "picked_up",
+      in_transit: "in_transit",
+      reached_destination_hub: "in_transit",
+      out_for_delivery: "out_for_delivery",
+      delivered: "delivered",
+      delivery_attempted: "ndr",
+      delivery_failed: "ndr",
+      rto_initiated: "rto",
+      rto_in_transit: "rto",
+      rto_delivered: "rto",
+      cancelled: "cancelled",
+    };
+    const targetStatus = statusMap[status] || "in_transit";
+    const updateFields: { status: typeof targetStatus; updatedAt: Date; shippedAt?: Date } = { status: targetStatus, updatedAt: now };
     
     // If status transitioned to pickup_completed or delivered, set relevant timestamps
     if (status === "pickup_completed" && !shipmentRecord.shippedAt) {
