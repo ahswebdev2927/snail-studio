@@ -26,12 +26,24 @@ export interface CreateShipmentRequest {
     state: string;
     postalCode: string;
     country: string;
+    addressType?: string;
   };
   orderDetails: {
     totalAmountPaise: number;
     paymentMode: 'Prepaid'; // Always Prepaid
     items: Array<{ name: string; sku: string; quantity: number; pricePaise: number }>;
     totalWeightGrams: number;
+    shippingMode?: 'Surface' | 'Express';
+  };
+  adminOptions?: {
+    sellerInvoiceNumber?: string;
+    weightGrams?: number;
+    lengthCm?: number;
+    widthCm?: number;
+    heightCm?: number;
+    fragileShipment?: boolean;
+    plasticPackaging?: boolean;
+    transportSpeed?: 'D' | 'F';
   };
 }
 
