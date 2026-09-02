@@ -38,19 +38,19 @@ export async function cancelDelhiveryShipment(
 
   const resData = await response.json();
 
-  // Validate cancellation response
-  const isSuccess = resData?.status === true || resData?.success === true || resData?.status === "Success" || resData?.status === "Canceled";
+  // Validate cancellation response matching live Delhivery response schema
+  const isSuccess = resData?.status === true || resData?.status === "Success" || resData?.status === "Canceled";
 
-  if (!isSuccess && resData?.status === false) {
-    const errorMsg = resData?.rmk || resData?.error || resData?.message || "Delhivery rejected cancellation request";
+  if (!isSuccess || resData?.status === "Failure" || resData?.error) {
+    const errorMsg = resData?.error || resData?.rmk || resData?.remark || resData?.message || "Delhivery rejected cancellation request.";
     return {
       success: false,
-      message: errorMsg,
+      message: typeof errorMsg === "string" ? errorMsg : "Delhivery cancellation failed",
     };
   }
 
   return {
     success: true,
-    message: resData?.rmk || resData?.message || `Shipment ${cleanWaybill} successfully cancelled in Delhivery.`,
+    message: resData?.remark || resData?.rmk || resData?.message || `Shipment ${cleanWaybill} successfully cancelled in Delhivery.`,
   };
 }
