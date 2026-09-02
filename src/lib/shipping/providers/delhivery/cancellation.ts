@@ -1,5 +1,6 @@
 import { CancelShipmentRequest } from "../../types";
 import { getDelhiveryConfig } from "./config";
+import { delhiveryFetch } from "./client";
 
 /**
  * Cancels a shipment in Delhivery.
@@ -15,28 +16,16 @@ export async function cancelDelhiveryShipment(
     throw new Error("Waybill number is required to cancel a shipment.");
   }
 
-  const url = `${config.baseUrl}/api/p/edit`;
-
   const payload = {
     waybill: cleanWaybill,
     cancellation: "true",
   };
 
-  const response = await fetch(url, {
+  const resData = await delhiveryFetch({
+    endpoint: "/api/p/edit",
     method: "POST",
-    headers: {
-      Authorization: `Token ${config.apiToken}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
+    body: payload,
   });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Delhivery Shipment Cancellation HTTP Error ${response.status}: ${errorText}`);
-  }
-
-  const resData = await response.json();
 
   // Validate cancellation response matching live Delhivery response schema
   const isSuccess = resData?.status === true || resData?.status === "Success" || resData?.status === "Canceled";

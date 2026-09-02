@@ -1,5 +1,6 @@
 import { TrackingResult, TrackingScan } from "../../types";
 import { getDelhiveryConfig } from "./config";
+import { delhiveryFetch } from "./client";
 
 /**
  * Normalizes Delhivery shipment status string into system status enum.
@@ -98,22 +99,10 @@ export async function trackDelhiveryShipment(waybill: string): Promise<TrackingR
     throw new Error("Waybill number is required to track shipment.");
   }
 
-  const url = `${config.baseUrl}/api/v1/packages/json/?waybill=${cleanWaybill}`;
-
-  const response = await fetch(url, {
+  const resData = await delhiveryFetch({
+    endpoint: `/api/v1/packages/json/?waybill=${cleanWaybill}`,
     method: "GET",
-    headers: {
-      Authorization: `Token ${config.apiToken}`,
-      "Content-Type": "application/json",
-    },
   });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Delhivery Tracking API HTTP Error ${response.status}: ${errorText}`);
-  }
-
-  const resData = await response.json();
 
   // Parse Delhivery ShipmentData array
   const shipmentWrapper = resData?.ShipmentData?.[0];

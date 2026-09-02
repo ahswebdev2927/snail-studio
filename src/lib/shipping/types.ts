@@ -79,14 +79,30 @@ export interface TrackingResult {
   scans: TrackingScan[];
 }
 
+export interface ShippingCostRequest {
+  destinationPincode: string;
+  weightGrams?: number;
+  shippingMode?: 'Surface' | 'Express';
+  lengthCm?: number;
+  widthCm?: number;
+  heightCm?: number;
+}
+
+export interface ShippingCostResult {
+  totalAmountRupees: number;
+  grossAmountRupees: number;
+  currency: string;
+  breakdown?: any;
+}
+
 export interface ShippingProvider {
   providerId: 'delhivery' | 'external';
   checkServiceability(req: ServiceabilityRequest): Promise<ServiceabilityResult>;
   createShipment(req: CreateShipmentRequest): Promise<CreateShipmentResult>;
   cancelShipment(req: CancelShipmentRequest): Promise<{ success: boolean; message?: string }>;
   trackShipment(waybill: string): Promise<TrackingResult>;
-  fetchWaybill?(count?: number): Promise<string[]>;
   generateLabel?(waybills: string[], pdfSize?: 'A4' | '4R'): Promise<{ pdfUrl: string; base64Pdf?: string }>;
-  createPickup?(req: { locationName: string; pickupDate: string; packageCount: number }): Promise<{ success: boolean; pickupId?: string }>;
+  createPickup?(req: { locationName?: string; pickupDate: string; pickupTime?: string; packageCount: number }): Promise<{ success: boolean; pickupId?: string; message?: string }>;
+  calculateShippingCost?(req: ShippingCostRequest): Promise<ShippingCostResult>;
   updateNDR?(waybill: string, action: string, comments?: string): Promise<{ success: boolean }>;
 }

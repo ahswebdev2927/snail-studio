@@ -1,6 +1,6 @@
 import { CreateShipmentRequest, CreateShipmentResult } from "../../types";
 import { getDelhiveryConfig } from "./config";
-import { fetchDelhiveryWaybill } from "./waybill";
+import { delhiveryFetch } from "./client";
 
 /**
  * Generates a forward B2C Prepaid shipment in Delhivery.
@@ -15,15 +15,7 @@ export async function createDelhiveryShipment(
     throw new Error("Delhivery API Token is missing in environment configuration.");
   }
 
-  // 1. Obtain a waybill number (fetch fresh waybill if not provided)
-  const waybills = await fetchDelhiveryWaybill(1);
-  const waybillNumber = waybills[0];
-
-  if (!waybillNumber) {
-    throw new Error("Failed to allocate a Waybill number for Delhivery shipment creation.");
-  }
-
-  // 2. Prepare Consignee Address details
+  // 1. Prepare Consignee Address details
   const fullAddress = [req.address.addressLine1, req.address.addressLine2]
     .filter(Boolean)
     .join(", ")
@@ -34,14 +26,15 @@ export async function createDelhiveryShipment(
     throw new Error(`Invalid pincode '${req.address.postalCode}' provided for shipment creation.`);
   }
 
-  // 3. Prepare Product Description & Quantity
+  // 2. Prepare Product Description & Quantity
   const productsDesc = req.orderDetails.items.length > 0
     ? req.orderDetails.items.map((item) => `${item.name} (x${item.quantity})`).join(", ")
     : "Press-On Nails Set";
 
   const totalQuantity = req.orderDetails.items.reduce((sum, item) => sum + item.quantity, 0);
 
-  // 4. Construct Delhivery Forward Shipment Payload (matching doc cURL schema)
+  // 3. Construct Delhivery Forward Shipment Payload
+  // Note: For single-piece shipments, passing waybill as empty string "" triggers Delhivery auto-assignment
   const shipmentData = {
     name: req.address.name,
     add: fullAddress,
@@ -70,7 +63,7 @@ export async function createDelhiveryShipment(
     seller_name: config.sellerName || "Snail Studio",
     seller_inv: req.adminOptions?.sellerInvoiceNumber || req.courierOrderId,
     quantity: totalQuantity.toString(),
-    waybill: waybillNumber,
+    waybill: "",
 
     // Metrics & Dimensions
     shipment_length: (req.adminOptions?.lengthCm || 15.0).toString(),
@@ -96,23 +89,12 @@ export async function createDelhiveryShipment(
   // 5. Construct Raw Format String Body (raw text: format=json&data={...})
   const rawBody = `format=json&data=${JSON.stringify(payload)}`;
 
-  const url = `${config.baseUrl}/api/cmu/create.json`;
-
-  const response = await fetch(url, {
+  const resData = await delhiveryFetch({
+    endpoint: "/api/cmu/create.json",
     method: "POST",
-    headers: {
-      Authorization: `Token ${config.apiToken}`,
-      "Content-Type": "text/plain",
-    },
+    contentType: "text/plain",
     body: rawBody,
   });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Delhivery Shipment Creation HTTP Error ${response.status}: ${errorText}`);
-  }
-
-  const resData = await response.json();
 
   // 6. Validate Response Status & Extract Errors
   const pkg = resData?.packages?.[0];
@@ -140,7 +122,11 @@ export async function createDelhiveryShipment(
     throw new Error(`Delhivery Shipment Creation Error: ${errorMessage}`);
   }
 
-  const assignedWaybill = pkg?.waybill || waybillNumber;
+  const assignedWaybill = pkg?.waybill;
+
+  if (!assignedWaybill) {
+    throw new Error("Delhivery shipment creation succeeded but no waybill number was returned in response.");
+  }
 
   return {
     success: true,

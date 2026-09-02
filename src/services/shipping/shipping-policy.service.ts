@@ -2,6 +2,7 @@ import { db } from "@/db";
 import { orders, orderAddresses, orderAddressHistory, inventoryItems, inventoryReservations } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { getSystemSettingsMap } from "@/services/settings";
+import { getShippingProvider } from "@/lib/shipping";
 import { nanoid } from "nanoid";
 
 export interface ShippingPolicySettings {
@@ -108,9 +109,25 @@ export async function calculateShippingRate(
     if (provider === "courier_api") {
       const pincode = address.postalCode.trim().replace(/\s+/g, "");
 
-      // Simulate API failure for specific pincode "999999" to test fallback
+      // Simulate API failure for specific test pincode "999999" to test fallback
       if (pincode === "999999") {
         throw new Error("Courier API returned serviceability error");
+      }
+
+      try {
+        const shippingProvider = getShippingProvider("delhivery");
+        if (shippingProvider.calculateShippingCost) {
+          const costRes = await shippingProvider.calculateShippingCost({
+            destinationPincode: pincode,
+            weightGrams: 500,
+            shippingMode: "Surface",
+          });
+          if (costRes?.totalAmountRupees > 0) {
+            return Math.round(costRes.totalAmountRupees * 100);
+          }
+        }
+      } catch (err) {
+        console.warn("Delhivery live rate calculation error, using fallback logic:", err);
       }
 
       const base = pincode.length % 2 === 0 ? 85 : 115;

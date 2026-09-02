@@ -1,4 +1,5 @@
 import { getDelhiveryConfig } from "./config";
+import { delhiveryFetch } from "./client";
 
 export interface GenerateLabelResult {
   pdfUrl: string;
@@ -22,22 +23,11 @@ export async function generateDelhiveryLabel(
   }
 
   const wbnsParam = cleanWaybills.join(",");
-  const url = `${config.baseUrl}/api/p/packing_slip?wbns=${wbnsParam}&pdf=true&pdf_size=${pdfSize}`;
 
-  const response = await fetch(url, {
+  const resData = await delhiveryFetch({
+    endpoint: `/api/p/packing_slip?wbns=${wbnsParam}&pdf=true&pdf_size=${pdfSize}`,
     method: "GET",
-    headers: {
-      Authorization: `Token ${config.apiToken}`,
-      "Content-Type": "application/json",
-    },
   });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Delhivery Generate Label HTTP Error ${response.status}: ${errorText}`);
-  }
-
-  const resData = await response.json();
 
   const packagesFound = resData?.packages_found || 0;
   const packageItem = resData?.packages?.[0];

@@ -1,5 +1,6 @@
 import { ServiceabilityRequest, ServiceabilityResult } from "../../types";
 import { getDelhiveryConfig } from "./config";
+import { delhiveryFetch } from "./client";
 
 export async function checkDelhiveryServiceability(
   req: ServiceabilityRequest
@@ -18,28 +19,12 @@ export async function checkDelhiveryServiceability(
   }
 
   try {
-    // 1. Query Pincode Serviceability API
-    const serviceUrl = `${config.baseUrl}/c/api/pin-codes/json/?filter_codes=${cleanPincode}`;
-    const serviceRes = await fetch(serviceUrl, {
+    // 1. Query Pincode Serviceability API via delhiveryFetch
+    const serviceData = await delhiveryFetch({
+      endpoint: `/c/api/pin-codes/json/?filter_codes=${cleanPincode}`,
       method: "GET",
-      headers: {
-        Authorization: `Token ${config.apiToken}`,
-        "Content-Type": "application/json",
-      },
     });
 
-    if (!serviceRes.ok) {
-      console.error(`Delhivery serviceability API error: ${serviceRes.status} ${serviceRes.statusText}`);
-      return {
-        isServiceable: false,
-        courierName: "Delhivery",
-        pincode: cleanPincode,
-        prepaidAvailable: false,
-        remarks: `Delhivery API HTTP error: ${serviceRes.status}`,
-      };
-    }
-
-    const serviceData = await serviceRes.json();
     const codes = serviceData?.delivery_codes || [];
 
     // Empty list or embargo status indicates non-serviceable
@@ -71,22 +56,15 @@ export async function checkDelhiveryServiceability(
     // 2. Query Expected TAT API for estimated delivery days
     let estimatedDeliveryDays: number | undefined = undefined;
     try {
-      const tatUrl = `${config.baseUrl}/api/dc/expected_tat?origin_pin=${config.originPincode}&destination_pin=${cleanPincode}&mot=S&pdt=B2C`;
-      const tatRes = await fetch(tatUrl, {
+      const tatData = await delhiveryFetch({
+        endpoint: `/api/dc/expected_tat?origin_pin=${config.originPincode}&destination_pin=${cleanPincode}&mot=S&pdt=B2C`,
         method: "GET",
-        headers: {
-          Authorization: `Token ${config.apiToken}`,
-          "Content-Type": "application/json",
-        },
       });
 
-      if (tatRes.ok) {
-        const tatData = await tatRes.json();
-        if (tatData?.success && typeof tatData?.data?.tat === "number") {
-          estimatedDeliveryDays = tatData.data.tat;
-        } else if (typeof tatData?.tat === "number") {
-          estimatedDeliveryDays = tatData.tat;
-        }
+      if (tatData?.success && typeof tatData?.data?.tat === "number") {
+        estimatedDeliveryDays = tatData.data.tat;
+      } else if (typeof tatData?.tat === "number") {
+        estimatedDeliveryDays = tatData.tat;
       }
     } catch (tatErr) {
       console.warn("Delhivery Expected TAT fetch failed, defaulting to estimated days:", tatErr);
