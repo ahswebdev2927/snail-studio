@@ -92,6 +92,8 @@ export interface ShippingCostResult {
   totalAmountRupees: number;
   grossAmountRupees: number;
   currency: string;
+  zone?: string;
+  chargedWeightGrams?: number;
   breakdown?: any;
 }
 

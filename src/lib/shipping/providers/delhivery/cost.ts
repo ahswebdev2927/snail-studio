@@ -46,9 +46,17 @@ export async function calculateDelhiveryShippingCost(
   const grossAmount = chargeData.gross_amount ?? totalAmount;
 
   return {
-    totalAmountRupees: totalAmount,
-    grossAmountRupees: grossAmount,
+    totalAmountRupees: typeof totalAmount === "number" ? totalAmount : parseFloat(totalAmount) || 0,
+    grossAmountRupees: typeof grossAmount === "number" ? grossAmount : parseFloat(grossAmount) || 0,
     currency: chargeData.currency || "INR",
-    breakdown: chargeData.charge_breakup || chargeData.tax_data || chargeData,
+    zone: chargeData.zone || undefined,
+    chargedWeightGrams: chargeData.charged_weight ? Number(chargeData.charged_weight) : undefined,
+    breakdown: {
+      deliveryCharge: chargeData.charge_DL ?? 0,
+      peakSurcharge: chargeData.charge_PEAK ?? 0,
+      documentationCharge: chargeData.charge_DPH ?? 0,
+      taxData: chargeData.tax_data || undefined,
+      rawCharges: chargeData,
+    },
   };
 }
