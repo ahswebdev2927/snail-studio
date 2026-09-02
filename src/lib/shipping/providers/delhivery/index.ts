@@ -6,6 +6,7 @@ import { fetchDelhiveryWaybill } from "./waybill";
 import { createDelhiveryShipment } from "./shipment";
 import { trackDelhiveryShipment } from "./tracking";
 import { cancelDelhiveryShipment } from "./cancellation";
+import { generateDelhiveryLabel } from "./label";
 
 export const delhiveryShippingProvider: ShippingProvider = {
   providerId: "delhivery",
@@ -14,6 +15,7 @@ export const delhiveryShippingProvider: ShippingProvider = {
   cancelShipment: cancelDelhiveryShipment,
   trackShipment: trackDelhiveryShipment,
   fetchWaybill: fetchDelhiveryWaybill,
+  generateLabel: generateDelhiveryLabel,
 };
 
 export * from "./config";
@@ -22,3 +24,4 @@ export * from "./waybill";
 export * from "./shipment";
 export * from "./tracking";
 export * from "./cancellation";
+export * from "./label";

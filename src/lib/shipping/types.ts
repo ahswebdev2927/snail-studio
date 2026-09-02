@@ -86,7 +86,7 @@ export interface ShippingProvider {
   cancelShipment(req: CancelShipmentRequest): Promise<{ success: boolean; message?: string }>;
   trackShipment(waybill: string): Promise<TrackingResult>;
   fetchWaybill?(count?: number): Promise<string[]>;
-  generateLabel?(waybills: string[]): Promise<{ pdfUrl: string }>;
+  generateLabel?(waybills: string[], pdfSize?: 'A4' | '4R'): Promise<{ pdfUrl: string; base64Pdf?: string }>;
   createPickup?(req: { locationName: string; pickupDate: string; packageCount: number }): Promise<{ success: boolean; pickupId?: string }>;
   updateNDR?(waybill: string, action: string, comments?: string): Promise<{ success: boolean }>;
 }
