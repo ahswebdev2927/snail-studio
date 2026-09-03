@@ -371,6 +371,41 @@ export default function AdminOrdersPage() {
     }
   };
 
+  const [isGeneratingLink, setIsGeneratingLink] = useState(false);
+
+  const handleGeneratePaymentLink = async () => {
+    if (!selectedOrderId || !orderDetail) return;
+    setIsGeneratingLink(true);
+    try {
+      const res = await fetch(`/api/admin/orders/${selectedOrderId}/generate-payment-link`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (res.ok && data.success && data.paymentLinkUrl) {
+        const link = data.paymentLinkUrl;
+        await navigator.clipboard.writeText(link);
+        const custPhone = orderDetail.user?.phoneNumber || orderDetail.addresses.find(a => a.type === "shipping")?.phone || "";
+        const cleanPhone = custPhone.replace(/[^0-9]/g, "");
+        const waText = encodeURIComponent(`Hi ${orderDetail.user?.name || "Customer"}, please complete your shipping rate adjustment payment of ₹${data.amountRupees} for Order #${orderDetail.id}: ${link}`);
+        
+        if (cleanPhone) {
+          window.open(`https://wa.me/${cleanPhone}?text=${waText}`, "_blank");
+        }
+        await customAlert(
+          "Razorpay Payment Link Generated",
+          `Razorpay payment link copied to clipboard:\n${link}${cleanPhone ? "\n\nOpening WhatsApp sharing window..." : ""}`
+        );
+      } else {
+        await customAlert("Error", data.error || "Failed to generate payment link.");
+      }
+    } catch (err: any) {
+      console.error("Error generating payment link:", err);
+      await customAlert("Error", "An unexpected error occurred while generating payment link.");
+    } finally {
+      setIsGeneratingLink(false);
+    }
+  };
+
   const handleWaiveDifference = async () => {
     if (!selectedOrderId) return;
     if (!await customConfirm("Cancel/Waive Off Shipping Difference", "Are you sure you want to waive off / cancel this shipping difference payment?")) return;
@@ -1007,33 +1042,41 @@ export default function AdminOrdersPage() {
                             <History className="w-3.5 h-3.5" />
                           </button>
 
-                          {/* Edit Address Button */}
+                          {/* Edit Address Button / Lock Badge */}
                           {orderDetail.addresses.filter(a => a.type === "shipping").map((addr) => {
                             const hasActiveShipment = orderDetail.shipments.some(s => s.status !== "cancelled");
-                            const isEditAllowed = !hasActiveShipment || (settings && (settings.adminCanEditAfterAwb === "true" || settings.adminCanEditAfterAwb === true));
-                            return (
-                              isEditAllowed && (
-                                <button
-                                  key={`edit-${addr.id}`}
-                                  type="button"
-                                  onClick={() => {
-                                    setEditName(addr.name);
-                                    setEditPhone(addr.phone);
-                                    setEditAddressLine1(addr.addressLine1);
-                                    setEditAddressLine2(addr.addressLine2 || "");
-                                    setEditCity(addr.city);
-                                    setEditState(addr.state);
-                                    setEditPostalCode(addr.postalCode);
-                                    setEditCountry(addr.country);
-                                    setEditReason("");
-                                    setShowEditAddressModal(true);
-                                  }}
-                                  className="p-1.5 bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg transition-all cursor-pointer flex items-center justify-center"
-                                  title="Edit Shipping Address"
-                                >
-                                  <Pencil className="w-3.5 h-3.5" />
-                                </button>
-                              )
+                            const isTerminal = ["shipped", "delivered", "cancelled", "refunded"].includes(orderDetail.status.toLowerCase());
+                            const isEditAllowed = !hasActiveShipment && !isTerminal;
+
+                            return isEditAllowed ? (
+                              <button
+                                key={`edit-${addr.id}`}
+                                type="button"
+                                onClick={() => {
+                                  setEditName(addr.name);
+                                  setEditPhone(addr.phone);
+                                  setEditAddressLine1(addr.addressLine1);
+                                  setEditAddressLine2(addr.addressLine2 || "");
+                                  setEditCity(addr.city);
+                                  setEditState(addr.state);
+                                  setEditPostalCode(addr.postalCode);
+                                  setEditCountry(addr.country);
+                                  setEditReason("");
+                                  setShowEditAddressModal(true);
+                                }}
+                                className="p-1.5 bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg transition-all cursor-pointer flex items-center justify-center"
+                                title="Edit Shipping Address (Available prior to shipment creation)"
+                              >
+                                <Pencil className="w-3.5 h-3.5" />
+                              </button>
+                            ) : (
+                              <span
+                                key={`lock-${addr.id}`}
+                                className="p-1.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 rounded-lg transition-all flex items-center justify-center cursor-help"
+                                title="Address Locked: A shipment (AWB) has already been created for this order."
+                              >
+                                <Lock className="w-3.5 h-3.5" />
+                              </span>
                             );
                           })}
                         </div>
@@ -1102,14 +1145,11 @@ export default function AdminOrdersPage() {
                                 <>
                                   <button
                                     type="button"
-                                    onClick={() => {
-                                      const mockLink = `${window.location.origin}/account/orders/${orderDetail.id}`;
-                                      navigator.clipboard.writeText(mockLink);
-                                      customAlert("Link Copied", `Payment notification link copied to clipboard: ${mockLink}`);
-                                    }}
-                                    className="px-2 py-0.5 bg-primary text-primary-foreground hover:bg-primary/95 rounded text-[8px] font-bold uppercase transition-all cursor-pointer"
+                                    disabled={isGeneratingLink}
+                                    onClick={handleGeneratePaymentLink}
+                                    className="px-2 py-0.5 bg-primary text-primary-foreground hover:bg-primary/95 rounded text-[8px] font-bold uppercase transition-all cursor-pointer disabled:opacity-50 flex items-center gap-1"
                                   >
-                                    Send Payment Link
+                                    {isGeneratingLink ? "Generating..." : "Generate Payment Link"}
                                   </button>
                                   <button
                                     type="button"
