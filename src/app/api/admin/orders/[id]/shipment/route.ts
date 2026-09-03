@@ -88,6 +88,13 @@ export async function POST(
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
 
+    if (order.shippingDifferenceStatus === "pending") {
+      return NextResponse.json(
+        { error: "Cannot create shipment: Additional shipping adjustment payment is pending from the customer." },
+        { status: 400 }
+      );
+    }
+
     // Check if shipment already exists
     const existingShipment = await db.query.shipments.findFirst({
       where: eq(shipments.orderId, orderId),
