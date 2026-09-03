@@ -34,6 +34,8 @@ import {
   ChevronRight
 } from "lucide-react";
 import { useDebounce } from "@/lib/hooks/use-debounce";
+import { ShipmentDispatchModal } from "@/components/admin/orders/shipment-dispatch-modal";
+import { ShipmentAttemptsTimeline } from "@/components/admin/orders/shipment-attempts-timeline";
 
 interface OrderListItem {
   id: string;
@@ -1211,172 +1213,21 @@ export default function AdminOrdersPage() {
                         <Truck className="w-3.5 h-3.5" />
                         Parcel Shipments
                       </h4>
-                      {orderDetail.shipments.length === 0 ? (
-                        <div className="border border-border/25 rounded-2xl p-4.5 space-y-3 text-center">
-                          <p className="text-xs text-muted-foreground font-light italic">No active parcel waybill generated.</p>
-                          
-                          {validationErrors.length > 0 && (
-                            <div className="bg-rose-500/10 border border-rose-500/20 text-rose-600 text-left rounded-xl p-3 space-y-1.5 text-[10px] leading-relaxed">
-                              <p className="font-bold flex items-center gap-1 uppercase tracking-wider text-[8px]">
-                                <AlertCircle className="w-3.5 h-3.5" />
-                                Pre-Shipment Warnings
-                              </p>
-                              <ul className="list-disc pl-3.5 space-y-0.5">
-                                {validationErrors.map((err, i) => (
-                                  <li key={i}>{err}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
+                      <ShipmentAttemptsTimeline
+                        orderId={orderDetail.id}
+                        shipments={orderDetail.shipments as any}
+                        onRefresh={() => fetchOrderDetail(orderDetail.id)}
+                        onOpenDispatchModal={() => setShowCreateShipmentModal(true)}
+                      />
 
-                          <button
-                            type="button"
-                            disabled={validationErrors.length > 0}
-                            onClick={() => setShowCreateShipmentModal(true)}
-                            className="w-full py-2 bg-primary text-primary-foreground hover:bg-primary/95 disabled:bg-muted disabled:text-muted-foreground rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1.5 mt-1"
-                          >
-                            + Create Shipment
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="border border-border/25 rounded-2xl p-4.5 space-y-4">
-                          {orderDetail.shipments.map((ship) => (
-                            <div key={ship.id} className="space-y-4">
-                              {/* Header Info */}
-                              <div className="text-xs font-light space-y-1 bg-secondary/25 border border-border/20 rounded-xl p-3">
-                                <div className="flex justify-between font-semibold">
-                                  <span className="text-foreground">{ship.carrier}</span>
-                                  <span className="text-blue-500 uppercase text-[10px]">{ship.status.replace(/_/g, " ")}</span>
-                                </div>
-                                <p className="text-[10px] text-muted-foreground font-mono">Waybill: {ship.trackingNumber}</p>
-                                {ship.shippedAt && (
-                                  <p className="text-[10px] text-muted-foreground">Dispatched: {formatDate(ship.shippedAt)}</p>
-                                )}
-                                {ship.estimatedDeliveryAt && (
-                                  <p className="text-[10px] text-muted-foreground">Est. Delivery: {formatDate(ship.estimatedDeliveryAt)}</p>
-                                )}
-                              </div>
-
-                              {/* Print Documents Actions */}
-                              <div className="flex gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => setShowPrintLabel(true)}
-                                  className="flex-1 py-1.5 bg-transparent hover:bg-secondary/15 text-[9px] font-bold uppercase tracking-wider rounded-lg border border-border text-foreground transition-all cursor-pointer text-center"
-                                >
-                                  Print Label
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => setShowPrintInvoice(true)}
-                                  className="flex-1 py-1.5 bg-transparent hover:bg-secondary/15 text-[9px] font-bold uppercase tracking-wider rounded-lg border border-border text-foreground transition-all cursor-pointer text-center"
-                                >
-                                  Print Invoice
-                                </button>
-                                {(!settings || settings.adminCanEditAfterAwb === "true" || settings.adminCanEditAfterAwb === true) && (
-                                  <button
-                                    type="button"
-                                    disabled={isRegeneratingAwb}
-                                    onClick={handleRegenerateAwb}
-                                    className="flex-1 py-1.5 bg-warning/15 hover:bg-warning/25 text-warning text-[9px] font-bold uppercase tracking-wider rounded-lg border border-warning/30 transition-all cursor-pointer text-center"
-                                  >
-                                    {isRegeneratingAwb ? "Regenerating..." : "Regenerate AWB"}
-                                  </button>
-                                )}
-                              </div>
-
-                              {/* Events List */}
-                              <div className="space-y-2 border-t border-border/10 pt-3">
-                                <span className="text-[9px] uppercase font-bold text-muted-foreground tracking-wider block">Shipment History</span>
-                                {ship.events && ship.events.length > 0 ? (
-                                  <div className="space-y-3.5 pl-2.5 border-l border-border/30 ml-1">
-                                    {ship.events.map((evt) => (
-                                      <div key={evt.id} className="relative text-[10px] leading-relaxed">
-                                        <div className="absolute -left-[14.5px] top-1.5 w-1.5 h-1.5 rounded-full bg-blue-500" />
-                                        <div className="flex justify-between items-center text-[9px] text-muted-foreground font-mono">
-                                          <span className="uppercase font-bold tracking-wide text-[8px]">{evt.status.replace(/_/g, " ")}</span>
-                                          <span>{new Date(evt.timestamp).toLocaleDateString("en-IN", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
-                                        </div>
-                                        {evt.location && <p className="font-semibold text-foreground text-[9px]">Location: {evt.location}</p>}
-                                        {evt.description && <p className="text-muted-foreground text-[9px] font-light italic mt-0.5">{evt.description}</p>}
-                                      </div>
-                                    ))}
-                                  </div>
-                                ) : (
-                                  <p className="text-[10px] text-muted-foreground font-light italic">No events logged.</p>
-                                )}
-                              </div>
-
-                              {/* Update Shipment Status Form */}
-                              <form onSubmit={handleUpdateShipmentStatus} className="space-y-3 border-t border-border/10 pt-3">
-                                <span className="text-[10px] font-bold uppercase tracking-wider text-primary block">Update Shipment Event</span>
-                                
-                                <div className="space-y-1">
-                                  <label className="text-[8px] uppercase font-bold text-muted-foreground">Select Status</label>
-                                  <select
-                                    value={updateShipStatus}
-                                    onChange={(e) => setUpdateShipStatus(e.target.value)}
-                                    className="w-full px-2.5 py-1.5 bg-background border border-border rounded-xl text-xs font-light text-foreground focus:outline-none focus:border-primary"
-                                  >
-                                    <option value="pickup_requested">Pickup Requested</option>
-                                    <option value="pickup_scheduled">Pickup Scheduled</option>
-                                    <option value="pickup_completed">Pickup Completed (Dispatched)</option>
-                                    <option value="in_transit">In Transit</option>
-                                    <option value="reached_destination_hub">Reached Hub</option>
-                                    <option value="out_for_delivery">Out For Delivery</option>
-                                    <option value="delivered">Delivered</option>
-                                    <option value="delivery_attempted">Delivery Attempted</option>
-                                    <option value="delivery_failed">Delivery Failed</option>
-                                    <option value="rto_initiated">RTO Initiated</option>
-                                    <option value="cancelled">Cancel Shipment</option>
-                                  </select>
-                                </div>
-
-                                <div className="space-y-1">
-                                  <label className="text-[8px] uppercase font-bold text-muted-foreground">Current Hub Location</label>
-                                  <input
-                                    type="text"
-                                    placeholder="e.g. Mumbai Hub, Delhi Sorting"
-                                    value={updateShipLocation}
-                                    onChange={(e) => setUpdateShipLocation(e.target.value)}
-                                    className="w-full px-2.5 py-1.5 bg-background border border-border rounded-xl text-xs font-light text-foreground focus:outline-none focus:border-primary"
-                                  />
-                                </div>
-
-                                <div className="space-y-1">
-                                  <label className="text-[8px] uppercase font-bold text-muted-foreground">Shipment Note / Description</label>
-                                  <textarea
-                                    placeholder="e.g. Package arrived at Mumbai hub."
-                                    value={updateShipDescription}
-                                    onChange={(e) => setUpdateShipDescription(e.target.value)}
-                                    rows={2}
-                                    className="w-full px-2.5 py-1.5 bg-background border border-border rounded-xl text-xs font-light text-foreground focus:outline-none focus:border-primary resize-none"
-                                  />
-                                </div>
-
-                                <button
-                                  type="submit"
-                                  disabled={isUpdatingShipment}
-                                  className="w-full py-2 bg-primary text-primary-foreground hover:bg-primary/95 disabled:bg-muted disabled:text-muted-foreground rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1 mt-1"
-                                >
-                                  {isUpdatingShipment ? "Updating..." : "Add Event Update"}
-                                </button>
-                              </form>
-
-                              {/* Cancel Shipment button */}
-                              <button
-                                type="button"
-                                onClick={handleCancelShipment}
-                                disabled={isCancellingShipment}
-                                className="w-full py-2 border border-rose-500/30 text-rose-500 hover:bg-rose-500/10 disabled:bg-muted disabled:text-muted-foreground rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer text-center mt-2"
-                              >
-                                {isCancellingShipment ? "Cancelling..." : "Cancel Shipment"}
-                              </button>
-
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                      <ShipmentDispatchModal
+                        isOpen={showCreateShipmentModal}
+                        onClose={() => setShowCreateShipmentModal(false)}
+                        orderId={orderDetail.id}
+                        customerPincode={orderDetail.addresses?.find(a => a.type === "shipping")?.postalCode}
+                        shippingDifferenceStatus={orderDetail.shippingDifferenceStatus}
+                        onSuccess={() => fetchOrderDetail(orderDetail.id)}
+                      />
                     </div>
 
                     {/* Notes by User */}

@@ -8,12 +8,23 @@ import { z } from "zod";
 import { updateOrderStatus } from "@/services/checkout/order.service";
 import { sendMail } from "@/services/email/email.service";
 import { getOrderStatusUpdateTemplate } from "@/services/email/templates/order-status-update.template";
-import { validatePreShipment } from "@/services/shipping/shipping-policy.service";
+import { createOrderShipment, cancelOrderShipment } from "@/services/shipping/shipment-orchestration.service";
 
 const createShipmentSchema = z.object({
-  carrier: z.string().min(2).max(100),
-  trackingNumber: z.string().min(3).max(100),
+  provider: z.enum(["delhivery", "external"]).default("delhivery"),
+  carrier: z.string().optional(),
+  trackingNumber: z.string().optional(),
+  externalCourierName: z.string().optional(),
+  externalTrackingUrl: z.string().optional(),
+  externalMetadata: z.string().optional(),
   estimatedDeliveryAt: z.string().optional().nullable(),
+  adminOptions: z.object({
+    weightGrams: z.number().optional(),
+    lengthCm: z.number().optional(),
+    widthCm: z.number().optional(),
+    heightCm: z.number().optional(),
+    fragileShipment: z.boolean().optional(),
+  }).optional(),
 });
 
 const updateShipmentSchema = z.object({
@@ -30,18 +41,21 @@ const updateShipmentSchema = z.object({
     "rto_initiated",
     "rto_in_transit",
     "rto_delivered",
-    "cancelled"
+    "cancelled",
   ]),
   location: z.string().max(200).optional().nullable(),
   description: z.string().max(500).optional().nullable(),
 });
 
-// Helper to send specific custom shipment emails
+const cancelShipmentSchema = z.object({
+  reason: z.string().min(3, "Cancellation reason must be at least 3 characters long"),
+});
+
 async function sendShipmentEmail(orderId: string, subject: string, newStatusLabel: string, notes?: string | null) {
   try {
     const order = await db.query.orders.findFirst({
       where: eq(orders.id, orderId),
-      with: { user: true }
+      with: { user: true },
     });
     if (order && order.user?.email) {
       const html = getOrderStatusUpdateTemplate({
@@ -49,13 +63,13 @@ async function sendShipmentEmail(orderId: string, subject: string, newStatusLabe
         orderId: order.id,
         newStatus: newStatusLabel,
         statusNotes: notes || `Shipment update: ${newStatusLabel}`,
-        updatedAt: new Date()
+        updatedAt: new Date(),
       });
       await sendMail({
         to: order.user.email,
         subject: `${subject} - Snail Studio (#${order.id})`,
         html,
-        templateName: "order_status_update"
+        templateName: "order_status_update",
       });
     }
   } catch (err) {
@@ -63,7 +77,7 @@ async function sendShipmentEmail(orderId: string, subject: string, newStatusLabe
   }
 }
 
-// POST /api/admin/orders/[id]/shipment - Create / Generate Shipment (Assign Courier)
+// POST /api/admin/orders/[id]/shipment - Create / Generate Shipment
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -94,129 +108,35 @@ export async function POST(
       );
     }
 
-    const { carrier, trackingNumber, estimatedDeliveryAt } = result.data;
-    const shipmentId = `ship_${nanoid(10)}`;
-    const now = new Date();
-    const estDeliveryDate = estimatedDeliveryAt ? new Date(estimatedDeliveryAt) : null;
-
-    // Run order checks, validation, and shipment creation atomically in transaction
-    const txResult = await db.transaction(async (tx) => {
-      // 1. Verify order exists
-      const order = await tx.query.orders.findFirst({
-        where: eq(orders.id, orderId),
-      });
-
-      if (!order) {
-        return { status: 404, data: { error: "Order not found" } };
-      }
-
-      if (order.shippingDifferenceStatus === "pending") {
-        return {
-          status: 400,
-          data: { error: "Cannot create shipment: Additional shipping adjustment payment is pending from the customer." },
-        };
-      }
-
-      // 2. Check if shipment already exists (transactional concurrency check)
-      const existingShipment = await tx.query.shipments.findFirst({
-        where: eq(shipments.orderId, orderId),
-      });
-
-      if (existingShipment) {
-        return {
-          status: 400,
-          data: { error: "A shipment has already been created for this order" },
-        };
-      }
-
-      // 3. Pre-Shipment Validation check (using transaction client)
-      const validation = await validatePreShipment(orderId, tx);
-      if (!validation.success) {
-        return {
-          status: 400,
-          data: { error: "Pre-shipment validation failed", reasons: validation.errors },
-        };
-      }
-
-      // 4. Create the shipment record
-      await tx.insert(shipments).values({
-        id: shipmentId,
-        orderId,
-        provider: "delhivery",
-        courierOrderId: orderId,
-        attemptNumber: 1,
-        carrier,
-        trackingNumber,
-        status: "ready_to_ship",
-        shippedAt: null,
-        estimatedDeliveryAt: estDeliveryDate,
-      });
-
-      // 5. Insert initial tracking event
-      await tx.insert(trackingEvents).values({
-        id: `evt_${nanoid(10)}`,
-        shipmentId,
-        status: "ready_to_ship",
-        location: "Warehouse",
-        description: `Waybill generated for courier ${carrier}. Tracking #: ${trackingNumber}.`,
-        timestamp: now,
-      });
-
-      // 6. Log "ready_to_ship" in orderStatusHistory
-      await tx.insert(orderStatusHistory).values({
-        id: `osh_${nanoid(10)}`,
-        orderId,
-        status: "ready_to_ship",
-        notes: `Shipment created with ${carrier} (Tracking #: ${trackingNumber}). Ready to ship.`,
-        createdAt: now,
-      });
-
-      // 7. Update the order status record to processing and lock the address
-      await tx.update(orders).set({
-        status: "processing",
-        addressLockedAt: now, // Address is locked after AWB generation
-        updatedAt: now,
-      }).where(eq(orders.id, orderId));
-
-      return {
-        status: 201,
-        data: {
-          success: true,
-          message: "Shipment successfully generated",
-          shipmentId,
-        },
-      };
-    });
-
-    if (txResult.status !== 201) {
-      return NextResponse.json(txResult.data, { status: txResult.status });
-    }
-
-    // 5. Send "Ready To Ship" / "Shipment Created" Email Notification
-    await sendShipmentEmail(
+    const shipmentData = await createOrderShipment({
       orderId,
-      "Ready to Ship",
-      "Ready to Ship",
-      `Your package is packed and ready. Shipment created with ${carrier}. Tracking waybill number is ${trackingNumber}.`
-    );
+      provider: result.data.provider,
+      carrier: result.data.carrier,
+      trackingNumber: result.data.trackingNumber,
+      externalCourierName: result.data.externalCourierName,
+      externalTrackingUrl: result.data.externalTrackingUrl,
+      externalMetadata: result.data.externalMetadata,
+      estimatedDeliveryAt: result.data.estimatedDeliveryAt,
+      adminOptions: result.data.adminOptions,
+    });
 
     return NextResponse.json({
       success: true,
       message: "Shipment successfully generated",
-      shipmentId,
+      ...shipmentData,
     }, { status: 201 });
 
   } catch (error: unknown) {
     const err = error as Error;
     console.error("POST /api/admin/orders/[id]/shipment error:", err);
     return NextResponse.json(
-      { error: "Internal Server Error", details: err.message || String(error) },
-      { status: 500 }
+      { error: err.message || "Failed to create shipment" },
+      { status: 400 }
     );
   }
 }
 
-// PATCH /api/admin/orders/[id]/shipment - Update Shipment Status (Add events & notes)
+// PATCH /api/admin/orders/[id]/shipment - Update Shipment Status
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -232,7 +152,6 @@ export async function PATCH(
       return NextResponse.json({ error: "Order ID is required" }, { status: 400 });
     }
 
-    // Verify shipment exists
     const shipmentRecord = await db.query.shipments.findFirst({
       where: eq(shipments.orderId, orderId),
     });
@@ -259,7 +178,6 @@ export async function PATCH(
     const { status, location, description } = result.data;
     const now = new Date();
 
-    // 1. Update the shipment status
     const statusMap: Record<string, "pending" | "ready_to_ship" | "in_transit" | "out_for_delivery" | "delivered" | "ndr" | "cancelled" | "rto" | "manifested" | "pickup_scheduled" | "picked_up"> = {
       pickup_requested: "pickup_scheduled",
       pickup_scheduled: "pickup_scheduled",
@@ -278,14 +196,12 @@ export async function PATCH(
     const targetStatus = statusMap[status] || "in_transit";
     const updateFields: { status: typeof targetStatus; updatedAt: Date; shippedAt?: Date } = { status: targetStatus, updatedAt: now };
     
-    // If status transitioned to pickup_completed or delivered, set relevant timestamps
     if (status === "pickup_completed" && !shipmentRecord.shippedAt) {
       updateFields.shippedAt = now;
     }
 
     await db.update(shipments).set(updateFields).where(eq(shipments.id, shipmentRecord.id));
 
-    // 2. Insert the tracking event
     await db.insert(trackingEvents).values({
       id: `evt_${nanoid(10)}`,
       shipmentId: shipmentRecord.id,
@@ -295,17 +211,13 @@ export async function PATCH(
       timestamp: now,
     });
 
-    // 3. Cascade updates to order workflow if matching milestones
     const noteText = description || `Shipment status updated to ${status}.`;
 
     if (status === "pickup_completed") {
-      // Cascade Order Status to 'shipped'
       await updateOrderStatus(orderId, "shipped", `Order shipped via ${shipmentRecord.carrier}. Notes: ${noteText}`);
     } else if (status === "delivered") {
-      // Cascade Order Status to 'delivered'
       await updateOrderStatus(orderId, "delivered", `Order delivered by ${shipmentRecord.carrier}. Notes: ${noteText}`);
     } else {
-      // Log custom tracking event into order status history and send email notification
       await db.insert(orderStatusHistory).values({
         id: `osh_${nanoid(10)}`,
         orderId,
@@ -314,7 +226,6 @@ export async function PATCH(
         createdAt: now,
       });
 
-      // Send update email for events (Pickup Requested, In Transit, Out for Delivery, etc.)
       const labelMap: Record<string, string> = {
         pickup_requested: "Pickup Requested",
         pickup_scheduled: "Pickup Scheduled",
@@ -324,7 +235,7 @@ export async function PATCH(
         delivery_attempted: "Delivery Attempted",
         delivery_failed: "Delivery Failed",
         rto_initiated: "Return to Origin (RTO) Initiated",
-        cancelled: "Shipment Cancelled"
+        cancelled: "Shipment Cancelled",
       };
 
       await sendShipmentEmail(
@@ -350,14 +261,14 @@ export async function PATCH(
   }
 }
 
-// DELETE /api/admin/orders/[id]/shipment - Cancel Shipment
+// DELETE /api/admin/orders/[id]/shipment - Cancel Shipment with mandatory admin reason & Delhivery eligibility check
 export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const auth = await authorize(req, "admin");
-    if (!auth.authorized) {
+    if (!auth.authorized || !auth.user) {
       return auth.response!;
     }
 
@@ -366,51 +277,39 @@ export async function DELETE(
       return NextResponse.json({ error: "Order ID is required" }, { status: 400 });
     }
 
-    // Verify shipment exists
-    const shipmentRecord = await db.query.shipments.findFirst({
-      where: eq(shipments.orderId, orderId),
-    });
-
-    if (!shipmentRecord) {
-      return NextResponse.json({ error: "No shipment found for this order" }, { status: 404 });
+    let reason = "Admin cancelled shipment";
+    try {
+      const body = await req.json();
+      const parseRes = cancelShipmentSchema.safeParse(body);
+      if (parseRes.success) {
+        reason = parseRes.data.reason;
+      } else if (body?.reason) {
+        reason = body.reason;
+      }
+    } catch {
+      const urlReason = req.nextUrl.searchParams.get("reason");
+      if (urlReason) reason = urlReason;
     }
 
-    // Sensitive Action Re-Authentication Check
     const { verifySensitiveAction, logAdminAudit } = await import("@/lib/auth/security");
-    const securityCheck = await verifySensitiveAction(req, auth.user!, "cancel_shipment", null);
+    const securityCheck = await verifySensitiveAction(req, auth.user, "cancel_shipment", null);
     if (!securityCheck.verified) {
       return securityCheck.errorResponse!;
     }
 
-    // Delete shipment (cascades to trackingEvents)
-    await db.delete(shipments).where(eq(shipments.id, shipmentRecord.id));
-
-    const now = new Date();
-
-    // Log the cancellation to order status history
-    await db.insert(orderStatusHistory).values({
-      id: `osh_${nanoid(10)}`,
+    const cancelResult = await cancelOrderShipment({
       orderId,
-      status: "processing",
-      notes: "Shipment cancelled. Order reverted back to general processing state.",
-      createdAt: now,
+      reason,
+      adminId: auth.user.id,
+      adminName: auth.user.name || auth.user.phoneNumber,
     });
-
-    // Send cancellation notification
-    await sendShipmentEmail(
-      orderId,
-      "Shipment Cancelled",
-      "Processing",
-      "Your active parcel shipment has been cancelled by the administrator. Your order is reverted back to processing state."
-    );
 
     const ipAddress = req.headers.get("x-forwarded-for") || "127.0.0.1";
     const browser = req.headers.get("user-agent") || "Unknown";
 
-    // Write to admin audit logs
     await logAdminAudit({
-      adminId: auth.user!.id,
-      adminName: auth.user!.name || auth.user!.phoneNumber,
+      adminId: auth.user.id,
+      adminName: auth.user.name || auth.user.phoneNumber,
       action: "cancel_shipment",
       targetUserId: null,
       verificationStatus: "verified",
@@ -418,37 +317,17 @@ export async function DELETE(
       browser,
     });
 
-    // Send confirmation email to acting admin
-    const { sendMail } = await import("@/services/email/email.service");
-    const { getPrivilegedActionEmailTemplate } = await import("@/services/email/templates/security.template");
-
-    if (auth.user!.email) {
-      const adminEmailHtml = getPrivilegedActionEmailTemplate(
-        auth.user!.name || "Administrator",
-        "Cancel Shipment",
-        `Order ID: ${orderId}, Shipment ID: ${shipmentRecord.id}`,
-        ipAddress,
-        browser
-      );
-      await sendMail({
-        to: auth.user!.email,
-        subject: `[Security Alert] Successful Privileged Action - Snail Studio`,
-        html: adminEmailHtml,
-        templateName: "admin_privileged_action",
-      });
-    }
-
     return NextResponse.json({
       success: true,
-      message: "Shipment successfully cancelled and deleted",
+      message: cancelResult.message,
     }, { status: 200 });
 
   } catch (error: unknown) {
     const err = error as Error;
     console.error("DELETE /api/admin/orders/[id]/shipment error:", err);
     return NextResponse.json(
-      { error: "Internal Server Error", details: err.message || String(error) },
-      { status: 500 }
+      { error: err.message || "Failed to cancel shipment" },
+      { status: 400 }
     );
   }
 }

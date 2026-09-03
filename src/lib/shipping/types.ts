@@ -17,6 +17,10 @@ export interface CreateShipmentRequest {
   orderId: string;
   courierOrderId: string;
   attemptNumber: number;
+  provider?: 'delhivery' | 'external';
+  externalCourierName?: string;
+  externalTrackingUrl?: string;
+  externalMetadata?: string;
   address: {
     name: string;
     phone: string;
@@ -60,7 +64,25 @@ export interface CreateShipmentResult {
 export interface CancelShipmentRequest {
   waybill: string;
   courierOrderId: string;
-  reason?: string;
+  reason: string;
+  currentStatus?: string;
+}
+
+export interface RedispatchRequest {
+  orderId: string;
+  provider: 'delhivery' | 'external';
+  reason: string;
+  externalCourierName?: string;
+  externalTrackingNumber?: string;
+  externalTrackingUrl?: string;
+  externalMetadata?: string;
+  adminOptions?: CreateShipmentRequest['adminOptions'];
+}
+
+export interface TrackingSyncResult {
+  totalSynced: number;
+  updatedCount: number;
+  errors: Array<{ waybill: string; error: string }>;
 }
 
 export interface TrackingScan {

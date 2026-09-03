@@ -19,12 +19,13 @@ export async function checkExternalServiceability(req: ServiceabilityRequest): P
 }
 
 export async function createExternalShipment(req: CreateShipmentRequest): Promise<CreateShipmentResult> {
+  const trackingNumber = req.courierOrderId;
   return {
     success: true,
     courierOrderId: req.courierOrderId,
-    waybill: req.courierOrderId,
-    trackingNumber: req.courierOrderId,
-    trackingUrl: "",
+    waybill: trackingNumber,
+    trackingNumber: trackingNumber,
+    trackingUrl: req.externalTrackingUrl || "",
   };
 }
 

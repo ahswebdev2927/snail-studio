@@ -1,9 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db";
-import { orders, shipments, trackingEvents, orderStatusHistory } from "@/db/schema";
-import { eq, and, ne } from "drizzle-orm";
 import { authorize } from "@/middleware/auth";
-import { nanoid } from "nanoid";
+import { redispatchOrderShipment } from "@/services/shipping/shipment-orchestration.service";
+import { z } from "zod";
+
+const redispatchSchema = z.object({
+  provider: z.enum(["delhivery", "external"]).default("delhivery"),
+  reason: z.string().min(3, "Reason for re-dispatch is required (minimum 3 characters)."),
+  carrier: z.string().optional(),
+  externalCourierName: z.string().optional(),
+  externalTrackingNumber: z.string().optional(),
+  externalTrackingUrl: z.string().optional(),
+  externalMetadata: z.string().optional(),
+});
 
 export async function POST(
   req: NextRequest,
@@ -20,90 +28,39 @@ export async function POST(
       return NextResponse.json({ error: "Order ID is required" }, { status: 400 });
     }
 
-    // Verify order exists
-    const order = await db.query.orders.findFirst({
-      where: eq(orders.id, orderId),
-    });
-
-    if (!order) {
-      return NextResponse.json({ error: "Order not found" }, { status: 404 });
+    let body = {};
+    try {
+      body = await req.json();
+    } catch {
+      // Default fallback reason if no body provided
     }
 
-    // Find active shipment
-    const activeShipment = await db.query.shipments.findFirst({
-      where: and(
-        eq(shipments.orderId, orderId),
-        ne(shipments.status, "cancelled")
-      ),
-    });
+    const parseRes = redispatchSchema.safeParse(body);
+    const reason = parseRes.success ? parseRes.data.reason : "Manual AWB regeneration requested by admin";
+    const provider = parseRes.success ? parseRes.data.provider : "delhivery";
 
-    if (!activeShipment) {
-      return NextResponse.json({ error: "No active shipment found to regenerate AWB." }, { status: 400 });
-    }
-
-    const newShipmentId = `ship_${nanoid(10)}`;
-    const newTrackingNumber = `TRK${nanoid(10).toUpperCase()}`;
-    const now = new Date();
-
-    await db.transaction(async (tx) => {
-      // 1. Cancel active shipment
-      await tx.update(shipments)
-        .set({ status: "cancelled" })
-        .where(eq(shipments.id, activeShipment.id));
-
-      await tx.insert(trackingEvents).values({
-        id: `evt_${nanoid(10)}`,
-        shipmentId: activeShipment.id,
-        status: "cancelled",
-        location: "Warehouse",
-        description: "Waybill cancelled by administrator.",
-        timestamp: now,
-      });
-
-      // 2. Create new shipment
-      const nextAttempt = (activeShipment.attemptNumber || 1) + 1;
-      await tx.insert(shipments).values({
-        id: newShipmentId,
-        orderId,
-        provider: (activeShipment.provider || "delhivery") as "delhivery" | "external",
-        courierOrderId: `${orderId}-R${nextAttempt - 1}`,
-        attemptNumber: nextAttempt,
-        carrier: activeShipment.carrier,
-        trackingNumber: newTrackingNumber,
-        status: "ready_to_ship",
-        shippedAt: null,
-        estimatedDeliveryAt: activeShipment.estimatedDeliveryAt,
-      });
-
-      await tx.insert(trackingEvents).values({
-        id: `evt_${nanoid(10)}`,
-        shipmentId: newShipmentId,
-        status: "ready_to_ship",
-        location: "Warehouse",
-        description: `New airway bill generated manually by Admin. Courier: ${activeShipment.carrier}. Tracking #: ${newTrackingNumber}.`,
-        timestamp: now,
-      });
-
-      await tx.insert(orderStatusHistory).values({
-        id: `osh_${nanoid(10)}`,
-        orderId,
-        status: order.status,
-        notes: `AWB manual regeneration: cancelled #${activeShipment.trackingNumber}, created #${newTrackingNumber} (${activeShipment.carrier}).`,
-        createdAt: now,
-      });
+    const redispatchResult = await redispatchOrderShipment({
+      orderId,
+      provider,
+      reason,
+      carrier: parseRes.success ? parseRes.data.carrier : undefined,
+      externalCourierName: parseRes.success ? parseRes.data.externalCourierName : undefined,
+      externalTrackingNumber: parseRes.success ? parseRes.data.externalTrackingNumber : undefined,
+      externalTrackingUrl: parseRes.success ? parseRes.data.externalTrackingUrl : undefined,
+      externalMetadata: parseRes.success ? parseRes.data.externalMetadata : undefined,
     });
 
     return NextResponse.json({
       success: true,
-      message: "AWB regenerated successfully.",
-      trackingNumber: newTrackingNumber,
+      message: "AWB regenerated / order re-dispatched successfully.",
+      ...redispatchResult,
     }, { status: 200 });
 
   } catch (error: any) {
     console.error("POST /api/admin/orders/[id]/regenerate-awb error:", error);
     return NextResponse.json(
-      { error: "Internal Server Error", details: error.message || String(error) },
-      { status: 500 }
+      { error: error.message || "Failed to regenerate AWB" },
+      { status: 400 }
     );
   }
 }

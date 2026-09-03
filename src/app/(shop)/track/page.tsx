@@ -84,6 +84,7 @@ interface TrackingResult {
       id: string;
       carrier: string;
       trackingNumber: string;
+      trackingUrl?: string | null;
       status: string;
       shippedAt: string | null;
       estimatedDeliveryAt: string | null;
@@ -529,19 +530,33 @@ function TrackingSearchContent() {
             {result.order.shipments && result.order.shipments.length > 0 ? (
               result.order.shipments.map((ship) => (
                 <div key={ship.id} className="bg-card border border-border/30 rounded-3xl p-6 shadow-sm space-y-6">
-                  {/* Courier details header */}
-                  <div className="flex items-center justify-between p-4 bg-secondary/15 rounded-2xl border border-border/20 text-xs">
-                    <div className="space-y-1">
-                      <p className="text-[10px] text-muted-foreground font-bold uppercase">Courier Partner</p>
-                      <p className="font-semibold text-foreground text-sm flex items-center gap-1.5">
-                        <Building2 className="w-4 h-4 text-primary shrink-0" />
-                        {ship.carrier}
-                      </p>
+                  <div className="space-y-3 p-4 bg-secondary/15 rounded-2xl border border-border/20 text-xs">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <p className="text-[10px] text-muted-foreground font-bold uppercase">Courier Partner</p>
+                        <p className="font-semibold text-foreground text-sm flex items-center gap-1.5">
+                          <Building2 className="w-4 h-4 text-primary shrink-0" />
+                          {ship.carrier}
+                        </p>
+                      </div>
+                      <div className="space-y-1 text-right">
+                        <p className="text-[10px] text-muted-foreground font-bold uppercase">Waybill / Tracking #</p>
+                        <p className="font-mono font-semibold text-primary text-sm tracking-wider">{ship.trackingNumber}</p>
+                      </div>
                     </div>
-                    <div className="space-y-1 text-right">
-                      <p className="text-[10px] text-muted-foreground font-bold uppercase">Waybill / Tracking #</p>
-                      <p className="font-mono font-semibold text-primary text-sm tracking-wider">{ship.trackingNumber}</p>
-                    </div>
+                    {ship.trackingUrl && (
+                      <div className="pt-2 border-t border-border/20 flex justify-end">
+                        <a
+                          href={ship.trackingUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded-xl text-xs font-semibold transition-all"
+                        >
+                          <span>Track on {ship.carrier} Portal</span>
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </a>
+                      </div>
+                    )}
                   </div>
 
                   {/* Vertical Events Timeline */}
