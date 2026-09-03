@@ -61,7 +61,7 @@ export async function verifySmtpConnection(config: SmtpConfig): Promise<{ succes
 }
 
 interface SendMailParams {
-  to: string;
+  to: string | string[];
   subject: string;
   html: string;
   templateName: string;
@@ -75,6 +75,7 @@ export async function sendMail(params: SendMailParams, loggerInstance?: any): Pr
   const logId = `eml_${nanoid(12)}`;
   const timestamp = new Date();
   const reqLogger = loggerInstance || logger;
+  const recipientStr = Array.isArray(params.to) ? params.to.join(", ") : params.to;
 
   try {
     const config = await getSmtpConfig();
@@ -82,7 +83,7 @@ export async function sendMail(params: SendMailParams, loggerInstance?: any): Pr
     if (!config) {
       reqLogger.warn({
         logId,
-        recipient: params.to,
+        recipient: recipientStr,
         subject: params.subject,
         templateName: params.templateName,
         type: "smtp_bypass"
@@ -90,7 +91,7 @@ export async function sendMail(params: SendMailParams, loggerInstance?: any): Pr
 
       await db.insert(emailLogs).values({
         id: logId,
-        recipient: params.to,
+        recipient: recipientStr,
         subject: params.subject,
         templateName: params.templateName,
         status: "success",
@@ -123,7 +124,7 @@ export async function sendMail(params: SendMailParams, loggerInstance?: any): Pr
     // Log success
     await db.insert(emailLogs).values({
       id: logId,
-      recipient: params.to,
+      recipient: recipientStr,
       subject: params.subject,
       templateName: params.templateName,
       status: "success",

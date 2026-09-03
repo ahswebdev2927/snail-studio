@@ -82,6 +82,9 @@ export interface RedispatchRequest {
 export interface TrackingSyncResult {
   totalSynced: number;
   updatedCount: number;
+  skippedCount?: number;
+  failedCount?: number;
+  durationMs?: number;
   errors: Array<{ waybill: string; error: string }>;
 }
 
