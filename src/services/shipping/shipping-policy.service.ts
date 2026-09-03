@@ -1,6 +1,6 @@
 import { db } from "@/db";
-import { orders, orderAddresses, orderAddressHistory, inventoryItems, inventoryReservations } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { orders, orderAddresses, orderAddressHistory, shipments, inventoryItems, inventoryReservations } from "@/db/schema";
+import { eq, and, ne } from "drizzle-orm";
 import { getSystemSettingsMap } from "@/services/settings";
 import { getShippingProvider } from "@/lib/shipping";
 import { nanoid } from "nanoid";
@@ -241,6 +241,75 @@ export async function recalculateShippingForOrder(
 }
 
 /**
+ * Checks if an order's address is locked for editing based on shipment creation status.
+ * Address editing is ONLY available until a shipment (AWB) is created.
+ */
+export async function checkAddressLockStatus(orderId: string): Promise<{
+  locked: boolean;
+  reason?: string;
+}> {
+  const order = await db.query.orders.findFirst({
+    where: eq(orders.id, orderId),
+  });
+
+  if (!order) {
+    return { locked: true, reason: "Order not found." };
+  }
+
+  // Check terminal statuses
+  if (["shipped", "delivered", "cancelled", "refunded"].includes(order.status)) {
+    return {
+      locked: true,
+      reason: `Address locked: Order is in status '${order.status}'.`,
+    };
+  }
+
+  // Check if any active shipment (AWB) exists for this order
+  const existingShipment = await db.query.shipments.findFirst({
+    where: and(
+      eq(shipments.orderId, orderId),
+      ne(shipments.status, "cancelled")
+    ),
+  });
+
+  if (existingShipment) {
+    return {
+      locked: true,
+      reason: "Address locked: A shipment (AWB) has already been created for this order.",
+    };
+  }
+
+  return { locked: false };
+}
+
+/**
+ * Validates if a pincode is serviceable by the active shipping provider.
+ */
+export async function validatePincodeServiceability(pincode: string): Promise<{
+  serviceable: boolean;
+  message?: string;
+}> {
+  const cleanPincode = pincode.trim().replace(/\s+/g, "");
+  if (!cleanPincode || cleanPincode.length < 5) {
+    return { serviceable: false, message: "Invalid or incomplete pincode." };
+  }
+
+  try {
+    const provider = getShippingProvider("delhivery");
+    const res = await provider.checkServiceability({
+      destinationPincode: cleanPincode,
+    });
+    return {
+      serviceable: res.isServiceable,
+      message: res.isServiceable ? undefined : (res.remarks || "Pincode is not serviceable by courier partner."),
+    };
+  } catch (err: any) {
+    console.warn("Serviceability check exception, assuming serviceable for fallback:", err);
+    return { serviceable: true };
+  }
+}
+
+/**
  * Validates pre-shipment requirements for an order before allowing AWB generation.
  */
 export async function validatePreShipment(orderId: string) {
@@ -274,12 +343,17 @@ export async function validatePreShipment(orderId: string) {
     }
   }
 
-  // 3. Address Verified
+  // 3. Address Verified & Serviceable Check
   const shippingAddress = order.addresses.find((a) => a.type === "shipping");
   if (!shippingAddress) {
     errors.push("Shipping address is missing.");
   } else if (shippingAddress.postalCode.length < 5 || !shippingAddress.city || !shippingAddress.state) {
     errors.push("Shipping address validation failed: Pincode, City, or State is incomplete.");
+  } else {
+    const serviceability = await validatePincodeServiceability(shippingAddress.postalCode);
+    if (!serviceability.serviceable) {
+      errors.push(`Shipping address error: Destination pincode ${shippingAddress.postalCode} is not serviceable.`);
+    }
   }
 
   // 4. Shipping Calculation check
