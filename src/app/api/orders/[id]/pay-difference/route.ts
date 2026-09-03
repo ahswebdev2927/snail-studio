@@ -61,6 +61,7 @@ export async function GET(
       orderId: order.id,
       gateway: session.gateway,
       gatewayTransactionId: session.id, // Stores the gateway order ID temporarily
+      purpose: "shipping_adjustment",
       status: "pending",
       amount: session.amount,
       currency: session.currency,

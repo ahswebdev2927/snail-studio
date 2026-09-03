@@ -1,0 +1,1 @@
+ALTER TABLE `payments` ADD `purpose` text DEFAULT 'checkout' NOT NULL;

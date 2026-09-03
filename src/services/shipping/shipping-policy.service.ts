@@ -244,11 +244,15 @@ export async function recalculateShippingForOrder(
  * Checks if an order's address is locked for editing based on shipment creation status.
  * Address editing is ONLY available until a shipment (AWB) is created.
  */
-export async function checkAddressLockStatus(orderId: string): Promise<{
+export async function checkAddressLockStatus(
+  orderId: string,
+  txClient?: any
+): Promise<{
   locked: boolean;
   reason?: string;
 }> {
-  const order = await db.query.orders.findFirst({
+  const client = txClient || db;
+  const order = await client.query.orders.findFirst({
     where: eq(orders.id, orderId),
   });
 
@@ -265,7 +269,7 @@ export async function checkAddressLockStatus(orderId: string): Promise<{
   }
 
   // Check if any active shipment (AWB) exists for this order
-  const existingShipment = await db.query.shipments.findFirst({
+  const existingShipment = await client.query.shipments.findFirst({
     where: and(
       eq(shipments.orderId, orderId),
       ne(shipments.status, "cancelled")
@@ -312,8 +316,9 @@ export async function validatePincodeServiceability(pincode: string): Promise<{
 /**
  * Validates pre-shipment requirements for an order before allowing AWB generation.
  */
-export async function validatePreShipment(orderId: string) {
-  const order = await db.query.orders.findFirst({
+export async function validatePreShipment(orderId: string, txClient?: any) {
+  const client = txClient || db;
+  const order = await client.query.orders.findFirst({
     where: eq(orders.id, orderId),
     with: {
       addresses: true,

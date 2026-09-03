@@ -79,34 +79,6 @@ export async function POST(
       return NextResponse.json({ error: "Order ID is required" }, { status: 400 });
     }
 
-    // Verify order exists
-    const order = await db.query.orders.findFirst({
-      where: eq(orders.id, orderId),
-    });
-
-    if (!order) {
-      return NextResponse.json({ error: "Order not found" }, { status: 404 });
-    }
-
-    if (order.shippingDifferenceStatus === "pending") {
-      return NextResponse.json(
-        { error: "Cannot create shipment: Additional shipping adjustment payment is pending from the customer." },
-        { status: 400 }
-      );
-    }
-
-    // Check if shipment already exists
-    const existingShipment = await db.query.shipments.findFirst({
-      where: eq(shipments.orderId, orderId),
-    });
-
-    if (existingShipment) {
-      return NextResponse.json(
-        { error: "A shipment has already been created for this order" },
-        { status: 400 }
-      );
-    }
-
     let body;
     try {
       body = await req.json();
@@ -122,23 +94,51 @@ export async function POST(
       );
     }
 
-    // Pre-Shipment Validation check
-    const validation = await validatePreShipment(orderId);
-    if (!validation.success) {
-      return NextResponse.json(
-        { error: "Pre-shipment validation failed", reasons: validation.errors },
-        { status: 400 }
-      );
-    }
-
     const { carrier, trackingNumber, estimatedDeliveryAt } = result.data;
     const shipmentId = `ship_${nanoid(10)}`;
     const now = new Date();
     const estDeliveryDate = estimatedDeliveryAt ? new Date(estimatedDeliveryAt) : null;
 
-    // Run updates atomically in transaction
-    await db.transaction(async (tx) => {
-      // 1. Create the shipment record
+    // Run order checks, validation, and shipment creation atomically in transaction
+    const txResult = await db.transaction(async (tx) => {
+      // 1. Verify order exists
+      const order = await tx.query.orders.findFirst({
+        where: eq(orders.id, orderId),
+      });
+
+      if (!order) {
+        return { status: 404, data: { error: "Order not found" } };
+      }
+
+      if (order.shippingDifferenceStatus === "pending") {
+        return {
+          status: 400,
+          data: { error: "Cannot create shipment: Additional shipping adjustment payment is pending from the customer." },
+        };
+      }
+
+      // 2. Check if shipment already exists (transactional concurrency check)
+      const existingShipment = await tx.query.shipments.findFirst({
+        where: eq(shipments.orderId, orderId),
+      });
+
+      if (existingShipment) {
+        return {
+          status: 400,
+          data: { error: "A shipment has already been created for this order" },
+        };
+      }
+
+      // 3. Pre-Shipment Validation check (using transaction client)
+      const validation = await validatePreShipment(orderId, tx);
+      if (!validation.success) {
+        return {
+          status: 400,
+          data: { error: "Pre-shipment validation failed", reasons: validation.errors },
+        };
+      }
+
+      // 4. Create the shipment record
       await tx.insert(shipments).values({
         id: shipmentId,
         orderId,
@@ -152,7 +152,7 @@ export async function POST(
         estimatedDeliveryAt: estDeliveryDate,
       });
 
-      // 2. Insert initial tracking event
+      // 5. Insert initial tracking event
       await tx.insert(trackingEvents).values({
         id: `evt_${nanoid(10)}`,
         shipmentId,
@@ -162,7 +162,7 @@ export async function POST(
         timestamp: now,
       });
 
-      // 3. Log "ready_to_ship" in orderStatusHistory
+      // 6. Log "ready_to_ship" in orderStatusHistory
       await tx.insert(orderStatusHistory).values({
         id: `osh_${nanoid(10)}`,
         orderId,
@@ -171,13 +171,26 @@ export async function POST(
         createdAt: now,
       });
 
-      // 4. Update the order status record to processing and lock the address
+      // 7. Update the order status record to processing and lock the address
       await tx.update(orders).set({
         status: "processing",
         addressLockedAt: now, // Address is locked after AWB generation
         updatedAt: now,
       }).where(eq(orders.id, orderId));
+
+      return {
+        status: 201,
+        data: {
+          success: true,
+          message: "Shipment successfully generated",
+          shipmentId,
+        },
+      };
     });
+
+    if (txResult.status !== 201) {
+      return NextResponse.json(txResult.data, { status: txResult.status });
+    }
 
     // 5. Send "Ready To Ship" / "Shipment Created" Email Notification
     await sendShipmentEmail(

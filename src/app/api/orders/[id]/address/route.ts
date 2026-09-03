@@ -61,16 +61,7 @@ export async function POST(
 
     const { name, phone, addressLine1, addressLine2, city, state, postalCode, country, reason } = validation.data;
 
-    // 2. Strict Pre-Shipment Address Lock Check
-    const lockStatus = await checkAddressLockStatus(orderId);
-    if (lockStatus.locked) {
-      return NextResponse.json(
-        { error: lockStatus.reason || "Address locked: Shipment/AWB has already been created for this order." },
-        { status: 400 }
-      );
-    }
-
-    // 3. Destination Pincode Serviceability Check
+    // 2. Destination Pincode Serviceability Check (pre-transaction validation)
     const serviceability = await validatePincodeServiceability(postalCode);
     if (!serviceability.serviceable) {
       return NextResponse.json(
@@ -79,8 +70,17 @@ export async function POST(
       );
     }
 
-    // 4. Execute Modifications within Database Transaction
+    // 3. Execute Modifications within Database Transaction with Concurrency Isolation
     const responseResult = await db.transaction(async (tx) => {
+      // Transactional Pre-Shipment Address Lock Check (runs inside transaction boundary)
+      const lockStatus = await checkAddressLockStatus(orderId, tx);
+      if (lockStatus.locked) {
+        return {
+          status: 400,
+          data: { error: lockStatus.reason || "Address locked: Shipment/AWB has already been created for this order." },
+        };
+      }
+
       const order = await tx.query.orders.findFirst({
         where: eq(orders.id, orderId),
         with: {

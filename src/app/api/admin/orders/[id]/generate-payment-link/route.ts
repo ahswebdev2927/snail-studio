@@ -61,6 +61,7 @@ export async function POST(
       orderId: order.id,
       gateway: session.gateway || "razorpay",
       gatewayTransactionId: session.gatewayOrderId || session.id,
+      purpose: "shipping_adjustment",
       status: "pending",
       amount: differenceToPay,
       currency: session.currency || "INR",

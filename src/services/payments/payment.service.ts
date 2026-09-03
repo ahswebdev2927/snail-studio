@@ -43,6 +43,7 @@ export async function createPaymentSession(orderId: string, tx?: any): Promise<P
     orderId: order.id,
     gateway: session.gateway,
     gatewayTransactionId: session.id, // Stores the gateway order ID (e.g. order_mock_xxx) temporarily until payment capture
+    purpose: "checkout",
     status: "pending",
     amount: session.amount,
     currency: session.currency

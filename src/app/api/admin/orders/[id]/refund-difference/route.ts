@@ -89,6 +89,7 @@ export async function POST(
           id: pmtId,
           orderId,
           gateway: "manual",
+          purpose: "shipping_adjustment",
           status: "succeeded",
           amount: order.totalAmount,
           currency: "INR",
