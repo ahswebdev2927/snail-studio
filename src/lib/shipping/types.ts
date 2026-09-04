@@ -133,3 +133,19 @@ export interface ShippingProvider {
   calculateShippingCost?(req: ShippingCostRequest): Promise<ShippingCostResult>;
   updateNDR?(waybill: string, action: string, comments?: string): Promise<{ success: boolean }>;
 }
+
+/**
+ * Allowed package statuses for Delhivery cancellation per B2C lifecycle specification:
+ * - Manifested
+ * - In Transit
+ * - Pending
+ * (and early pre-pickup states like ready_to_ship, pickup_scheduled)
+ */
+export const ALLOWED_DELHIVERY_CANCEL_STATUSES = [
+  "pending",
+  "manifested",
+  "ready_to_ship",
+  "pickup_scheduled",
+  "in_transit",
+];
+

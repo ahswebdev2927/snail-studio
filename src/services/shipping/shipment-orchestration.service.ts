@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { orders, orderAddresses, orderItems, shipments, trackingEvents, orderStatusHistory } from "@/db/schema";
+import { orders, orderAddresses, orderItems, shipments, trackingEvents, orderStatusHistory, shipmentAuditLogs } from "@/db/schema";
 import { eq, and, ne, desc } from "drizzle-orm";
 import { getShippingProvider } from "@/lib/shipping";
 import { CreateShipmentRequest, ShippingProvider } from "@/lib/shipping/types";
@@ -54,6 +54,72 @@ export interface RedispatchOptions {
   externalTrackingUrl?: string;
   externalMetadata?: string;
   adminOptions?: CreateShipmentRequest["adminOptions"];
+}
+
+export interface LogShipmentAuditOptions {
+  shipmentId?: string | null;
+  orderId: string;
+  adminId?: string | null;
+  adminName?: string;
+  action: string;
+  previousState?: any;
+  newState?: any;
+  notes?: string | null;
+  txClient?: any;
+}
+
+export interface SchedulePickupOptions {
+  pickupDate: string; // YYYY-MM-DD
+  pickupTime?: string; // e.g. "14:00:00"
+  packageCount?: number;
+  adminName?: string;
+  adminId?: string;
+}
+
+export interface UpdateExternalCourierOptions {
+  shipmentId: string;
+  orderId: string;
+  externalCourierName?: string;
+  trackingNumber?: string;
+  externalTrackingUrl?: string;
+  externalMetadata?: string;
+  adminName?: string;
+  adminId?: string;
+}
+
+/**
+ * Records an administrative audit trail entry for shipping operations.
+ */
+export async function logShipmentAudit(options: LogShipmentAuditOptions) {
+  const {
+    shipmentId,
+    orderId,
+    adminId,
+    adminName = "Admin",
+    action,
+    previousState,
+    newState,
+    notes,
+    txClient,
+  } = options;
+
+  const client = txClient || db;
+  const auditId = `audit_${nanoid(10)}`;
+
+  await client.insert(shipmentAuditLogs).values({
+    id: auditId,
+    shipmentId: shipmentId || null,
+    orderId,
+    adminId: adminId || null,
+    adminName,
+    action,
+    previousState: previousState ? JSON.stringify(previousState) : null,
+    newState: newState ? JSON.stringify(newState) : null,
+    notes: notes || null,
+    createdAt: new Date(),
+  });
+
+  return auditId;
 }
 
 async function sendShipmentEmail(
@@ -278,6 +344,23 @@ export async function createOrderShipment(options: CreateShipmentOptions) {
       createdAt: now,
     });
 
+    // 8. Log audit entry for shipment creation
+    await logShipmentAudit({
+      shipmentId,
+      orderId,
+      action: "create",
+      newState: {
+        shipmentId,
+        provider: providerType,
+        carrier: finalCarrier,
+        waybill: finalWaybill,
+        courierOrderId,
+        attemptNumber,
+      },
+      notes: `Shipment created via ${finalCarrier} (Attempt #${attemptNumber}). Tracking #: ${finalWaybill}.`,
+      txClient: tx,
+    });
+
     await tx.update(orders).set({
       status: "processing",
       addressLockedAt: now,
@@ -311,7 +394,7 @@ export async function createOrderShipment(options: CreateShipmentOptions) {
  * Atomically reverts order status back to 'processing' and records mandatory admin reason.
  */
 export async function cancelOrderShipment(options: CancelShipmentOptions) {
-  const { orderId, reason, adminName = "Admin" } = options;
+  const { orderId, reason, adminName = "Admin", adminId } = options;
   const trimmedReason = reason?.trim();
 
   if (!trimmedReason || trimmedReason.length < 3) {
@@ -390,6 +473,23 @@ export async function cancelOrderShipment(options: CancelShipmentOptions) {
       notes: `Shipment #${activeShipment.trackingNumber} (Attempt #${activeShipment.attemptNumber}) cancelled by ${adminName}. Reason: "${trimmedReason}". Order state reverted to Processing for re-dispatch.`,
       createdAt: now,
     });
+
+    // 5. Log audit entry for cancellation
+    await logShipmentAudit({
+      shipmentId: activeShipment.id,
+      orderId,
+      adminId,
+      adminName,
+      action: "cancel",
+      previousState: {
+        status: activeShipment.status,
+        waybill: activeShipment.waybill,
+        courierOrderId: activeShipment.courierOrderId,
+      },
+      newState: { status: "cancelled" },
+      notes: `Shipment attempt #${activeShipment.attemptNumber} cancelled. Reason: ${trimmedReason}`,
+      txClient: tx,
+    });
   });
 
   // Notify customer
@@ -467,5 +567,118 @@ export async function fetchShipmentLabel(orderId: string, pdfSize: "A4" | "4R" =
   }
 
   const waybill = activeShipment.waybill || activeShipment.trackingNumber;
-  return await provider.generateLabel([waybill], pdfSize);
+  const labelRes = await provider.generateLabel([waybill], pdfSize);
+
+  await logShipmentAudit({
+    shipmentId: activeShipment.id,
+    orderId,
+    action: "label_generated",
+    notes: `Generated ${pdfSize} label for waybill ${waybill}.`,
+  });
+
+  return labelRes;
+}
+
+/**
+ * Schedules a warehouse pickup request with Delhivery provider using DELHIVERY_PICKUP_LOCATION.
+ */
+export async function scheduleShipmentPickup(options: SchedulePickupOptions) {
+  const { pickupDate, pickupTime = "14:00:00", packageCount = 1, adminName = "Admin", adminId } = options;
+
+  const provider = getShippingProvider("delhivery");
+  if (!provider.createPickup) {
+    throw new Error("Pickup scheduling is not supported by the current shipping provider.");
+  }
+
+  const result = await provider.createPickup({
+    pickupDate,
+    pickupTime,
+    packageCount,
+  });
+
+  if (!result.success) {
+    throw new Error(result.message || "Failed to schedule pickup with Delhivery API.");
+  }
+
+  await logShipmentAudit({
+    orderId: "SYSTEM_PICKUP",
+    adminId,
+    adminName,
+    action: "pickup_scheduled",
+    newState: {
+      pickupId: result.pickupId,
+      pickupDate,
+      pickupTime,
+      packageCount,
+    },
+    notes: `Scheduled pickup for ${packageCount} package(s) on ${pickupDate} at ${pickupTime}. Pickup ID: ${result.pickupId || "N/A"}. ${result.message || ""}`,
+  });
+
+  return result;
+}
+
+/**
+ * Updates manual external courier details for a shipment attempt.
+ */
+export async function updateExternalCourierDetails(options: UpdateExternalCourierOptions) {
+  const {
+    shipmentId,
+    orderId,
+    externalCourierName,
+    trackingNumber,
+    externalTrackingUrl,
+    externalMetadata,
+    adminName = "Admin",
+    adminId,
+  } = options;
+
+  const existingShipment = await db.query.shipments.findFirst({
+    where: eq(shipments.id, shipmentId),
+  });
+
+  if (!existingShipment) {
+    throw new Error(`Shipment not found: ${shipmentId}`);
+  }
+
+  const now = new Date();
+
+  await db.transaction(async (tx) => {
+    const updateData: any = {
+      updatedAt: now,
+    };
+    if (externalCourierName) {
+      updateData.carrier = externalCourierName;
+      updateData.externalCourierName = externalCourierName;
+    }
+    if (trackingNumber) {
+      updateData.trackingNumber = trackingNumber;
+      updateData.waybill = trackingNumber;
+    }
+    if (externalTrackingUrl) {
+      updateData.trackingUrl = externalTrackingUrl;
+    }
+    if (externalMetadata !== undefined) {
+      updateData.externalMetadata = externalMetadata;
+    }
+
+    await tx.update(shipments).set(updateData).where(eq(shipments.id, shipmentId));
+
+    await logShipmentAudit({
+      shipmentId,
+      orderId,
+      adminId,
+      adminName,
+      action: "external_updated",
+      previousState: {
+        carrier: existingShipment.carrier,
+        trackingNumber: existingShipment.trackingNumber,
+        trackingUrl: existingShipment.trackingUrl,
+      },
+      newState: updateData,
+      notes: `External courier details updated by ${adminName}.`,
+      txClient: tx,
+    });
+  });
+
+  return { success: true };
 }

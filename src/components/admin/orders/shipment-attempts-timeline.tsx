@@ -16,7 +16,7 @@ import {
   ChevronUp,
   Loader2,
 } from "lucide-react";
-import { ALLOWED_DELHIVERY_CANCEL_STATUSES } from "@/services/shipping/shipment-orchestration.service";
+import { ALLOWED_DELHIVERY_CANCEL_STATUSES } from "@/lib/shipping/types";
 
 export interface ShipmentAttemptItem {
   id: string;
@@ -181,15 +181,15 @@ export function ShipmentAttemptsTimeline({
 
   if (shipments.length === 0) {
     return (
-      <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 text-center">
-        <Truck className="w-10 h-10 text-neutral-600 mx-auto mb-3" />
-        <h4 className="text-sm font-semibold text-neutral-200">No Shipment Created Yet</h4>
-        <p className="text-xs text-neutral-400 mt-1 max-w-md mx-auto">
+      <div className="bg-white border border-slate-200 rounded-2xl p-6 text-center shadow-sm">
+        <Truck className="w-10 h-10 text-[#a95423] mx-auto mb-3 opacity-80" />
+        <h4 className="text-sm font-semibold text-slate-800">No Shipment Created Yet</h4>
+        <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
           Create an automated Delhivery dispatch or manual external courier dispatch for this order.
         </p>
         <button
           onClick={onOpenDispatchModal}
-          className="mt-4 px-4 py-2 text-xs font-semibold bg-pink-600 hover:bg-pink-500 text-white rounded-xl shadow-lg shadow-pink-600/20 transition inline-flex items-center space-x-2"
+          className="mt-4 px-4 py-2 text-xs font-semibold bg-[#a95423] hover:bg-[#94451b] text-white rounded-xl shadow-sm transition inline-flex items-center space-x-2 cursor-pointer"
         >
           <Truck className="w-4 h-4" />
           <span>Dispatch Order Now</span>
@@ -202,15 +202,15 @@ export function ShipmentAttemptsTimeline({
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h4 className="text-sm font-semibold text-neutral-200 flex items-center space-x-2">
-          <Truck className="w-4 h-4 text-pink-400" />
+        <h4 className="text-sm font-semibold text-slate-800 flex items-center space-x-2">
+          <Truck className="w-4 h-4 text-[#a95423]" />
           <span>Shipment Attempts History ({shipments.length})</span>
         </h4>
 
         {!activeShipment && (
           <button
             onClick={onOpenDispatchModal}
-            className="px-3 py-1.5 text-xs font-medium bg-pink-600 hover:bg-pink-500 text-white rounded-lg transition flex items-center space-x-1.5"
+            className="px-3 py-1.5 text-xs font-medium bg-[#a95423] hover:bg-[#94451b] text-white rounded-lg transition flex items-center space-x-1.5 cursor-pointer shadow-sm"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             <span>New Dispatch Attempt</span>
@@ -230,31 +230,31 @@ export function ShipmentAttemptsTimeline({
               key={ship.id}
               className={`border rounded-2xl p-5 transition ${
                 isActive
-                  ? "bg-neutral-900 border-pink-500/30 shadow-lg shadow-pink-500/5"
-                  : "bg-neutral-950/60 border-neutral-800 opacity-75"
+                  ? "bg-white border-[#a95423]/30 shadow-sm"
+                  : "bg-slate-50/80 border-slate-200 opacity-80"
               }`}
             >
-              <div className="flex flex-wrap items-start justify-between gap-3 pb-3 border-b border-neutral-800">
+              <div className="flex flex-wrap items-start justify-between gap-3 pb-3 border-b border-slate-200">
                 <div className="flex items-center space-x-3">
                   <span
                     className={`px-2.5 py-1 text-xs font-bold rounded-lg ${
-                      isActive ? "bg-pink-500/10 text-pink-400 border border-pink-500/20" : "bg-neutral-800 text-neutral-400"
+                      isActive ? "bg-[#a95423]/10 text-[#a95423] border border-[#a95423]/20" : "bg-slate-200 text-slate-600 border border-slate-300"
                     }`}
                   >
                     Attempt #{ship.attemptNumber} {isActive ? "(Active)" : "(Cancelled)"}
                   </span>
 
                   <div>
-                    <h5 className="text-sm font-bold text-neutral-100 flex items-center space-x-2">
+                    <h5 className="text-sm font-bold text-slate-900 flex items-center space-x-2">
                       <span>{ship.carrier}</span>
                       {ship.provider === "external" && (
-                        <span className="text-[10px] uppercase font-semibold px-2 py-0.5 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded">
+                        <span className="text-[10px] uppercase font-semibold px-2 py-0.5 bg-amber-50 text-amber-700 border border-amber-200 rounded">
                           External Courier
                         </span>
                       )}
                     </h5>
-                    <p className="text-xs text-neutral-400 mt-0.5">
-                      Tracking / Waybill: <code className="text-pink-300 font-mono">{ship.trackingNumber}</code>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Tracking / Waybill: <code className="text-[#a95423] font-mono font-semibold">{ship.trackingNumber}</code>
                     </p>
                   </div>
                 </div>
@@ -263,10 +263,10 @@ export function ShipmentAttemptsTimeline({
                   <span
                     className={`px-3 py-1 text-xs font-medium rounded-full capitalize ${
                       ship.status === "delivered"
-                        ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                        ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
                         : ship.status === "cancelled"
-                        ? "bg-red-500/10 text-red-400 border border-red-500/20"
-                        : "bg-blue-500/10 text-blue-400 border border-blue-500/20"
+                        ? "bg-red-50 text-red-700 border border-red-200"
+                        : "bg-blue-50 text-blue-700 border border-blue-200"
                     }`}
                   >
                     {ship.status.replace(/_/g, " ")}
@@ -275,19 +275,19 @@ export function ShipmentAttemptsTimeline({
               </div>
 
               {/* Extra Details & External Tracking Button */}
-              <div className="py-3 grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-neutral-300">
+              <div className="py-3 grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-slate-600">
                 <div>
-                  <span className="text-neutral-500">Created:</span>{" "}
+                  <span className="text-slate-400">Created:</span>{" "}
                   {new Date(ship.createdAt).toLocaleString()}
                 </div>
                 {ship.trackingUrl && (
                   <div className="flex items-center space-x-1">
-                    <span className="text-neutral-500">Tracking Link:</span>{" "}
+                    <span className="text-slate-400">Tracking Link:</span>{" "}
                     <a
                       href={ship.trackingUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-pink-400 hover:underline flex items-center space-x-1 truncate max-w-xs"
+                      className="text-[#a95423] hover:underline font-medium flex items-center space-x-1 truncate max-w-xs"
                     >
                       <span>{ship.trackingUrl}</span>
                       <ExternalLink className="w-3 h-3 shrink-0" />
@@ -298,30 +298,30 @@ export function ShipmentAttemptsTimeline({
 
               {/* Active Shipment Action Toolbar */}
               {isActive && (
-                <div className="pt-3 border-t border-neutral-800/80 flex flex-wrap items-center justify-between gap-2">
+                <div className="pt-3 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center space-x-2">
                     {ship.provider === "delhivery" && (
                       <button
                         onClick={() => printLabel("4R")}
-                        className="px-3 py-1.5 text-xs font-medium bg-neutral-800 hover:bg-neutral-700 text-neutral-200 rounded-lg transition flex items-center space-x-1.5"
+                        className="px-3 py-1.5 text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 rounded-lg transition flex items-center space-x-1.5 cursor-pointer"
                       >
-                        <Printer className="w-3.5 h-3.5 text-pink-400" />
+                        <Printer className="w-3.5 h-3.5 text-[#a95423]" />
                         <span>Print 4R Label</span>
                       </button>
                     )}
 
                     <button
                       onClick={() => setRedispatchModalOpen(true)}
-                      className="px-3 py-1.5 text-xs font-medium bg-neutral-800 hover:bg-neutral-700 text-neutral-200 rounded-lg transition flex items-center space-x-1.5"
+                      className="px-3 py-1.5 text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 rounded-lg transition flex items-center space-x-1.5 cursor-pointer"
                     >
-                      <RotateCcw className="w-3.5 h-3.5 text-blue-400" />
+                      <RotateCcw className="w-3.5 h-3.5 text-blue-600" />
                       <span>Re-Dispatch</span>
                     </button>
                   </div>
 
                   <button
                     onClick={() => setCancelModalOpen(true)}
-                    className="px-3 py-1.5 text-xs font-medium bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded-lg transition flex items-center space-x-1.5"
+                    className="px-3 py-1.5 text-xs font-medium bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-lg transition flex items-center space-x-1.5 cursor-pointer"
                   >
                     <XCircle className="w-3.5 h-3.5" />
                     <span>Cancel Shipment</span>
@@ -331,25 +331,25 @@ export function ShipmentAttemptsTimeline({
 
               {/* Scan Events Toggle */}
               {ship.trackingEvents && ship.trackingEvents.length > 0 && (
-                <div className="mt-3 pt-2 border-t border-neutral-800/40">
+                <div className="mt-3 pt-2 border-t border-slate-200/60">
                   <button
                     onClick={() => setExpandedAttemptId(isExpanded ? null : ship.id)}
-                    className="text-xs text-neutral-400 hover:text-neutral-200 flex items-center space-x-1"
+                    className="text-xs text-slate-500 hover:text-slate-800 flex items-center space-x-1 cursor-pointer font-medium"
                   >
                     <span>{isExpanded ? "Hide Tracking Scans" : `View ${ship.trackingEvents.length} Tracking Scans`}</span>
                     {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                   </button>
 
                   {isExpanded && (
-                    <div className="mt-3 space-y-2 pl-3 border-l-2 border-pink-500/30">
+                    <div className="mt-3 space-y-2 pl-3 border-l-2 border-[#a95423]/40">
                       {ship.trackingEvents.map((evt) => (
                         <div key={evt.id} className="text-xs space-y-0.5">
-                          <div className="flex items-center space-x-2 font-medium text-neutral-200">
+                          <div className="flex items-center space-x-2 font-medium text-slate-800">
                             <span className="capitalize">{evt.status.replace(/_/g, " ")}</span>
-                            {evt.location && <span className="text-neutral-400 text-[11px]">({evt.location})</span>}
-                            <span className="text-[10px] text-neutral-500">{new Date(evt.timestamp).toLocaleString()}</span>
+                            {evt.location && <span className="text-slate-500 text-[11px]">({evt.location})</span>}
+                            <span className="text-[10px] text-slate-400">{new Date(evt.timestamp).toLocaleString()}</span>
                           </div>
-                          {evt.description && <p className="text-neutral-400 text-[11px]">{evt.description}</p>}
+                          {evt.description && <p className="text-slate-600 text-[11px]">{evt.description}</p>}
                         </div>
                       ))}
                     </div>
@@ -363,43 +363,43 @@ export function ShipmentAttemptsTimeline({
 
       {/* Cancel Shipment Modal */}
       {cancelModalOpen && activeShipment && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-neutral-900 border border-neutral-800 text-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl p-6 space-y-4">
-            <h3 className="text-lg font-semibold text-neutral-100 flex items-center space-x-2">
-              <XCircle className="w-5 h-5 text-red-400" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white border border-slate-200 text-slate-900 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl p-6 space-y-4">
+            <h3 className="text-lg font-bold text-slate-900 flex items-center space-x-2">
+              <XCircle className="w-5 h-5 text-red-600" />
               <span>Cancel Active Shipment (Attempt #{activeShipment.attemptNumber})</span>
             </h3>
 
             {cancelError && (
-              <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl text-xs flex items-start space-x-2">
-                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+              <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs flex items-start space-x-2">
+                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-red-600" />
                 <span>{cancelError}</span>
               </div>
             )}
 
             {/* Check Delhivery Status Eligibility Warning */}
             {activeShipment.provider === "delhivery" && !checkDelhiveryCancelEligibility(activeShipment).eligible ? (
-              <div className="p-4 bg-amber-500/10 border border-amber-500/20 text-amber-300 rounded-xl text-xs space-y-1">
+              <div className="p-4 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl text-xs space-y-1">
                 <p className="font-bold">Cancellation Ineligible per Delhivery Rules</p>
                 <p>{checkDelhiveryCancelEligibility(activeShipment).reason}</p>
               </div>
             ) : (
-              <p className="text-xs text-neutral-400">
-                Cancelling this active shipment will call the courier cancellation API, mark the shipment as cancelled, and <strong className="text-pink-400">revert order status back to Processing</strong> for immediate re-dispatch.
+              <p className="text-xs text-slate-600">
+                Cancelling this active shipment will call the courier cancellation API, mark the shipment as cancelled, and <strong className="text-[#a95423]">revert order status back to Processing</strong> for immediate re-dispatch.
               </p>
             )}
 
             <form onSubmit={handleCancelShipment} className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-neutral-300 mb-1.5">
-                  Cancellation Reason <span className="text-pink-400">* Required</span>
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                  Cancellation Reason <span className="text-[#a95423]">* Required</span>
                 </label>
                 <textarea
                   rows={3}
                   placeholder="e.g. Customer requested address change before dispatch / Carrier issue..."
                   value={cancelReason}
                   onChange={(e) => setCancelReason(e.target.value)}
-                  className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-pink-500 resize-none"
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-[#a95423] focus:bg-white resize-none"
                   required
                 />
               </div>
@@ -408,7 +408,7 @@ export function ShipmentAttemptsTimeline({
                 <button
                   type="button"
                   onClick={() => setCancelModalOpen(false)}
-                  className="px-4 py-2 text-xs font-medium text-neutral-400 hover:text-white rounded-xl hover:bg-neutral-800 transition"
+                  className="px-4 py-2 text-xs font-medium text-slate-600 hover:text-slate-900 rounded-xl hover:bg-slate-100 transition cursor-pointer"
                   disabled={cancelling}
                 >
                   Close
@@ -416,7 +416,7 @@ export function ShipmentAttemptsTimeline({
                 <button
                   type="submit"
                   disabled={cancelling || (activeShipment.provider === "delhivery" && !checkDelhiveryCancelEligibility(activeShipment).eligible)}
-                  className="px-4 py-2 text-xs font-medium bg-red-600 hover:bg-red-500 text-white rounded-xl shadow-lg disabled:opacity-50 transition flex items-center space-x-1.5"
+                  className="px-4 py-2 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-sm disabled:opacity-50 transition flex items-center space-x-1.5 cursor-pointer"
                 >
                   {cancelling ? (
                     <>
@@ -435,29 +435,29 @@ export function ShipmentAttemptsTimeline({
 
       {/* Re-Dispatch Modal */}
       {redispatchModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-neutral-900 border border-neutral-800 text-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl p-6 space-y-4">
-            <h3 className="text-lg font-semibold text-neutral-100 flex items-center space-x-2">
-              <RotateCcw className="w-5 h-5 text-blue-400" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white border border-slate-200 text-slate-900 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl p-6 space-y-4">
+            <h3 className="text-lg font-bold text-slate-900 flex items-center space-x-2">
+              <RotateCcw className="w-5 h-5 text-blue-600" />
               <span>Re-Dispatch Order</span>
             </h3>
 
             {redispatchError && (
-              <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl text-xs flex items-start space-x-2">
-                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+              <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs flex items-start space-x-2">
+                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-red-600" />
                 <span>{redispatchError}</span>
               </div>
             )}
 
             <form onSubmit={handleRedispatch} className="space-y-4 text-xs">
               <div>
-                <label className="block font-medium text-neutral-300 mb-1">Re-Dispatch Provider</label>
+                <label className="block font-semibold text-slate-700 mb-1">Re-Dispatch Provider</label>
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
                     onClick={() => setRedispatchProvider("delhivery")}
-                    className={`py-2 px-3 rounded-lg border font-medium ${
-                      redispatchProvider === "delhivery" ? "bg-pink-600 text-white border-pink-500" : "bg-neutral-950 border-neutral-800 text-neutral-400"
+                    className={`py-2 px-3 rounded-lg border font-medium cursor-pointer transition ${
+                      redispatchProvider === "delhivery" ? "bg-[#a95423] text-white border-[#a95423]" : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
                     }`}
                   >
                     Delhivery API
@@ -465,8 +465,8 @@ export function ShipmentAttemptsTimeline({
                   <button
                     type="button"
                     onClick={() => setRedispatchProvider("external")}
-                    className={`py-2 px-3 rounded-lg border font-medium ${
-                      redispatchProvider === "external" ? "bg-pink-600 text-white border-pink-500" : "bg-neutral-950 border-neutral-800 text-neutral-400"
+                    className={`py-2 px-3 rounded-lg border font-medium cursor-pointer transition ${
+                      redispatchProvider === "external" ? "bg-[#a95423] text-white border-[#a95423]" : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
                     }`}
                   >
                     External Courier
@@ -477,24 +477,24 @@ export function ShipmentAttemptsTimeline({
               {redispatchProvider === "external" && (
                 <>
                   <div>
-                    <label className="block font-medium text-neutral-300 mb-1">Carrier Name</label>
+                    <label className="block font-semibold text-slate-700 mb-1">Carrier Name</label>
                     <input
                       type="text"
                       value={redispatchCarrier}
                       onChange={(e) => setRedispatchCarrier(e.target.value)}
-                      className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-pink-500"
+                      className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:border-[#a95423] focus:bg-white"
                       required
                     />
                   </div>
 
                   <div>
-                    <label className="block font-medium text-neutral-300 mb-1">Manual Tracking URL *</label>
+                    <label className="block font-semibold text-slate-700 mb-1">Manual Tracking URL *</label>
                     <input
                       type="url"
                       placeholder="https://..."
                       value={redispatchTrackingUrl}
                       onChange={(e) => setRedispatchTrackingUrl(e.target.value)}
-                      className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-pink-500"
+                      className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:border-[#a95423] focus:bg-white"
                       required
                     />
                   </div>
@@ -502,13 +502,13 @@ export function ShipmentAttemptsTimeline({
               )}
 
               <div>
-                <label className="block font-medium text-neutral-300 mb-1">Reason for Re-Dispatch *</label>
+                <label className="block font-semibold text-slate-700 mb-1">Reason for Re-Dispatch *</label>
                 <textarea
                   rows={2}
                   placeholder="e.g. Previous attempt NDR / Address corrected..."
                   value={redispatchReason}
                   onChange={(e) => setRedispatchReason(e.target.value)}
-                  className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-pink-500 resize-none"
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:border-[#a95423] focus:bg-white resize-none"
                   required
                 />
               </div>
@@ -517,7 +517,7 @@ export function ShipmentAttemptsTimeline({
                 <button
                   type="button"
                   onClick={() => setRedispatchModalOpen(false)}
-                  className="px-4 py-2 font-medium text-neutral-400 hover:text-white rounded-xl hover:bg-neutral-800 transition"
+                  className="px-4 py-2 font-medium text-slate-600 hover:text-slate-900 rounded-xl hover:bg-slate-100 transition cursor-pointer"
                   disabled={redispatching}
                 >
                   Close
@@ -525,7 +525,7 @@ export function ShipmentAttemptsTimeline({
                 <button
                   type="submit"
                   disabled={redispatching}
-                  className="px-4 py-2 font-medium bg-blue-600 hover:bg-blue-500 text-white rounded-xl shadow-lg transition flex items-center space-x-1.5"
+                  className="px-4 py-2 font-semibold bg-[#a95423] hover:bg-[#94451b] text-white rounded-xl shadow-sm transition flex items-center space-x-1.5 cursor-pointer"
                 >
                   {redispatching ? (
                     <>

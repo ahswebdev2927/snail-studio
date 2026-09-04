@@ -18,7 +18,9 @@ import {
   Info,
   Briefcase,
   School,
-  Tag
+  Tag,
+  CheckCircle2,
+  AlertCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { saveUserAddress, deleteUserAddress, setDefaultAddress } from "@/features/account/actions";
@@ -96,6 +98,42 @@ export function AddressClient({ initialAddresses }: AddressClientProps) {
   });
 
   const addressType = form.watch("type");
+  const watchedPostalCode = form.watch("postalCode");
+
+  const [pincodeCheck, setPincodeCheck] = useState<{
+    checking: boolean;
+    isServiceable: boolean | null;
+    message: string;
+  }>({ checking: false, isServiceable: null, message: "" });
+
+  useEffect(() => {
+    const cleanPin = (watchedPostalCode || "").replace(/\D/g, "");
+    if (cleanPin.length === 6) {
+      setPincodeCheck((prev) => ({ ...prev, checking: true }));
+      fetch(`/api/shipping/serviceability?pincode=${cleanPin}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success && data.isServiceable) {
+            setPincodeCheck({
+              checking: false,
+              isServiceable: true,
+              message: `Serviceable via ${data.courierName || "Delhivery"} (${data.estimatedDays || "4–5 days"})`,
+            });
+          } else {
+            setPincodeCheck({
+              checking: false,
+              isServiceable: false,
+              message: data.remarks || "Pincode is non-serviceable by courier partner.",
+            });
+          }
+        })
+        .catch(() => {
+          setPincodeCheck({ checking: false, isServiceable: null, message: "" });
+        });
+    } else {
+      setPincodeCheck({ checking: false, isServiceable: null, message: "" });
+    }
+  }, [watchedPostalCode]);
 
   const openAddModal = () => {
     if (initialAddresses.length >= 5) {
@@ -166,6 +204,11 @@ export function AddressClient({ initialAddresses }: AddressClientProps) {
   };
 
   const handleFormSubmit = async (data: AddressInput) => {
+    if (pincodeCheck.isServiceable === false) {
+      notify.error("Destination pincode is not serviceable by courier partner. Please enter a valid pincode.");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -484,9 +527,26 @@ export function AddressClient({ initialAddresses }: AddressClientProps) {
                     <InputField placeholder="Maharashtra" />
                   </FormField>
 
-                  <FormField name="postalCode" label="Postal Code / PIN" required>
-                    <InputField placeholder="400063" />
-                  </FormField>
+                  <div className="space-y-1">
+                    <FormField name="postalCode" label="Postal Code / PIN" required>
+                      <InputField placeholder="400063" />
+                    </FormField>
+                    {pincodeCheck.checking && (
+                      <p className="text-[10px] text-muted-foreground animate-pulse mt-1">Checking pincode...</p>
+                    )}
+                    {pincodeCheck.isServiceable === true && (
+                      <p className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1 mt-1">
+                        <CheckCircle2 className="w-3 h-3 shrink-0" />
+                        <span>{pincodeCheck.message}</span>
+                      </p>
+                    )}
+                    {pincodeCheck.isServiceable === false && (
+                      <p className="text-[10px] font-medium text-destructive flex items-center gap-1 mt-1">
+                        <AlertCircle className="w-3 h-3 shrink-0" />
+                        <span>{pincodeCheck.message}</span>
+                      </p>
+                    )}
+                  </div>
                 </div>
 
                 {/* Country and Type */}

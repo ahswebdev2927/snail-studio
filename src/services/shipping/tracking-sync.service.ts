@@ -69,7 +69,7 @@ export async function syncActiveShipments(): Promise<TrackingSyncResult> {
   const terminalStatuses = ["delivered", "cancelled", "rto"];
 
   const activeShipments = await db.query.shipments.findMany({
-    where: notInArray(shipments.status, terminalStatuses),
+    where: notInArray(shipments.status, terminalStatuses as any),
     with: {
       order: {
         with: { user: true },

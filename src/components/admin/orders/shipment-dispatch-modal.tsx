@@ -94,22 +94,22 @@ export function ShipmentDispatchModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="bg-neutral-900 border border-neutral-800 text-white rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      <div className="bg-white border border-slate-200 text-slate-900 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-800 bg-neutral-950/50">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50">
           <div className="flex items-center space-x-3">
-            <div className="p-2 bg-pink-500/10 text-pink-400 rounded-xl">
+            <div className="p-2 bg-[#a95423]/10 text-[#a95423] rounded-xl">
               <Truck className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-neutral-100">Dispatch Order Shipment</h3>
-              <p className="text-xs text-neutral-400">Order ID: #{orderId}</p>
+              <h3 className="text-lg font-bold text-slate-900">Dispatch Order Shipment</h3>
+              <p className="text-xs text-slate-500">Order ID: #{orderId}</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 text-neutral-400 hover:text-white rounded-lg hover:bg-neutral-800 transition"
+            className="p-2 text-slate-400 hover:text-slate-800 rounded-lg hover:bg-slate-200/60 transition cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -118,18 +118,18 @@ export function ShipmentDispatchModal({
         {/* Content */}
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {error && (
-            <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl flex items-start space-x-3 text-sm">
-              <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
+            <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl flex items-start space-x-3 text-xs">
+              <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5 text-red-600" />
               <span>{error}</span>
             </div>
           )}
 
           {isDifferencePending && (
-            <div className="p-4 bg-amber-500/10 border border-amber-500/20 text-amber-300 rounded-xl flex items-start space-x-3 text-sm">
-              <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
+            <div className="p-4 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl flex items-start space-x-3 text-xs">
+              <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5 text-amber-600" />
               <div>
-                <p className="font-medium">Pending Shipping Adjustment</p>
-                <p className="text-xs text-amber-400/80 mt-0.5">
+                <p className="font-bold">Pending Shipping Adjustment</p>
+                <p className="text-xs text-amber-700 mt-0.5">
                   The customer has a pending shipping difference payment. Shipment creation is blocked until settled or waived.
                 </p>
               </div>
@@ -137,14 +137,14 @@ export function ShipmentDispatchModal({
           )}
 
           {/* Provider Selection Tabs */}
-          <div className="grid grid-cols-2 gap-3 p-1 bg-neutral-950 rounded-xl border border-neutral-800">
+          <div className="grid grid-cols-2 gap-3 p-1 bg-slate-100 rounded-xl border border-slate-200">
             <button
               type="button"
               onClick={() => setProvider("delhivery")}
-              className={`py-3 px-4 rounded-lg text-sm font-medium transition flex items-center justify-center space-x-2 ${
+              className={`py-3 px-4 rounded-lg text-xs font-semibold transition flex items-center justify-center space-x-2 cursor-pointer ${
                 provider === "delhivery"
-                  ? "bg-pink-600 text-white shadow-lg"
-                  : "text-neutral-400 hover:text-neutral-200"
+                  ? "bg-[#a95423] text-white shadow-sm"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/50"
               }`}
             >
               <ShieldCheck className="w-4 h-4" />
@@ -154,10 +154,10 @@ export function ShipmentDispatchModal({
             <button
               type="button"
               onClick={() => setProvider("external")}
-              className={`py-3 px-4 rounded-lg text-sm font-medium transition flex items-center justify-center space-x-2 ${
+              className={`py-3 px-4 rounded-lg text-xs font-semibold transition flex items-center justify-center space-x-2 cursor-pointer ${
                 provider === "external"
-                  ? "bg-pink-600 text-white shadow-lg"
-                  : "text-neutral-400 hover:text-neutral-200"
+                  ? "bg-[#a95423] text-white shadow-sm"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/50"
               }`}
             >
               <ExternalLink className="w-4 h-4" />
@@ -167,33 +167,33 @@ export function ShipmentDispatchModal({
 
           {/* Delhivery API Form Options */}
           {provider === "delhivery" && (
-            <div className="space-y-4 bg-neutral-950/40 p-4 rounded-xl border border-neutral-800/60">
-              <div className="flex items-center justify-between text-xs text-neutral-400 pb-2 border-b border-neutral-800">
+            <div className="space-y-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
+              <div className="flex items-center justify-between text-xs text-slate-500 pb-2 border-b border-slate-200">
                 <span>Courier Service: Delhivery Surface / Express</span>
                 <span>Destination Pincode: {customerPincode || "Verified"}</span>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-medium text-neutral-300 mb-1.5">Package Weight (Grams)</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">Package Weight (Grams)</label>
                   <input
                     type="number"
                     min="100"
                     max="50000"
                     value={weightGrams}
                     onChange={(e) => setWeightGrams(Number(e.target.value))}
-                    className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-pink-500"
+                    className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-[#a95423]"
                     required
                   />
                 </div>
 
                 <div className="flex items-center pt-6">
-                  <label className="flex items-center space-x-2 cursor-pointer text-sm text-neutral-300">
+                  <label className="flex items-center space-x-2 cursor-pointer text-xs font-medium text-slate-700">
                     <input
                       type="checkbox"
                       checked={fragile}
                       onChange={(e) => setFragile(e.target.checked)}
-                      className="w-4 h-4 rounded bg-neutral-900 border-neutral-700 text-pink-600 focus:ring-pink-500"
+                      className="w-4 h-4 rounded border-slate-300 text-[#a95423] focus:ring-[#a95423]"
                     />
                     <span>Mark as Fragile Packaging</span>
                   </label>
@@ -204,14 +204,14 @@ export function ShipmentDispatchModal({
 
           {/* External Courier Form Options */}
           {provider === "external" && (
-            <div className="space-y-4 bg-neutral-950/40 p-4 rounded-xl border border-neutral-800/60">
+            <div className="space-y-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-medium text-neutral-300 mb-1.5">Courier Carrier</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">Courier Carrier</label>
                   <select
                     value={carrier}
                     onChange={(e) => setCarrier(e.target.value)}
-                    className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-pink-500"
+                    className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-[#a95423] cursor-pointer"
                   >
                     <option value="DTDC">DTDC Express</option>
                     <option value="BlueDart">BlueDart</option>
@@ -224,56 +224,56 @@ export function ShipmentDispatchModal({
 
                 {carrier === "Other" && (
                   <div>
-                    <label className="block text-xs font-medium text-neutral-300 mb-1.5">Custom Courier Name</label>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1.5">Custom Courier Name</label>
                     <input
                       type="text"
                       placeholder="e.g. Local Courier Service"
                       value={customCarrierName}
                       onChange={(e) => setCustomCarrierName(e.target.value)}
-                      className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-pink-500"
+                      className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-[#a95423]"
                       required
                     />
                   </div>
                 )}
 
                 <div>
-                  <label className="block text-xs font-medium text-neutral-300 mb-1.5">Waybill / Tracking Number</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">Waybill / Tracking Number</label>
                   <input
                     type="text"
                     placeholder="e.g. D123456789"
                     value={trackingNumber}
                     onChange={(e) => setTrackingNumber(e.target.value)}
-                    className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-pink-500"
+                    className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-[#a95423]"
                     required
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-neutral-300 mb-1.5">
-                  Manual Tracking URL <span className="text-pink-400">* Required</span>
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                  Manual Tracking URL <span className="text-[#a95423]">* Required</span>
                 </label>
                 <input
                   type="url"
                   placeholder="https://www.dtdc.in/tracking/tracking_results.asp?TknNo=..."
                   value={externalTrackingUrl}
                   onChange={(e) => setExternalTrackingUrl(e.target.value)}
-                  className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-pink-500"
+                  className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-[#a95423]"
                   required
                 />
-                <p className="text-[11px] text-neutral-400 mt-1">
+                <p className="text-[11px] text-slate-500 mt-1">
                   Enter the direct public URL where the customer can view live shipment tracking.
                 </p>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-neutral-300 mb-1.5">Dispatch Notes / Vehicle Details</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Dispatch Notes / Vehicle Details</label>
                 <textarea
                   rows={2}
                   placeholder="Optional dispatch notes or driver details..."
                   value={externalMetadata}
                   onChange={(e) => setExternalMetadata(e.target.value)}
-                  className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-pink-500 resize-none"
+                  className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-[#a95423] resize-none"
                 />
               </div>
             </div>
@@ -284,7 +284,7 @@ export function ShipmentDispatchModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-neutral-400 hover:text-white rounded-xl hover:bg-neutral-800 transition"
+              className="px-4 py-2 text-xs font-medium text-slate-600 hover:text-slate-900 rounded-xl hover:bg-slate-100 transition cursor-pointer"
               disabled={loading}
             >
               Cancel
@@ -293,7 +293,7 @@ export function ShipmentDispatchModal({
             <button
               type="submit"
               disabled={loading || isDifferencePending}
-              className="px-5 py-2 text-sm font-medium bg-pink-600 hover:bg-pink-500 text-white rounded-xl shadow-lg shadow-pink-600/20 disabled:opacity-50 transition flex items-center space-x-2"
+              className="px-5 py-2 text-xs font-semibold bg-[#a95423] hover:bg-[#94451b] text-white rounded-xl shadow-sm disabled:opacity-50 transition flex items-center space-x-2 cursor-pointer"
             >
               {loading ? (
                 <>

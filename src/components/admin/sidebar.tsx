@@ -201,8 +201,11 @@ export default function Sidebar({ isCollapsed, isMobileOpen, closeMobileSidebar,
     },
     {
       name: "Orders",
-      href: "/admin/orders",
-      icon: ClipboardList
+      icon: ClipboardList,
+      subItems: [
+        { name: "All Orders", href: "/admin/orders", icon: ClipboardList },
+        { name: "Shipments", href: "/admin/shipments", icon: Truck }
+      ]
     },
     {
       name: "Customers",

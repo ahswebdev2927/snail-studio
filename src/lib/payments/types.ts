@@ -5,6 +5,7 @@ export interface PaymentSession {
   currency: string; // Currency e.g. "INR"
   status: string; // Session status e.g. "created"
   checkoutUrl?: string; // Redirect URL for mock checkout simulation
+  paymentUrl?: string; // Razorpay payment link URL if generated
   gateway: "mock" | "razorpay";
   provider: "razorpay";
   gatewayOrderId?: string;

@@ -51,7 +51,6 @@ export async function POST(
     });
 
     return NextResponse.json({
-      success: true,
       message: "AWB regenerated / order re-dispatched successfully.",
       ...redispatchResult,
     }, { status: 200 });

@@ -187,6 +187,20 @@ export default function CheckoutClient() {
   const [shippingRules, setShippingRules] = useState({ standardFee: 99, freeThreshold: 1500, expressFee: 250 });
   const [shippingMethod, setShippingMethod] = useState<"standard" | "express">("standard");
 
+  const [pincodeServiceability, setPincodeServiceability] = useState<{
+    checking: boolean;
+    isServiceable: boolean | null;
+    message: string;
+    tatDays?: number;
+    dateStr?: string;
+    standardFeeRupees?: number;
+    expressFeeRupees?: number;
+  }>({
+    checking: false,
+    isServiceable: null,
+    message: "",
+  });
+
   // Payment Method Step State
   const [paymentGateway, setPaymentGateway] = useState<"razorpay">("razorpay");
 
@@ -388,6 +402,46 @@ export default function CheckoutClient() {
     return sum + getNormalizedPriceInPaise(item.price) * item.quantity;
   }, 0);
 
+  useEffect(() => {
+    const cleanPin = (shippingPincode || "").replace(/\D/g, "");
+    if (cleanPin.length === 6) {
+      setPincodeServiceability((prev) => ({ ...prev, checking: true }));
+      fetch(`/api/shipping/serviceability?pincode=${cleanPin}&subtotalPaise=${cartSubtotal}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success && data.isServiceable) {
+            setPincodeServiceability({
+              checking: false,
+              isServiceable: true,
+              message: `Serviceable via ${data.courierName || "Delhivery"} (${data.estimatedDays || "4–5 days"})`,
+              tatDays: data.tatDays,
+              dateStr: data.dateStr,
+              standardFeeRupees: data.standardShippingFeeRupees,
+              expressFeeRupees: data.expressShippingFeeRupees,
+            });
+            if (typeof data.rawStandardShippingFeeRupees === "number" || typeof data.standardShippingFeeRupees === "number") {
+              setShippingRules((prev) => ({
+                ...prev,
+                standardFee: data.rawStandardShippingFeeRupees ?? data.standardShippingFeeRupees,
+                expressFee: data.expressShippingFeeRupees ?? prev.expressFee,
+              }));
+            }
+          } else {
+            setPincodeServiceability({
+              checking: false,
+              isServiceable: false,
+              message: data.remarks || "Pincode is non-serviceable by courier partner.",
+            });
+          }
+        })
+        .catch(() => {
+          setPincodeServiceability({ checking: false, isServiceable: null, message: "" });
+        });
+    } else {
+      setPincodeServiceability({ checking: false, isServiceable: null, message: "" });
+    }
+  }, [shippingPincode, cartSubtotal]);
+
   // Convert shipping rules from Rupees to Paise
   const standardFeeInPaise = shippingRules.standardFee * 100;
   const freeThresholdInPaise = shippingRules.freeThreshold * 100;
@@ -503,6 +557,10 @@ export default function CheckoutClient() {
       }
 
       if (isValid && isBillingValid) {
+        if (pincodeServiceability.isServiceable === false) {
+          notify.error("Destination pincode is not serviceable by courier partner. Please enter a valid pincode.");
+          return;
+        }
         setErrorMsg("");
         setCurrentStep("shipping");
       } else {
@@ -875,9 +933,26 @@ export default function CheckoutClient() {
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <FormField name="shippingAddress.postalCode" label="Pincode" required>
-                    <InputField placeholder="400001" />
-                  </FormField>
+                  <div className="space-y-1">
+                    <FormField name="shippingAddress.postalCode" label="Pincode" required>
+                      <InputField placeholder="400001" />
+                    </FormField>
+                    {pincodeServiceability.checking && (
+                      <p className="text-[10px] text-muted-foreground animate-pulse mt-1">Checking pincode...</p>
+                    )}
+                    {pincodeServiceability.isServiceable === true && (
+                      <p className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1 mt-1">
+                        <CheckCircle2 className="w-3 h-3 shrink-0" />
+                        <span>{pincodeServiceability.message}</span>
+                      </p>
+                    )}
+                    {pincodeServiceability.isServiceable === false && (
+                      <p className="text-[10px] font-medium text-destructive flex items-center gap-1 mt-1">
+                        <AlertCircle className="w-3 h-3 shrink-0" />
+                        <span>{pincodeServiceability.message}</span>
+                      </p>
+                    )}
+                  </div>
                   <FormField name="shippingAddress.city" label="Town/City" required>
                     <InputField placeholder="Mumbai" />
                   </FormField>
@@ -986,7 +1061,11 @@ export default function CheckoutClient() {
                     />
                     <div className="space-y-0.5">
                       <p className="text-xs font-semibold text-foreground">Standard Delivery</p>
-                      <p className="text-[10px] text-muted-foreground font-light">Takes 5-7 business days across India.</p>
+                      <p className="text-[10px] text-muted-foreground font-light">
+                        {pincodeServiceability.dateStr
+                          ? `Estimated Delivery by ${pincodeServiceability.dateStr} via Delhivery.`
+                          : "Takes 5–7 business days across India."}
+                      </p>
                     </div>
                   </div>
                   <span className="text-xs font-semibold text-foreground font-mono">
@@ -1010,7 +1089,7 @@ export default function CheckoutClient() {
                     />
                     <div className="space-y-0.5">
                       <p className="text-xs font-semibold text-foreground">Express Delivery</p>
-                      <p className="text-[10px] text-muted-foreground font-light">Guaranteed delivery in 2-3 business days.</p>
+                      <p className="text-[10px] text-muted-foreground font-light">Guaranteed fast delivery in 2–3 business days via Delhivery Express.</p>
                     </div>
                   </div>
                   <span className="text-xs font-semibold text-foreground font-mono">

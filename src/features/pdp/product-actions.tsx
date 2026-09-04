@@ -972,11 +972,13 @@ function DeliveryEstimator() {
   const [pincode, setPincode] = useState("");
   const [isChecking, setIsChecking] = useState(false);
   const [result, setResult] = useState<{
+    isServiceable: boolean;
     pincode: string;
-    days: string;
-    dateStr: string;
-    type: "metro" | "standard" | "other";
-    cod: boolean;
+    estimatedDays?: string;
+    dateStr?: string;
+    codAvailable?: boolean;
+    remarks?: string;
+    standardShippingFeeRupees?: number;
   } | null>(null);
   const [error, setError] = useState("");
 
@@ -992,64 +994,46 @@ function DeliveryEstimator() {
     }
   }, []);
 
-  const handleCheck = () => {
+  const handleCheck = async () => {
     setError("");
-    if (!/^\d{6}$/.test(pincode)) {
-      setError("Please enter a valid 6-digit PIN code.");
+    const cleanPin = pincode.replace(/\D/g, "");
+    if (cleanPin.length !== 6) {
+      setError("Please enter all 6 digits of a valid PIN code.");
       setResult(null);
       return;
     }
 
     setIsChecking(true);
 
-    // Simulate 600ms network check latency for interactive feel
-    setTimeout(() => {
-      const startsWith = pincode.substring(0, 2);
-      let days = "4–5 business days";
-      let deliveryType: "metro" | "standard" | "other" = "standard";
-      let codAvailable = false;
+    try {
+      const res = await fetch(`/api/shipping/serviceability?pincode=${cleanPin}`);
+      const data = await res.json();
 
-      // Metro prefixes: 11 Delhi, 40 Mumbai, 56 Bangalore, 60 Chennai, 70 Kolkata
-      if (["11", "40", "56", "60", "70"].includes(startsWith)) {
-        days = "2–3 business days (Express)";
-        deliveryType = "metro";
-      } else if (["12", "13", "18", "19", "79", "80", "81", "82", "83", "84", "85", "90"].includes(startsWith)) {
-        days = "5–7 business days";
-        deliveryType = "other";
-        // Remote locations COD check
-        if (["19", "84", "90"].includes(startsWith)) {
-          codAvailable = false;
-        }
+      if (!res.ok || !data.success) {
+        setError(data.error || "Unable to check pincode serviceability.");
+        setResult(null);
+      } else {
+        const checkResult = {
+          isServiceable: data.isServiceable,
+          pincode: data.pincode,
+          estimatedDays: data.estimatedDays || "4–5 business days",
+          dateStr: data.dateStr || "",
+          codAvailable: data.codAvailable || false,
+          remarks: data.remarks || "",
+          standardShippingFeeRupees: data.standardShippingFeeRupees,
+        };
+
+        setResult(checkResult);
+        localStorage.setItem("snail_pincode", pincode);
+        localStorage.setItem("snail_pincode_result", JSON.stringify(checkResult));
       }
-
-      const today = new Date();
-      const minDays = deliveryType === "metro" ? 2 : deliveryType === "other" ? 5 : 4;
-      const maxDays = deliveryType === "metro" ? 3 : deliveryType === "other" ? 7 : 5;
-
-      const addDays = (date: Date, daysCount: number) => {
-        const resDate = new Date(date);
-        resDate.setDate(resDate.getDate() + daysCount);
-        return resDate;
-      };
-
-      const options: Intl.DateTimeFormatOptions = { weekday: "short", month: "short", day: "numeric" };
-      const minDate = addDays(today, minDays);
-      const maxDate = addDays(today, maxDays);
-      const dateStr = `${minDate.toLocaleDateString("en-IN", options)} – ${maxDate.toLocaleDateString("en-IN", options)}`;
-
-      const checkResult = {
-        pincode,
-        days,
-        dateStr,
-        type: deliveryType,
-        cod: codAvailable,
-      };
-
-      setResult(checkResult);
-      localStorage.setItem("snail_pincode", pincode);
-      localStorage.setItem("snail_pincode_result", JSON.stringify(checkResult));
+    } catch (err: any) {
+      console.error("DeliveryEstimator fetch error:", err);
+      setError("Network error while checking pincode.");
+      setResult(null);
+    } finally {
       setIsChecking(false);
-    }, 600);
+    }
   };
 
   const handleClear = () => {
@@ -1102,38 +1086,45 @@ function DeliveryEstimator() {
 
       {result && !isChecking && (
         <div className="space-y-3 pt-1 animate-in fade-in slide-in-from-top-1 duration-200">
-          <div className="flex items-start gap-2.5">
-            <Truck className="w-4 h-4 text-success shrink-0 mt-0.5" />
-            <div>
-              <p className="text-xs font-semibold text-foreground">
-                Estimated Delivery by {result.dateStr}
-              </p>
-              <p className="text-[10px] text-muted-foreground font-light">
-                Standard Courier Shipping ({result.days})
-              </p>
+          {!result.isServiceable ? (
+            <div className="p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs font-medium space-y-1">
+              <p className="font-semibold">✕ Pincode Non-Serviceable</p>
+              <p className="text-[11px] font-light opacity-90">{result.remarks || "We currently do not ship to this pincode."}</p>
             </div>
-          </div>
+          ) : (
+            <>
+              <div className="flex items-start gap-2.5">
+                <Truck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-xs font-semibold text-foreground">
+                    Estimated Delivery by {result.dateStr}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground font-light">
+                    Standard Courier Shipping ({result.estimatedDays})
+                  </p>
+                </div>
+              </div>
 
-          <div className="flex items-start gap-2.5">
-            <div className="w-4 h-4 rounded-full bg-success/15 text-success flex items-center justify-center shrink-0 text-[10px] font-bold">
-              ₹
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-foreground">
-                {result.cod ? "Cash on Delivery Available" : "Prepaid Payment Only"}
-              </p>
-              <p className="text-[10px] text-muted-foreground font-light">
-                {result.cod
-                  ? "Pay in cash or UPI at the time of delivery"
-                  : "Cash on Delivery is not supported. All orders are prepaid."}
-              </p>
-            </div>
-          </div>
+              <div className="flex items-start gap-2.5">
+                <div className="w-4 h-4 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 flex items-center justify-center shrink-0 text-[10px] font-bold">
+                  ₹
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-foreground">
+                    Prepaid Payment Only
+                  </p>
+                  <p className="text-[10px] text-muted-foreground font-light">
+                    Cash on Delivery is not supported. All orders are prepaid.
+                  </p>
+                </div>
+              </div>
 
-          <div className="border-t border-border/10 pt-2 flex items-center justify-between text-[10px] text-muted-foreground font-light">
-            <span>Free Shipping above ₹999</span>
-            <span>Easy Exchange on Damage</span>
-          </div>
+              <div className="border-t border-border/10 pt-2 flex items-center justify-between text-[10px] text-muted-foreground font-light">
+                <span>Free Shipping above ₹999</span>
+                <span>Easy Exchange on Damage</span>
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>

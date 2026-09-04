@@ -121,7 +121,6 @@ export async function POST(
     });
 
     return NextResponse.json({
-      success: true,
       message: "Shipment successfully generated",
       ...shipmentData,
     }, { status: 201 });

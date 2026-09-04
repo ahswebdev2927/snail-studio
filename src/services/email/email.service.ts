@@ -139,7 +139,7 @@ export async function sendMail(params: SendMailParams, loggerInstance?: any): Pr
     try {
       await db.insert(emailLogs).values({
         id: logId,
-        recipient: params.to,
+        recipient: recipientStr,
         subject: params.subject,
         templateName: params.templateName,
         status: "failed",

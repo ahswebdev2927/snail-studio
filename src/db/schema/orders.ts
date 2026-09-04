@@ -154,3 +154,21 @@ export const orderAddressHistory = sqliteTable('order_address_history', {
   reason: text('reason'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)
 });
+
+export const shipmentAuditLogs = sqliteTable('shipment_audit_logs', {
+  id: text('id').primaryKey(),
+  shipmentId: text('shipment_id').references(() => shipments.id, { onDelete: 'set null' }),
+  orderId: text('order_id').notNull().references(() => orders.id, { onDelete: 'cascade' }),
+  adminId: text('admin_id'),
+  adminName: text('admin_name').notNull().default('Admin'),
+  action: text('action').notNull(),
+  previousState: text('previous_state'), // JSON string
+  newState: text('new_state'), // JSON string
+  notes: text('notes'),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)
+}, (table) => [
+  index('shipment_audit_logs_order_id_idx').on(table.orderId),
+  index('shipment_audit_logs_shipment_id_idx').on(table.shipmentId),
+  index('shipment_audit_logs_created_at_idx').on(table.createdAt),
+]);
+

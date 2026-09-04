@@ -301,7 +301,7 @@ export async function validatePincodeServiceability(pincode: string): Promise<{
   try {
     const provider = getShippingProvider("delhivery");
     const res = await provider.checkServiceability({
-      destinationPincode: cleanPincode,
+      pincode: cleanPincode,
     });
     return {
       serviceable: res.isServiceable,
@@ -342,14 +342,14 @@ export async function validatePreShipment(orderId: string, txClient?: any) {
   // 2. Payment Verified (or COD)
   const isCod = order.payments.length === 0;
   if (!isCod) {
-    const hasSucceededPayment = order.payments.some((p) => p.status === "succeeded");
+    const hasSucceededPayment = order.payments.some((p: any) => p.status === "succeeded");
     if (!hasSucceededPayment && order.status === "pending") {
       errors.push("Payment is not verified for this prepaid order.");
     }
   }
 
   // 3. Address Verified & Serviceable Check
-  const shippingAddress = order.addresses.find((a) => a.type === "shipping");
+  const shippingAddress = order.addresses.find((a: any) => a.type === "shipping");
   if (!shippingAddress) {
     errors.push("Shipping address is missing.");
   } else if (shippingAddress.postalCode.length < 5 || !shippingAddress.city || !shippingAddress.state) {

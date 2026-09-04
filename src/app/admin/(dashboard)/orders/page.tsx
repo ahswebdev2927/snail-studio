@@ -31,7 +31,8 @@ import {
   Share2,
   Check,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Lock
 } from "lucide-react";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 import { ShipmentDispatchModal } from "@/components/admin/orders/shipment-dispatch-modal";
@@ -1216,7 +1217,7 @@ export default function AdminOrdersPage() {
                       <ShipmentAttemptsTimeline
                         orderId={orderDetail.id}
                         shipments={orderDetail.shipments as any}
-                        onRefresh={() => fetchOrderDetail(orderDetail.id)}
+                        onRefresh={() => loadOrderDetail(orderDetail.id)}
                         onOpenDispatchModal={() => setShowCreateShipmentModal(true)}
                       />
 
@@ -1226,7 +1227,7 @@ export default function AdminOrdersPage() {
                         orderId={orderDetail.id}
                         customerPincode={orderDetail.addresses?.find(a => a.type === "shipping")?.postalCode}
                         shippingDifferenceStatus={orderDetail.shippingDifferenceStatus}
-                        onSuccess={() => fetchOrderDetail(orderDetail.id)}
+                        onSuccess={() => loadOrderDetail(orderDetail.id)}
                       />
                     </div>
 
