@@ -1,6 +1,7 @@
 import fs from "node:fs";
+import { migrate } from "drizzle-orm/libsql/migrator";
 
-// Load .env variables into process.env
+// Load .env variables into process.env BEFORE initializing database client
 if (fs.existsSync(".env")) {
   const envContent = fs.readFileSync(".env", "utf-8");
   for (const line of envContent.split("\n")) {
@@ -20,14 +21,13 @@ if (fs.existsSync(".env")) {
   }
 }
 
-import { db } from "../src/db";
-import { migrate } from "drizzle-orm/libsql/migrator";
-
 async function main() {
-  console.log("Running database migrations...");
+  const provider = process.env.DB_PROVIDER || "sqlite";
+  console.log(`Running database migrations for provider '${provider}'...`);
   try {
+    const { db } = await import("../src/db");
     await migrate(db, { migrationsFolder: "./database/migrations" });
-    console.log("Migrations applied successfully!");
+    console.log(`Migrations applied successfully to ${provider}!`);
     process.exit(0);
   } catch (error) {
     console.error("Migration failed:", error);

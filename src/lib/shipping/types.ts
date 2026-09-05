@@ -48,6 +48,7 @@ export interface CreateShipmentRequest {
     fragileShipment?: boolean;
     plasticPackaging?: boolean;
     transportSpeed?: 'D' | 'F';
+    labelFormat?: '4R' | 'A4';
   };
 }
 

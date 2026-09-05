@@ -13,7 +13,7 @@ export interface GenerateLabelResult {
  */
 export async function generateDelhiveryLabel(
   waybills: string[],
-  pdfSize: "A4" | "4R" = "A4"
+  pdfSize: "A4" | "4R" = "4R"
 ): Promise<GenerateLabelResult> {
   const config = getDelhiveryConfig();
   const cleanWaybills = waybills.map((w) => w.trim()).filter(Boolean);

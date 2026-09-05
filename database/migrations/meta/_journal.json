@@ -225,6 +225,13 @@
       "when": 1788614425258,
       "tag": "0031_rapid_nova",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "6",
+      "when": 1788619267603,
+      "tag": "0032_rare_phil_sheldon",
+      "breakpoints": true
     }
   ]
 }

@@ -98,6 +98,7 @@ export const shipments = sqliteTable('shipments', {
   waybill: text('waybill'),
   trackingNumber: text('tracking_number').notNull(),
   trackingUrl: text('tracking_url'),
+  labelUrl: text('label_url'),
 
   // Status & Timestamps
   status: text('status', {

@@ -98,10 +98,13 @@ export async function createDelhiveryShipment(
 
   // 6. Validate Response Status & Extract Errors
   const pkg = resData?.packages?.[0];
+  const assignedWaybill = pkg?.waybill;
+
   const isRootSuccess = resData?.success === true && resData?.error !== true;
   const isPackageSuccess = pkg?.status === "Success";
 
-  if (!isRootSuccess || !isPackageSuccess) {
+  // If Delhivery returned a valid assigned waybill AWB, treat as success even if root remarks contain notices
+  if (!assignedWaybill && (!isRootSuccess || !isPackageSuccess)) {
     let errorMessage = resData?.rmk || resData?.error_message;
 
     if (!errorMessage && pkg) {
@@ -121,8 +124,6 @@ export async function createDelhiveryShipment(
 
     throw new Error(`Delhivery Shipment Creation Error: ${errorMessage}`);
   }
-
-  const assignedWaybill = pkg?.waybill;
 
   if (!assignedWaybill) {
     throw new Error("Delhivery shipment creation succeeded but no waybill number was returned in response.");

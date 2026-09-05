@@ -333,23 +333,24 @@ export async function validatePreShipment(orderId: string, txClient?: any) {
 
   const errors: string[] = [];
 
-  // 1. Order status confirmed check
-  const validStatuses = ["paid", "confirmed", "processing"];
-  if (!validStatuses.includes(order.status)) {
-    errors.push(`Order is in status '${order.status}'. Only Confirmed or Processing orders can be shipped.`);
+  // 1. Order status confirmed / ready to ship check
+  const validStatuses = ["paid", "placed", "confirmed", "processing", "ready_to_ship"];
+  const currentStatusLower = order.status.toLowerCase();
+  if (!validStatuses.includes(currentStatusLower)) {
+    errors.push(`Order is in status '${order.status}'. Only Confirmed, Processing, or Ready to Ship orders can be shipped.`);
   }
 
   // 2. Payment Verified (or COD)
   const isCod = order.payments.length === 0;
   if (!isCod) {
     const hasSucceededPayment = order.payments.some((p: any) => p.status === "succeeded");
-    if (!hasSucceededPayment && order.status === "pending") {
+    if (!hasSucceededPayment && currentStatusLower === "pending") {
       errors.push("Payment is not verified for this prepaid order.");
     }
   }
 
   // 3. Address Verified & Serviceable Check
-  const shippingAddress = order.addresses.find((a: any) => a.type === "shipping");
+  const shippingAddress = order.addresses.find((a: any) => a.type === "shipping") || order.addresses[0];
   if (!shippingAddress) {
     errors.push("Shipping address is missing.");
   } else if (shippingAddress.postalCode.length < 5 || !shippingAddress.city || !shippingAddress.state) {
@@ -361,9 +362,9 @@ export async function validatePreShipment(orderId: string, txClient?: any) {
     }
   }
 
-  // 4. Shipping Calculation check
-  if (order.shippingCalculatedAt === null) {
-    errors.push("Shipping charges have not been verified/calculated.");
+  // 4. Shipping Amount check
+  if (order.shippingAmount === undefined || order.shippingAmount === null) {
+    errors.push("Shipping charges have not been calculated for this order.");
   }
 
   // 5. Shipping Adjustment check (no pending payments)

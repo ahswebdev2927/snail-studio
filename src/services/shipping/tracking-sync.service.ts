@@ -173,7 +173,7 @@ export async function syncActiveShipments(): Promise<TrackingSyncResult> {
 
         // 3. Cascade order status changes & record milestone history
         if (
-          (newStatus === "picked_up" || newStatus === "in_transit" || newStatus === "out_for_delivery") &&
+          (newStatus === "in_transit" || newStatus === "out_for_delivery") &&
           shipment.order.status !== "shipped" &&
           shipment.order.status !== "delivered"
         ) {

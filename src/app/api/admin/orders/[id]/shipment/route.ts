@@ -15,7 +15,7 @@ const createShipmentSchema = z.object({
   carrier: z.string().optional(),
   trackingNumber: z.string().optional(),
   externalCourierName: z.string().optional(),
-  externalTrackingUrl: z.string().optional(),
+  externalTrackingUrl: z.string().optional().nullable(),
   externalMetadata: z.string().optional(),
   estimatedDeliveryAt: z.string().optional().nullable(),
   adminOptions: z.object({
@@ -24,6 +24,10 @@ const createShipmentSchema = z.object({
     widthCm: z.number().optional(),
     heightCm: z.number().optional(),
     fragileShipment: z.boolean().optional(),
+    plasticPackaging: z.boolean().optional(),
+    transportSpeed: z.enum(["D", "F"]).optional(),
+    labelFormat: z.enum(["4R", "A4"]).optional(),
+    sellerInvoiceNumber: z.string().optional(),
   }).optional(),
 });
 
@@ -114,7 +118,7 @@ export async function POST(
       carrier: result.data.carrier,
       trackingNumber: result.data.trackingNumber,
       externalCourierName: result.data.externalCourierName,
-      externalTrackingUrl: result.data.externalTrackingUrl,
+      externalTrackingUrl: result.data.externalTrackingUrl ?? undefined,
       externalMetadata: result.data.externalMetadata,
       estimatedDeliveryAt: result.data.estimatedDeliveryAt,
       adminOptions: result.data.adminOptions,

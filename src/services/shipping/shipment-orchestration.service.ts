@@ -190,151 +190,185 @@ export async function createOrderShipment(options: CreateShipmentOptions) {
   const shipmentId = `ship_${nanoid(10)}`;
   const estDeliveryDate = estimatedDeliveryAt ? new Date(estimatedDeliveryAt) : null;
 
-  return await db.transaction(async (tx) => {
-    // 1. Check order existence & terminal status
-    const orderRecord = await tx.query.orders.findFirst({
-      where: eq(orders.id, orderId),
-      with: {
-        addresses: true,
-        items: {
-          with: { variant: true },
-        },
+  // 1. Check order existence & terminal status (read phase outside tx)
+  const orderRecord = await db.query.orders.findFirst({
+    where: eq(orders.id, orderId),
+    with: {
+      addresses: true,
+      items: {
+        with: { variant: true },
+      },
+    },
+  });
+
+  if (!orderRecord) {
+    throw new Error(`Order not found: ${orderId}`);
+  }
+
+  if (["cancelled", "refunded", "partially_refunded", "shipped", "delivered"].includes(orderRecord.status.toLowerCase())) {
+    throw new Error(`Cannot create shipment: Order #${orderId} is in terminal status '${orderRecord.status}'.`);
+  }
+
+  if (orderRecord.shippingDifferenceStatus === "pending") {
+    throw new Error("Cannot create shipment: Additional shipping adjustment payment is pending from customer.");
+  }
+
+  // 2. Check for active non-cancelled shipment (1:1 Relationship & Safe Retry)
+  const activeShipment = await db.query.shipments.findFirst({
+    where: and(
+      eq(shipments.orderId, orderId),
+      ne(shipments.status, "cancelled")
+    ),
+  });
+
+  if (activeShipment) {
+    // Idempotent return for retry: return existing active shipment data
+    return {
+      success: true,
+      shipmentId: activeShipment.id,
+      waybill: activeShipment.waybill || activeShipment.trackingNumber,
+      courierOrderId: activeShipment.courierOrderId,
+      attemptNumber: activeShipment.attemptNumber,
+      trackingUrl: activeShipment.trackingUrl || "",
+      carrier: activeShipment.carrier,
+      isExisting: true,
+    };
+  }
+
+  // 3. Validate pre-shipment policy
+  const validation = await validatePreShipment(orderId);
+  if (!validation.success) {
+    throw new Error(`Pre-shipment validation failed: ${validation.errors.join("; ")}`);
+  }
+
+  const shippingAddr = orderRecord.addresses.find((a) => a.type === "shipping") || orderRecord.addresses[0];
+  if (!shippingAddr) {
+    throw new Error("Shipping address is missing for this order.");
+  }
+
+  const courierOrderId = attemptNumber > 1 ? `${orderId}-A${attemptNumber}` : orderId;
+
+  let finalWaybill = customTrackingNum || `TRK${nanoid(10).toUpperCase()}`;
+  let finalTrackingUrl = externalTrackingUrl || "";
+  let finalCarrier = externalCourierName || carrier;
+
+  // 4. Delegate to provider (HTTP network calls executed OUTSIDE database transaction)
+  const shippingProvider = getShippingProvider(providerType);
+  let generatedLabelUrl: string | null = null;
+
+  if (providerType === "delhivery") {
+    const itemsPayload = orderRecord.items.map((item) => ({
+      name: item.variant?.name || "Nail Product",
+      sku: item.variant?.sku || item.variantId || "SKU-GEN",
+      quantity: item.quantity,
+      pricePaise: item.price,
+    }));
+
+    const totalWeight = adminOptions?.weightGrams || 250;
+
+    const providerResult = await shippingProvider.createShipment({
+      orderId,
+      courierOrderId,
+      attemptNumber,
+      provider: "delhivery",
+      address: {
+        name: shippingAddr.name,
+        phone: shippingAddr.phone,
+        addressLine1: shippingAddr.addressLine1,
+        addressLine2: shippingAddr.addressLine2 || undefined,
+        city: shippingAddr.city,
+        state: shippingAddr.state,
+        postalCode: shippingAddr.postalCode,
+        country: shippingAddr.country,
+      },
+      orderDetails: {
+        totalAmountPaise: orderRecord.totalAmount,
+        paymentMode: "Prepaid",
+        items: itemsPayload,
+        totalWeightGrams: totalWeight,
+        shippingMode: adminOptions?.transportSpeed === "F" ? "Express" : "Surface",
+      },
+      adminOptions,
+    });
+
+    if (!providerResult.success) {
+      throw new Error(`Delhivery dispatch failed: ${providerResult.waybill || "Unknown API error"}`);
+    }
+
+    finalWaybill = providerResult.waybill || finalWaybill;
+    finalTrackingUrl = providerResult.trackingUrl || finalTrackingUrl;
+    finalCarrier = "Delhivery";
+
+    // Attempt automatic label URL fetch for Delhivery (4R or A4 format)
+    try {
+      if (shippingProvider.generateLabel) {
+        const labelRes = await shippingProvider.generateLabel(
+          [finalWaybill],
+          adminOptions?.labelFormat || "4R"
+        );
+        if (labelRes?.pdfUrl) {
+          generatedLabelUrl = labelRes.pdfUrl;
+        }
+      }
+    } catch (labelErr) {
+      console.warn(`Label auto-generation warning for waybill ${finalWaybill}:`, labelErr);
+    }
+  } else {
+    // External courier manual dispatch (Tracking URL is optional)
+    const externalRes = await shippingProvider.createShipment({
+      orderId,
+      courierOrderId,
+      attemptNumber,
+      provider: "external",
+      externalCourierName: finalCarrier,
+      externalTrackingUrl: finalTrackingUrl || undefined,
+      externalMetadata,
+      address: {
+        name: shippingAddr.name,
+        phone: shippingAddr.phone,
+        addressLine1: shippingAddr.addressLine1,
+        addressLine2: shippingAddr.addressLine2 || undefined,
+        city: shippingAddr.city,
+        state: shippingAddr.state,
+        postalCode: shippingAddr.postalCode,
+        country: shippingAddr.country,
+      },
+      orderDetails: {
+        totalAmountPaise: orderRecord.totalAmount,
+        paymentMode: "Prepaid",
+        items: [],
+        totalWeightGrams: adminOptions?.weightGrams || 250,
       },
     });
 
-    if (!orderRecord) {
-      throw new Error(`Order not found: ${orderId}`);
-    }
+    finalWaybill = customTrackingNum || externalRes.waybill;
+    finalTrackingUrl = externalRes.trackingUrl || finalTrackingUrl;
+  }
 
-    if (["cancelled", "refunded", "partially_refunded", "shipped", "delivered"].includes(orderRecord.status.toLowerCase())) {
-      throw new Error(`Cannot create shipment: Order #${orderId} is in terminal status '${orderRecord.status}'.`);
-    }
-
-    if (orderRecord.shippingDifferenceStatus === "pending") {
-      throw new Error("Cannot create shipment: Additional shipping adjustment payment is pending from customer.");
-    }
-
-    // 2. Check for active non-cancelled shipment (1:1 Relationship & Safe Retry)
-    const activeShipment = await tx.query.shipments.findFirst({
+  // 5. Execute fast DB write transaction (atomic DB writes only)
+  const result = await db.transaction(async (tx) => {
+    // Re-check active shipment inside transaction to prevent concurrent duplicate creation
+    const recheckActive = await tx.query.shipments.findFirst({
       where: and(
         eq(shipments.orderId, orderId),
         ne(shipments.status, "cancelled")
       ),
     });
 
-    if (activeShipment) {
-      // Idempotent return for retry: return existing active shipment data
+    if (recheckActive) {
       return {
         success: true,
-        shipmentId: activeShipment.id,
-        waybill: activeShipment.waybill || activeShipment.trackingNumber,
-        courierOrderId: activeShipment.courierOrderId,
-        attemptNumber: activeShipment.attemptNumber,
-        trackingUrl: activeShipment.trackingUrl || "",
-        carrier: activeShipment.carrier,
+        shipmentId: recheckActive.id,
+        waybill: recheckActive.waybill || recheckActive.trackingNumber,
+        courierOrderId: recheckActive.courierOrderId,
+        attemptNumber: recheckActive.attemptNumber,
+        trackingUrl: recheckActive.trackingUrl || "",
+        carrier: recheckActive.carrier,
         isExisting: true,
       };
     }
 
-    // 3. Validate pre-shipment policy
-    const validation = await validatePreShipment(orderId, tx);
-    if (!validation.success) {
-      throw new Error(`Pre-shipment validation failed: ${validation.errors.join("; ")}`);
-    }
-
-    const shippingAddr = orderRecord.addresses.find((a) => a.type === "shipping") || orderRecord.addresses[0];
-    if (!shippingAddr) {
-      throw new Error("Shipping address is missing for this order.");
-    }
-
-    const courierOrderId = attemptNumber > 1 ? `${orderId}-A${attemptNumber}` : orderId;
-
-    let finalWaybill = customTrackingNum || `TRK${nanoid(10).toUpperCase()}`;
-    let finalTrackingUrl = externalTrackingUrl || "";
-    let finalCarrier = externalCourierName || carrier;
-
-    // 4. Delegate to provider
-    const shippingProvider = getShippingProvider(providerType);
-
-    if (providerType === "delhivery") {
-      const itemsPayload = orderRecord.items.map((item) => ({
-        name: item.variant?.name || "Nail Product",
-        sku: item.variant?.sku || item.variantId || "SKU-GEN",
-        quantity: item.quantity,
-        pricePaise: item.price,
-      }));
-
-      const totalWeight = adminOptions?.weightGrams || 500;
-
-      const providerResult = await shippingProvider.createShipment({
-        orderId,
-        courierOrderId,
-        attemptNumber,
-        provider: "delhivery",
-        address: {
-          name: shippingAddr.name,
-          phone: shippingAddr.phone,
-          addressLine1: shippingAddr.addressLine1,
-          addressLine2: shippingAddr.addressLine2 || undefined,
-          city: shippingAddr.city,
-          state: shippingAddr.state,
-          postalCode: shippingAddr.postalCode,
-          country: shippingAddr.country,
-        },
-        orderDetails: {
-          totalAmountPaise: orderRecord.totalAmount,
-          paymentMode: "Prepaid",
-          items: itemsPayload,
-          totalWeightGrams: totalWeight,
-          shippingMode: "Surface",
-        },
-        adminOptions,
-      });
-
-      if (!providerResult.success) {
-        throw new Error(`Delhivery dispatch failed: ${providerResult.waybill || "Unknown API error"}`);
-      }
-
-      finalWaybill = providerResult.waybill || finalWaybill;
-      finalTrackingUrl = providerResult.trackingUrl || finalTrackingUrl;
-      finalCarrier = "Delhivery";
-    } else {
-      // External courier manual dispatch
-      if (!finalTrackingUrl) {
-        throw new Error("Manual Tracking URL is required for external courier dispatches.");
-      }
-
-      const externalRes = await shippingProvider.createShipment({
-        orderId,
-        courierOrderId,
-        attemptNumber,
-        provider: "external",
-        externalCourierName: finalCarrier,
-        externalTrackingUrl: finalTrackingUrl,
-        externalMetadata,
-        address: {
-          name: shippingAddr.name,
-          phone: shippingAddr.phone,
-          addressLine1: shippingAddr.addressLine1,
-          addressLine2: shippingAddr.addressLine2 || undefined,
-          city: shippingAddr.city,
-          state: shippingAddr.state,
-          postalCode: shippingAddr.postalCode,
-          country: shippingAddr.country,
-        },
-        orderDetails: {
-          totalAmountPaise: orderRecord.totalAmount,
-          paymentMode: "Prepaid",
-          items: [],
-          totalWeightGrams: 500,
-        },
-      });
-
-      finalWaybill = customTrackingNum || externalRes.waybill;
-      finalTrackingUrl = externalRes.trackingUrl || finalTrackingUrl;
-    }
-
-    // 5. Insert shipment record
+    // Insert shipment record
     await tx.insert(shipments).values({
       id: shipmentId,
       orderId,
@@ -344,7 +378,8 @@ export async function createOrderShipment(options: CreateShipmentOptions) {
       carrier: finalCarrier,
       waybill: finalWaybill,
       trackingNumber: finalWaybill,
-      trackingUrl: finalTrackingUrl,
+      trackingUrl: finalTrackingUrl || null,
+      labelUrl: generatedLabelUrl,
       status: "ready_to_ship",
       shippedAt: null,
       estimatedDeliveryAt: estDeliveryDate,
@@ -355,7 +390,7 @@ export async function createOrderShipment(options: CreateShipmentOptions) {
       serviceabilityCheckedAt: now,
     });
 
-    // 6. Insert initial tracking scan event
+    // Insert initial tracking scan event
     await tx.insert(trackingEvents).values({
       id: `evt_${nanoid(10)}`,
       shipmentId,
@@ -365,7 +400,7 @@ export async function createOrderShipment(options: CreateShipmentOptions) {
       timestamp: now,
     });
 
-    // 7. Log status history and update order record with active shipmentId link
+    // Log status history
     await tx.insert(orderStatusHistory).values({
       id: `osh_${nanoid(10)}`,
       orderId,
@@ -374,7 +409,7 @@ export async function createOrderShipment(options: CreateShipmentOptions) {
       createdAt: now,
     });
 
-    // 8. Log audit entry for shipment creation
+    // Log audit entry
     await logShipmentAudit({
       shipmentId,
       orderId,
@@ -398,14 +433,6 @@ export async function createOrderShipment(options: CreateShipmentOptions) {
       updatedAt: now,
     }).where(eq(orders.id, orderId));
 
-    // Send customer email
-    await sendShipmentEmail(
-      orderId,
-      "Ready to Ship",
-      "Ready to Ship",
-      `Your order is packed and ready. Dispatched via ${finalCarrier}. Tracking #: ${finalWaybill}.`
-    );
-
     return {
       success: true,
       shipmentId,
@@ -416,6 +443,16 @@ export async function createOrderShipment(options: CreateShipmentOptions) {
       carrier: finalCarrier,
     };
   });
+
+  // Send customer email asynchronously post DB transaction
+  await sendShipmentEmail(
+    orderId,
+    "Ready to Ship",
+    "Ready to Ship",
+    `Your order is packed and ready. Dispatched via ${finalCarrier}. Tracking #: ${finalWaybill}.`
+  );
+
+  return result;
 }
 
 /**
