@@ -191,7 +191,7 @@ export async function createOrderShipment(options: CreateShipmentOptions) {
   const estDeliveryDate = estimatedDeliveryAt ? new Date(estimatedDeliveryAt) : null;
 
   return await db.transaction(async (tx) => {
-    // 1. Check order existence
+    // 1. Check order existence & terminal status
     const orderRecord = await tx.query.orders.findFirst({
       where: eq(orders.id, orderId),
       with: {
@@ -206,11 +206,15 @@ export async function createOrderShipment(options: CreateShipmentOptions) {
       throw new Error(`Order not found: ${orderId}`);
     }
 
+    if (["cancelled", "refunded", "partially_refunded", "shipped", "delivered"].includes(orderRecord.status.toLowerCase())) {
+      throw new Error(`Cannot create shipment: Order #${orderId} is in terminal status '${orderRecord.status}'.`);
+    }
+
     if (orderRecord.shippingDifferenceStatus === "pending") {
       throw new Error("Cannot create shipment: Additional shipping adjustment payment is pending from customer.");
     }
 
-    // 2. Check for active non-cancelled shipment
+    // 2. Check for active non-cancelled shipment (1:1 Relationship & Safe Retry)
     const activeShipment = await tx.query.shipments.findFirst({
       where: and(
         eq(shipments.orderId, orderId),
@@ -219,7 +223,17 @@ export async function createOrderShipment(options: CreateShipmentOptions) {
     });
 
     if (activeShipment) {
-      throw new Error("An active non-cancelled shipment already exists for this order.");
+      // Idempotent return for retry: return existing active shipment data
+      return {
+        success: true,
+        shipmentId: activeShipment.id,
+        waybill: activeShipment.waybill || activeShipment.trackingNumber,
+        courierOrderId: activeShipment.courierOrderId,
+        attemptNumber: activeShipment.attemptNumber,
+        trackingUrl: activeShipment.trackingUrl || "",
+        carrier: activeShipment.carrier,
+        isExisting: true,
+      };
     }
 
     // 3. Validate pre-shipment policy
@@ -351,11 +365,11 @@ export async function createOrderShipment(options: CreateShipmentOptions) {
       timestamp: now,
     });
 
-    // 7. Log status history and update order record
+    // 7. Log status history and update order record with active shipmentId link
     await tx.insert(orderStatusHistory).values({
       id: `osh_${nanoid(10)}`,
       orderId,
-      status: "processing",
+      status: "ready_to_ship",
       notes: `Shipment (Attempt #${attemptNumber}) generated via ${finalCarrier}. Tracking #: ${finalWaybill}.`,
       createdAt: now,
     });
@@ -378,7 +392,8 @@ export async function createOrderShipment(options: CreateShipmentOptions) {
     });
 
     await tx.update(orders).set({
-      status: "processing",
+      shipmentId: shipmentId,
+      status: "ready_to_ship",
       addressLockedAt: now,
       updatedAt: now,
     }).where(eq(orders.id, orderId));

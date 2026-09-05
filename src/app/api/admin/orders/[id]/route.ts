@@ -9,7 +9,19 @@ import { authorize } from "@/middleware/auth";
 import { z } from "zod";
 
 const patchSchema = z.object({
-  status: z.enum(['pending', 'paid', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded']),
+  status: z.enum([
+    'pending',
+    'placed',
+    'paid',
+    'confirmed',
+    'processing',
+    'ready_to_ship',
+    'shipped',
+    'delivered',
+    'cancelled',
+    'refunded',
+    'partially_refunded',
+  ]),
   notes: z.string().max(500).optional().nullable(),
 });
 
@@ -115,7 +127,7 @@ export async function PATCH(
     }
 
     // Sensitive Action Re-Authentication Check (Only for cancellation / refunding)
-    if (status === "cancelled" || status === "refunded") {
+    if (status === "cancelled" || status === "refunded" || status === "partially_refunded") {
       const { verifySensitiveAction } = await import("@/lib/auth/security");
       const securityCheck = await verifySensitiveAction(
         req,
@@ -128,14 +140,14 @@ export async function PATCH(
       }
     }
 
-    // Update status and write status history log
+    // Update status and write status history log (catches transition rule errors)
     await updateOrderStatus(orderId, status, notes || undefined);
 
     const ipAddress = req.headers.get("x-forwarded-for") || "127.0.0.1";
     const browser = req.headers.get("user-agent") || "Unknown";
 
     // Log to admin audit logs if sensitive status
-    if (status === "cancelled" || status === "refunded") {
+    if (status === "cancelled" || status === "refunded" || status === "partially_refunded") {
       const { logAdminAudit } = await import("@/lib/auth/security");
       await logAdminAudit({
         adminId: auth.user!.id,
@@ -180,8 +192,8 @@ export async function PATCH(
   } catch (error: any) {
     console.error("PATCH /api/admin/orders/[id] error:", error);
     return NextResponse.json(
-      { error: "Internal Server Error", details: error.message || String(error) },
-      { status: 500 }
+      { error: error.message || "Failed to transition order status" },
+      { status: 400 }
     );
   }
 }

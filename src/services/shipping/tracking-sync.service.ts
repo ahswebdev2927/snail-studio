@@ -173,20 +173,24 @@ export async function syncActiveShipments(): Promise<TrackingSyncResult> {
 
         // 3. Cascade order status changes & record milestone history
         if (
-          (newStatus === "in_transit" || newStatus === "out_for_delivery") &&
+          (newStatus === "picked_up" || newStatus === "in_transit" || newStatus === "out_for_delivery") &&
           shipment.order.status !== "shipped" &&
           shipment.order.status !== "delivered"
         ) {
           await updateOrderStatus(
             shipment.orderId,
             "shipped",
-            `Automatic sync: Package in transit via ${shipment.carrier}. Tracking #: ${waybill}`
+            `Automatic sync: Package scanned as ${newStatus} via ${shipment.carrier}. Tracking #: ${waybill}`,
+            undefined,
+            true
           );
         } else if (newStatus === "delivered" && shipment.order.status !== "delivered") {
           await updateOrderStatus(
             shipment.orderId,
             "delivered",
-            `Automatic sync: Package delivered by ${shipment.carrier}. Tracking #: ${waybill}`
+            `Automatic sync: Package delivered by ${shipment.carrier}. Tracking #: ${waybill}`,
+            undefined,
+            true
           );
         } else {
           // Record milestone event in orderStatusHistory

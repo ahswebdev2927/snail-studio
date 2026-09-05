@@ -218,6 +218,13 @@
       "when": 1788509067878,
       "tag": "0030_magenta_hardball",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "6",
+      "when": 1788614425258,
+      "tag": "0031_rapid_nova",
+      "breakpoints": true
     }
   ]
 }

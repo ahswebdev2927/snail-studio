@@ -264,6 +264,10 @@ export const ordersRelations = relations(schema.orders, ({ one, many }) => ({
     fields: [schema.orders.userId],
     references: [schema.users.id]
   }),
+  activeShipment: one(schema.shipments, {
+    fields: [schema.orders.shipmentId],
+    references: [schema.shipments.id]
+  }),
   items: many(schema.orderItems),
   addresses: many(schema.orderAddresses),
   payments: many(schema.payments),

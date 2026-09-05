@@ -1,11 +1,62 @@
 import { db } from "@/db";
-import { orders, orderItems, orderAddresses, orderStatusHistory, users } from "@/db/schema";
+import { orders, orderItems, orderAddresses, orderStatusHistory, users, shipmentAuditLogs, refunds as refundsTable } from "@/db/schema";
 import { eq, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { sendMail } from "@/services/email/email.service";
 import { getOrderConfirmationTemplate } from "@/services/email/templates/order-confirmation.template";
 import { getOrderStatusUpdateTemplate } from "@/services/email/templates/order-status-update.template";
 import { releaseCouponReservation } from "./coupon-engine.service";
+
+/**
+ * Allowed state transitions for Order Fulfilment State Machine.
+ */
+export const ALLOWED_ORDER_TRANSITIONS: Record<string, string[]> = {
+  pending: ["placed", "paid", "confirmed", "cancelled"],
+  placed: ["confirmed", "cancelled"],
+  paid: ["confirmed", "processing", "cancelled"],
+  confirmed: ["processing", "cancelled"],
+  processing: ["ready_to_ship", "cancelled"],
+  ready_to_ship: ["shipped", "cancelled"],
+  shipped: ["delivered"],
+  delivered: [],
+  cancelled: ["refunded", "partially_refunded"],
+  refunded: [],
+  partially_refunded: [],
+};
+
+/**
+ * Validates whether an order status transition is allowed by business rules.
+ */
+export function validateOrderTransition(
+  currentStatus: string,
+  targetStatus: string,
+  options?: { isLogisticsEvent?: boolean }
+): { valid: boolean; reason?: string } {
+  const current = (currentStatus || "").toLowerCase();
+  const target = (targetStatus || "").toLowerCase();
+
+  if (current === target) {
+    return { valid: true };
+  }
+
+  // Enforce logistics event lock on shipped and delivered
+  if ((target === "shipped" || target === "delivered") && !options?.isLogisticsEvent) {
+    return {
+      valid: false,
+      reason: `Order status cannot be manually set to '${target}'. Logistics states ('shipped', 'delivered') are updated automatically when physical carrier events are scanned.`,
+    };
+  }
+
+  const allowedNext = ALLOWED_ORDER_TRANSITIONS[current] || [];
+  if (!allowedNext.includes(target)) {
+    return {
+      valid: false,
+      reason: `Invalid transition from '${current}' to '${target}'. Allowed next states from '${current}': [${allowedNext.join(", ")}]. Arbitrary state jumps are blocked.`,
+    };
+  }
+
+  return { valid: true };
+}
 
 /**
  * Creates a pending order in the database with associated items and shipping/billing addresses.
@@ -126,10 +177,6 @@ export async function createPendingOrder(
     notes: "Order initiated in checkout state machine.",
   });
 
-  // EMAIL NOTIFICATION TRIGGER: Order Placed email is no longer sent here to prevent
-  // sending order success/placed emails for pending/failed payments.
-  // Order confirmation emails are sent only upon successful payment in updateOrderStatus().
-
   return {
     id: orderId,
     totalAmount: subtotal,
@@ -155,20 +202,40 @@ export async function getOrderById(orderId: string, tx?: any) {
       addresses: true,
       statusHistory: true,
       user: true,
+      activeShipment: true,
     },
   });
 }
 
 /**
  * Updates an order's status and logs the event to order status history.
+ * Enforces transition validation rules via validateOrderTransition.
  * 
  * @param orderId The internal order ID.
  * @param status The new status.
  * @param notes Optional notes explaining the status change.
  * @param tx Optional transaction client.
+ * @param isLogisticsEvent Set to true if transition is triggered by automated carrier event.
  */
-export async function updateOrderStatus(orderId: string, status: string, notes?: string, tx?: any) {
+export async function updateOrderStatus(
+  orderId: string,
+  status: string,
+  notes?: string,
+  tx?: any,
+  isLogisticsEvent: boolean = false
+) {
   const client = tx || db;
+
+  const orderRecord = await client.query.orders.findFirst({
+    where: eq(orders.id, orderId),
+  });
+
+  if (orderRecord) {
+    const transitionCheck = validateOrderTransition(orderRecord.status, status, { isLogisticsEvent });
+    if (!transitionCheck.valid) {
+      throw new Error(transitionCheck.reason);
+    }
+  }
 
   const updateData: any = {
     status: status as any,
@@ -196,7 +263,6 @@ export async function updateOrderStatus(orderId: string, status: string, notes?:
   }
 
   // EMAIL NOTIFICATION TRIGGER
-  // Fired asynchronously in the background so it doesn't block the request lifecycle
   (async () => {
     try {
       const order = await db.query.orders.findFirst({
@@ -223,14 +289,12 @@ export async function updateOrderStatus(orderId: string, status: string, notes?:
 
       const userEmail = order.user?.email || null;
       if (!userEmail) {
-        console.log(`[Email Trigger] Order ${orderId} transitioned to ${status}, but no customer email is configured. Skipping.`);
         return;
       }
 
       const customerName = order.user?.name || "Customer";
       const shippingAddress = order.addresses.find(addr => addr.type === "shipping");
 
-      // Send Order Confirmation if order just moved to 'paid' (or processing if from pending)
       if (status.toLowerCase() === "paid" || (status.toLowerCase() === "processing" && order.status === "pending")) {
         const items = order.items.map(item => ({
           productName: item.variant?.product?.name || "Luxury Handcrafted Nails",
@@ -239,7 +303,6 @@ export async function updateOrderStatus(orderId: string, status: string, notes?:
           price: item.price
         }));
 
-        // Calculate subtotal
         const subtotal = order.totalAmount - order.shippingAmount - order.taxAmount + order.discountAmount;
 
         const html = getOrderConfirmationTemplate({
@@ -271,7 +334,6 @@ export async function updateOrderStatus(orderId: string, status: string, notes?:
         });
 
       } else {
-        // Send a status progress email
         const html = getOrderStatusUpdateTemplate({
           customerName,
           orderId: order.id,
@@ -292,3 +354,130 @@ export async function updateOrderStatus(orderId: string, status: string, notes?:
     }
   })();
 }
+
+export interface CancelAndRefundOrderParams {
+  orderId: string;
+  reason: string;
+  refundType: "full" | "custom";
+  refundAmountPaise?: number;
+  adminId: string;
+  adminName?: string;
+}
+
+/**
+ * Cancels an order pre-dispatch and computes/issues full or custom refunds.
+ */
+export async function cancelAndRefundOrder(params: CancelAndRefundOrderParams, tx?: any) {
+  const { orderId, reason, refundType, refundAmountPaise, adminId, adminName = "Admin" } = params;
+  const trimmedReason = reason?.trim();
+
+  if (!trimmedReason || trimmedReason.length < 3) {
+    throw new Error("A valid cancellation reason (minimum 3 characters) is required.");
+  }
+
+  const client = tx || db;
+
+  const order = await client.query.orders.findFirst({
+    where: eq(orders.id, orderId),
+    with: {
+      payments: true,
+      shipments: true,
+    },
+  });
+
+  if (!order) {
+    throw new Error(`Order not found: ${orderId}`);
+  }
+
+  const PRE_DISPATCH_STATUSES = ["pending", "placed", "paid", "confirmed", "processing", "ready_to_ship"];
+  if (!PRE_DISPATCH_STATUSES.includes(order.status.toLowerCase())) {
+    throw new Error(
+      `Cannot cancel order #${orderId}: Order is in status '${order.status}'. Cancellation is permitted only prior to dispatch (READY_TO_SHIP or earlier).`
+    );
+  }
+
+  // Calculate refund amount
+  let calculatedRefundPaise = 0;
+  if (refundType === "full") {
+    calculatedRefundPaise = order.totalAmount;
+  } else if (refundType === "custom") {
+    if (refundAmountPaise === undefined || refundAmountPaise <= 0) {
+      throw new Error("Custom refund amount must be greater than 0 paise.");
+    }
+    if (refundAmountPaise > order.totalAmount) {
+      throw new Error(
+        `Refund amount (₹${(refundAmountPaise / 100).toFixed(2)}) cannot exceed total order amount (₹${(order.totalAmount / 100).toFixed(2)}).`
+      );
+    }
+    calculatedRefundPaise = refundAmountPaise;
+  }
+
+  const refundPercentage = Math.round((calculatedRefundPaise / order.totalAmount) * 100);
+
+  let targetStatus: "cancelled" | "refunded" | "partially_refunded" = "cancelled";
+  if (calculatedRefundPaise === order.totalAmount) {
+    targetStatus = "refunded";
+  } else if (calculatedRefundPaise > 0) {
+    targetStatus = "partially_refunded";
+  }
+
+  const now = new Date();
+
+  // Handle gateway refund entry if online payment exists
+  const successfulPayment = order.payments?.find(
+    (p: any) => p.status === "succeeded" || p.status === "paid" || p.status === "captured"
+  );
+  if (successfulPayment && calculatedRefundPaise > 0) {
+    const refundId = `ref_${nanoid(10)}`;
+    await client.insert(refundsTable).values({
+      id: refundId,
+      paymentId: successfulPayment.id,
+      gatewayRefundId: `rfd_${nanoid(10)}`,
+      amount: calculatedRefundPaise,
+      reason: trimmedReason,
+      status: "succeeded",
+      createdAt: now,
+    });
+  }
+
+  // Update order status
+  await client.update(orders).set({
+    status: targetStatus,
+    updatedAt: now,
+  }).where(eq(orders.id, orderId));
+
+  // Insert status history
+  await client.insert(orderStatusHistory).values({
+    id: `osh_${nanoid(10)}`,
+    orderId,
+    status: targetStatus,
+    notes: `Order cancelled by ${adminName}. Reason: "${trimmedReason}". Refund type: ${refundType} (₹${(calculatedRefundPaise / 100).toFixed(2)}, ${refundPercentage}%).`,
+    createdAt: now,
+  });
+
+  // Release coupon
+  await releaseCouponReservation(orderId, client);
+
+  // Log shipment audit log
+  await client.insert(shipmentAuditLogs).values({
+    id: `audit_${nanoid(10)}`,
+    orderId,
+    adminId,
+    adminName,
+    action: "ORDER_CANCELLED_AND_REFUNDED",
+    previousState: JSON.stringify({ status: order.status, totalAmount: order.totalAmount }),
+    newState: JSON.stringify({ status: targetStatus, refundAmountPaise: calculatedRefundPaise, refundPercentage }),
+    notes: `Cancelled & Refunded by ${adminName}. Reason: ${trimmedReason}`,
+    createdAt: now,
+  });
+
+  return {
+    success: true,
+    orderId,
+    status: targetStatus,
+    refundAmountPaise: calculatedRefundPaise,
+    refundPercentage,
+    message: `Order successfully transitioned to ${targetStatus}. Refund of ₹${(calculatedRefundPaise / 100).toFixed(2)} (${refundPercentage}%) processed.`,
+  };
+}
+

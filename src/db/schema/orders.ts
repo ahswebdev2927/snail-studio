@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, index } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, index, uniqueIndex } from 'drizzle-orm/sqlite-core';
 import { sql } from 'drizzle-orm';
 import { users } from './auth';
 import { productVariants } from './catalog';
@@ -6,8 +6,9 @@ import { productVariants } from './catalog';
 export const orders = sqliteTable('orders', {
   id: text('id').primaryKey(),
   userId: text('user_id').references(() => users.id, { onDelete: 'set null' }), // Nullable for guest purchases
+  shipmentId: text('shipment_id'), // Link to active shipment record
   status: text('status', {
-    enum: ['pending', 'paid', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded']
+    enum: ['pending', 'placed', 'paid', 'confirmed', 'processing', 'ready_to_ship', 'shipped', 'delivered', 'cancelled', 'refunded', 'partially_refunded']
   }).notNull().default('pending'),
   totalAmount: integer('total_amount').notNull(), // stored in paise / INR subunit
   taxAmount: integer('tax_amount').notNull().default(0),
