@@ -42,6 +42,9 @@ import {
   createCheckoutOrder,
   reserveCartStockOnCheckout
 } from "./actions";
+import { AddressVerificationModal } from "@/components/address/address-verification-modal";
+import { areAddressesEqual, getAddressSignature } from "@/lib/validators/address";
+
 
 type CheckoutStep = "address" | "shipping" | "review";
 
@@ -59,6 +62,10 @@ export default function CheckoutClient() {
   // Address Step State
   const [savedAddresses, setSavedAddresses] = useState<any[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string>("new");
+  const [verifiedAddressSignature, setVerifiedAddressSignature] = useState<string | null>(null);
+  const [verificationModalOpen, setVerificationModalOpen] = useState(false);
+  const [pendingVerificationAddress, setPendingVerificationAddress] = useState<any>(null);
+
   
   // RHF Setup
   const form = useForm({
@@ -530,6 +537,15 @@ export default function CheckoutClient() {
     return cart.reduce((acc, curr) => acc + (curr.price / 100) * curr.quantity, 0);
   };
 
+  const confirmAddressVerification = () => {
+    if (pendingVerificationAddress) {
+      setVerifiedAddressSignature(getAddressSignature(pendingVerificationAddress));
+    }
+    setVerificationModalOpen(false);
+    setErrorMsg("");
+    setCurrentStep("shipping");
+  };
+
   const handleStepSubmit = async (step: CheckoutStep) => {
     if (step === "address") {
       const isValid = await form.trigger([
@@ -561,8 +577,31 @@ export default function CheckoutClient() {
           notify.error("Destination pincode is not serviceable by courier partner. Please enter a valid pincode.");
           return;
         }
-        setErrorMsg("");
-        setCurrentStep("shipping");
+
+        const currentShippingObj = form.getValues("shippingAddress");
+        const currentSignature = getAddressSignature(currentShippingObj);
+
+        // 1. Existing saved address check -> if fields match saved object, proceed immediately without modal
+        if (selectedAddressId !== "new") {
+          const savedObj = savedAddresses.find((a) => a.id === selectedAddressId);
+          if (savedObj && areAddressesEqual(currentShippingObj, savedObj)) {
+            setVerifiedAddressSignature(currentSignature);
+            setErrorMsg("");
+            setCurrentStep("shipping");
+            return;
+          }
+        }
+
+        // 2. Previously verified in this session check (step navigation cache) -> proceed immediately
+        if (verifiedAddressSignature === currentSignature) {
+          setErrorMsg("");
+          setCurrentStep("shipping");
+          return;
+        }
+
+        // 3. New or changed address -> Require 5-second confirmation modal
+        setPendingVerificationAddress(currentShippingObj);
+        setVerificationModalOpen(true);
       } else {
         notify.error("Please fill out all required address fields correctly.");
       }
@@ -1364,6 +1403,17 @@ export default function CheckoutClient() {
 
       </div>
       )}
+
+      {/* 5-Second Address Verification Modal for Checkout */}
+      <AddressVerificationModal
+        isOpen={verificationModalOpen}
+        address={pendingVerificationAddress}
+        title="Verify Checkout Delivery Address"
+        onConfirm={confirmAddressVerification}
+        onEdit={() => setVerificationModalOpen(false)}
+        onClose={() => setVerificationModalOpen(false)}
+      />
     </Form>
   );
 }
+

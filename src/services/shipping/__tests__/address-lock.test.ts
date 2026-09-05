@@ -53,8 +53,9 @@ vi.mock("@/db", () => ({
 // Mock shipping provider factory
 vi.mock("@/lib/shipping", () => ({
   getShippingProvider: vi.fn().mockReturnValue({
-    checkServiceability: vi.fn().mockImplementation(({ destinationPincode }: { destinationPincode?: string }) => {
-      if (destinationPincode === "000000" || destinationPincode === "999999") {
+    checkServiceability: vi.fn().mockImplementation(({ pincode, destinationPincode }) => {
+      const pin = pincode || destinationPincode;
+      if (pin === "000000" || pin === "999999") {
         return Promise.resolve({ isServiceable: false, remarks: "Non-serviceable pincode" });
       }
       return Promise.resolve({ isServiceable: true });

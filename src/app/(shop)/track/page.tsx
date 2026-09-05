@@ -32,6 +32,9 @@ import {
   type TrackingLookupInput, 
   type OrderLookupInput 
 } from "@/lib/validators/auth";
+import { CustomerTrackingTimeline } from "@/components/orders/customer-tracking-timeline";
+import { CustomerTrackingEvents } from "@/components/orders/customer-tracking-events";
+
 
 interface TrackingResult {
   success: boolean;
@@ -416,195 +419,39 @@ function TrackingSearchContent() {
           {/* LEFT: TIMELINE & CARRIER TRACK (7 cols) */}
           <div className="lg:col-span-7 space-y-6">
             
-            {/* Header info */}
-            <div className="bg-card border border-border/30 rounded-3xl p-6 shadow-sm space-y-4">
-              <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-border/20">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2.5">
-                    <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider">Order Timeline</span>
-                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${
-                      result.order.status === "delivered" 
-                        ? "bg-success/15 text-success border border-success/30"
-                        : "bg-warning/15 text-warning border border-warning/30"
-                    }`}>
-                      {result.order.status}
-                    </span>
-                  </div>
-                  <h3 className="font-serif text-lg font-normal text-foreground">
-                    Order ID: <span className="font-sans font-bold">{result.order.id}</span>
-                  </h3>
-                </div>
-                <div className="text-right text-xs">
-                  <p className="text-[10px] text-muted-foreground font-bold uppercase">Estimated Delivery</p>
-                  <p className="font-serif text-sm font-semibold text-primary">
-                    {result.order.shipments?.[0]?.estimatedDeliveryAt 
-                      ? new Date(result.order.shipments[0].estimatedDeliveryAt).toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" })
-                      : "Pending Dispatch"}
-                  </p>
-                </div>
-              </div>
+            {/* Visual Tracking Progress Bar */}
+            <CustomerTrackingTimeline
+              orderStatus={result.order.status}
+              shipmentStatus={result.order.shipments?.[0]?.status}
+            />
 
-              {/* Visual Horizontal Timeline */}
-              {(() => {
-                const { steps, shipmentSteps, isCancelled, isRefunded } = getOrderStatusTimeline(result.order);
-                
-                if (isCancelled) {
-                  return (
-                    <div className="p-4 bg-rose-500/10 border border-rose-500/20 text-rose-500 rounded-2xl flex items-center gap-3 text-xs">
-                      <AlertCircle className="w-5 h-5 shrink-0" />
-                      <div>
-                        <p className="font-bold uppercase tracking-wider text-[9px]">Cancelled</p>
-                        <p className="font-light">This order has been cancelled and will not be processed further.</p>
-                      </div>
-                    </div>
-                  );
-                }
-
-                if (isRefunded) {
-                  return (
-                    <div className="p-4 bg-rose-500/10 border border-rose-500/20 text-rose-500 rounded-2xl flex items-center gap-3 text-xs">
-                      <AlertCircle className="w-5 h-5 shrink-0" />
-                      <div>
-                        <p className="font-bold uppercase tracking-wider text-[9px]">Refunded</p>
-                        <p className="font-light">A refund has been issued back to the source payment method.</p>
-                      </div>
-                    </div>
-                  );
-                }
-
-                return (
-                  <div className="space-y-6 pt-2">
-                    {/* Order progress */}
-                    <div className="space-y-4">
-                      <span className="text-[9px] uppercase font-bold text-muted-foreground tracking-wider">Order Workflow</span>
-                      <div className="grid grid-cols-5 text-center text-xs relative">
-                        <div className="absolute top-4 left-[10%] right-[10%] h-[1.5px] bg-border/40 z-0" />
-                        {steps.map((step, idx) => (
-                          <div key={idx} className="flex flex-col items-center relative z-10">
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center border transition-all ${
-                              step.done 
-                                ? "bg-primary border-primary text-primary-foreground shadow-md shadow-primary/10"
-                                : "bg-card border-border/50 text-muted-foreground"
-                            }`}>
-                              <step.icon className="w-3.5 h-3.5" />
-                            </div>
-                            <span className={`text-[8px] font-bold uppercase tracking-wider mt-2.5 block ${
-                              step.done ? "text-primary" : "text-muted-foreground/60"
-                            }`}>
-                              {step.label}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Shipment progress timeline */}
-                    <div className="pt-4 border-t border-border/15 space-y-4">
-                      <span className="text-[9px] uppercase font-bold text-muted-foreground tracking-wider">Shipment Progress</span>
-                      <div className="grid grid-cols-4 text-center text-xs relative">
-                        <div className="absolute top-4 left-[12.5%] right-[12.5%] h-[1.5px] bg-border/40 z-0" />
-                        {shipmentSteps.map((step, idx) => (
-                          <div key={idx} className="flex flex-col items-center relative z-10">
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center border transition-all ${
-                              step.done 
-                                ? "bg-primary border-primary text-primary-foreground shadow-md shadow-primary/10"
-                                : "bg-card border-border/50 text-muted-foreground"
-                            }`}>
-                              {step.done ? "✓" : idx + 1}
-                            </div>
-                            <span className={`text-[8px] font-bold uppercase tracking-wider mt-2.5 block ${
-                              step.done ? "text-primary" : "text-muted-foreground/60"
-                            }`}>
-                              {step.label}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })()}
-            </div>
-
-            {/* Carrier info & Detailed events */}
+            {/* Carrier Info & Detailed Events */}
             {result.order.shipments && result.order.shipments.length > 0 ? (
-              result.order.shipments.map((ship) => (
-                <div key={ship.id} className="bg-card border border-border/30 rounded-3xl p-6 shadow-sm space-y-6">
-                  <div className="space-y-3 p-4 bg-secondary/15 rounded-2xl border border-border/20 text-xs">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-1">
-                        <p className="text-[10px] text-muted-foreground font-bold uppercase">Courier Partner</p>
-                        <p className="font-semibold text-foreground text-sm flex items-center gap-1.5">
-                          <Building2 className="w-4 h-4 text-primary shrink-0" />
-                          {ship.carrier}
-                        </p>
-                      </div>
-                      <div className="space-y-1 text-right">
-                        <p className="text-[10px] text-muted-foreground font-bold uppercase">Waybill / Tracking #</p>
-                        <p className="font-mono font-semibold text-primary text-sm tracking-wider">{ship.trackingNumber}</p>
-                      </div>
-                    </div>
-                    {ship.trackingUrl && (
-                      <div className="pt-2 border-t border-border/20 flex justify-end">
-                        <a
-                          href={ship.trackingUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded-xl text-xs font-semibold transition-all"
-                        >
-                          <span>Track on {ship.carrier} Portal</span>
-                          <ExternalLink className="w-3.5 h-3.5" />
-                        </a>
-                      </div>
-                    )}
-                  </div>
+              result.order.shipments.map((ship: any) => (
+                <CustomerTrackingEvents
+                  key={ship.id}
+                  carrier={ship.carrier}
+                  provider={ship.provider || "delhivery"}
+                  trackingNumber={ship.trackingNumber || ship.waybill || ""}
 
-                  {/* Vertical Events Timeline */}
-                  <div className="space-y-4">
-                    <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Shipment History & Updates</h4>
-                    
-                    {ship.events && ship.events.length > 0 ? (
-                      <div className="space-y-5 pl-4 border-l border-border/40 ml-2">
-                        {ship.events.map((event) => (
-                          <div key={event.id} className="relative space-y-1">
-                            {/* Dot indicator */}
-                            <div className="absolute -left-[20.5px] top-1 w-2.5 h-2.5 rounded-full bg-primary border border-card" />
-                            <div className="flex flex-wrap items-center gap-2 text-xs">
-                              <span className="font-bold uppercase text-foreground bg-secondary/50 px-2 py-0.5 border border-border/40 rounded-[6px] text-[9px] tracking-wide">
-                                {event.status.replace(/_/g, " ")}
-                              </span>
-                              <span className="text-[10px] text-muted-foreground font-light">{formatDate(event.timestamp)}</span>
-                              {event.location && (
-                                <span className="text-[9px] text-muted-foreground/80 flex items-center gap-1">
-                                  <MapPin className="w-3 h-3 text-primary/80" />
-                                  {event.location}
-                                </span>
-                              )}
-                            </div>
-                            {event.description && (
-                              <p className="text-xs font-light text-muted-foreground italic leading-relaxed pl-0.5">{event.description}</p>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-xs text-muted-foreground font-light italic pl-1">Shipment created, waiting for pickup dispatch events...</p>
-                    )}
-                  </div>
-                </div>
+                  trackingUrl={ship.trackingUrl}
+                  estimatedDeliveryAt={ship.estimatedDeliveryAt}
+                  events={ship.events || []}
+                />
               ))
             ) : (
               <div className="bg-card border border-border/30 rounded-3xl p-6 text-center space-y-3 shadow-sm">
                 <div className="p-3 bg-secondary/30 text-muted-foreground rounded-full inline-block">
-                  <Package className="w-6 h-6" />
+                  <Package className="w-6 h-6 animate-pulse text-primary" />
                 </div>
-                <div className="max-w-xs mx-auto space-y-1 text-xs">
-                  <p className="font-semibold text-foreground">Awaiting Shipment Dispatch</p>
-                  <p className="text-muted-foreground font-light">Your order is being handcrafted. As soon as the courier partner receives the package, the waybill status will update here.</p>
+                <div className="max-w-xs mx-auto space-y-1 text-xs font-light">
+                  <p className="font-semibold text-foreground font-serif text-sm">Awaiting Shipment Dispatch</p>
+                  <p className="text-muted-foreground">Your order is being handcrafted with care. As soon as the courier partner receives the package, the waybill status will update here.</p>
                 </div>
               </div>
             )}
           </div>
+
 
           {/* RIGHT: DESTINATION, ITEMS & SUMMARY (5 cols) */}
           <div className="lg:col-span-5 space-y-6">

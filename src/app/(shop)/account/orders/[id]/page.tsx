@@ -25,6 +25,9 @@ import { getSessionUser } from "@/lib/auth/session";
 import { formatPrice } from "@/lib/utils";
 import CustomerOrderActions from "@/components/orders/customer-order-actions";
 import { OrderStatusBadge } from "@/components/orders/order-status-badge";
+import { CustomerTrackingTimeline } from "@/components/orders/customer-tracking-timeline";
+import { CustomerTrackingEvents } from "@/components/orders/customer-tracking-events";
+
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -201,54 +204,12 @@ export default async function OrderDetailsPage({ params }: PageProps) {
         </div>
       </div>
 
-      {/* 3. Horizontal Order Progress timeline */}
-      {!isCancelled && !isRefunded && (
-        <div className="bg-card border border-border/30 rounded-2xl p-6 shadow-sm max-w-2xl mx-auto">
-          <div className="grid grid-cols-5 text-center text-xs relative">
-            {/* Connecting Line */}
-            <div className="absolute top-4.5 left-[10%] right-[10%] h-[2px] bg-border/30 z-0" />
-            
-            {timelineSteps.map((step, index) => (
-              <div key={index} className="flex flex-col items-center relative z-10">
-                <div 
-                  className={`w-9 h-9 rounded-full flex items-center justify-center border text-[11px] font-bold transition-all ${
-                    step.active 
-                      ? "bg-primary border-primary text-primary-foreground shadow-md shadow-primary/10" 
-                      : "bg-background border-border/50 text-muted-foreground"
-                  }`}
-                >
-                  {index + 1}
-                </div>
-                <span className={`text-[9px] font-bold uppercase tracking-wider mt-3 ${
-                  step.active ? "text-primary" : "text-muted-foreground/60"
-                }`}>
-                  {step.label}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* 3. Horizontal Order & Shipping Progress Timeline */}
+      <CustomerTrackingTimeline
+        orderStatus={orderRecord.status}
+        shipmentStatus={shipment?.status}
+      />
 
-      {isCancelled && (
-        <div className="bg-rose-500/10 border border-rose-500/20 text-rose-700 dark:text-rose-400 p-4.5 rounded-2xl flex items-center gap-3">
-          <ShieldAlert className="w-5 h-5 shrink-0" />
-          <div className="text-xs">
-            <p className="font-semibold uppercase tracking-wider text-[10px]">Order Cancelled</p>
-            <p className="font-light">This order has been cancelled and will not be processed further. If you were charged, a refund is being initiated.</p>
-          </div>
-        </div>
-      )}
-
-      {isRefunded && (
-        <div className="bg-rose-500/10 border border-rose-500/20 text-rose-700 dark:text-rose-400 p-4.5 rounded-2xl flex items-center gap-3">
-          <ShieldAlert className="w-5 h-5 shrink-0" />
-          <div className="text-xs">
-            <p className="font-semibold uppercase tracking-wider text-[10px]">Order Refunded</p>
-            <p className="font-light">A full refund has been successfully credited back to your original source of payment.</p>
-          </div>
-        </div>
-      )}
 
       {/* 4. Details Grid System */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -379,61 +340,29 @@ export default async function OrderDetailsPage({ params }: PageProps) {
           />
 
           {/* Shipment & Tracker Card */}
-          <div className="bg-card border border-border/30 rounded-2xl p-5 space-y-3.5">
-            <h3 className="font-serif text-sm font-semibold text-foreground flex items-center gap-1.5 pb-2 border-b border-border/20">
-              <Truck className="w-4 h-4 text-primary shrink-0" />
-              Shipment Details
-            </h3>
+          {shipment ? (
+            <CustomerTrackingEvents
+              carrier={shipment.carrier}
+              provider={shipment.provider}
+              trackingNumber={shipment.trackingNumber || shipment.waybill || ""}
 
-            {shipment ? (
-              <div className="space-y-4">
-                <div className="text-xs font-light space-y-1 bg-secondary/25 border border-border/20 rounded-xl p-3">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Carrier:</span>
-                    <span className="font-semibold text-foreground">{shipment.carrier}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Tracking #:</span>
-                    <span className="font-mono font-semibold text-primary">{shipment.trackingNumber}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Status:</span>
-                    <span className="font-medium text-foreground uppercase text-[10px]">{shipment.status}</span>
-                  </div>
-                </div>
+              trackingUrl={shipment.trackingUrl}
+              estimatedDeliveryAt={shipment.estimatedDeliveryAt}
+              events={shipment.events || []}
+            />
+          ) : (
+            <div className="bg-card border border-border/30 rounded-2xl p-5 space-y-3 shadow-sm text-center">
+              <h3 className="font-serif text-sm font-semibold text-foreground flex items-center gap-1.5 pb-2 border-b border-border/20 justify-center">
+                <Truck className="w-4 h-4 text-primary shrink-0" />
+                Shipment Details
+              </h3>
+              <div className="text-center py-4 text-xs text-muted-foreground font-light flex flex-col items-center gap-2">
+                <Package className="w-6 h-6 text-muted-foreground/50 animate-pulse" />
+                <span>Handcrafting in progress. Tracking details will update once shipped.</span>
+              </div>
+            </div>
+          )}
 
-                {/* Vertical Tracking Events timeline */}
-                {shipment.events && shipment.events.length > 0 && (
-                  <div className="space-y-3 pl-2 border-l border-border/40 ml-1">
-                    <span className="text-[9px] uppercase font-bold text-muted-foreground tracking-wider block">Tracking Log</span>
-                    <div className="space-y-3">
-                      {shipment.events.map((event) => (
-                        <div key={event.id} className="relative pl-3 text-[10px] leading-relaxed">
-                          {/* Circle Dot */}
-                          <div className="absolute -left-[12.5px] top-1.5 w-1.5 h-1.5 rounded-full bg-primary" />
-                          <p className="text-muted-foreground/60 font-mono text-[8px]">
-                            {new Date(event.timestamp).toLocaleDateString("en-IN", {
-                              day: "numeric",
-                              month: "short",
-                              hour: "2-digit",
-                              minute: "2-digit"
-                            })}
-                          </p>
-                          <p className="font-semibold text-foreground">{event.status}</p>
-                          {event.description && <p className="text-muted-foreground font-light">{event.description}</p>}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="text-center py-2 text-xs text-muted-foreground font-light flex items-center gap-2 justify-center">
-                <Package className="w-4 h-4 text-muted-foreground/60" />
-                <span>Pending shipment details...</span>
-              </div>
-            )}
-          </div>
 
           {/* Activity / Status History Log */}
           <div className="bg-card border border-border/30 rounded-2xl p-5 space-y-4">

@@ -28,7 +28,8 @@ import { Form } from "@/components/forms/form";
 import { FormField } from "@/components/forms/form-field";
 import { InputField, SelectField, PhoneInputField } from "@/components/forms/fields";
 import { notify } from "@/lib/toast";
-import { addressSchema, type AddressInput } from "@/lib/validators/address";
+import { addressSchema, type AddressInput, areAddressesEqual } from "@/lib/validators/address";
+import { AddressVerificationModal } from "@/components/address/address-verification-modal";
 
 interface Address {
   id: string;
@@ -56,6 +57,10 @@ export function AddressClient({ initialAddresses }: AddressClientProps) {
   const [modalMode, setModalMode] = useState<"add" | "edit">("add");
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
 
+  // Address verification modal state
+  const [verificationModalOpen, setVerificationModalOpen] = useState(false);
+  const [pendingAddressPayload, setPendingAddressPayload] = useState<any>(null);
+
   // Address label state ("Home", "Work", "Hostel", "Other")
   const [label, setLabel] = useState("Home");
 
@@ -69,7 +74,7 @@ export function AddressClient({ initialAddresses }: AddressClientProps) {
 
   // Disable background scrolling when modal is open
   useEffect(() => {
-    if (modalOpen) {
+    if (modalOpen || verificationModalOpen) {
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "unset";
@@ -77,7 +82,7 @@ export function AddressClient({ initialAddresses }: AddressClientProps) {
     return () => {
       document.body.style.overflow = "unset";
     };
-  }, [modalOpen]);
+  }, [modalOpen, verificationModalOpen]);
 
   // RHF Setup
   const form = useForm({
@@ -203,31 +208,10 @@ export function AddressClient({ initialAddresses }: AddressClientProps) {
     return digits.slice(0, 13);
   };
 
-  const handleFormSubmit = async (data: AddressInput) => {
-    if (pincodeCheck.isServiceable === false) {
-      notify.error("Destination pincode is not serviceable by courier partner. Please enter a valid pincode.");
-      return;
-    }
-
+  const executeSaveAddress = async (payload: any) => {
     setLoading(true);
-
     try {
-      // Package label into Address Line 2
-      const finalAddressLine2 = `${label} | ${(data.addressLine2 || "").trim()}`;
-      
-      const res = await saveUserAddress({
-        id: modalMode === "edit" && selectedAddressId ? selectedAddressId : undefined,
-        type: data.type,
-        name: data.name,
-        phone: data.phone,
-        addressLine1: data.addressLine1,
-        addressLine2: finalAddressLine2,
-        city: data.city,
-        state: data.state,
-        postalCode: data.postalCode,
-        country: data.country,
-        isDefault: data.isDefault
-      });
+      const res = await saveUserAddress(payload);
 
       if (res.success) {
         notify.success(
@@ -235,6 +219,7 @@ export function AddressClient({ initialAddresses }: AddressClientProps) {
             ? "New address saved successfully." 
             : "Address changes saved successfully."
         );
+        setVerificationModalOpen(false);
         setModalOpen(false);
         router.refresh();
       } else {
@@ -246,6 +231,42 @@ export function AddressClient({ initialAddresses }: AddressClientProps) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleFormSubmit = async (data: AddressInput) => {
+    if (pincodeCheck.isServiceable === false) {
+      notify.error("Destination pincode is not serviceable by courier partner. Please enter a valid pincode.");
+      return;
+    }
+
+    // Package label into Address Line 2
+    const finalAddressLine2 = `${label} | ${(data.addressLine2 || "").trim()}`;
+    const payload = {
+      id: modalMode === "edit" && selectedAddressId ? selectedAddressId : undefined,
+      type: data.type,
+      name: data.name,
+      phone: data.phone,
+      addressLine1: data.addressLine1,
+      addressLine2: finalAddressLine2,
+      city: data.city,
+      state: data.state,
+      postalCode: data.postalCode,
+      country: data.country,
+      isDefault: data.isDefault,
+    };
+
+    if (modalMode === "edit" && selectedAddressId) {
+      const originalAddr = initialAddresses.find((a) => a.id === selectedAddressId);
+      if (originalAddr && areAddressesEqual(payload, originalAddr)) {
+        // Edit address without changes -> Save directly without verification modal
+        await executeSaveAddress(payload);
+        return;
+      }
+    }
+
+    // New address or edit with changed details -> Open verification modal with 5s countdown
+    setPendingAddressPayload(payload);
+    setVerificationModalOpen(true);
   };
 
   const handleDelete = async (id: string) => {
@@ -607,6 +628,17 @@ export function AddressClient({ initialAddresses }: AddressClientProps) {
         </div>,
         document.body
       )}
+
+      {/* 5-Second Address Verification Modal */}
+      <AddressVerificationModal
+        isOpen={verificationModalOpen}
+        address={pendingAddressPayload}
+        title={modalMode === "add" ? "Verify New Address" : "Verify Updated Address"}
+        onConfirm={() => executeSaveAddress(pendingAddressPayload)}
+        onEdit={() => setVerificationModalOpen(false)}
+        onClose={() => setVerificationModalOpen(false)}
+      />
     </div>
   );
 }
+

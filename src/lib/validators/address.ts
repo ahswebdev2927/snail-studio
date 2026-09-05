@@ -54,3 +54,47 @@ export const addressSchema = z.object({
 });
 
 export type AddressInput = z.infer<typeof addressSchema>;
+
+/**
+ * Normalizes a string field for exact address comparisons.
+ */
+function normalizeField(val: string | null | undefined): string {
+  return (val || "").trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+/**
+ * Checks if two address objects have identical delivery fields.
+ * Compares name, phone, addressLine1, addressLine2, city, state, postalCode, and country.
+ */
+export function areAddressesEqual(a: Partial<AddressInput> | null | undefined, b: Partial<AddressInput> | null | undefined): boolean {
+  if (!a || !b) return false;
+
+  return (
+    normalizeField(a.name) === normalizeField(b.name) &&
+    normalizeField(a.phone) === normalizeField(b.phone) &&
+    normalizeField(a.addressLine1) === normalizeField(b.addressLine1) &&
+    normalizeField(a.addressLine2) === normalizeField(b.addressLine2) &&
+    normalizeField(a.city) === normalizeField(b.city) &&
+    normalizeField(a.state) === normalizeField(b.state) &&
+    normalizeField(a.postalCode) === normalizeField(b.postalCode) &&
+    normalizeField(a.country || "India") === normalizeField(b.country || "India")
+  );
+}
+
+/**
+ * Computes a deterministic signature string for an address to track verification state in checkout.
+ */
+export function getAddressSignature(addr: Partial<AddressInput> | null | undefined): string {
+  if (!addr) return "";
+  return [
+    normalizeField(addr.name),
+    normalizeField(addr.phone),
+    normalizeField(addr.addressLine1),
+    normalizeField(addr.addressLine2),
+    normalizeField(addr.city),
+    normalizeField(addr.state),
+    normalizeField(addr.postalCode),
+    normalizeField(addr.country || "India"),
+  ].join("|");
+}
+

@@ -6,7 +6,8 @@ import { TrackingSyncResult } from "@/lib/shipping/types";
 import { nanoid } from "nanoid";
 import { updateOrderStatus } from "@/services/checkout/order.service";
 import { sendMail } from "@/services/email/email.service";
-import { getOrderStatusUpdateTemplate } from "@/services/email/templates/order-status-update.template";
+import { getShipmentUpdateTemplate } from "@/services/email/templates/shipment-update.template";
+
 
 /**
  * Resolves the admin email recipient address from environment settings.
@@ -212,11 +213,15 @@ export async function syncActiveShipments(): Promise<TrackingSyncResult> {
           };
 
           const statusLabel = statusLabels[newStatus] || newStatus;
-          const html = getOrderStatusUpdateTemplate({
+          const html = getShipmentUpdateTemplate({
             customerName: shipment.order.user?.name || "Customer",
             orderId: shipment.orderId,
-            newStatus: statusLabel,
-            statusNotes: `Shipment status updated to ${statusLabel}. Carrier: ${shipment.carrier}, Tracking #: ${waybill}`,
+            status: newStatus,
+            carrier: shipment.carrier,
+            trackingNumber: waybill,
+            trackingUrl: shipment.trackingUrl,
+            estimatedDeliveryAt: shipment.estimatedDeliveryAt,
+            statusNotes: `Package status updated to ${statusLabel} by ${shipment.carrier}.`,
             updatedAt: now,
           });
 
@@ -224,8 +229,9 @@ export async function syncActiveShipments(): Promise<TrackingSyncResult> {
             to: recipients.length === 1 ? recipients[0] : recipients,
             subject: `Shipment Update: ${statusLabel} - Snail Studio (#${shipment.orderId})`,
             html,
-            templateName: "order_status_update",
+            templateName: "shipment_update",
           });
+
         }
       }
     } catch (err: any) {

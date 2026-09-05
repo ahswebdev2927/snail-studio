@@ -443,8 +443,10 @@ export default function AdminOrdersPage() {
         await loadOrderDetail(selectedOrderId);
         await loadOrders();
       } else {
-        const data = await res.json();
-        await customAlert("Error", `Failed to process refund: ${data.error || "Server error"}`);
+        const data = await res.json().catch(() => ({}));
+        if (!data.verificationRequired) {
+          await customAlert("Error", `Failed to process refund: ${data.error || "Server error"}`);
+        }
       }
     } catch (err) {
       console.error(err);

@@ -6,8 +6,9 @@ import { CreateShipmentRequest, ShippingProvider } from "@/lib/shipping/types";
 import { validatePreShipment } from "./shipping-policy.service";
 import { nanoid } from "nanoid";
 import { sendMail } from "@/services/email/email.service";
-import { getOrderStatusUpdateTemplate } from "@/services/email/templates/order-status-update.template";
+import { getShipmentUpdateTemplate } from "@/services/email/templates/shipment-update.template";
 import { updateOrderStatus } from "@/services/checkout/order.service";
+
 
 /**
  * Allowed package statuses for Delhivery cancellation per B2C lifecycle specification:
@@ -131,27 +132,42 @@ async function sendShipmentEmail(
   try {
     const order = await db.query.orders.findFirst({
       where: eq(orders.id, orderId),
-      with: { user: true },
+      with: {
+        user: true,
+        shipments: {
+          orderBy: (s, { desc }) => [desc(s.createdAt)],
+        },
+      },
     });
     if (order && order.user?.email) {
-      const html = getOrderStatusUpdateTemplate({
+      const activeShipment = order.shipments?.[0];
+      const waybill = activeShipment?.waybill || activeShipment?.trackingNumber || "TRK-PENDING";
+      const carrier = activeShipment?.carrier || "Courier Partner";
+
+      const html = getShipmentUpdateTemplate({
         customerName: order.user.name || "Customer",
         orderId: order.id,
-        newStatus: newStatusLabel,
+        status: activeShipment?.status || "created",
+        carrier,
+        trackingNumber: waybill,
+        trackingUrl: activeShipment?.trackingUrl,
+        estimatedDeliveryAt: activeShipment?.estimatedDeliveryAt,
         statusNotes: notes || `Shipment update: ${newStatusLabel}`,
         updatedAt: new Date(),
       });
+
       await sendMail({
         to: order.user.email,
         subject: `${subject} - Snail Studio (#${order.id})`,
         html,
-        templateName: "order_status_update",
+        templateName: "shipment_update",
       });
     }
   } catch (err) {
     console.error(`[Shipment Email Error] Failed for order ${orderId}:`, err);
   }
 }
+
 
 /**
  * Creates a new shipment attempt for an order (Delhivery API or External Courier).
