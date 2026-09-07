@@ -216,10 +216,24 @@ export async function PATCH(
 
     const noteText = description || `Shipment status updated to ${status}.`;
 
-    if (status === "pickup_completed") {
-      await updateOrderStatus(orderId, "shipped", `Order shipped via ${shipmentRecord.carrier}. Notes: ${noteText}`);
-    } else if (status === "delivered") {
+    const isShippedState = [
+      "pickup_completed",
+      "picked_up",
+      "in_transit",
+      "reached_destination_hub",
+      "out_for_delivery",
+      "ndr",
+      "rto",
+    ].includes(status) || [
+      "picked_up",
+      "in_transit",
+      "out_for_delivery",
+    ].includes(targetStatus);
+
+    if (status === "delivered" || targetStatus === "delivered") {
       await updateOrderStatus(orderId, "delivered", `Order delivered by ${shipmentRecord.carrier}. Notes: ${noteText}`);
+    } else if (isShippedState) {
+      await updateOrderStatus(orderId, "shipped", `Order shipped via ${shipmentRecord.carrier}. Notes: ${noteText}`);
     } else {
       await db.insert(orderStatusHistory).values({
         id: `osh_${nanoid(10)}`,

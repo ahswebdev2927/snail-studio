@@ -32,7 +32,8 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
-  Lock
+  Lock,
+  AlertTriangle
 } from "lucide-react";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 import { ShipmentDispatchModal } from "@/components/admin/orders/shipment-dispatch-modal";
@@ -601,7 +602,7 @@ export default function AdminOrdersPage() {
   const processingCount = orders.filter(o => o.status === "processing").length;
   const completedCount = orders.filter(o => o.status === "delivered").length;
   const totalRevenue = orders
-    .filter(o => ["paid", "processing", "shipped", "delivered"].includes(o.status))
+    .filter(o => ["paid", "processing", "ready_to_ship", "shipped", "delivered"].includes(o.status))
     .reduce((sum, o) => sum + o.totalAmount, 0);
 
   return (
@@ -683,7 +684,7 @@ export default function AdminOrdersPage() {
 
         {/* Filter Tabs */}
         <div className="flex flex-wrap gap-1.5 w-full sm:w-auto">
-          {["all", "pending", "paid", "processing", "shipped", "delivered", "cancelled", "refunded"].map((status) => (
+          {["all", "pending", "paid", "processing", "ready_to_ship", "shipped", "delivered", "cancelled", "refunded"].map((status) => (
             <button
               key={status}
               onClick={() => setStatusFilter(status)}
@@ -693,7 +694,7 @@ export default function AdminOrdersPage() {
                   : "bg-secondary/40 hover:bg-secondary/70 text-muted-foreground border border-border/35"
               }`}
             >
-              {status}
+              {status.replace(/_/g, " ")}
             </button>
           ))}
         </div>
@@ -1041,9 +1042,8 @@ export default function AdminOrdersPage() {
                           {/* History Icon Button */}
                           <button
                             type="button"
-                            disabled={!orderDetail.addressHistory || orderDetail.addressHistory.length === 0}
                             onClick={() => setShowAddressHistoryModal(true)}
-                            className="p-1.5 bg-card hover:bg-secondary/15 disabled:opacity-40 disabled:cursor-not-allowed text-muted-foreground hover:text-foreground rounded-lg transition-all cursor-pointer border border-border/30 flex items-center justify-center"
+                            className="p-1.5 bg-card hover:bg-secondary/15 text-muted-foreground hover:text-foreground rounded-lg transition-all cursor-pointer border border-border/30 flex items-center justify-center"
                             title="View Address Modification Audit Trail"
                           >
                             <History className="w-3.5 h-3.5" />
@@ -1278,184 +1278,205 @@ export default function AdminOrdersPage() {
             </div>
 
             {/* Modal Footer / Context-Aware Action Controls */}
-            {orderDetail && (
-              <div className="p-6 border-t border-border/40 bg-secondary/10 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                    Order Action Controls (Status: {orderDetail.status.toUpperCase()})
-                  </span>
-                  {["shipped", "delivered"].includes(orderDetail.status.toLowerCase()) && (
-                    <span className="text-[9px] font-mono text-muted-foreground bg-muted px-2.5 py-0.5 rounded border border-border">
-                      🔒 Logistics status automated via carrier tracking scans
+            {orderDetail && (() => {
+              const hasActiveUndeliveredShipment = orderDetail.shipments?.some(
+                (s) => s.status !== "cancelled" && s.status !== "delivered"
+              );
+
+              return (
+                <div className="p-6 border-t border-border/40 bg-secondary/10 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                      Order Action Controls (Status: {orderDetail.status.toUpperCase()})
                     </span>
-                  )}
-                </div>
+                    {["shipped", "delivered"].includes(orderDetail.status.toLowerCase()) && (
+                      <span className="text-[9px] font-mono text-muted-foreground bg-muted px-2.5 py-0.5 rounded border border-border">
+                        🔒 Logistics status automated via carrier tracking scans
+                      </span>
+                    )}
+                  </div>
 
-                <div className="flex flex-wrap gap-2.5 items-center">
-                  {/* PLACED or PENDING or PAID */}
-                  {(orderDetail.status === "placed" || orderDetail.status === "pending" || orderDetail.status === "paid") && (
-                    <>
-                      <button
-                        type="button"
-                        disabled={isUpdatingStatus}
-                        onClick={async () => {
-                          setIsUpdatingStatus(true);
-                          try {
-                            const res = await fetch(`/api/admin/orders/${orderDetail.id}`, {
-                              method: "PATCH",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({ status: "confirmed", notes: "Order confirmed by admin after review." }),
-                            });
-                            if (res.ok) {
-                              await loadOrderDetail(orderDetail.id);
-                              await loadOrders();
-                            } else {
-                              const err = await res.json();
-                              await customAlert("Error", err.error || "Failed to confirm order.");
-                            }
-                          } catch (e) {
-                            await customAlert("Error", "Unexpected error.");
-                          } finally {
-                            setIsUpdatingStatus(false);
-                          }
-                        }}
-                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5"
-                      >
-                        {isUpdatingStatus ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Mark Confirmed"}
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setShowCancelModal(true)}
-                        className="px-4 py-2 bg-rose-600/10 hover:bg-rose-600/20 text-rose-600 dark:text-rose-400 border border-rose-600/20 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer"
-                      >
-                        Cancel & Refund Order
-                      </button>
-                    </>
-                  )}
-
-                  {/* CONFIRMED */}
-                  {orderDetail.status === "confirmed" && (
-                    <>
-                      <button
-                        type="button"
-                        disabled={isUpdatingStatus}
-                        onClick={async () => {
-                          setIsUpdatingStatus(true);
-                          try {
-                            const res = await fetch(`/api/admin/orders/${orderDetail.id}`, {
-                              method: "PATCH",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({ status: "processing", notes: "Workshop processing started." }),
-                            });
-                            if (res.ok) {
-                              await loadOrderDetail(orderDetail.id);
-                              await loadOrders();
-                            } else {
-                              const err = await res.json();
-                              await customAlert("Error", err.error || "Failed to start processing.");
-                            }
-                          } catch (e) {
-                            await customAlert("Error", "Unexpected error.");
-                          } finally {
-                            setIsUpdatingStatus(false);
-                          }
-                        }}
-                        className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5"
-                      >
-                        {isUpdatingStatus ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Start Processing"}
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setShowCancelModal(true)}
-                        className="px-4 py-2 bg-rose-600/10 hover:bg-rose-600/20 text-rose-600 dark:text-rose-400 border border-rose-600/20 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer"
-                      >
-                        Cancel & Refund Order
-                      </button>
-                    </>
-                  )}
-
-                  {/* PROCESSING */}
-                  {orderDetail.status === "processing" && (
-                    <>
-                      <button
-                        type="button"
-                        disabled={isUpdatingStatus}
-                        onClick={async () => {
-                          setIsUpdatingStatus(true);
-                          try {
-                            const res = await fetch(`/api/admin/orders/${orderDetail.id}`, {
-                              method: "PATCH",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({ status: "ready_to_ship", notes: "Package assembled and ready for shipment." }),
-                            });
-                            if (res.ok) {
-                              await loadOrderDetail(orderDetail.id);
-                              await loadOrders();
-                            } else {
-                              const err = await res.json();
-                              await customAlert("Error", err.error || "Failed to mark ready to ship.");
-                            }
-                          } catch (e) {
-                            await customAlert("Error", "Unexpected error.");
-                          } finally {
-                            setIsUpdatingStatus(false);
-                          }
-                        }}
-                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5"
-                      >
-                        {isUpdatingStatus ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Mark Ready to Ship"}
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setShowCancelModal(true)}
-                        className="px-4 py-2 bg-rose-600/10 hover:bg-rose-600/20 text-rose-600 dark:text-rose-400 border border-rose-600/20 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer"
-                      >
-                        Cancel & Refund Order
-                      </button>
-                    </>
-                  )}
-
-                  {/* READY TO SHIP */}
-                  {orderDetail.status === "ready_to_ship" && (
-                    <>
-                      {!orderDetail.shipments?.some(s => s.status !== "cancelled") ? (
+                  <div className="flex flex-wrap gap-2.5 items-center">
+                    {/* PLACED or PENDING or PAID */}
+                    {(orderDetail.status === "placed" || orderDetail.status === "pending" || orderDetail.status === "paid") && (
+                      <>
                         <button
                           type="button"
-                          onClick={() => setShowCreateShipmentModal(true)}
-                          className="px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5"
+                          disabled={isUpdatingStatus}
+                          onClick={async () => {
+                            setIsUpdatingStatus(true);
+                            try {
+                              const res = await fetch(`/api/admin/orders/${orderDetail.id}`, {
+                                method: "PATCH",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ status: "confirmed", notes: "Order confirmed by admin after review." }),
+                              });
+                              if (res.ok) {
+                                await loadOrderDetail(orderDetail.id);
+                                await loadOrders();
+                              } else {
+                                const err = await res.json();
+                                await customAlert("Error", err.error || "Failed to confirm order.");
+                              }
+                            } catch (e) {
+                              await customAlert("Error", "Unexpected error.");
+                            } finally {
+                              setIsUpdatingStatus(false);
+                            }
+                          }}
+                          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5"
                         >
-                          <Truck className="w-3.5 h-3.5" />
-                          Generate Shipment
+                          {isUpdatingStatus ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Mark Confirmed"}
                         </button>
-                      ) : (
-                        <div className="p-2.5 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-xs text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-2">
-                          <CheckCircle2 className="w-4 h-4" />
-                          <span>Active Shipment (AWB) Created</span>
-                        </div>
-                      )}
 
-                      <button
-                        type="button"
-                        onClick={() => setShowCancelModal(true)}
-                        className="px-4 py-2 bg-rose-600/10 hover:bg-rose-600/20 text-rose-600 dark:text-rose-400 border border-rose-600/20 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer"
-                      >
-                        Cancel & Refund Order
-                      </button>
-                    </>
-                  )}
+                        <button
+                          type="button"
+                          disabled={hasActiveUndeliveredShipment}
+                          title={hasActiveUndeliveredShipment ? "Order cannot be cancelled or refunded while shipment is in progress. Shipment must be delivered or cancelled first." : undefined}
+                          onClick={() => setShowCancelModal(true)}
+                          className="px-4 py-2 bg-rose-600/10 hover:bg-rose-600/20 disabled:opacity-40 disabled:cursor-not-allowed text-rose-600 dark:text-rose-400 border border-rose-600/20 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer"
+                        >
+                          Cancel & Refund Order
+                        </button>
+                      </>
+                    )}
 
-                  {/* CANCELLED / REFUNDED / PARTIALLY_REFUNDED */}
-                  {["cancelled", "refunded", "partially_refunded"].includes(orderDetail.status.toLowerCase()) && (
-                    <span className="text-xs text-rose-500 font-semibold italic">
-                      Order has been cancelled / refunded ({orderDetail.status.toUpperCase()}). No further administrative actions.
-                    </span>
-                  )}
+                    {/* CONFIRMED */}
+                    {orderDetail.status === "confirmed" && (
+                      <>
+                        <button
+                          type="button"
+                          disabled={isUpdatingStatus}
+                          onClick={async () => {
+                            setIsUpdatingStatus(true);
+                            try {
+                              const res = await fetch(`/api/admin/orders/${orderDetail.id}`, {
+                                method: "PATCH",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ status: "processing", notes: "Workshop processing started." }),
+                              });
+                              if (res.ok) {
+                                await loadOrderDetail(orderDetail.id);
+                                await loadOrders();
+                              } else {
+                                const err = await res.json();
+                                await customAlert("Error", err.error || "Failed to start processing.");
+                              }
+                            } catch (e) {
+                              await customAlert("Error", "Unexpected error.");
+                            } finally {
+                              setIsUpdatingStatus(false);
+                            }
+                          }}
+                          className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5"
+                        >
+                          {isUpdatingStatus ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Start Processing"}
+                        </button>
+
+                        <button
+                          type="button"
+                          disabled={hasActiveUndeliveredShipment}
+                          title={hasActiveUndeliveredShipment ? "Order cannot be cancelled or refunded while shipment is in progress. Shipment must be delivered or cancelled first." : undefined}
+                          onClick={() => setShowCancelModal(true)}
+                          className="px-4 py-2 bg-rose-600/10 hover:bg-rose-600/20 disabled:opacity-40 disabled:cursor-not-allowed text-rose-600 dark:text-rose-400 border border-rose-600/20 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer"
+                        >
+                          Cancel & Refund Order
+                        </button>
+                      </>
+                    )}
+
+                    {/* PROCESSING */}
+                    {orderDetail.status === "processing" && (
+                      <>
+                        <button
+                          type="button"
+                          disabled={isUpdatingStatus}
+                          onClick={async () => {
+                            setIsUpdatingStatus(true);
+                            try {
+                              const res = await fetch(`/api/admin/orders/${orderDetail.id}`, {
+                                method: "PATCH",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ status: "ready_to_ship", notes: "Package assembled and ready for shipment." }),
+                              });
+                              if (res.ok) {
+                                await loadOrderDetail(orderDetail.id);
+                                await loadOrders();
+                              } else {
+                                const err = await res.json();
+                                await customAlert("Error", err.error || "Failed to mark ready to ship.");
+                              }
+                            } catch (e) {
+                              await customAlert("Error", "Unexpected error.");
+                            } finally {
+                              setIsUpdatingStatus(false);
+                            }
+                          }}
+                          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5"
+                        >
+                          {isUpdatingStatus ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Mark Ready to Ship"}
+                        </button>
+
+                        <button
+                          type="button"
+                          disabled={hasActiveUndeliveredShipment}
+                          title={hasActiveUndeliveredShipment ? "Order cannot be cancelled or refunded while shipment is in progress. Shipment must be delivered or cancelled first." : undefined}
+                          onClick={() => setShowCancelModal(true)}
+                          className="px-4 py-2 bg-rose-600/10 hover:bg-rose-600/20 disabled:opacity-40 disabled:cursor-not-allowed text-rose-600 dark:text-rose-400 border border-rose-600/20 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer"
+                        >
+                          Cancel & Refund Order
+                        </button>
+                      </>
+                    )}
+
+                    {/* READY TO SHIP */}
+                    {orderDetail.status === "ready_to_ship" && (
+                      <>
+                        {!orderDetail.shipments?.some(s => s.status !== "cancelled") ? (
+                          <button
+                            type="button"
+                            onClick={() => setShowCreateShipmentModal(true)}
+                            className="px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5"
+                          >
+                            <Truck className="w-3.5 h-3.5" />
+                            Generate Shipment
+                          </button>
+                        ) : (
+                          <div className="p-2.5 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-xs text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-2">
+                            <CheckCircle2 className="w-4 h-4" />
+                            <span>Active Shipment (AWB) Created</span>
+                          </div>
+                        )}
+
+                        <button
+                          type="button"
+                          disabled={hasActiveUndeliveredShipment}
+                          title={hasActiveUndeliveredShipment ? "Order cannot be cancelled or refunded while shipment is in progress. Shipment must be delivered or cancelled first." : undefined}
+                          onClick={() => setShowCancelModal(true)}
+                          className="px-4 py-2 bg-rose-600/10 hover:bg-rose-600/20 disabled:opacity-40 disabled:cursor-not-allowed text-rose-600 dark:text-rose-400 border border-rose-600/20 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer"
+                        >
+                          Cancel & Refund Order
+                        </button>
+                      </>
+                    )}
+
+                    {/* CANCELLED / REFUNDED / PARTIALLY_REFUNDED */}
+                    {["cancelled", "refunded", "partially_refunded"].includes(orderDetail.status.toLowerCase()) && (
+                      <span className="text-xs text-rose-500 font-semibold italic">
+                        Order has been cancelled / refunded ({orderDetail.status.toUpperCase()}). No further administrative actions.
+                      </span>
+                    )}
+
+                    {hasActiveUndeliveredShipment && (
+                      <span className="text-[11px] text-amber-600 dark:text-amber-400 font-medium flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/20 px-3 py-1.5 rounded-xl">
+                        <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-amber-500" />
+                        <span>Cancel & Refund locked while active shipment is in progress</span>
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
           </div>
         </div>
       )}
@@ -1850,47 +1871,53 @@ export default function AdminOrdersPage() {
             </div>
 
             <div className="space-y-4 relative pl-4 border-l border-border/40 ml-2">
-              {orderDetail.addressHistory && orderDetail.addressHistory.map((ah: any) => {
-                let oldAddr: any = {};
-                let newAddr: any = {};
-                try {
-                  oldAddr = JSON.parse(ah.oldAddress);
-                  newAddr = JSON.parse(ah.newAddress);
-                } catch (e) {
-                  console.error(e);
-                }
-                return (
-                  <div key={ah.id} className="space-y-1 relative text-xs">
-                    <div className="absolute -left-[20.5px] top-1 w-2.5 h-2.5 rounded-full bg-warning border border-card" />
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-bold uppercase text-warning bg-warning/15 px-1.5 py-0.5 border border-warning/30 rounded">
-                        Version {ah.version}
-                      </span>
-                      <span className="text-[10px] font-medium text-foreground">Edited by: {ah.editedBy}</span>
-                      <span className="text-[9px] text-muted-foreground font-light">{formatDate(ah.createdAt)}</span>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-[10px] font-light bg-background/50 border border-border/30 rounded-xl p-2.5">
-                      <div>
-                        <span className="text-[8px] font-bold uppercase tracking-wider text-muted-foreground block">Old Address:</span>
-                        <p className="font-semibold text-foreground">{oldAddr.name} ({oldAddr.phone})</p>
-                        <p className="text-muted-foreground">{oldAddr.addressLine1}, {oldAddr.city}, {oldAddr.state} - {oldAddr.postalCode}</p>
-                        <p className="text-muted-foreground font-semibold">Shipping: {formatPrice(ah.shippingBefore)}</p>
+              {(!orderDetail.addressHistory || orderDetail.addressHistory.length === 0) ? (
+                <div className="text-xs text-muted-foreground italic py-3">
+                  No address modifications recorded. The current shipping address is the original address provided at checkout.
+                </div>
+              ) : (
+                orderDetail.addressHistory.map((ah: any) => {
+                  let oldAddr: any = {};
+                  let newAddr: any = {};
+                  try {
+                    oldAddr = JSON.parse(ah.oldAddress);
+                    newAddr = JSON.parse(ah.newAddress);
+                  } catch (e) {
+                    console.error(e);
+                  }
+                  return (
+                    <div key={ah.id} className="space-y-1 relative text-xs">
+                      <div className="absolute -left-[20.5px] top-1 w-2.5 h-2.5 rounded-full bg-warning border border-card" />
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold uppercase text-warning bg-warning/15 px-1.5 py-0.5 border border-warning/30 rounded">
+                          Version {ah.version}
+                        </span>
+                        <span className="text-[10px] font-medium text-foreground">Edited by: {ah.editedBy}</span>
+                        <span className="text-[9px] text-muted-foreground font-light">{formatDate(ah.createdAt)}</span>
                       </div>
-                      <div>
-                        <span className="text-[8px] font-bold uppercase tracking-wider text-muted-foreground block">New Address:</span>
-                        <p className="font-semibold text-foreground">{newAddr.name} ({newAddr.phone})</p>
-                        <p className="text-muted-foreground">{newAddr.addressLine1}, {newAddr.city}, {newAddr.state} - {newAddr.postalCode}</p>
-                        <p className="text-muted-foreground font-semibold">Shipping: {formatPrice(ah.shippingAfter)}</p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-[10px] font-light bg-background/50 border border-border/30 rounded-xl p-2.5">
+                        <div>
+                          <span className="text-[8px] font-bold uppercase tracking-wider text-muted-foreground block">Old Address:</span>
+                          <p className="font-semibold text-foreground">{oldAddr.name} ({oldAddr.phone})</p>
+                          <p className="text-muted-foreground">{oldAddr.addressLine1}, {oldAddr.city}, {oldAddr.state} - {oldAddr.postalCode}</p>
+                          <p className="text-muted-foreground font-semibold">Shipping: {formatPrice(ah.shippingBefore)}</p>
+                        </div>
+                        <div>
+                          <span className="text-[8px] font-bold uppercase tracking-wider text-muted-foreground block">New Address:</span>
+                          <p className="font-semibold text-foreground">{newAddr.name} ({newAddr.phone})</p>
+                          <p className="text-muted-foreground">{newAddr.addressLine1}, {newAddr.city}, {newAddr.state} - {newAddr.postalCode}</p>
+                          <p className="text-muted-foreground font-semibold">Shipping: {formatPrice(ah.shippingAfter)}</p>
+                        </div>
                       </div>
+                      {ah.reason && (
+                        <p className="text-[10px] text-muted-foreground pl-1 leading-normal italic">
+                          Reason: {ah.reason}
+                        </p>
+                      )}
                     </div>
-                    {ah.reason && (
-                      <p className="text-[10px] text-muted-foreground pl-1 leading-normal italic">
-                        Reason: {ah.reason}
-                      </p>
-                    )}
-                  </div>
-                );
-              })}
+                  );
+                })
+              )}
             </div>
 
             <div className="flex justify-end pt-2 border-t border-border/40">

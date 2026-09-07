@@ -172,8 +172,27 @@ export async function syncActiveShipments(): Promise<TrackingSyncResult> {
         await db.update(shipments).set(updateData).where(eq(shipments.id, shipment.id));
 
         // 3. Cascade order status changes & record milestone history
-        if (
-          (newStatus === "in_transit" || newStatus === "out_for_delivery") &&
+        const isShippedScan = [
+          "picked_up",
+          "pickup_completed",
+          "in_transit",
+          "reached_destination_hub",
+          "out_for_delivery",
+          "manifested",
+          "ndr",
+          "rto",
+        ].includes(newStatus);
+
+        if (newStatus === "delivered" && shipment.order.status !== "delivered") {
+          await updateOrderStatus(
+            shipment.orderId,
+            "delivered",
+            `Automatic sync: Package delivered by ${shipment.carrier}. Tracking #: ${waybill}`,
+            undefined,
+            true
+          );
+        } else if (
+          isShippedScan &&
           shipment.order.status !== "shipped" &&
           shipment.order.status !== "delivered"
         ) {
@@ -181,14 +200,6 @@ export async function syncActiveShipments(): Promise<TrackingSyncResult> {
             shipment.orderId,
             "shipped",
             `Automatic sync: Package scanned as ${newStatus} via ${shipment.carrier}. Tracking #: ${waybill}`,
-            undefined,
-            true
-          );
-        } else if (newStatus === "delivered" && shipment.order.status !== "delivered") {
-          await updateOrderStatus(
-            shipment.orderId,
-            "delivered",
-            `Automatic sync: Package delivered by ${shipment.carrier}. Tracking #: ${waybill}`,
             undefined,
             true
           );

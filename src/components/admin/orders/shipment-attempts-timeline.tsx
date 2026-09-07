@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import {
   Truck,
   ExternalLink,
@@ -309,23 +310,15 @@ export function ShipmentAttemptsTimeline({
                         <span>Print 4R Label</span>
                       </button>
                     )}
-
-                    <button
-                      onClick={() => setRedispatchModalOpen(true)}
-                      className="px-3 py-1.5 text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 rounded-lg transition flex items-center space-x-1.5 cursor-pointer"
-                    >
-                      <RotateCcw className="w-3.5 h-3.5 text-blue-600" />
-                      <span>Re-Dispatch</span>
-                    </button>
                   </div>
 
-                  <button
-                    onClick={() => setCancelModalOpen(true)}
-                    className="px-3 py-1.5 text-xs font-medium bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-lg transition flex items-center space-x-1.5 cursor-pointer"
+                  <Link
+                    href={`/admin/shipments?q=${encodeURIComponent(ship.waybill || ship.trackingNumber || ship.courierOrderId)}`}
+                    className="px-3 py-1.5 text-xs font-semibold bg-[#a95423]/10 hover:bg-[#a95423]/20 text-[#a95423] border border-[#a95423]/30 rounded-lg transition flex items-center space-x-1.5 cursor-pointer"
                   >
-                    <XCircle className="w-3.5 h-3.5" />
-                    <span>Cancel Shipment</span>
-                  </button>
+                    <span>View Shipment Details</span>
+                    <ExternalLink className="w-3.5 h-3.5 shrink-0" />
+                  </Link>
                 </div>
               )}
 

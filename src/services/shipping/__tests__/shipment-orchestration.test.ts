@@ -30,14 +30,14 @@ assert.strictEqual(isDelhiveryCancelEligible("delivered"), false, "Delivered sho
 assert.strictEqual(isDelhiveryCancelEligible("rto"), false, "RTO should NOT be eligible");
 console.log("✓ Test 2 Passed: Dispatched and Delivered cancellation guard verified.");
 
-// Test 3: Courier Order ID attempt formatting
+// Test 3: Courier Order ID attempt formatting (-R suffix for re-dispatches)
 const formatCourierOrderId = (orderId: string, attemptNumber: number) => {
-  return attemptNumber > 1 ? `${orderId}-A${attemptNumber}` : orderId;
+  return attemptNumber > 1 ? `${orderId}-R${attemptNumber - 1}` : orderId;
 };
 
-assert.strictEqual(formatCourierOrderId("ord_123", 1), "ord_123");
-assert.strictEqual(formatCourierOrderId("ord_123", 2), "ord_123-A2");
-assert.strictEqual(formatCourierOrderId("ord_123", 3), "ord_123-A3");
-console.log("✓ Test 3 Passed: Multi-attempt courier order ID formatting verified.");
+assert.strictEqual(formatCourierOrderId("ord_EZlVo_N3DS", 1), "ord_EZlVo_N3DS");
+assert.strictEqual(formatCourierOrderId("ord_EZlVo_N3DS", 2), "ord_EZlVo_N3DS-R1");
+assert.strictEqual(formatCourierOrderId("ord_EZlVo_N3DS", 3), "ord_EZlVo_N3DS-R2");
+console.log("✓ Test 3 Passed: Multi-attempt courier order ID formatting (-R suffix) verified.");
 
 console.log("\nALL SHIPMENT ORCHESTRATION TESTS PASSED SUCCESSFULLY! 🎉");

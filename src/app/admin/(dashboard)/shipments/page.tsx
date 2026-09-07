@@ -114,6 +114,17 @@ export default function AdminShipmentsPage() {
     );
   };
 
+  // Read URL query params (e.g. from Order Details redirect) on mount
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const q = params.get("q");
+      if (q) {
+        setSearchQuery(q);
+      }
+    }
+  }, []);
+
   // Reset page when queries change
   useEffect(() => {
     setCurrentPage(1);

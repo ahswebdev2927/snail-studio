@@ -185,7 +185,7 @@ export async function createOrderShipment(options: CreateShipmentOptions) {
     externalMetadata,
     estimatedDeliveryAt,
     adminOptions,
-    attemptNumber = 1,
+    attemptNumber: explicitAttemptNumber,
   } = options;
 
   const now = new Date();
@@ -237,7 +237,15 @@ export async function createOrderShipment(options: CreateShipmentOptions) {
     };
   }
 
-  // 3. Validate pre-shipment policy
+  // 3. Query all previous shipment attempts to compute attempt number & courier order ID
+  const allExistingShipments = await db.query.shipments.findMany({
+    where: eq(shipments.orderId, orderId),
+  });
+
+  const attemptNumber = explicitAttemptNumber || allExistingShipments.length + 1;
+  const courierOrderId = attemptNumber > 1 ? `${orderId}-R${attemptNumber - 1}` : orderId;
+
+  // 4. Validate pre-shipment policy
   const validation = await validatePreShipment(orderId);
   if (!validation.success) {
     throw new Error(`Pre-shipment validation failed: ${validation.errors.join("; ")}`);
@@ -247,8 +255,6 @@ export async function createOrderShipment(options: CreateShipmentOptions) {
   if (!shippingAddr) {
     throw new Error("Shipping address is missing for this order.");
   }
-
-  const courierOrderId = attemptNumber > 1 ? `${orderId}-A${attemptNumber}` : orderId;
 
   let finalWaybill = customTrackingNum || `TRK${nanoid(10).toUpperCase()}`;
   let finalTrackingUrl = externalTrackingUrl || "";
@@ -596,7 +602,11 @@ export async function redispatchOrderShipment(options: RedispatchOptions) {
     });
   }
 
-  const nextAttempt = lastShipment ? (lastShipment.attemptNumber || 1) + 1 : 1;
+  const allShipments = await db.query.shipments.findMany({
+    where: eq(shipments.orderId, orderId),
+  });
+  const maxAttemptInDb = Math.max(0, ...allShipments.map((s) => s.attemptNumber || 1));
+  const nextAttempt = Math.max(allShipments.length, maxAttemptInDb) + 1;
 
   // 3. Create new shipment attempt
   return await createOrderShipment({
