@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { orders, orderAddresses, orderItems, shipments, trackingEvents, orderStatusHistory, shipmentAuditLogs } from "@/db/schema";
-import { eq, and, ne, desc } from "drizzle-orm";
+import { eq, and, ne, desc, gte, inArray } from "drizzle-orm";
 import { getShippingProvider } from "@/lib/shipping";
 import { CreateShipmentRequest, ShippingProvider } from "@/lib/shipping/types";
 import { validatePreShipment } from "./shipping-policy.service";
@@ -59,7 +59,7 @@ export interface RedispatchOptions {
 
 export interface LogShipmentAuditOptions {
   shipmentId?: string | null;
-  orderId: string;
+  orderId?: string | null;
   adminId?: string | null;
   adminName?: string;
   action: string;
@@ -73,6 +73,8 @@ export interface SchedulePickupOptions {
   pickupDate: string; // YYYY-MM-DD
   pickupTime?: string; // e.g. "14:00:00"
   packageCount?: number;
+  shipmentIds?: string[];
+  bypassActiveLock?: boolean;
   adminName?: string;
   adminId?: string;
 }
@@ -110,7 +112,7 @@ export async function logShipmentAudit(options: LogShipmentAuditOptions) {
   await client.insert(shipmentAuditLogs).values({
     id: auditId,
     shipmentId: shipmentId || null,
-    orderId,
+    orderId: orderId && orderId !== "SYSTEM_PICKUP" ? orderId : null,
     adminId: adminId || null,
     adminName,
     action,
@@ -648,41 +650,172 @@ export async function fetchShipmentLabel(orderId: string, pdfSize: "A4" | "4R" =
 }
 
 /**
+ * Checks if a pickup request has already been scheduled today for the warehouse location.
+ */
+export async function getTodayActivePickup() {
+  const startOfDay = new Date();
+  startOfDay.setHours(0, 0, 0, 0);
+
+  const logs = await db.query.shipmentAuditLogs.findMany({
+    where: and(
+      eq(shipmentAuditLogs.action, "pickup_scheduled"),
+      gte(shipmentAuditLogs.createdAt, startOfDay)
+    ),
+    orderBy: [desc(shipmentAuditLogs.createdAt)],
+    limit: 1,
+  });
+
+  if (logs.length === 0) {
+    return { activePickupExists: false, latestPickup: null };
+  }
+
+  const latest = logs[0];
+  let newState: any = {};
+  try {
+    newState = latest.newState ? JSON.parse(latest.newState) : {};
+  } catch {}
+
+  return {
+    activePickupExists: true,
+    latestPickup: {
+      id: latest.id,
+      pickupId: newState.pickupId || null,
+      scheduledDate: newState.pickupDate || null,
+      scheduledTime: newState.pickupTime || null,
+      packageCount: newState.packageCount || 1,
+      createdAt: latest.createdAt,
+      adminName: latest.adminName,
+    },
+  };
+}
+
+/**
  * Schedules a warehouse pickup request with Delhivery provider using DELHIVERY_PICKUP_LOCATION.
  */
 export async function scheduleShipmentPickup(options: SchedulePickupOptions) {
-  const { pickupDate, pickupTime = "14:00:00", packageCount = 1, adminName = "Admin", adminId } = options;
+  const {
+    pickupDate,
+    pickupTime = "14:00:00",
+    packageCount = 1,
+    shipmentIds = [],
+    bypassActiveLock = false,
+    adminName = "Admin",
+    adminId,
+  } = options;
+
+  // 1. Check active pickup limit for today if lock not explicitly bypassed
+  const todayActive = await getTodayActivePickup();
+  if (todayActive.activePickupExists && !bypassActiveLock) {
+    return {
+      success: false,
+      activePickupExists: true,
+      latestPickup: todayActive.latestPickup,
+      message: "An active pickup request has already been scheduled today for this warehouse location.",
+    };
+  }
 
   const provider = getShippingProvider("delhivery");
   if (!provider.createPickup) {
     throw new Error("Pickup scheduling is not supported by the current shipping provider.");
   }
 
+  const countToSchedule = shipmentIds.length > 0 ? shipmentIds.length : Math.max(1, packageCount);
+
   const result = await provider.createPickup({
     pickupDate,
     pickupTime,
-    packageCount,
+    packageCount: countToSchedule,
   });
 
   if (!result.success) {
     throw new Error(result.message || "Failed to schedule pickup with Delhivery API.");
   }
 
-  await logShipmentAudit({
-    orderId: "SYSTEM_PICKUP",
-    adminId,
-    adminName,
-    action: "pickup_scheduled",
-    newState: {
-      pickupId: result.pickupId,
-      pickupDate,
-      pickupTime,
-      packageCount,
-    },
-    notes: `Scheduled pickup for ${packageCount} package(s) on ${pickupDate} at ${pickupTime}. Pickup ID: ${result.pickupId || "N/A"}. ${result.message || ""}`,
-  });
+  let firstOrderId: string | null = null;
+  let firstShipmentId: string | null = null;
 
-  return result;
+  // 2. Resolve target shipments and update status to pickup_scheduled
+  let targetShipments: any[] = [];
+  if (shipmentIds.length > 0) {
+    targetShipments = await db.query.shipments.findMany({
+      where: inArray(shipments.id, shipmentIds),
+    });
+  } else {
+    targetShipments = await db.query.shipments.findMany({
+      where: and(
+        eq(shipments.provider, "delhivery"),
+        inArray(shipments.status, ["ready_to_ship", "manifested"])
+      ),
+      limit: countToSchedule,
+    });
+  }
+
+  if (targetShipments.length > 0) {
+    firstOrderId = targetShipments[0].orderId;
+    firstShipmentId = targetShipments[0].id;
+
+    await db.transaction(async (tx) => {
+      for (const ship of targetShipments) {
+        await tx
+          .update(shipments)
+          .set({
+            status: "pickup_scheduled",
+            updatedAt: new Date(),
+          })
+          .where(eq(shipments.id, ship.id));
+
+        await logShipmentAudit({
+          shipmentId: ship.id,
+          orderId: ship.orderId,
+          adminId,
+          adminName,
+          action: "pickup_scheduled",
+          newState: {
+            pickupId: result.pickupId,
+            pickupDate,
+            pickupTime,
+          },
+          notes: `Scheduled pickup on ${pickupDate} at ${pickupTime}. Pickup ID: ${result.pickupId || "N/A"}.`,
+          txClient: tx,
+        });
+      }
+    });
+  }
+
+  // Fallback to latest active order/shipment ID for system audit logging if no ready shipments found
+  if (!firstOrderId) {
+    const latestOrder = await db.query.orders.findFirst({
+      orderBy: [desc(orders.createdAt)],
+    });
+    if (latestOrder) {
+      firstOrderId = latestOrder.id;
+    }
+  }
+
+  if (firstOrderId) {
+    await logShipmentAudit({
+      shipmentId: firstShipmentId,
+      orderId: firstOrderId,
+      adminId,
+      adminName,
+      action: "pickup_scheduled",
+      newState: {
+        pickupId: result.pickupId,
+        pickupDate,
+        pickupTime,
+        packageCount: countToSchedule,
+        shipmentIds: targetShipments.map((s) => s.id),
+        bypassedLock: bypassActiveLock,
+      },
+      notes: `Scheduled pickup for ${countToSchedule} package(s) on ${pickupDate} at ${pickupTime}. Pickup ID: ${result.pickupId || "N/A"}. ${result.message || ""}`,
+    });
+  }
+
+  return {
+    ...result,
+    activePickupExists: false,
+    scheduledCount: countToSchedule,
+  };
 }
 
 /**

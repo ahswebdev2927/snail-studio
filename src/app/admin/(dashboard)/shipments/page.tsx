@@ -83,9 +83,36 @@ export default function AdminShipmentsPage() {
   const [selectedShipmentId, setSelectedShipmentId] = useState<string | null>(null);
   const [detailDrawerOpen, setDetailDrawerOpen] = useState(false);
 
+  // Multi-Selection State for Batch Pickup Scheduling
+  const [selectedShipmentIds, setSelectedShipmentIds] = useState<string[]>([]);
+
   // Dispatch Modal
   const [dispatchModalOpen, setDispatchModalOpen] = useState(false);
   const [dispatchOrderId, setDispatchOrderId] = useState<string | null>(null);
+
+  // Ready to pickup shipments eligible for batch pickup
+  const readyToPickupShipments = shipments.filter(
+    (s) => (s.status === "ready_to_pickup" || s.status === "manifested") && s.provider === "delhivery"
+  );
+
+  const isAllReadySelected =
+    readyToPickupShipments.length > 0 &&
+    readyToPickupShipments.every((s) => selectedShipmentIds.includes(s.id));
+
+  const toggleSelectAllReady = () => {
+    if (isAllReadySelected) {
+      setSelectedShipmentIds([]);
+    } else {
+      setSelectedShipmentIds(readyToPickupShipments.map((s) => s.id));
+    }
+  };
+
+  const toggleSelectShipment = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedShipmentIds((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+    );
+  };
 
   // Reset page when queries change
   useEffect(() => {
@@ -359,6 +386,35 @@ export default function AdminShipmentsPage() {
         </div>
       </div>
 
+      {/* Bulk Action Bar for Batch Pickup */}
+      {selectedShipmentIds.length > 0 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 bg-[#a95423]/10 border border-[#a95423]/25 rounded-2xl animate-in fade-in duration-200">
+          <div className="flex items-center space-x-3 text-xs">
+            <span className="px-2.5 py-1 bg-[#a95423] text-white font-bold rounded-lg text-[11px] shadow-sm">
+              {selectedShipmentIds.length} Selected
+            </span>
+            <span className="text-slate-800 font-medium">
+              Ready-to-pickup parcel(s) selected for Delhivery batch pickup request.
+            </span>
+          </div>
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={() => setSelectedShipmentIds([])}
+              className="px-3 py-1.5 text-xs text-slate-600 hover:text-slate-900 font-medium cursor-pointer"
+            >
+              Clear Selection
+            </button>
+            <button
+              onClick={() => setPickupModalOpen(true)}
+              className="px-4 py-2 bg-[#a95423] hover:bg-[#94451b] text-white text-xs font-semibold rounded-xl shadow-sm transition flex items-center space-x-2 cursor-pointer"
+            >
+              <Calendar className="w-4 h-4" />
+              <span>Schedule Batch Pickup ({selectedShipmentIds.length})</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Main Shipments Data Table */}
       <div className="bg-card border border-border/40 rounded-3xl overflow-hidden shadow-sm">
         {isLoading ? (
@@ -433,6 +489,16 @@ export default function AdminShipmentsPage() {
               <table className="w-full text-left text-xs font-light border-collapse">
                 <thead>
                   <tr className="border-b border-border/40 text-muted-foreground uppercase text-[9px] font-bold tracking-wider bg-secondary/10">
+                    <th className="py-3 px-4 w-10 text-center">
+                      <input
+                        type="checkbox"
+                        checked={isAllReadySelected}
+                        onChange={toggleSelectAllReady}
+                        title="Select all ready to pickup shipments"
+                        className="rounded border-slate-300 text-[#a95423] focus:ring-[#a95423] cursor-pointer disabled:opacity-30"
+                        disabled={readyToPickupShipments.length === 0}
+                      />
+                    </th>
                     <th className="py-3 px-5">Order & Courier ID</th>
                     <th className="py-3 px-5">Customer & Destination</th>
                     <th className="py-3 px-5">Provider / Carrier</th>
@@ -443,12 +509,34 @@ export default function AdminShipmentsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {shipments.map((ship) => (
-                    <tr
-                      key={ship.id}
-                      className="border-b border-border/10 last:border-0 hover:bg-secondary/15 transition cursor-pointer"
-                      onClick={() => handleOpenDetail(ship.id)}
-                    >
+                  {shipments.map((ship) => {
+                    const isEligibleForPickup =
+                      (ship.status === "ready_to_pickup" || ship.status === "manifested") &&
+                      ship.provider === "delhivery";
+                    const isSelected = selectedShipmentIds.includes(ship.id);
+
+                    return (
+                      <tr
+                        key={ship.id}
+                        className={`border-b border-border/10 last:border-0 transition cursor-pointer ${
+                          isSelected ? "bg-[#a95423]/10 hover:bg-[#a95423]/15" : "hover:bg-secondary/15"
+                        }`}
+                        onClick={() => handleOpenDetail(ship.id)}
+                      >
+                        <td className="py-4 px-4 w-10 text-center" onClick={(e) => e.stopPropagation()}>
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={(e) => toggleSelectShipment(ship.id, e as any)}
+                            disabled={!isEligibleForPickup}
+                            title={
+                              isEligibleForPickup
+                                ? "Select for batch pickup"
+                                : "Only ready_to_pickup Delhivery parcels can be selected for batch pickup"
+                            }
+                            className="rounded border-slate-300 text-[#a95423] focus:ring-[#a95423] cursor-pointer disabled:opacity-25"
+                          />
+                        </td>
                       <td className="py-4 px-5">
                         <div className="flex flex-col">
                           <span className="font-mono font-bold text-foreground">#{ship.orderId}</span>
@@ -526,7 +614,8 @@ export default function AdminShipmentsPage() {
                         )}
                       </td>
                     </tr>
-                  ))}
+                  );
+                })}
                 </tbody>
               </table>
             </div>
@@ -543,7 +632,11 @@ export default function AdminShipmentsPage() {
       <SchedulePickupModal
         isOpen={pickupModalOpen}
         onClose={() => setPickupModalOpen(false)}
-        onSuccess={() => loadShipments()}
+        onSuccess={() => {
+          loadShipments();
+          setSelectedShipmentIds([]);
+        }}
+        selectedShipmentIds={selectedShipmentIds}
       />
 
       <ShipmentDetailDrawer
