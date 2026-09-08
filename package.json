@@ -11,7 +11,10 @@
     "lint": "eslint",
     "db:check": "tsx database/db-check.ts",
     "db:migrate": "tsx database/migrate.ts",
-    "db:seed": "tsx database/seed.ts"
+    "db:seed": "tsx database/seed.ts",
+    "simulate:ndr": "tsx scripts/simulate-ndr.ts",
+    "test": "vitest run src/tests/shipping/"
+
   },
   "dependencies": {
     "@google-analytics/data": "^6.1.0",

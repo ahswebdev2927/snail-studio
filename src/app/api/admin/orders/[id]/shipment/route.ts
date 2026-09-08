@@ -251,7 +251,7 @@ export async function PATCH(
         out_for_delivery: "Out for Delivery",
         delivery_attempted: "Delivery Attempted",
         delivery_failed: "Delivery Failed",
-        rto_initiated: "Return to Origin (RTO) Initiated",
+        rto_initiated: "Return to Origin (RTO)",
         cancelled: "Shipment Cancelled",
       };
 

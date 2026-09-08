@@ -90,6 +90,28 @@ export default function AdminShipmentsPage() {
   const [dispatchModalOpen, setDispatchModalOpen] = useState(false);
   const [dispatchOrderId, setDispatchOrderId] = useState<string | null>(null);
 
+  // Live Exception Metrics State
+  const [exceptionMetrics, setExceptionMetrics] = useState({ ndrCount: 0, pickupCount: 0, rtoCount: 0 });
+
+  useEffect(() => {
+    fetchExceptionMetrics();
+  }, []);
+
+  const fetchExceptionMetrics = async () => {
+    try {
+      const res = await fetch("/api/admin/shipping/exceptions");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.metrics) {
+          setExceptionMetrics(data.metrics);
+        }
+      }
+    } catch (err) {
+      console.error("Error loading exception metrics:", err);
+    }
+  };
+
+
   // Ready to pickup shipments eligible for batch pickup
   const readyToPickupShipments = shipments.filter(
     (s) => (s.status === "ready_to_pickup" || s.status === "manifested") && s.provider === "delhivery"
@@ -262,25 +284,34 @@ export default function AdminShipmentsPage() {
           </div>
         </div>
 
-        <div className="bg-card border border-border/40 rounded-3xl p-5 shadow-sm flex items-center justify-between">
+        <div
+          onClick={() => setStatusFilter("ndr")}
+          className="bg-card border border-border/40 hover:border-amber-500/40 rounded-3xl p-5 shadow-sm flex items-center justify-between cursor-pointer transition"
+        >
           <div className="space-y-1">
             <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">NDR Delivery Alerts</span>
-            <p className="font-serif text-xl font-semibold text-foreground">{ndrCount}</p>
+            <p className="font-serif text-xl font-semibold text-amber-500">
+              {Math.max(ndrCount, exceptionMetrics.ndrCount)}
+            </p>
           </div>
           <div className="p-3 rounded-2xl bg-amber-500/10 text-amber-400">
             <AlertTriangle className="w-5 h-5" />
           </div>
         </div>
 
-        <div className="bg-card border border-border/40 rounded-3xl p-5 shadow-sm flex items-center justify-between">
+        <div
+          onClick={() => setStatusFilter("rto")}
+          className="bg-card border border-border/40 hover:border-red-500/40 rounded-3xl p-5 shadow-sm flex items-center justify-between cursor-pointer transition"
+        >
           <div className="space-y-1">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Delivered Success</span>
-            <p className="font-serif text-xl font-semibold text-foreground">{deliveredCount}</p>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">RTO Exception Journey</span>
+            <p className="font-serif text-xl font-semibold text-red-500">{exceptionMetrics.rtoCount}</p>
           </div>
-          <div className="p-3 rounded-2xl bg-emerald-500/10 text-emerald-400">
-            <CheckCircle2 className="w-5 h-5" />
+          <div className="p-3 rounded-2xl bg-red-500/10 text-red-400">
+            <RotateCcw className="w-5 h-5" />
           </div>
         </div>
+
       </div>
 
       {/* Search & Comprehensive Multi-Filter Bar */}
@@ -359,7 +390,7 @@ export default function AdminShipmentsPage() {
               <option value="out_for_delivery">Out for Delivery</option>
               <option value="delivered">Delivered</option>
               <option value="ndr">NDR Alert</option>
-              <option value="rto">RTO Initiated</option>
+              <option value="rto">Return to Origin (RTO)</option>
               <option value="cancelled">Cancelled</option>
             </select>
           </div>

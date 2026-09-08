@@ -315,8 +315,11 @@ export const shipmentsRelations = relations(schema.shipments, ({ one, many }) =>
     fields: [schema.shipments.orderId],
     references: [schema.orders.id]
   }),
-  events: many(schema.trackingEvents)
+  events: many(schema.trackingEvents),
+  exceptions: many(schema.shipmentExceptions),
+  auditLogs: many(schema.shipmentAuditLogs)
 }));
+
 
 export const trackingEventsRelations = relations(schema.trackingEvents, ({ one }) => ({
   shipment: one(schema.shipments, {
@@ -482,3 +485,20 @@ export const launchEventsRelations = relations(schema.launchEvents, ({ one }) =>
     references: [schema.products.id]
   })
 }));
+
+export const shipmentExceptionsRelations = relations(schema.shipmentExceptions, ({ one, many }) => ({
+  shipment: one(schema.shipments, {
+    fields: [schema.shipmentExceptions.shipmentId],
+    references: [schema.shipments.id]
+  }),
+  actions: many(schema.ndrActions)
+}));
+
+
+export const ndrActionsRelations = relations(schema.ndrActions, ({ one }) => ({
+  exception: one(schema.shipmentExceptions, {
+    fields: [schema.ndrActions.shipmentExceptionId],
+    references: [schema.shipmentExceptions.id]
+  })
+}));
+

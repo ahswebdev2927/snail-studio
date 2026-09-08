@@ -174,3 +174,49 @@ export const shipmentAuditLogs = sqliteTable('shipment_audit_logs', {
   index('shipment_audit_logs_created_at_idx').on(table.createdAt),
 ]);
 
+export const shipmentExceptions = sqliteTable('shipment_exceptions', {
+  id: text('id').primaryKey(),
+  shipmentId: text('shipment_id').notNull().references(() => shipments.id, { onDelete: 'cascade' }),
+  provider: text('provider', { enum: ['delhivery', 'external'] }).notNull().default('delhivery'),
+  exceptionType: text('exception_type', {
+    enum: ['DELIVERY_NDR', 'PICKUP_EXCEPTION', 'RTO', 'UNKNOWN_EXCEPTION']
+  }).notNull(),
+  providerCode: text('provider_code'),
+  reason: text('reason'),
+  remark: text('remark'),
+  attemptCount: integer('attempt_count').notNull().default(1),
+  // Note: RTO_INITIATED is retained in the enum array for backward compatibility with historical records. Active lifecycle flow uses RTO_REQUESTED -> RTO_IN_TRANSIT -> RETURNED_TO_ORIGIN.
+  status: text('status', {
+    enum: ['ACTION_REQUIRED', 'REATTEMPT_REQUESTED', 'RESOLVED', 'RTO_REQUESTED', 'RTO_INITIATED', 'RTO_IN_TRANSIT', 'RETURNED_TO_ORIGIN']
+  }).notNull().default('ACTION_REQUIRED'),
+  occurredAt: integer('occurred_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
+  resolvedAt: integer('resolved_at', { mode: 'timestamp' }),
+  metadata: text('metadata'), // JSON string for raw scan / location data
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)
+}, (table) => [
+  index('shipment_exceptions_shipment_id_idx').on(table.shipmentId),
+  index('shipment_exceptions_status_idx').on(table.status),
+  index('shipment_exceptions_type_idx').on(table.exceptionType),
+]);
+
+export const ndrActions = sqliteTable('ndr_actions', {
+  id: text('id').primaryKey(),
+  shipmentExceptionId: text('shipment_exception_id').notNull().references(() => shipmentExceptions.id, { onDelete: 'cascade' }),
+  actionType: text('action_type', {
+    enum: ['REATTEMPT', 'DEFER_DLV', 'EDIT_DETAILS', 'PICKUP_RESCHEDULE', 'CUSTOMER_CONTACTED', 'RESOLVE', 'RTO_REQUESTED']
+  }).notNull(),
+  adminId: text('admin_id'),
+  requestedAt: integer('requested_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
+  providerReference: text('provider_reference'), // Delhivery UPL / reference ID
+  requestPayload: text('request_payload'), // JSON string
+  responsePayload: text('response_payload'), // JSON string
+  status: text('status', { enum: ['REQUESTED', 'SUCCESS', 'FAILED'] }).notNull().default('REQUESTED'),
+  notes: text('notes'),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)
+}, (table) => [
+  index('ndr_actions_exception_id_idx').on(table.shipmentExceptionId),
+  index('ndr_actions_action_type_idx').on(table.actionType),
+]);
+
+

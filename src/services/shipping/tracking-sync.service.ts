@@ -7,6 +7,11 @@ import { nanoid } from "nanoid";
 import { updateOrderStatus } from "@/services/checkout/order.service";
 import { sendMail } from "@/services/email/email.service";
 import { getShipmentUpdateTemplate } from "@/services/email/templates/shipment-update.template";
+import { normalizeDelhiveryEvent } from "@/lib/shipping/event-normalizer";
+import { processShipmentEventExceptions } from "@/services/shipping/exception-engine";
+
+// inside sync loop:
+// 1. Sync scan events into database with composite key deduplication & Exception Classification
 
 
 /**
@@ -122,7 +127,7 @@ export async function syncActiveShipments(): Promise<TrackingSyncResult> {
       const newStatus = trackingRes.normalizedStatus;
       const currentStatus = shipment.status;
 
-      // 1. Sync scan events into database with composite key deduplication
+      // 1. Sync scan events into database with composite key deduplication & Exception Classification Engine
       if (trackingRes.scans && trackingRes.scans.length > 0) {
         const existingEvents = await db.query.trackingEvents.findMany({
           where: eq(trackingEvents.shipmentId, shipment.id),
@@ -147,9 +152,14 @@ export async function syncActiveShipments(): Promise<TrackingSyncResult> {
               timestamp: new Date(scan.timestamp),
             });
             existingKeys.add(scanKey);
+
+            // Pass normalized scan event into Exception Engine
+            const normalizedEvt = normalizeDelhiveryEvent(shipment.id, waybill, scan, trackingRes);
+            await processShipmentEventExceptions(normalizedEvt);
           }
         }
       }
+
 
       // 2. Process status transition updates
       if (newStatus !== currentStatus) {

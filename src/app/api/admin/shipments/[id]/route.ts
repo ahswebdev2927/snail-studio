@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { shipments, orders, orderAddresses, trackingEvents, orderAddressHistory, shipmentAuditLogs } from "@/db/schema";
+import { shipments, orders, orderAddresses, trackingEvents, orderAddressHistory, shipmentAuditLogs, shipmentExceptions, ndrActions } from "@/db/schema";
+
 import { eq, or, desc } from "drizzle-orm";
 import { authorize } from "@/middleware/auth";
 
@@ -68,6 +69,17 @@ export async function GET(
       orderBy: [desc(shipmentAuditLogs.createdAt)],
     });
 
+    // Fetch shipment exceptions with action history
+    const exceptions = await db.query.shipmentExceptions.findMany({
+      where: eq(shipmentExceptions.shipmentId, shipmentRecord.id),
+      orderBy: [desc(shipmentExceptions.createdAt)],
+      with: {
+        actions: {
+          orderBy: [desc(ndrActions.createdAt)],
+        },
+      },
+    });
+
     const shippingAddress = orderRecord?.addresses.find((a) => a.type === "shipping") || orderRecord?.addresses[0];
 
     return NextResponse.json({
@@ -81,9 +93,11 @@ export async function GET(
       },
       order: orderRecord || null,
       trackingEvents: scans,
+      exceptions,
       addressHistory: addressHistories,
       auditLogs,
     });
+
   } catch (error: any) {
     console.error("GET /api/admin/shipments/[id] error:", error);
     return NextResponse.json(

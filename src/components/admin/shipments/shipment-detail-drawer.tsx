@@ -14,14 +14,18 @@ import {
   FileText,
   User,
   Phone,
+  PhoneCall,
   Calendar,
   History,
   AlertTriangle,
   Loader2,
   CheckCircle2,
   ChevronRight,
+  MoreVertical,
 } from "lucide-react";
 import { ALLOWED_DELHIVERY_CANCEL_STATUSES } from "@/lib/shipping/types";
+import { NDRActionModal } from "./ndr-action-modal";
+
 
 interface ShipmentDetailDrawerProps {
   shipmentId: string | null;
@@ -53,6 +57,12 @@ export function ShipmentDetailDrawer({
   const [externalTrackingNumber, setExternalTrackingNumber] = useState("");
   const [externalTrackingUrl, setExternalTrackingUrl] = useState("");
   const [updatingExternal, setUpdatingExternal] = useState(false);
+
+  // Exception Action Modal
+  const [actionModalOpen, setActionModalOpen] = useState(false);
+  const [selectedActionException, setSelectedActionException] = useState<any>(null);
+  const [initialActionType, setInitialActionType] = useState<any>("REATTEMPT");
+  const [moreMenuOpen, setMoreMenuOpen] = useState(false);
 
   useEffect(() => {
     if (isOpen && shipmentId) {
@@ -88,7 +98,9 @@ export function ShipmentDetailDrawer({
   const shipment = data?.shipment;
   const order = data?.order;
   const scans = data?.trackingEvents || [];
+  const exceptions = data?.exceptions || [];
   const auditLogs = data?.auditLogs || [];
+
 
   const isActive = shipment && shipment.status !== "cancelled";
 
@@ -329,6 +341,147 @@ export function ShipmentDetailDrawer({
                   )}
                 </div>
 
+                {/* Active Exception Summary Card */}
+                {exceptions.length > 0 && (
+                  <div className="bg-amber-50/60 border border-amber-200/80 rounded-2xl p-5 space-y-3">
+                    <div className="flex items-center justify-between border-b border-amber-200 pb-2.5">
+                      <h5 className="text-xs font-bold text-amber-900 uppercase tracking-wider flex items-center space-x-2">
+                        <AlertTriangle className="w-4 h-4 text-amber-600" />
+                        <span>Carrier Exception Record ({exceptions.length})</span>
+                      </h5>
+                      <span className="px-2.5 py-0.5 text-[10px] font-bold bg-amber-100 text-amber-800 rounded-full capitalize border border-amber-300">
+                        {exceptions[0].status.replace(/_/g, " ")}
+                      </span>
+                    </div>
+
+                    {exceptions.map((ex: any) => (
+                      <div key={ex.id} className="space-y-2.5 text-xs text-amber-900 pt-1">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <span className="font-bold text-slate-900 font-mono text-[11px]">
+                              {ex.exceptionType.replace(/_/g, " ")} ({ex.providerCode || "N/A"})
+                            </span>
+                            <p className="font-medium text-amber-800 text-[11px] mt-0.5">{ex.reason}</p>
+                          </div>
+                          <span className="text-[10px] text-slate-500 font-mono">
+                            Attempt #{ex.attemptCount || 1}
+                          </span>
+                        </div>
+                        {ex.remark && <p className="text-[11px] text-slate-600 bg-white/70 p-2 rounded-lg border border-amber-200/50">{ex.remark}</p>}
+
+                        {/* Informational Waiting Banner */}
+                        <div className="p-3 bg-amber-100/70 border border-amber-300/80 rounded-xl text-amber-900 text-xs flex items-start space-x-2">
+                          <Clock className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                          <p className="leading-relaxed text-[11px]">
+                            <strong>⏳ Waiting for Delhivery tracking update</strong> — Carrier tracking is the source of truth. The exception will update automatically when new shipment movement is received.
+                          </p>
+                        </div>
+
+                        {/* Operational Action Buttons */}
+                        {ex.status === "ACTION_REQUIRED" && (
+                          <div className="pt-2 flex flex-wrap items-center gap-2 relative">
+                            {/* 1. Log Customer Call */}
+                            <button
+                              onClick={() => {
+                                setSelectedActionException({ ...ex, shipment });
+                                setInitialActionType("CUSTOMER_CONTACTED");
+                                setActionModalOpen(true);
+                                setMoreMenuOpen(false);
+                              }}
+                              className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 rounded-lg font-medium text-xs transition flex items-center space-x-1.5 cursor-pointer"
+                              title="Record customer call notes & conversation details"
+                            >
+                              <PhoneCall className="w-3.5 h-3.5 text-blue-600" />
+                              <span>Log Customer Call</span>
+                            </button>
+
+                            {/* 2. Request Re-attempt */}
+                            <button
+                              onClick={() => {
+                                setSelectedActionException({ ...ex, shipment });
+                                setInitialActionType("REATTEMPT");
+                                setActionModalOpen(true);
+                                setMoreMenuOpen(false);
+                              }}
+                              className="px-3 py-1.5 bg-[#a95423] hover:bg-[#94451b] text-white rounded-lg font-semibold text-xs transition flex items-center space-x-1.5 cursor-pointer shadow-sm"
+                              title="Submit delivery re-attempt request to Delhivery API"
+                            >
+                              <RotateCcw className="w-3.5 h-3.5" />
+                              <span>Request Re-attempt</span>
+                            </button>
+
+                            {/* 3. RTO */}
+                            <button
+                              onClick={() => {
+                                setSelectedActionException({ ...ex, shipment });
+                                setInitialActionType("RTO_REQUESTED");
+                                setActionModalOpen(true);
+                                setMoreMenuOpen(false);
+                              }}
+                              className="px-2.5 py-1.5 bg-red-50 hover:bg-red-100 text-red-800 border border-red-200 rounded-lg font-medium text-xs transition flex items-center space-x-1 cursor-pointer"
+                              title="Initiate Return to Origin"
+                            >
+                              <AlertTriangle className="w-3.5 h-3.5 text-red-600" />
+                              <span>RTO</span>
+                            </button>
+
+                            {/* 4. More Menu Dropdown */}
+                            <div className="relative inline-block text-left">
+                              <button
+                                onClick={() => setMoreMenuOpen(!moreMenuOpen)}
+                                className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded-lg font-medium text-xs transition flex items-center space-x-1 cursor-pointer"
+                                title="More actions"
+                              >
+                                <MoreVertical className="w-4 h-4 text-slate-600" />
+                                <span>More</span>
+                              </button>
+                              {moreMenuOpen && (
+                                <div className="absolute right-0 mt-1 w-56 rounded-xl bg-white border border-slate-200 shadow-xl z-20 py-1 text-xs text-slate-800">
+                                  <button
+                                    onClick={() => {
+                                      setSelectedActionException({ ...ex, shipment });
+                                      setInitialActionType("RESOLVE");
+                                      setActionModalOpen(true);
+                                      setMoreMenuOpen(false);
+                                    }}
+                                    className="w-full text-left px-3 py-2 hover:bg-slate-100 flex items-center space-x-2 text-slate-700 font-medium cursor-pointer"
+                                  >
+                                    <CheckCircle2 className="w-4 h-4 text-slate-500" />
+                                    <span>Manual Admin Override</span>
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setMoreMenuOpen(false);
+                                      const el = document.getElementById("shipment-audit-trail-section");
+                                      if (el) el.scrollIntoView({ behavior: "smooth" });
+                                    }}
+                                    className="w-full text-left px-3 py-2 hover:bg-slate-100 flex items-center space-x-2 text-slate-700 font-medium cursor-pointer border-t border-slate-100"
+                                  >
+                                    <History className="w-4 h-4 text-slate-500" />
+                                    <span>View Exception History</span>
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setMoreMenuOpen(false);
+                                      const el = document.getElementById("shipment-tracking-timeline-section");
+                                      if (el) el.scrollIntoView({ behavior: "smooth" });
+                                    }}
+                                    className="w-full text-left px-3 py-2 hover:bg-slate-100 flex items-center space-x-2 text-slate-700 font-medium cursor-pointer border-t border-slate-100"
+                                  >
+                                    <Clock className="w-4 h-4 text-slate-500" />
+                                    <span>View Tracking Timeline</span>
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+
                 {/* Delivery Address & Lock Badge */}
                 <div className="bg-slate-50/70 border border-slate-200 rounded-2xl p-5 space-y-3">
                   <div className="flex items-center justify-between border-b border-slate-200 pb-2.5">
@@ -360,7 +513,7 @@ export function ShipmentDetailDrawer({
                 </div>
 
                 {/* Tracking Scans Timeline */}
-                <div className="bg-slate-50/70 border border-slate-200 rounded-2xl p-5 space-y-3">
+                <div id="shipment-tracking-timeline-section" className="bg-slate-50/70 border border-slate-200 rounded-2xl p-5 space-y-3">
                   <h5 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center space-x-2 border-b border-slate-200 pb-2.5">
                     <Clock className="w-4 h-4 text-[#a95423]" />
                     <span>Tracking Scan Timeline ({scans.length})</span>
@@ -388,7 +541,7 @@ export function ShipmentDetailDrawer({
                 </div>
 
                 {/* Shipment Operational Audit History */}
-                <div className="bg-slate-50/70 border border-slate-200 rounded-2xl p-5 space-y-3">
+                <div id="shipment-audit-trail-section" className="bg-slate-50/70 border border-slate-200 rounded-2xl p-5 space-y-3">
                   <h5 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center space-x-2 border-b border-slate-200 pb-2.5">
                     <History className="w-4 h-4 text-[#a95423]" />
                     <span>Audit Trail Log ({auditLogs.length})</span>
@@ -555,6 +708,20 @@ export function ShipmentDetailDrawer({
           </div>
         </div>
       )}
+
+      {/* NDR Action Modal */}
+      <NDRActionModal
+        isOpen={actionModalOpen}
+        onClose={() => setActionModalOpen(false)}
+        onSuccess={() => {
+          if (shipmentId) fetchDetail(shipmentId);
+          onRefresh();
+        }}
+        exception={selectedActionException}
+        initialActionType={initialActionType}
+      />
     </div>
   );
 }
+
+

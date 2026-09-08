@@ -133,6 +133,16 @@ export interface ShippingProvider {
   createPickup?(req: { locationName?: string; pickupDate: string; pickupTime?: string; packageCount: number }): Promise<{ success: boolean; pickupId?: string; message?: string }>;
   calculateShippingCost?(req: ShippingCostRequest): Promise<ShippingCostResult>;
   updateNDR?(waybill: string, action: string, comments?: string): Promise<{ success: boolean }>;
+  submitCarrierAction?(
+    waybill: string,
+    action: 'REATTEMPT' | 'DEFER_DLV' | 'EDIT_DETAILS' | 'PICKUP_RESCHEDULE' | 'RTO_REQUESTED',
+    payload?: any
+  ): Promise<{ success: boolean; providerReference?: string; message?: string; rawResponse?: any }>;
+  checkActionEligibility?(
+    action: string,
+    shipment: any,
+    exception?: any
+  ): { eligible: boolean; reason?: string };
 }
 
 /**
