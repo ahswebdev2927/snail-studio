@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { orders, shipments } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, or } from "drizzle-orm";
 
 export async function GET(req: NextRequest) {
   try {
@@ -13,15 +13,18 @@ export async function GET(req: NextRequest) {
 
     let resolvedOrderId = "";
 
-    // 1. Search by Tracking Number
+    // 1. Search by Tracking Number (matches trackingNumber or waybill)
     if (trackingNumber) {
       const shipmentRecord = await db.query.shipments.findFirst({
-        where: eq(shipments.trackingNumber, trackingNumber),
+        where: or(
+          eq(shipments.trackingNumber, trackingNumber),
+          eq(shipments.waybill, trackingNumber)
+        ),
       });
 
       if (!shipmentRecord) {
         return NextResponse.json(
-          { error: "No shipment found with this tracking number" },
+          { error: "No shipment found with this tracking number or AWB" },
           { status: 404 }
         );
       }
@@ -73,8 +76,6 @@ export async function GET(req: NextRequest) {
       }
 
       // If both email and phone are empty, but the order ID is queried directly:
-      // Since order ID (ord_nanoid) is cryptographic and non-guessable, we allow direct lookup,
-      // but we will require email/phone verification for extra security in the UI if needed.
       resolvedOrderId = orderRecord.id;
     } else {
       return NextResponse.json(

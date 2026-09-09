@@ -50,10 +50,11 @@ export function CustomerTrackingTimeline({
   // Determine stage completion flags
   const isPlacedDone = true;
   const isPaidDone = statusLower !== "pending";
-  const isProcessingDone = ["processing", "shipped", "delivered"].includes(statusLower) || !!shipmentStatus;
+  const isProcessingDone = ["processing", "ready_to_ship", "shipped", "delivered"].includes(statusLower) || !!shipmentStatus;
+  const isReadyToShipDone = ["ready_to_ship", "shipped", "delivered"].includes(statusLower) || !!shipmentStatus;
   const isShippedDone =
     ["shipped", "delivered"].includes(statusLower) ||
-    ["pickup_completed", "in_transit", "reached_destination_hub", "out_for_delivery", "delivered"].includes(shipStatusLower);
+    ["picked_up", "pickup_completed", "in_transit", "reached_destination_hub", "out_for_delivery", "delivered"].includes(shipStatusLower);
   const isOutForDeliveryDone = ["out_for_delivery", "delivered"].includes(shipStatusLower);
   const isDeliveredDone = statusLower === "delivered" || shipStatusLower === "delivered";
 
@@ -61,13 +62,17 @@ export function CustomerTrackingTimeline({
     { label: "Placed", done: isPlacedDone, icon: Package },
     { label: "Confirmed", done: isPaidDone, icon: ShieldCheck },
     { label: "Processing", done: isProcessingDone, icon: Clock },
+    { label: "Ready to Ship", done: isReadyToShipDone, icon: Package },
     { label: "In Transit", done: isShippedDone, icon: Truck },
     { label: "Out for Delivery", done: isOutForDeliveryDone, icon: Truck },
     { label: "Delivered", done: isDeliveredDone, icon: Home },
   ];
 
+  // Find the current active (highest completed) milestone stage
+  const currentActiveStep = [...timelineSteps].reverse().find((s) => s.done) || timelineSteps[0];
+
   return (
-    <div className={cn("space-y-4", className)}>
+    <div className={cn("space-y-4 font-sans", className)}>
       {/* NDR Exception Warning */}
       {isNDR && (
         <div className="p-4 bg-amber-500/10 border border-amber-500/25 text-amber-700 dark:text-amber-300 rounded-2xl flex items-center gap-3 text-xs font-light">
@@ -91,31 +96,46 @@ export function CustomerTrackingTimeline({
       )}
 
       {/* Visual Step Bar */}
-      <div className="bg-card border border-border/30 rounded-2xl p-5 shadow-sm">
-        <div className="grid grid-cols-6 text-center text-xs relative">
-          <div className="absolute top-4 left-[8%] right-[8%] h-[2px] bg-border/30 z-0" />
-          {timelineSteps.map((step, idx) => (
-            <div key={idx} className="flex flex-col items-center relative z-10">
-              <div
-                className={cn(
-                  "w-8 h-8 rounded-full flex items-center justify-center border transition-all text-[11px]",
-                  step.done
-                    ? "bg-primary border-primary text-primary-foreground shadow-md shadow-primary/10"
-                    : "bg-background border-border/50 text-muted-foreground"
-                )}
-              >
-                <step.icon className="w-3.5 h-3.5" />
+      <div className="bg-card border border-border/30 rounded-2xl p-4 sm:p-6 shadow-sm">
+        <div className="w-full">
+          <div 
+            className="grid text-center text-xs relative w-full" 
+            style={{ gridTemplateColumns: "repeat(7, minmax(0, 1fr))" }}
+          >
+            {/* Horizontal Connecting Line */}
+            <div className="absolute top-3.5 sm:top-4 left-[6%] right-[6%] h-[2px] bg-border/30 z-0" />
+            
+            {timelineSteps.map((step, idx) => (
+              <div key={idx} className="flex flex-col items-center relative z-10">
+                <div
+                  className={cn(
+                    "w-7 h-7 sm:w-9 sm:h-9 rounded-full flex items-center justify-center border transition-all text-[10px] sm:text-[11px]",
+                    step.done
+                      ? "bg-primary border-primary text-primary-foreground shadow-md shadow-primary/10"
+                      : "bg-background border-border/50 text-muted-foreground"
+                  )}
+                >
+                  <step.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                </div>
+                {/* Labels shown on desktop / medium screens only */}
+                <span
+                  className={cn(
+                    "hidden md:block text-[8px] sm:text-[9px] font-bold uppercase tracking-wider mt-2.5 text-center leading-tight max-w-[85px] mx-auto",
+                    step.done ? "text-primary font-semibold" : "text-muted-foreground/60"
+                  )}
+                >
+                  {step.label}
+                </span>
               </div>
-              <span
-                className={cn(
-                  "text-[8px] font-bold uppercase tracking-wider mt-2.5 block text-center leading-tight",
-                  step.done ? "text-primary font-semibold" : "text-muted-foreground/60"
-                )}
-              >
-                {step.label}
-              </span>
-            </div>
-          ))}
+            ))}
+          </div>
+
+          {/* On small devices (< md), display only the current active status label centered below */}
+          <div className="md:hidden mt-3.5 pt-2.5 border-t border-border/15 text-center">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 text-[10px] font-bold uppercase tracking-wider">
+              Status: {currentActiveStep.label}
+            </span>
+          </div>
         </div>
       </div>
     </div>

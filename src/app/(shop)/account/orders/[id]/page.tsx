@@ -26,7 +26,10 @@ import { formatPrice } from "@/lib/utils";
 import CustomerOrderActions from "@/components/orders/customer-order-actions";
 import { OrderStatusBadge } from "@/components/orders/order-status-badge";
 import { CustomerTrackingTimeline } from "@/components/orders/customer-tracking-timeline";
-import { CustomerTrackingEvents } from "@/components/orders/customer-tracking-events";
+import { 
+  ShipmentUpdatesAccordion, 
+  OrderUpdatesAccordion 
+} from "@/components/orders/order-details-accordions";
 
 
 interface PageProps {
@@ -339,69 +342,22 @@ export default async function OrderDetailsPage({ params }: PageProps) {
             storePhone={storePhone}
           />
 
-          {/* Shipment & Tracker Card */}
-          {shipment ? (
-            <CustomerTrackingEvents
-              carrier={shipment.carrier}
-              provider={shipment.provider}
-              trackingNumber={shipment.trackingNumber || shipment.waybill || ""}
+          {/* Shipment Updates Accordion */}
+          <ShipmentUpdatesAccordion
+            shipment={shipment ? {
+              carrier: shipment.carrier,
+              provider: shipment.provider,
+              trackingNumber: shipment.trackingNumber || shipment.waybill || "",
+              trackingUrl: shipment.trackingUrl,
+              estimatedDeliveryAt: shipment.estimatedDeliveryAt,
+              events: shipment.events || [],
+            } : null}
+          />
 
-              trackingUrl={shipment.trackingUrl}
-              estimatedDeliveryAt={shipment.estimatedDeliveryAt}
-              events={shipment.events || []}
-            />
-          ) : (
-            <div className="bg-card border border-border/30 rounded-2xl p-5 space-y-3 shadow-sm text-center">
-              <h3 className="font-serif text-sm font-semibold text-foreground flex items-center gap-1.5 pb-2 border-b border-border/20 justify-center">
-                <Truck className="w-4 h-4 text-primary shrink-0" />
-                Shipment Details
-              </h3>
-              <div className="text-center py-4 text-xs text-muted-foreground font-light flex flex-col items-center gap-2">
-                <Package className="w-6 h-6 text-muted-foreground/50 animate-pulse" />
-                <span>Handcrafting in progress. Tracking details will update once shipped.</span>
-              </div>
-            </div>
-          )}
-
-
-          {/* Activity / Status History Log */}
-          <div className="bg-card border border-border/30 rounded-2xl p-5 space-y-4">
-            <h3 className="font-serif text-sm font-semibold text-foreground flex items-center gap-1.5 pb-2 border-b border-border/20">
-              <Activity className="w-4 h-4 text-primary shrink-0" />
-              Order Updates
-            </h3>
-
-            {orderRecord.statusHistory && orderRecord.statusHistory.length > 0 ? (
-              <div className="space-y-4 pl-2 border-l border-border/30 ml-1">
-                {orderRecord.statusHistory.map((history) => (
-                  <div key={history.id} className="relative pl-3.5 text-xs">
-                    {/* Event Dot */}
-                    <div className="absolute -left-[12.5px] top-1.5 w-1.5 h-1.5 rounded-full bg-accent border border-background" />
-                    
-                    <p className="font-semibold text-foreground capitalize flex items-center gap-1.5">
-                      {history.status}
-                    </p>
-                    <p className="text-[9px] text-muted-foreground font-mono">
-                      {new Date(history.createdAt).toLocaleDateString("en-IN", {
-                        day: "numeric",
-                        month: "short",
-                        year: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit"
-                      })}
-                    </p>
-                    {history.notes && (
-                      <p className="text-[10px] text-muted-foreground font-light leading-relaxed mt-0.5 bg-secondary/15 rounded-lg p-2 border border-border/10">
-                        {history.notes}
-                      </p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-xs text-muted-foreground font-light">No updates recorded.</p>
-            )}
-          </div>
+          {/* Order Updates Accordion */}
+          <OrderUpdatesAccordion
+            statusHistory={orderRecord.statusHistory || []}
+          />
         </div>
       </div>
     </div>
