@@ -123,10 +123,38 @@ export interface ShippingCostResult {
   breakdown?: any;
 }
 
+export interface CreateReversePickupRequest {
+  requestId: string;
+  orderId: string;
+  pickupAddress: {
+    name: string;
+    phone: string;
+    addressLine1: string;
+    addressLine2?: string;
+    city: string;
+    state: string;
+    postalCode: string;
+    country?: string;
+  };
+  returnWarehouseAddress?: {
+    name?: string;
+    phone?: string;
+    addressLine1?: string;
+    city?: string;
+    state?: string;
+    postalCode?: string;
+    country?: string;
+  };
+  itemsDesc?: string;
+  quantity?: number;
+  weightGrams?: number;
+}
+
 export interface ShippingProvider {
   providerId: 'delhivery' | 'external';
   checkServiceability(req: ServiceabilityRequest): Promise<ServiceabilityResult>;
   createShipment(req: CreateShipmentRequest): Promise<CreateShipmentResult>;
+  createReversePickup?(req: CreateReversePickupRequest): Promise<CreateShipmentResult>;
   cancelShipment(req: CancelShipmentRequest): Promise<{ success: boolean; message?: string }>;
   trackShipment(waybill: string): Promise<TrackingResult>;
   generateLabel?(waybills: string[], pdfSize?: 'A4' | '4R'): Promise<{ pdfUrl: string; base64Pdf?: string }>;

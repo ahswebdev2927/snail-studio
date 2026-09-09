@@ -15,6 +15,8 @@ import {
   CreditCard,
   ChevronRight,
   Sparkles,
+  Truck,
+  ExternalLink,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -69,6 +71,7 @@ export interface ReturnRequestItem {
       product?: {
         id: string;
         title?: string | null;
+        name?: string | null;
         images?: any;
       };
     };
@@ -106,6 +109,8 @@ export function AdminReturnRequestCard({ request, onRefresh }: AdminReturnReques
   const isPending = request.status === "PENDING_REVIEW";
   const isApproved = request.status === "APPROVED";
   const isRejected = request.status === "REJECTED";
+  const isProcessing = request.status === "PROCESSING";
+  const isCompleted = request.status === "COMPLETED";
 
   const customerName =
     request.customer?.name ||
@@ -114,8 +119,60 @@ export function AdminReturnRequestCard({ request, onRefresh }: AdminReturnReques
     "Customer";
   const customerPhone = request.customer?.phoneNumber || request.order?.addresses?.[0]?.phone || "";
 
-  const originalProductTitle = request.orderItem?.variant?.product?.title || "Original Product";
+  const originalProductTitle =
+    request.orderItem?.variant?.product?.title ||
+    request.orderItem?.variant?.product?.name ||
+    "Original Product";
   const originalVariantName = request.orderItem?.variant?.name || "";
+
+  const isCustomerPaymentPending =
+    request.paymentResponsibility === "CUSTOMER_PAYS" && request.paymentStatus !== "PAID";
+
+  const handleCreatePickup = async () => {
+    setErrorMessage(null);
+    setIsSubmitting(true);
+    try {
+      const res = await fetch(`/api/admin/returns/${request.id}/create-pickup`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setErrorMessage(data.error || "Failed to create reverse pickup");
+        return;
+      }
+
+      if (onRefresh) onRefresh();
+    } catch (err: any) {
+      setErrorMessage(err.message || "An error occurred while creating reverse pickup");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleMarkReceived = async () => {
+    setErrorMessage(null);
+    setIsSubmitting(true);
+    try {
+      const res = await fetch(`/api/admin/returns/${request.id}/mark-received`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setErrorMessage(data.error || "Failed to mark return as received");
+        return;
+      }
+
+      if (onRefresh) onRefresh();
+    } catch (err: any) {
+      setErrorMessage(err.message || "An error occurred while updating return status");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const handleApprove = async () => {
     setErrorMessage(null);
@@ -214,12 +271,16 @@ export function AdminReturnRequestCard({ request, onRefresh }: AdminReturnReques
                 ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
                 : isRejected
                 ? "bg-red-500/10 text-red-400 border border-red-500/20"
-                : "bg-blue-500/10 text-blue-400 border border-blue-500/20"
+                : isProcessing
+                ? "bg-blue-500/10 text-blue-400 border border-blue-500/20"
+                : "bg-teal-500/10 text-teal-400 border border-teal-500/20"
             }`}
           >
             {isPending && <Clock className="w-3 h-3" />}
             {isApproved && <CheckCircle2 className="w-3 h-3" />}
             {isRejected && <XCircle className="w-3 h-3" />}
+            {isProcessing && <Truck className="w-3 h-3" />}
+            {isCompleted && <CheckCircle2 className="w-3 h-3" />}
             <span>{request.status.replace(/_/g, " ")}</span>
           </span>
         </div>
@@ -312,6 +373,32 @@ export function AdminReturnRequestCard({ request, onRefresh }: AdminReturnReques
           </div>
         </div>
 
+        {/* Reverse Pickup / Logistics Info if waybill exists or processing */}
+        {request.waybill && (
+          <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-2xl space-y-2 mt-4">
+            <div className="flex items-center justify-between text-[11px] text-blue-300 font-bold uppercase tracking-wider">
+              <span className="flex items-center gap-1.5">
+                <Truck className="w-3.5 h-3.5 text-blue-400" /> Reverse Pickup Shipment
+              </span>
+              <span className="font-mono text-xs text-blue-200">AWB: {request.waybill}</span>
+            </div>
+
+            <div className="flex items-center justify-between pt-1">
+              <p className="text-xs text-muted-foreground">Provider: <span className="font-semibold text-foreground">Delhivery (Pickup)</span></p>
+              {request.trackingUrl && (
+                <a
+                  href={request.trackingUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs font-semibold text-primary hover:underline flex items-center gap-1"
+                >
+                  Track Reverse Shipment <ExternalLink className="w-3 h-3" />
+                </a>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Existing Admin Notes & Reviewer Info if already reviewed */}
         {!isPending && (
           <div className="p-4 bg-secondary/30 border border-border/40 rounded-2xl space-y-2 mt-4">
@@ -337,6 +424,20 @@ export function AdminReturnRequestCard({ request, onRefresh }: AdminReturnReques
                     : "Snail Studio Pays Customer"}
                 </span>
               </p>
+              <p className="text-muted-foreground">
+                Payment Status:{" "}
+                <span
+                  className={`font-semibold ${
+                    request.paymentStatus === "PAID"
+                      ? "text-emerald-400"
+                      : request.paymentStatus === "PENDING"
+                      ? "text-amber-400"
+                      : "text-foreground"
+                  }`}
+                >
+                  {request.paymentStatus}
+                </span>
+              </p>
               {request.adminNotes && (
                 <p className="text-foreground italic bg-background/50 p-2 rounded-lg border border-border/20">
                   Admin Note: "{request.adminNotes}"
@@ -346,6 +447,57 @@ export function AdminReturnRequestCard({ request, onRefresh }: AdminReturnReques
           </div>
         )}
       </div>
+
+      {/* Error Alert Display */}
+      {errorMessage && (
+        <div className="mt-4 p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-400 text-xs flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          <span>{errorMessage}</span>
+        </div>
+      )}
+
+      {/* Phase V3-19: Create Reverse Pickup Action for Approved Returns */}
+      {isApproved && request.type === "RETURN" && !request.waybill && (
+        <div className="mt-6 pt-5 border-t border-border/40 space-y-3">
+          {isCustomerPaymentPending && (
+            <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-300 text-xs flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>Customer payment is PENDING. Record payment before creating reverse pickup.</span>
+            </div>
+          )}
+
+          <button
+            onClick={handleCreatePickup}
+            disabled={isSubmitting || isCustomerPaymentPending}
+            className="w-full py-2.5 px-4 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs rounded-xl shadow-sm transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+          >
+            {isSubmitting ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Truck className="w-4 h-4" />
+            )}
+            <span>Create Delhivery Reverse Pickup</span>
+          </button>
+        </div>
+      )}
+
+      {/* Phase V3-19: Mark Return Received Action for Processing Returns */}
+      {isProcessing && request.type === "RETURN" && (
+        <div className="mt-6 pt-5 border-t border-border/40 space-y-3">
+          <button
+            onClick={handleMarkReceived}
+            disabled={isSubmitting}
+            className="w-full py-2.5 px-4 bg-teal-600 hover:bg-teal-700 text-white font-semibold text-xs rounded-xl shadow-sm transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+          >
+            {isSubmitting ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <CheckCircle2 className="w-4 h-4" />
+            )}
+            <span>Mark Return Received (Complete Request)</span>
+          </button>
+        </div>
+      )}
 
       {/* Review Form for Pending Requests */}
       {isPending && (
@@ -385,14 +537,6 @@ export function AdminReturnRequestCard({ request, onRefresh }: AdminReturnReques
               />
             </div>
           </div>
-
-          {/* Error Alert */}
-          {errorMessage && (
-            <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-400 text-xs flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              <span>{errorMessage}</span>
-            </div>
-          )}
 
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-3 pt-1">

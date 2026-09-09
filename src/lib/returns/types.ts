@@ -46,7 +46,7 @@ export const approveReturnRequestSchema = z.object({
 
 export const rejectReturnRequestSchema = z.object({
   adminNotes: z
-    .string({ required_error: "Admin rejection notes are required" })
+    .string()
     .trim()
     .min(1, "Admin rejection notes are required")
     .max(1000, "Notes cannot exceed 1000 characters"),

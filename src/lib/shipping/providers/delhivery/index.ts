@@ -8,6 +8,7 @@ import { cancelDelhiveryShipment } from "./cancellation";
 import { generateDelhiveryLabel } from "./label";
 import { createDelhiveryPickup } from "./pickup";
 import { calculateDelhiveryShippingCost } from "./cost";
+import { createDelhiveryReversePickup } from "./reverse-pickup";
 
 import { submitDelhiveryCarrierAction, canPerformDelhiveryAction } from "./ndr-action";
 
@@ -15,6 +16,7 @@ export const delhiveryShippingProvider: ShippingProvider = {
   providerId: "delhivery",
   checkServiceability: checkDelhiveryServiceability,
   createShipment: createDelhiveryShipment,
+  createReversePickup: createDelhiveryReversePickup,
   cancelShipment: cancelDelhiveryShipment,
   trackShipment: trackDelhiveryShipment,
   generateLabel: generateDelhiveryLabel,
@@ -29,6 +31,7 @@ export * from "./config";
 export * from "./client";
 export * from "./serviceability";
 export * from "./shipment";
+export * from "./reverse-pickup";
 export * from "./tracking";
 export * from "./cancellation";
 export * from "./label";
@@ -37,4 +40,5 @@ export * from "./cost";
 export * from "./delhivery-exception-codes";
 export * from "./action-eligibility";
 export * from "./ndr-action";
+
 
