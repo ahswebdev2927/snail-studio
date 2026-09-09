@@ -1,0 +1,145 @@
+import { db } from "@/db";
+import { returnRequests, shipmentAuditLogs } from "@/db/schema";
+import { eq } from "drizzle-orm";
+import { PaymentResponsibility } from "./types";
+import { SessionUser } from "@/lib/auth/session";
+import { nanoid } from "nanoid";
+
+export interface ReviewReturnRequestOptions {
+  requestId: string;
+  action: "APPROVE" | "REJECT";
+  paymentResponsibility?: PaymentResponsibility;
+  adminNotes?: string;
+  adminUser: SessionUser;
+}
+
+export interface ReviewReturnRequestResult {
+  success: boolean;
+  error?: string;
+  status?: number;
+  returnRequest?: any;
+}
+
+/**
+ * Executes an admin review (approval or rejection) on a pending return request.
+ */
+export async function reviewReturnRequest(
+  options: ReviewReturnRequestOptions
+): Promise<ReviewReturnRequestResult> {
+  const { requestId, action, paymentResponsibility, adminNotes, adminUser } = options;
+
+  const existing = await db.query.returnRequests.findFirst({
+    where: eq(returnRequests.id, requestId),
+  });
+
+  if (!existing) {
+    return { success: false, error: "Return request not found", status: 404 };
+  }
+
+  if (existing.status !== "PENDING_REVIEW") {
+    return {
+      success: false,
+      error: `Return request cannot be modified because it is currently ${existing.status.replace(/_/g, " ")}.`,
+      status: 400,
+    };
+  }
+
+  const now = new Date();
+
+  if (action === "APPROVE") {
+    if (!paymentResponsibility || !["NONE", "CUSTOMER_PAYS", "STORE_PAYS"].includes(paymentResponsibility)) {
+      return {
+        success: false,
+        error: "Payment responsibility selection is required to approve return request",
+        status: 400,
+      };
+    }
+
+    const paymentStatus = paymentResponsibility === "NONE" ? "NOT_REQUIRED" : "PENDING";
+
+    const updates = {
+      status: "APPROVED" as const,
+      reviewedBy: adminUser.id,
+      reviewedAt: now,
+      paymentResponsibility,
+      paymentStatus: paymentStatus as "NOT_REQUIRED" | "PENDING",
+      adminNotes: adminNotes ? adminNotes.trim() : null,
+      updatedAt: now,
+    };
+
+    await db.update(returnRequests).set(updates).where(eq(returnRequests.id, requestId));
+
+    await db.insert(shipmentAuditLogs).values({
+      id: `log_${nanoid(12)}`,
+      shipmentId: null,
+      orderId: existing.orderId,
+      adminId: adminUser.id,
+      adminName: adminUser.name || adminUser.phoneNumber || "Admin",
+      action: "RETURN_APPROVED",
+      previousState: JSON.stringify({
+        status: existing.status,
+        paymentResponsibility: existing.paymentResponsibility,
+      }),
+      newState: JSON.stringify({
+        status: updates.status,
+        paymentResponsibility: updates.paymentResponsibility,
+        adminNotes: updates.adminNotes,
+      }),
+      notes: updates.adminNotes || `Return request approved with payment responsibility: ${paymentResponsibility}`,
+    });
+
+    return {
+      success: true,
+      returnRequest: {
+        ...existing,
+        ...updates,
+      },
+    };
+  } else if (action === "REJECT") {
+    const trimmedNotes = adminNotes ? adminNotes.trim() : "";
+    if (!trimmedNotes) {
+      return {
+        success: false,
+        error: "Admin rejection notes are required when rejecting a return request",
+        status: 400,
+      };
+    }
+
+    const updates = {
+      status: "REJECTED" as const,
+      reviewedBy: adminUser.id,
+      reviewedAt: now,
+      adminNotes: trimmedNotes,
+      updatedAt: now,
+    };
+
+    await db.update(returnRequests).set(updates).where(eq(returnRequests.id, requestId));
+
+    await db.insert(shipmentAuditLogs).values({
+      id: `log_${nanoid(12)}`,
+      shipmentId: null,
+      orderId: existing.orderId,
+      adminId: adminUser.id,
+      adminName: adminUser.name || adminUser.phoneNumber || "Admin",
+      action: "RETURN_REJECTED",
+      previousState: JSON.stringify({
+        status: existing.status,
+      }),
+      newState: JSON.stringify({
+        status: updates.status,
+        adminNotes: updates.adminNotes,
+      }),
+      notes: updates.adminNotes,
+    });
+
+    return {
+      success: true,
+      returnRequest: {
+        ...existing,
+        ...updates,
+      },
+    };
+  }
+
+  return { success: false, error: "Invalid action specified", status: 400 };
+}

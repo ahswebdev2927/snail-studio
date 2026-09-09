@@ -36,3 +36,22 @@ export const createReturnRequestSchema = z.object({
 });
 
 export type CreateReturnRequestInput = z.infer<typeof createReturnRequestSchema>;
+
+export const approveReturnRequestSchema = z.object({
+  paymentResponsibility: z.enum(["NONE", "CUSTOMER_PAYS", "STORE_PAYS"], {
+    message: "Payment responsibility selection is required",
+  }),
+  adminNotes: z.string().max(1000, "Notes cannot exceed 1000 characters").optional().or(z.literal("")),
+});
+
+export const rejectReturnRequestSchema = z.object({
+  adminNotes: z
+    .string({ required_error: "Admin rejection notes are required" })
+    .trim()
+    .min(1, "Admin rejection notes are required")
+    .max(1000, "Notes cannot exceed 1000 characters"),
+});
+
+export type ApproveReturnRequestInput = z.infer<typeof approveReturnRequestSchema>;
+export type RejectReturnRequestInput = z.infer<typeof rejectReturnRequestSchema>;
+

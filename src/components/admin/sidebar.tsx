@@ -32,7 +32,8 @@ import {
   Search,
   Send,
   Sparkles,
-  Shield
+  Shield,
+  RotateCcw
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SessionUser } from "@/lib/auth/session";
@@ -204,7 +205,8 @@ export default function Sidebar({ isCollapsed, isMobileOpen, closeMobileSidebar,
       icon: ClipboardList,
       subItems: [
         { name: "All Orders", href: "/admin/orders", icon: ClipboardList },
-        { name: "Shipments", href: "/admin/shipments", icon: Truck }
+        { name: "Shipments", href: "/admin/shipments", icon: Truck },
+        { name: "Return Requests", href: "/admin/returns", icon: RotateCcw }
       ]
     },
     {
