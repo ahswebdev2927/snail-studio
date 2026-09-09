@@ -37,10 +37,21 @@ export const createReturnRequestSchema = z.object({
 
 export type CreateReturnRequestInput = z.infer<typeof createReturnRequestSchema>;
 
+export const PAYMENT_METHODS = [
+  'UPI',
+  'BANK_TRANSFER',
+  'CASH',
+  'RAZORPAY',
+  'OTHER'
+] as const;
+
+export type PaymentMethod = typeof PAYMENT_METHODS[number];
+
 export const approveReturnRequestSchema = z.object({
   paymentResponsibility: z.enum(["NONE", "CUSTOMER_PAYS", "STORE_PAYS"], {
     message: "Payment responsibility selection is required",
   }),
+  paymentAmount: z.number().nonnegative("Payment amount must be zero or positive").optional().default(0),
   adminNotes: z.string().max(1000, "Notes cannot exceed 1000 characters").optional().or(z.literal("")),
 });
 
@@ -52,6 +63,17 @@ export const rejectReturnRequestSchema = z.object({
     .max(1000, "Notes cannot exceed 1000 characters"),
 });
 
+export const recordReturnPaymentSchema = z.object({
+  paymentAmount: z.number().positive("Payment amount must be greater than zero"),
+  paymentMethod: z.enum(PAYMENT_METHODS, {
+    message: "Valid payment method selection is required",
+  }),
+  paymentReference: z.string().trim().min(1, "Payment reference / transaction ID is required"),
+  paymentNotes: z.string().max(1000, "Notes cannot exceed 1000 characters").optional().or(z.literal("")),
+});
+
 export type ApproveReturnRequestInput = z.infer<typeof approveReturnRequestSchema>;
 export type RejectReturnRequestInput = z.infer<typeof rejectReturnRequestSchema>;
+export type RecordReturnPaymentInput = z.infer<typeof recordReturnPaymentSchema>;
+
 

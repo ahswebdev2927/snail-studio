@@ -249,6 +249,8 @@ export const returnRequests = sqliteTable('return_requests', {
   paymentMethod: text('payment_method'),
   paymentReference: text('payment_reference'),
   paymentNotes: text('payment_notes'),
+  paidAt: integer('paid_at', { mode: 'timestamp' }),
+  recordedBy: text('recorded_by').references(() => users.id, { onDelete: 'set null' }),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)
 }, (table) => [

@@ -9,6 +9,7 @@ export interface ReviewReturnRequestOptions {
   requestId: string;
   action: "APPROVE" | "REJECT";
   paymentResponsibility?: PaymentResponsibility;
+  paymentAmount?: number;
   adminNotes?: string;
   adminUser: SessionUser;
 }
@@ -26,7 +27,7 @@ export interface ReviewReturnRequestResult {
 export async function reviewReturnRequest(
   options: ReviewReturnRequestOptions
 ): Promise<ReviewReturnRequestResult> {
-  const { requestId, action, paymentResponsibility, adminNotes, adminUser } = options;
+  const { requestId, action, paymentResponsibility, paymentAmount, adminNotes, adminUser } = options;
 
   const existing = await db.query.returnRequests.findFirst({
     where: eq(returnRequests.id, requestId),
@@ -62,6 +63,7 @@ export async function reviewReturnRequest(
       reviewedBy: adminUser.id,
       reviewedAt: now,
       paymentResponsibility,
+      paymentAmount: paymentResponsibility === "NONE" ? 0 : (paymentAmount ?? existing.paymentAmount ?? 0),
       paymentStatus: paymentStatus as "NOT_REQUIRED" | "PENDING",
       adminNotes: adminNotes ? adminNotes.trim() : null,
       updatedAt: now,

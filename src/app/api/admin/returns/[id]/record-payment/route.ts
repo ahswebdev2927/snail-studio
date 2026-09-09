@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authorize } from "@/middleware/auth";
-import { approveReturnRequestSchema } from "@/lib/returns/types";
-import { reviewReturnRequest } from "@/lib/returns/admin";
+import { recordReturnPaymentSchema } from "@/lib/returns/types";
+import { recordReturnPayment } from "@/lib/returns/payment";
 import { revalidateTag } from "next/cache";
 import { CACHE_TAGS } from "@/lib/cache-tags";
 
 /**
- * POST /api/admin/returns/[id]/approve
- * Approve a pending return request and assign operational payment responsibility.
+ * POST /api/admin/returns/[id]/record-payment
+ * Record external payment details (method, reference, amount, notes) for a return or replacement request.
  */
 export async function POST(
   req: NextRequest,
@@ -25,20 +25,20 @@ export async function POST(
     }
 
     const body = await req.json().catch(() => ({}));
-    const parseResult = approveReturnRequestSchema.safeParse(body);
+    const parseResult = recordReturnPaymentSchema.safeParse(body);
 
     if (!parseResult.success) {
       const issues = parseResult.error.issues || (parseResult.error as any).errors;
-      const errorMsg = issues?.[0]?.message || "Invalid approval payload";
+      const errorMsg = issues?.[0]?.message || "Invalid payment recording payload";
       return NextResponse.json({ success: false, error: errorMsg }, { status: 400 });
     }
 
-    const result = await reviewReturnRequest({
+    const result = await recordReturnPayment({
       requestId,
-      action: "APPROVE",
-      paymentResponsibility: parseResult.data.paymentResponsibility,
       paymentAmount: parseResult.data.paymentAmount,
-      adminNotes: parseResult.data.adminNotes,
+      paymentMethod: parseResult.data.paymentMethod,
+      paymentReference: parseResult.data.paymentReference,
+      paymentNotes: parseResult.data.paymentNotes,
       adminUser: auth.user,
     });
 
@@ -58,13 +58,13 @@ export async function POST(
 
     return NextResponse.json({
       success: true,
-      message: "Return request approved successfully",
+      message: "Payment recorded successfully",
       returnRequest: result.returnRequest,
     });
   } catch (error: any) {
-    console.error("POST /api/admin/returns/[id]/approve error:", error);
+    console.error("POST /api/admin/returns/[id]/record-payment error:", error);
     return NextResponse.json(
-      { success: false, error: "Failed to approve return request" },
+      { success: false, error: "Failed to record payment" },
       { status: 500 }
     );
   }

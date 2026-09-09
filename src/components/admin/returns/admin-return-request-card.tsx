@@ -19,6 +19,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import Link from "next/link";
+import { AdminPaymentRecordModal } from "./admin-payment-record-modal";
 
 export interface ReturnRequestItem {
   id: string;
@@ -42,6 +43,8 @@ export interface ReturnRequestItem {
   paymentMethod?: string | null;
   paymentReference?: string | null;
   paymentNotes?: string | null;
+  paidAt?: string | null;
+  recordedBy?: string | null;
   createdAt: string;
   updatedAt: string;
   order?: {
@@ -102,9 +105,13 @@ export function AdminReturnRequestCard({ request, onRefresh }: AdminReturnReques
   const [paymentResponsibility, setPaymentResponsibility] = useState<"NONE" | "CUSTOMER_PAYS" | "STORE_PAYS">(
     request.paymentResponsibility || "NONE"
   );
+  const [paymentAmountRupees, setPaymentAmountRupees] = useState<string>(
+    request.paymentAmount > 0 ? (request.paymentAmount / 100).toString() : "120"
+  );
   const [adminNotes, setAdminNotes] = useState(request.adminNotes || "");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isRecordModalOpen, setIsRecordModalOpen] = useState(false);
 
   const isPending = request.status === "PENDING_REVIEW";
   const isApproved = request.status === "APPROVED";
@@ -227,6 +234,11 @@ export function AdminReturnRequestCard({ request, onRefresh }: AdminReturnReques
       return;
     }
 
+    const parsedRupees = parseFloat(paymentAmountRupees);
+    const paymentAmount = paymentResponsibility !== "NONE" && !isNaN(parsedRupees) && parsedRupees > 0
+      ? Math.round(parsedRupees * 100)
+      : 0;
+
     setIsSubmitting(true);
     try {
       const res = await fetch(`/api/admin/returns/${request.id}/approve`, {
@@ -234,6 +246,7 @@ export function AdminReturnRequestCard({ request, onRefresh }: AdminReturnReques
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           paymentResponsibility,
+          paymentAmount,
           adminNotes,
         }),
       });
@@ -462,7 +475,7 @@ export function AdminReturnRequestCard({ request, onRefresh }: AdminReturnReques
               )}
             </div>
 
-            <div className="text-xs space-y-1">
+            <div className="text-xs space-y-1.5">
               <p className="text-muted-foreground">
                 Payment Responsibility:{" "}
                 <span className="font-semibold text-foreground">
@@ -473,22 +486,62 @@ export function AdminReturnRequestCard({ request, onRefresh }: AdminReturnReques
                     : "Snail Studio Pays Customer"}
                 </span>
               </p>
-              <p className="text-muted-foreground">
-                Payment Status:{" "}
-                <span
-                  className={`font-semibold ${
-                    request.paymentStatus === "PAID"
-                      ? "text-emerald-400"
-                      : request.paymentStatus === "PENDING"
-                      ? "text-amber-400"
-                      : "text-foreground"
-                  }`}
-                >
-                  {request.paymentStatus}
-                </span>
-              </p>
+              {request.paymentResponsibility !== "NONE" && (
+                <p className="text-muted-foreground">
+                  Amount:{" "}
+                  <span className="font-semibold text-foreground">
+                    ₹{(request.paymentAmount / 100).toFixed(2)}
+                  </span>
+                </p>
+              )}
+              <div className="flex items-center justify-between pt-0.5">
+                <p className="text-muted-foreground">
+                  Payment Status:{" "}
+                  <span
+                    className={`font-semibold ${
+                      request.paymentStatus === "PAID"
+                        ? "text-emerald-400"
+                        : request.paymentStatus === "PENDING"
+                        ? "text-amber-400"
+                        : "text-foreground"
+                    }`}
+                  >
+                    {request.paymentStatus}
+                  </span>
+                </p>
+
+                {request.paymentStatus === "PENDING" && (
+                  <button
+                    type="button"
+                    onClick={() => setIsRecordModalOpen(true)}
+                    className="py-1 px-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold rounded-lg shadow-xs transition flex items-center gap-1 cursor-pointer"
+                  >
+                    <CreditCard className="w-3 h-3" />
+                    Record Payment
+                  </button>
+                )}
+              </div>
+
+              {request.paymentMethod && (
+                <p className="text-muted-foreground">
+                  Method & Ref:{" "}
+                  <span className="font-semibold text-foreground">
+                    {request.paymentMethod} ({request.paymentReference || "N/A"})
+                  </span>
+                </p>
+              )}
+
+              {request.paidAt && (
+                <p className="text-muted-foreground">
+                  Paid On:{" "}
+                  <span className="font-semibold text-foreground">
+                    {new Date(request.paidAt).toLocaleString("en-IN", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                  </span>
+                </p>
+              )}
+
               {request.adminNotes && (
-                <p className="text-foreground italic bg-background/50 p-2 rounded-lg border border-border/20">
+                <p className="text-foreground italic bg-background/50 p-2 rounded-lg border border-border/20 mt-1">
                   Admin Note: "{request.adminNotes}"
                 </p>
               )}
@@ -509,9 +562,19 @@ export function AdminReturnRequestCard({ request, onRefresh }: AdminReturnReques
       {isApproved && request.type === "RETURN" && !request.waybill && (
         <div className="mt-6 pt-5 border-t border-border/40 space-y-3">
           {isCustomerPaymentPending && (
-            <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-300 text-xs flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              <span>Customer payment is PENDING. Record payment before creating reverse pickup.</span>
+            <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-300 text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 text-amber-400" />
+                <span>Customer payment of ₹{(request.paymentAmount / 100).toFixed(2)} is PENDING. Record payment before creating reverse pickup.</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsRecordModalOpen(true)}
+                className="py-1 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-xl shadow-xs transition flex items-center gap-1.5 shrink-0 cursor-pointer"
+              >
+                <CreditCard className="w-3.5 h-3.5" />
+                Record Payment
+              </button>
             </div>
           )}
 
@@ -552,9 +615,19 @@ export function AdminReturnRequestCard({ request, onRefresh }: AdminReturnReques
       {isApproved && request.type === "REPLACEMENT" && !request.waybill && (
         <div className="mt-6 pt-5 border-t border-border/40 space-y-3">
           {isCustomerPaymentPending && (
-            <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-300 text-xs flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              <span>Customer payment is PENDING. Record payment before creating REPL exchange shipment.</span>
+            <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-300 text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 text-amber-400" />
+                <span>Customer payment of ₹{(request.paymentAmount / 100).toFixed(2)} is PENDING. Record payment before creating REPL exchange shipment.</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsRecordModalOpen(true)}
+                className="py-1 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-xl shadow-xs transition flex items-center gap-1.5 shrink-0 cursor-pointer"
+              >
+                <CreditCard className="w-3.5 h-3.5" />
+                Record Payment
+              </button>
             </div>
           )}
 
@@ -595,6 +668,19 @@ export function AdminReturnRequestCard({ request, onRefresh }: AdminReturnReques
       {isPending && (
         <div className="mt-6 pt-5 border-t border-border/40 space-y-4">
           <div className="space-y-3">
+            {/* Policy guidance box */}
+            <div className="p-3 bg-secondary/30 border border-border/30 rounded-2xl text-[11px] text-muted-foreground space-y-1">
+              <p className="font-semibold text-foreground flex items-center gap-1">
+                <Sparkles className="w-3.5 h-3.5 text-primary" /> Payment Policy Guidance
+              </p>
+              <p>
+                • <strong>Customer-related (Wrong Size / Mind Change):</strong> Customer bears shipping fee (~₹120-180) or price difference.
+              </p>
+              <p>
+                • <strong>Snail Studio issue (Defective / Damaged / Wrong Item):</strong> Snail Studio bears fee (select <em>No Payment Required</em> or <em>Snail Studio Pays Customer</em>).
+              </p>
+            </div>
+
             {/* Who pays whom selector */}
             <div className="space-y-1.5">
               <label className="text-[11px] font-bold uppercase tracking-wider text-foreground flex items-center gap-1.5">
@@ -613,6 +699,25 @@ export function AdminReturnRequestCard({ request, onRefresh }: AdminReturnReques
                 <option value="STORE_PAYS">Snail Studio Pays Customer</option>
               </select>
             </div>
+
+            {/* Payment amount input if responsibility is not NONE */}
+            {paymentResponsibility !== "NONE" && (
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-foreground flex items-center gap-1.5">
+                  <CreditCard className="w-3.5 h-3.5 text-emerald-400" />
+                  Actual Payment Amount (₹) <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={paymentAmountRupees}
+                  onChange={(e) => setPaymentAmountRupees(e.target.value)}
+                  placeholder="e.g. 120"
+                  className="w-full bg-secondary/30 border border-border/50 text-foreground rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-primary font-semibold"
+                />
+              </div>
+            )}
 
             {/* Admin Notes */}
             <div className="space-y-1.5">
@@ -660,6 +765,19 @@ export function AdminReturnRequestCard({ request, onRefresh }: AdminReturnReques
           </div>
         </div>
       )}
+
+      {/* Record Payment Modal Dialog */}
+      {isRecordModalOpen && (
+        <AdminPaymentRecordModal
+          isOpen={isRecordModalOpen}
+          onClose={() => setIsRecordModalOpen(false)}
+          request={request}
+          onSuccess={() => {
+            if (onRefresh) onRefresh();
+          }}
+        />
+      )}
     </div>
   );
 }
+

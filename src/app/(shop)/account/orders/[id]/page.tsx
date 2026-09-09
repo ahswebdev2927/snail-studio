@@ -272,6 +272,7 @@ export default async function OrderDetailsPage({ params }: PageProps) {
                         orderItem={item}
                         returnRequests={orderRecord.returnRequests || []}
                         orderDeliveredAt={shipment?.updatedAt || orderRecord.updatedAt}
+                        storePhone={storePhone}
                       />
                     </div>
                   </div>
