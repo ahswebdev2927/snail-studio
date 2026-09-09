@@ -122,7 +122,6 @@ export default function AdminSecuritySettingsPage() {
     if (!await customConfirm("Modify User Role", confirmMsg)) return;
 
     setActionUserId(userId);
-    showStatus("success", "OTP Verification triggered. Please check your email.");
 
     try {
       const res = await fetch(`/api/admin/users/${userId}/role`, {

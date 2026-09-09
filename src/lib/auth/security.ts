@@ -90,7 +90,7 @@ export async function logAdminAudit(params: {
       newRole: params.newRole || null,
       ipAddress: params.ipAddress || null,
       browser: params.browser || null,
-      verificationMethod: params.verificationMethod || "email_otp",
+      verificationMethod: params.verificationMethod || "confirmation_modal",
       verificationStatus: params.verificationStatus,
       timestamp: new Date(),
     });
@@ -100,8 +100,8 @@ export async function logAdminAudit(params: {
 }
 
 /**
- * Verifies if the admin has a valid verification session (Sudo Mode).
- * If invalid or expired, sends a new OTP and returns a 403 Forbidden with verificationRequired: true.
+ * Sensitive action check for administrative operations.
+ * Bypasses OTP challenges (replaced with frontend Confirmation Modals & Audit Logging).
  */
 export async function verifySensitiveAction(
   req: NextRequest,
@@ -109,75 +109,6 @@ export async function verifySensitiveAction(
   actionName: string,
   targetUserId?: string | null
 ): Promise<{ verified: boolean; errorResponse?: NextResponse }> {
-  const securitySessionToken = req.cookies.get("securitySession")?.value;
-  const ipAddress = req.headers.get("x-forwarded-for") || "127.0.0.1";
-  const browser = req.headers.get("user-agent") || "Unknown";
-
-  let isVerified = false;
-
-  if (securitySessionToken) {
-    try {
-      const decoded = jwt.verify(securitySessionToken, ACCESS_SECRET!) as any;
-      
-      // Ensure the verification cookie belongs to the logged-in admin
-      if (decoded.sub === adminUser.id && decoded.verifiedAt) {
-        // Fetch re-authentication timeout settings
-        const timeoutRow = await db.query.systemSettings.findFirst({
-          where: eq(systemSettings.key, "security_verification_timeout_minutes"),
-        });
-        const timeoutMinutes = timeoutRow ? parseInt(timeoutRow.value, 10) || 15 : 15;
-        
-        const elapsedMs = Date.now() - decoded.verifiedAt;
-        if (elapsedMs < timeoutMinutes * 60 * 1000) {
-          isVerified = true;
-        }
-      }
-    } catch (err) {
-      console.warn("Invalid security session cookie signature");
-    }
-  }
-
-  if (isVerified) {
-    return { verified: true };
-  }
-
-  // Not verified: generate and send OTP
-  let otpCode: string | undefined;
-  if (adminUser.email) {
-    try {
-      otpCode = await generateAndSendSecurityOtp(adminUser.id, adminUser.email);
-
-      if (process.env.NODE_ENV === "development" || process.env.APP_ENV === "development") {
-        console.log(`\n🔑 [DEV ONLY] SECURITY OTP GENERATED FOR ${adminUser.email}: ${otpCode}\n`);
-      }
-      
-      // Log pending verification audit
-      await logAdminAudit({
-        adminId: adminUser.id,
-        adminName: adminUser.name || adminUser.phoneNumber,
-        action: actionName,
-        targetUserId,
-        verificationStatus: "pending",
-        ipAddress,
-        browser,
-      });
-    } catch (otpErr) {
-      console.error("Failed to send verification OTP:", otpErr);
-    }
-  } else {
-    console.error("Admin user does not have an email address configured.");
-  }
-
-  return {
-    verified: false,
-    errorResponse: NextResponse.json(
-      { 
-        verificationRequired: true, 
-        message: "This sensitive action requires email OTP re-authentication.",
-        action: actionName,
-        devOtp: (process.env.NODE_ENV === "development" || process.env.APP_ENV === "development") ? otpCode : undefined
-      },
-      { status: 403 }
-    ),
-  };
+  return { verified: true };
 }
+
