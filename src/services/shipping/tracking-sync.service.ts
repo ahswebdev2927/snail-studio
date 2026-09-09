@@ -242,6 +242,7 @@ export async function syncActiveShipments(): Promise<TrackingSyncResult> {
             customerName: shipment.order.user?.name || "Customer",
             orderId: shipment.orderId,
             status: newStatus,
+            previousStatus: currentStatus,
             carrier: shipment.carrier,
             trackingNumber: waybill,
             trackingUrl: shipment.trackingUrl,
