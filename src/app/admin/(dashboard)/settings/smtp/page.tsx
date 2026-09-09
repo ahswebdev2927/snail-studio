@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Mail, RefreshCw, Send, CheckCircle2, XCircle, AlertCircle, Lock, Zap } from "lucide-react";
+import { AuditLogsInfoIcon } from "@/components/admin/audit-logs-info";
 
 interface EmailLog {
   id: string;
@@ -445,6 +446,7 @@ export default function AdminSmtpSettingsPage() {
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
               <Mail className="w-4 h-4 text-primary" /> Delivery History Audit Trail
+              <AuditLogsInfoIcon />
             </h2>
             <button
               onClick={fetchLogs}

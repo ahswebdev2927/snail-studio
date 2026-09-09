@@ -20,16 +20,32 @@ export async function GET(request: Request) {
     const settings = await getShippingSettings();
 
     // 2. Check Delhivery Serviceability
-    const serviceability = await checkDelhiveryServiceability({ pincode });
+    let serviceability: { isServiceable: boolean; remarks?: string; courierName?: string; estimatedDeliveryDays?: number };
+    try {
+      serviceability = await checkDelhiveryServiceability({ pincode });
+    } catch (err: any) {
+      serviceability = { isServiceable: false, remarks: err.message };
+    }
 
+    let isFallback = false;
     if (!serviceability.isServiceable) {
-      return NextResponse.json({
-        success: true,
-        isServiceable: false,
-        pincode,
-        courierName: "Delhivery",
-        remarks: serviceability.remarks || "Pincode is currently non-serviceable by courier partner.",
-      });
+      if (settings.shippingFallbackMode === "default_charges") {
+        isFallback = true;
+        serviceability = {
+          isServiceable: true,
+          courierName: "Standard Delivery (Fallback)",
+          estimatedDeliveryDays: 6,
+          remarks: "Serviceable via Standard Shipping (Default Charges)",
+        };
+      } else {
+        return NextResponse.json({
+          success: true,
+          isServiceable: false,
+          pincode,
+          courierName: "Delhivery",
+          remarks: serviceability.remarks || "Pincode is currently non-serviceable by courier partner.",
+        });
+      }
     }
 
     // 3. Compute Estimated Delivery Date range using Delhivery Expected TAT
@@ -54,32 +70,36 @@ export async function GET(request: Request) {
     let standardFeeRupees = settings.defaultPrepaidShipping || 70;
     let expressFeeRupees = 250;
 
-    try {
-      const standardCost = await calculateDelhiveryShippingCost({
-        destinationPincode: pincode,
-        shippingMode: "Surface",
-        weightGrams,
-      });
-      if (standardCost && typeof standardCost.totalAmountRupees === "number" && standardCost.totalAmountRupees > 0) {
-        standardFeeRupees = Math.round(standardCost.totalAmountRupees);
+    if (!isFallback) {
+      try {
+        const standardCost = await calculateDelhiveryShippingCost({
+          destinationPincode: pincode,
+          shippingMode: "Surface",
+          weightGrams,
+        });
+        if (standardCost && typeof standardCost.totalAmountRupees === "number" && standardCost.totalAmountRupees > 0) {
+          standardFeeRupees = Math.round(standardCost.totalAmountRupees);
+        }
+      } catch (costErr) {
+        console.warn("Delhivery surface cost estimation API fallback:", costErr);
       }
-    } catch (costErr) {
-      console.warn("Delhivery surface cost estimation API fallback:", costErr);
-    }
 
-    try {
-      const expressCost = await calculateDelhiveryShippingCost({
-        destinationPincode: pincode,
-        shippingMode: "Express",
-        weightGrams,
-      });
-      if (expressCost && typeof expressCost.totalAmountRupees === "number" && expressCost.totalAmountRupees > 0) {
-        expressFeeRupees = Math.round(expressCost.totalAmountRupees);
-      } else {
+      try {
+        const expressCost = await calculateDelhiveryShippingCost({
+          destinationPincode: pincode,
+          shippingMode: "Express",
+          weightGrams,
+        });
+        if (expressCost && typeof expressCost.totalAmountRupees === "number" && expressCost.totalAmountRupees > 0) {
+          expressFeeRupees = Math.round(expressCost.totalAmountRupees);
+        } else {
+          expressFeeRupees = Math.round(standardFeeRupees * 1.8);
+        }
+      } catch (costErr) {
+        console.warn("Delhivery express cost estimation API fallback:", costErr);
         expressFeeRupees = Math.round(standardFeeRupees * 1.8);
       }
-    } catch (costErr) {
-      console.warn("Delhivery express cost estimation API fallback:", costErr);
+    } else {
       expressFeeRupees = Math.round(standardFeeRupees * 1.8);
     }
 
@@ -90,6 +110,7 @@ export async function GET(request: Request) {
     return NextResponse.json({
       success: true,
       isServiceable: true,
+      isFallback,
       pincode,
       courierName: serviceability.courierName || "Delhivery",
       tatDays,

@@ -12,7 +12,7 @@ import {
   userAuditLogs, 
   adminAuditLogs 
 } from "@/db/schema";
-import { lt, or, and, isNotNull } from "drizzle-orm";
+import { lt, or, and, isNotNull, desc, notInArray } from "drizzle-orm";
 
 /**
  * Runs the weekly security cleanup routine.
@@ -68,57 +68,71 @@ export async function runWeeklySecurityCleanup() {
 }
 
 /**
+ * Helper to delete records older than thresholdDate, while preserving at least the top N newest records.
+ */
+async function purgeTableWithRetentionBuffer(
+  table: any,
+  dateColumn: any,
+  thresholdDate: Date,
+  bufferSize: number = 50
+): Promise<any[]> {
+  const newestRows = await db
+    .select({ id: table.id })
+    .from(table)
+    .orderBy(desc(dateColumn))
+    .limit(bufferSize);
+
+  const keepIds = newestRows.map((r: any) => r.id);
+
+  if (keepIds.length === 0) {
+    const deleted = await db.delete(table).where(lt(dateColumn, thresholdDate)).returning();
+    return Array.isArray(deleted) ? deleted : [];
+  }
+
+  const deleted = await db
+    .delete(table)
+    .where(
+      and(
+        lt(dateColumn, thresholdDate),
+        notInArray(table.id, keepIds)
+      )
+    )
+    .returning();
+  return Array.isArray(deleted) ? deleted : [];
+}
+
+/**
  * Runs the monthly operational cleanup routine.
- * Purges operational and historical logs older than the first day of the month two months prior.
+ * Purges operational and historical logs older than the first day of the month two months prior,
+ * while preserving the newest 50 records per log table as a safety/context buffer.
  */
 export async function runMonthlyOperationalCleanup() {
   const now = new Date();
   // Calculate the first day of the month two months prior (e.g. if Aug 15, then June 1st)
   const firstDayTwoMonthsPrior = new Date(now.getFullYear(), now.getMonth() - 2, 1);
 
-  console.log(`[Operational Cleanup] Running monthly operational cleanup. Threshold date (first day of two months prior): ${firstDayTwoMonthsPrior.toISOString()}`);
+  console.log(`[Operational Cleanup] Running monthly operational cleanup. Threshold date (first day of two months prior): ${firstDayTwoMonthsPrior.toISOString()} (preserving top 50 newest logs)`);
 
-  // 1. inventoryReservations: createdAt < firstDayTwoMonthsPrior
-  const deletedInventoryReservations = await db
-    .delete(inventoryReservations)
-    .where(lt(inventoryReservations.createdAt, firstDayTwoMonthsPrior))
-    .returning();
+  // 1. inventoryReservations: createdAt < firstDayTwoMonthsPrior (keep top 50)
+  const deletedInventoryReservations = await purgeTableWithRetentionBuffer(inventoryReservations, inventoryReservations.createdAt, firstDayTwoMonthsPrior, 50);
 
-  // 2. recentlyViewed: createdAt < firstDayTwoMonthsPrior
-  const deletedRecentlyViewed = await db
-    .delete(recentlyViewed)
-    .where(lt(recentlyViewed.createdAt, firstDayTwoMonthsPrior))
-    .returning();
+  // 2. recentlyViewed: createdAt < firstDayTwoMonthsPrior (keep top 50)
+  const deletedRecentlyViewed = await purgeTableWithRetentionBuffer(recentlyViewed, recentlyViewed.createdAt, firstDayTwoMonthsPrior, 50);
 
-  // 3. searchLogs: createdAt < firstDayTwoMonthsPrior
-  const deletedSearchLogs = await db
-    .delete(searchLogs)
-    .where(lt(searchLogs.createdAt, firstDayTwoMonthsPrior))
-    .returning();
+  // 3. searchLogs: createdAt < firstDayTwoMonthsPrior (keep top 50)
+  const deletedSearchLogs = await purgeTableWithRetentionBuffer(searchLogs, searchLogs.createdAt, firstDayTwoMonthsPrior, 50);
 
-  // 4. emailLogs: sentAt < firstDayTwoMonthsPrior
-  const deletedEmailLogs = await db
-    .delete(emailLogs)
-    .where(lt(emailLogs.sentAt, firstDayTwoMonthsPrior))
-    .returning();
+  // 4. emailLogs: sentAt < firstDayTwoMonthsPrior (keep top 50)
+  const deletedEmailLogs = await purgeTableWithRetentionBuffer(emailLogs, emailLogs.sentAt, firstDayTwoMonthsPrior, 50);
 
-  // 5. notifications: createdAt < firstDayTwoMonthsPrior
-  const deletedNotifications = await db
-    .delete(notifications)
-    .where(lt(notifications.createdAt, firstDayTwoMonthsPrior))
-    .returning();
+  // 5. notifications: createdAt < firstDayTwoMonthsPrior (keep top 50)
+  const deletedNotifications = await purgeTableWithRetentionBuffer(notifications, notifications.createdAt, firstDayTwoMonthsPrior, 50);
 
-  // 6. userAuditLogs: createdAt < firstDayTwoMonthsPrior
-  const deletedUserAuditLogs = await db
-    .delete(userAuditLogs)
-    .where(lt(userAuditLogs.createdAt, firstDayTwoMonthsPrior))
-    .returning();
+  // 6. userAuditLogs: createdAt < firstDayTwoMonthsPrior (keep top 50)
+  const deletedUserAuditLogs = await purgeTableWithRetentionBuffer(userAuditLogs, userAuditLogs.createdAt, firstDayTwoMonthsPrior, 50);
 
-  // 7. adminAuditLogs: timestamp < firstDayTwoMonthsPrior
-  const deletedAdminAuditLogs = await db
-    .delete(adminAuditLogs)
-    .where(lt(adminAuditLogs.timestamp, firstDayTwoMonthsPrior))
-    .returning();
+  // 7. adminAuditLogs: timestamp < firstDayTwoMonthsPrior (keep top 50)
+  const deletedAdminAuditLogs = await purgeTableWithRetentionBuffer(adminAuditLogs, adminAuditLogs.timestamp, firstDayTwoMonthsPrior, 50);
 
   const results = {
     inventoryReservations: deletedInventoryReservations.length,

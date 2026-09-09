@@ -18,7 +18,7 @@ export interface ShippingPolicySettings {
   adminCanEditAfterAwb: boolean;
   autoRegenerateAwb: boolean;
   shippingPaymentMode: 'razorpay' | 'offline' | 'absorb';
-  shippingRefundMode: 'refund' | 'store_credit' | 'ignore' | 'manual';
+  shippingRefundMode: 'refund' | 'ignore' | 'manual';
 }
 
 /**
@@ -218,9 +218,6 @@ export async function recalculateShippingForOrder(
     if (settings.shippingRefundMode === "refund") {
       shippingDifferenceStatus = "refunded";
       totalAmountAdjustment = difference;
-    } else if (settings.shippingRefundMode === "store_credit") {
-      shippingDifferenceStatus = "store_credit";
-      totalAmountAdjustment = 0;
     } else if (settings.shippingRefundMode === "manual") {
       shippingDifferenceStatus = "manual_review";
       totalAmountAdjustment = 0;
@@ -292,24 +289,41 @@ export async function checkAddressLockStatus(
 export async function validatePincodeServiceability(pincode: string): Promise<{
   serviceable: boolean;
   message?: string;
+  fallbackUsed?: boolean;
 }> {
   const cleanPincode = pincode.trim().replace(/\s+/g, "");
   if (!cleanPincode || cleanPincode.length < 5) {
     return { serviceable: false, message: "Invalid or incomplete pincode." };
   }
 
+  const settings = await getShippingSettings();
+
   try {
     const provider = getShippingProvider("delhivery");
     const res = await provider.checkServiceability({
       pincode: cleanPincode,
     });
+
+    if (res.isServiceable) {
+      return { serviceable: true };
+    }
+
+    // Pincode is unserviceable by Delhivery
+    if (settings.shippingFallbackMode === "default_charges") {
+      return {
+        serviceable: true,
+        fallbackUsed: true,
+        message: "Serviced via Standard Shipping (Default Charges)",
+      };
+    }
+
     return {
-      serviceable: res.isServiceable,
-      message: res.isServiceable ? undefined : (res.remarks || "Pincode is not serviceable by courier partner."),
+      serviceable: false,
+      message: res.remarks || "Pincode is not serviceable by courier partner.",
     };
   } catch (err: any) {
     console.warn("Serviceability check exception, assuming serviceable for fallback:", err);
-    return { serviceable: true };
+    return { serviceable: true, fallbackUsed: true };
   }
 }
 

@@ -24,6 +24,7 @@ import {
   ChevronRight
 } from "lucide-react";
 import { useDebounce } from "@/lib/hooks/use-debounce";
+import { AuditLogsInfoIcon } from "@/components/admin/audit-logs-info";
 
 interface InventoryItem {
   id: string;
@@ -669,10 +670,13 @@ export default function AdminInventoryPage() {
       {/* Main Adjustment Audit Logs View */}
       {activeTab === "logs" && (
         <div className="bg-card border border-border/40 rounded-2xl shadow-sm overflow-hidden">
-          <div className="p-4 bg-secondary/20 border-b border-border/40">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
-              Recent Warehouse Adjustments Ledger
-            </span>
+          <div className="p-4 bg-secondary/20 border-b border-border/40 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                Recent Warehouse Adjustments Ledger
+              </span>
+              <AuditLogsInfoIcon />
+            </div>
           </div>
 
           {isLogsLoading ? (

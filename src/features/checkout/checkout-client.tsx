@@ -420,7 +420,9 @@ export default function CheckoutClient() {
             setPincodeServiceability({
               checking: false,
               isServiceable: true,
-              message: `Serviceable via ${data.courierName || "Delhivery"} (${data.estimatedDays || "4–5 days"})`,
+              message: data.isFallback 
+                ? `Standard Shipping (${data.estimatedDays || "5–7 days"})`
+                : `Serviceable via ${data.courierName || "Delhivery"} (${data.estimatedDays || "4–5 days"})`,
               tatDays: data.tatDays,
               dateStr: data.dateStr,
               standardFeeRupees: data.standardShippingFeeRupees,

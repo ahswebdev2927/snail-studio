@@ -15,7 +15,7 @@ export default function ShippingSettingsPage() {
   const [ignoreShippingDifference, setIgnoreShippingDifference] = useState(true);
   const [ignoreDifferenceAmount, setIgnoreDifferenceAmount] = useState("50");
   const [shippingPaymentMode, setShippingPaymentMode] = useState<"razorpay" | "offline" | "absorb">("razorpay");
-  const [shippingRefundMode, setShippingRefundMode] = useState<"refund" | "store_credit" | "ignore" | "manual">("ignore");
+  const [shippingRefundMode, setShippingRefundMode] = useState<"refund" | "ignore" | "manual">("ignore");
 
   const [customerAddressEditUntil, setCustomerAddressEditUntil] = useState<"pending" | "paid" | "confirmed" | "processing" | "never">("processing");
   const [adminCanEditAfterAwb, setAdminCanEditAfterAwb] = useState(false);
@@ -417,7 +417,6 @@ export default function ShippingSettingsPage() {
                       >
                         <option value="ignore">Ignore Difference (Store absorbs)</option>
                         <option value="refund">Automatic Refund to Source</option>
-                        <option value="store_credit">Convert to Customer Store Credit</option>
                         <option value="manual">Flag for Manual Admin Decision</option>
                       </select>
                     </div>

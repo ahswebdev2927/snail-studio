@@ -14,6 +14,7 @@ import {
   ArrowRight,
   Info
 } from "lucide-react";
+import { AuditLogsInfoIcon } from "@/components/admin/audit-logs-info";
 
 interface AuditLog {
   id: string;
@@ -282,7 +283,10 @@ export default function AdminAuditLogsPage() {
       {/* Premium Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-6 bg-card border border-border/40 rounded-3xl shadow-sm">
         <div className="space-y-1">
-          <h1 className="font-serif text-2xl font-normal text-foreground">Product Audit Trail</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="font-serif text-2xl font-normal text-foreground">Product Audit Trail</h1>
+            <AuditLogsInfoIcon />
+          </div>
           <p className="text-xs text-muted-foreground font-light">
             Monitor product edits, variant modifications, inventory adjustments, and catalog status logs.
           </p>
