@@ -174,6 +174,52 @@ export function AdminReturnRequestCard({ request, onRefresh }: AdminReturnReques
     }
   };
 
+  const handleCreateRepl = async () => {
+    setErrorMessage(null);
+    setIsSubmitting(true);
+    try {
+      const res = await fetch(`/api/admin/returns/${request.id}/create-repl`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setErrorMessage(data.error || "Failed to create REPL exchange shipment");
+        return;
+      }
+
+      if (onRefresh) onRefresh();
+    } catch (err: any) {
+      setErrorMessage(err.message || "An error occurred while creating REPL shipment");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleCompleteReplacement = async () => {
+    setErrorMessage(null);
+    setIsSubmitting(true);
+    try {
+      const res = await fetch(`/api/admin/returns/${request.id}/complete-replacement`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setErrorMessage(data.error || "Failed to complete replacement request");
+        return;
+      }
+
+      if (onRefresh) onRefresh();
+    } catch (err: any) {
+      setErrorMessage(err.message || "An error occurred while completing replacement");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleApprove = async () => {
     setErrorMessage(null);
     if (!paymentResponsibility) {
@@ -373,18 +419,21 @@ export function AdminReturnRequestCard({ request, onRefresh }: AdminReturnReques
           </div>
         </div>
 
-        {/* Reverse Pickup / Logistics Info if waybill exists or processing */}
+        {/* Reverse Pickup / REPL Exchange Logistics Info if waybill exists */}
         {request.waybill && (
-          <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-2xl space-y-2 mt-4">
-            <div className="flex items-center justify-between text-[11px] text-blue-300 font-bold uppercase tracking-wider">
+          <div className="p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl space-y-2 mt-4">
+            <div className="flex items-center justify-between text-[11px] text-indigo-300 font-bold uppercase tracking-wider">
               <span className="flex items-center gap-1.5">
-                <Truck className="w-3.5 h-3.5 text-blue-400" /> Reverse Pickup Shipment
+                <Truck className="w-3.5 h-3.5 text-indigo-400" />
+                {request.type === "REPLACEMENT" ? "Delhivery REPL Exchange (Single AWB)" : "Reverse Pickup Shipment"}
               </span>
-              <span className="font-mono text-xs text-blue-200">AWB: {request.waybill}</span>
+              <span className="font-mono text-xs text-indigo-200">AWB: {request.waybill}</span>
             </div>
 
             <div className="flex items-center justify-between pt-1">
-              <p className="text-xs text-muted-foreground">Provider: <span className="font-semibold text-foreground">Delhivery (Pickup)</span></p>
+              <p className="text-xs text-muted-foreground">
+                Provider: <span className="font-semibold text-foreground">Delhivery ({request.type === "REPLACEMENT" ? "REPL" : "Pickup"})</span>
+              </p>
               {request.trackingUrl && (
                 <a
                   href={request.trackingUrl}
@@ -392,7 +441,7 @@ export function AdminReturnRequestCard({ request, onRefresh }: AdminReturnReques
                   rel="noopener noreferrer"
                   className="text-xs font-semibold text-primary hover:underline flex items-center gap-1"
                 >
-                  Track Reverse Shipment <ExternalLink className="w-3 h-3" />
+                  Track {request.type === "REPLACEMENT" ? "Exchange" : "Reverse"} Shipment <ExternalLink className="w-3 h-3" />
                 </a>
               )}
             </div>
@@ -495,6 +544,49 @@ export function AdminReturnRequestCard({ request, onRefresh }: AdminReturnReques
               <CheckCircle2 className="w-4 h-4" />
             )}
             <span>Mark Return Received (Complete Request)</span>
+          </button>
+        </div>
+      )}
+
+      {/* Phase V3-20: Create Delhivery REPL Exchange Action for Approved Replacements */}
+      {isApproved && request.type === "REPLACEMENT" && !request.waybill && (
+        <div className="mt-6 pt-5 border-t border-border/40 space-y-3">
+          {isCustomerPaymentPending && (
+            <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-300 text-xs flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>Customer payment is PENDING. Record payment before creating REPL exchange shipment.</span>
+            </div>
+          )}
+
+          <button
+            onClick={handleCreateRepl}
+            disabled={isSubmitting || isCustomerPaymentPending}
+            className="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-xl shadow-sm transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+          >
+            {isSubmitting ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <RefreshCw className="w-4 h-4" />
+            )}
+            <span>Create Delhivery REPL Exchange Shipment</span>
+          </button>
+        </div>
+      )}
+
+      {/* Phase V3-20: Mark Replacement Completed Action for Processing Replacements */}
+      {isProcessing && request.type === "REPLACEMENT" && (
+        <div className="mt-6 pt-5 border-t border-border/40 space-y-3">
+          <button
+            onClick={handleCompleteReplacement}
+            disabled={isSubmitting}
+            className="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-xl shadow-sm transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+          >
+            {isSubmitting ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <CheckCircle2 className="w-4 h-4" />
+            )}
+            <span>Mark Replacement Completed</span>
           </button>
         </div>
       )}

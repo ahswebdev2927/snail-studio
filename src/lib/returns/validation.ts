@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { orders, orderItems, returnRequests, productVariants } from "@/db/schema";
+import { orders, orderItems, returnRequests, productVariants, products, inventoryItems } from "@/db/schema";
 import { eq, and, inArray } from "drizzle-orm";
 import { ReturnRequestType, CreateReturnRequestInput } from "./types";
 
@@ -99,4 +99,64 @@ export async function validateReturnEligibility(
   }
 
   return { eligible: true, orderItem: item };
+}
+
+export interface ReplacementVariantValidationResult {
+  valid: boolean;
+  error?: string;
+  variant?: any;
+  product?: any;
+}
+
+/**
+ * Validates a replacement variant prior to REPL shipment creation.
+ * Checks product existence, variant active state, and inventory level.
+ */
+export async function validateReplacementVariant(
+  productId: string | null | undefined,
+  variantId: string | null | undefined,
+  requiredQuantity: number = 1
+): Promise<ReplacementVariantValidationResult> {
+  if (!variantId) {
+    return { valid: false, error: "Replacement variant ID is required." };
+  }
+
+  const variant = await db.query.productVariants.findFirst({
+    where: eq(productVariants.id, variantId),
+  });
+
+  if (!variant) {
+    return { valid: false, error: "Replacement variant does not exist." };
+  }
+
+  if (variant.status && variant.status !== "Active") {
+    return { valid: false, error: `Replacement variant is not active (status: ${variant.status}).` };
+  }
+
+  if (productId && variant.productId !== productId) {
+    return { valid: false, error: "Replacement variant does not belong to the specified product." };
+  }
+
+  const product = await db.query.products.findFirst({
+    where: eq(products.id, variant.productId),
+  });
+
+  const inventoryItem = await db.query.inventoryItems.findFirst({
+    where: eq(inventoryItems.variantId, variantId),
+  });
+
+  if (inventoryItem) {
+    if (inventoryItem.stockLevel < requiredQuantity) {
+      return {
+        valid: false,
+        error: `Insufficient inventory for replacement variant '${variant.name}'. Available: ${inventoryItem.stockLevel}, Required: ${requiredQuantity}.`,
+      };
+    }
+  }
+
+  return {
+    valid: true,
+    variant,
+    product,
+  };
 }
