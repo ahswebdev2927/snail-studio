@@ -13,7 +13,8 @@
     "db:migrate": "tsx database/migrate.ts",
     "db:seed": "tsx database/seed.ts",
     "simulate:ndr": "tsx scripts/simulate-ndr.ts",
-    "test": "vitest run src/tests/shipping/"
+    "typecheck": "tsc --noEmit",
+    "test": "npx vitest run src/tests/shipping/"
 
   },
   "dependencies": {

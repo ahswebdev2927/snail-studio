@@ -1,93 +1,91 @@
-import assert from "node:assert";
+import { describe, it, expect } from "vitest";
 
-console.log("Running Phase V3-6 Admin Shipment Operations Unit Tests...");
+describe("Phase V3-6 Admin Shipment Operations Unit Tests", () => {
+  it("should format courier order ID for multi-attempts", () => {
+    const formatCourierOrderId = (orderId: string, attemptNumber: number) => {
+      return attemptNumber > 1 ? `${orderId}-A${attemptNumber}` : orderId;
+    };
 
-// Test 1: Courier Order ID attempt formatting (Attempt #1 = ord_123, Attempt #2 = ord_123-A2)
-const formatCourierOrderId = (orderId: string, attemptNumber: number) => {
-  return attemptNumber > 1 ? `${orderId}-A${attemptNumber}` : orderId;
-};
+    expect(formatCourierOrderId("ORD-9999", 1)).toBe("ORD-9999");
+    expect(formatCourierOrderId("ORD-9999", 2)).toBe("ORD-9999-A2");
+    expect(formatCourierOrderId("ORD-9999", 3)).toBe("ORD-9999-A3");
+  });
 
-assert.strictEqual(formatCourierOrderId("ORD-9999", 1), "ORD-9999");
-assert.strictEqual(formatCourierOrderId("ORD-9999", 2), "ORD-9999-A2");
-assert.strictEqual(formatCourierOrderId("ORD-9999", 3), "ORD-9999-A3");
-console.log("✓ Test 1 Passed: Courier Order ID multi-attempt formatting verified.");
+  it("should match search filters across AWB, order ID, customer name, and pincode", () => {
+    const matchesSearchFilter = (item: {
+      orderId: string;
+      courierOrderId: string;
+      trackingNumber: string;
+      customerName: string;
+      destinationPincode: string;
+    }, query: string) => {
+      const q = query.toLowerCase().trim();
+      if (!q) return true;
+      return (
+        item.orderId.toLowerCase().includes(q) ||
+        item.courierOrderId.toLowerCase().includes(q) ||
+        item.trackingNumber.toLowerCase().includes(q) ||
+        item.customerName.toLowerCase().includes(q) ||
+        item.destinationPincode.includes(q)
+      );
+    };
 
-// Test 2: Search filter matcher for AWB, Order ID, Customer Name, and Pincode
-const matchesSearchFilter = (item: {
-  orderId: string;
-  courierOrderId: string;
-  trackingNumber: string;
-  customerName: string;
-  destinationPincode: string;
-}, query: string) => {
-  const q = query.toLowerCase().trim();
-  if (!q) return true;
-  return (
-    item.orderId.toLowerCase().includes(q) ||
-    item.courierOrderId.toLowerCase().includes(q) ||
-    item.trackingNumber.toLowerCase().includes(q) ||
-    item.customerName.toLowerCase().includes(q) ||
-    item.destinationPincode.includes(q)
-  );
-};
+    const sampleShipment = {
+      orderId: "ORD-501",
+      courierOrderId: "ORD-501-A2",
+      trackingNumber: "DEL123456789",
+      customerName: "Jane Doe",
+      destinationPincode: "500019",
+    };
 
-const sampleShipment = {
-  orderId: "ORD-501",
-  courierOrderId: "ORD-501-A2",
-  trackingNumber: "DEL123456789",
-  customerName: "Jane Doe",
-  destinationPincode: "500019",
-};
+    expect(matchesSearchFilter(sampleShipment, "DEL123")).toBe(true);
+    expect(matchesSearchFilter(sampleShipment, "Jane")).toBe(true);
+    expect(matchesSearchFilter(sampleShipment, "500019")).toBe(true);
+    expect(matchesSearchFilter(sampleShipment, "ORD-501-A2")).toBe(true);
+    expect(matchesSearchFilter(sampleShipment, "NonExistent")).toBe(false);
+  });
 
-assert.strictEqual(matchesSearchFilter(sampleShipment, "DEL123"), true);
-assert.strictEqual(matchesSearchFilter(sampleShipment, "Jane"), true);
-assert.strictEqual(matchesSearchFilter(sampleShipment, "500019"), true);
-assert.strictEqual(matchesSearchFilter(sampleShipment, "ORD-501-A2"), true);
-assert.strictEqual(matchesSearchFilter(sampleShipment, "NonExistent"), false);
-console.log("✓ Test 2 Passed: Admin shipment search filter matcher verified.");
+  it("should validate pickup scheduling payload", () => {
+    const validatePickupPayload = (payload: { pickupDate?: string; packageCount?: number }) => {
+      if (!payload.pickupDate || !/^\d{4}-\d{2}-\d{2}$/.test(payload.pickupDate)) {
+        return { valid: false, error: "Invalid pickup date format (must be YYYY-MM-DD)" };
+      }
+      if (!payload.packageCount || payload.packageCount < 1) {
+        return { valid: false, error: "Package count must be at least 1" };
+      }
+      return { valid: true };
+    };
 
-// Test 3: Pickup schedule payload validator
-const validatePickupPayload = (payload: { pickupDate?: string; packageCount?: number }) => {
-  if (!payload.pickupDate || !/^\d{4}-\d{2}-\d{2}$/.test(payload.pickupDate)) {
-    return { valid: false, error: "Invalid pickup date format (must be YYYY-MM-DD)" };
-  }
-  if (!payload.packageCount || payload.packageCount < 1) {
-    return { valid: false, error: "Package count must be at least 1" };
-  }
-  return { valid: true };
-};
+    expect(validatePickupPayload({ pickupDate: "2026-09-10", packageCount: 5 }).valid).toBe(true);
+    expect(validatePickupPayload({ pickupDate: "invalid", packageCount: 1 }).valid).toBe(false);
+    expect(validatePickupPayload({ pickupDate: "2026-09-10", packageCount: 0 }).valid).toBe(false);
+  });
 
-assert.strictEqual(validatePickupPayload({ pickupDate: "2026-09-10", packageCount: 5 }).valid, true);
-assert.strictEqual(validatePickupPayload({ pickupDate: "invalid", packageCount: 1 }).valid, false);
-assert.strictEqual(validatePickupPayload({ pickupDate: "2026-09-10", packageCount: 0 }).valid, false);
-console.log("✓ Test 3 Passed: Pickup scheduling payload validation verified.");
+  it("should validate external courier tracking URL format", () => {
+    const validateExternalCourierUpdate = (data: { externalCourierName?: string; trackingNumber?: string; externalTrackingUrl?: string }) => {
+      if (data.externalTrackingUrl && data.externalTrackingUrl.length > 0) {
+        try {
+          new URL(data.externalTrackingUrl);
+        } catch {
+          return { valid: false, error: "Invalid tracking URL" };
+        }
+      }
+      return { valid: true };
+    };
 
-// Test 4: External courier update validation
-const validateExternalCourierUpdate = (data: { externalCourierName?: string; trackingNumber?: string; externalTrackingUrl?: string }) => {
-  if (data.externalTrackingUrl && data.externalTrackingUrl.length > 0) {
-    try {
-      new URL(data.externalTrackingUrl);
-    } catch {
-      return { valid: false, error: "Invalid tracking URL" };
-    }
-  }
-  return { valid: true };
-};
+    expect(validateExternalCourierUpdate({ externalTrackingUrl: "https://www.dtdc.in/track/123" }).valid).toBe(true);
+    expect(validateExternalCourierUpdate({ externalTrackingUrl: "not-a-url" }).valid).toBe(false);
+  });
 
-assert.strictEqual(validateExternalCourierUpdate({ externalTrackingUrl: "https://www.dtdc.in/track/123" }).valid, true);
-assert.strictEqual(validateExternalCourierUpdate({ externalTrackingUrl: "not-a-url" }).valid, false);
-console.log("✓ Test 4 Passed: External courier tracking URL validator verified.");
+  it("should classify valid audit log action types", () => {
+    const validAuditActions = ["create", "cancel", "redispatch", "pickup_scheduled", "label_generated", "external_updated"];
+    const isValidAuditAction = (action: string) => validAuditActions.includes(action);
 
-// Test 5: Audit log action type classification
-const validAuditActions = ["create", "cancel", "redispatch", "pickup_scheduled", "label_generated", "external_updated"];
-const isValidAuditAction = (action: string) => validAuditActions.includes(action);
-
-assert.strictEqual(isValidAuditAction("create"), true);
-assert.strictEqual(isValidAuditAction("cancel"), true);
-assert.strictEqual(isValidAuditAction("pickup_scheduled"), true);
-assert.strictEqual(isValidAuditAction("label_generated"), true);
-assert.strictEqual(isValidAuditAction("external_updated"), true);
-assert.strictEqual(isValidAuditAction("unknown_action"), false);
-console.log("✓ Test 5 Passed: Audit log action type classification verified.");
-
-console.log("\nALL PHASE V3-6 ADMIN SHIPMENT OPERATIONS TESTS PASSED SUCCESSFULLY! 🎉");
+    expect(isValidAuditAction("create")).toBe(true);
+    expect(isValidAuditAction("cancel")).toBe(true);
+    expect(isValidAuditAction("pickup_scheduled")).toBe(true);
+    expect(isValidAuditAction("label_generated")).toBe(true);
+    expect(isValidAuditAction("external_updated")).toBe(true);
+    expect(isValidAuditAction("unknown_action")).toBe(false);
+  });
+});

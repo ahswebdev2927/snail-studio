@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { orders, shipments } from "@/db/schema";
 import { eq, or } from "drizzle-orm";
+import { authorize } from "@/middleware/auth";
 
 export async function GET(req: NextRequest) {
   try {
@@ -75,7 +76,24 @@ export async function GET(req: NextRequest) {
         }
       }
 
-      // If both email and phone are empty, but the order ID is queried directly:
+      // If both email and phone are empty, require active session matching order.userId or admin role
+      if (!email && !phone) {
+        const auth = await authorize(req);
+        if (auth.user) {
+          if (auth.user.role !== "admin" && orderRecord.userId !== auth.user.id) {
+            return NextResponse.json(
+              { error: "Forbidden: You are not authorized to view this order." },
+              { status: 403 }
+            );
+          }
+        } else {
+          return NextResponse.json(
+            { error: "Verification required: Please provide email or phone number associated with this order." },
+            { status: 403 }
+          );
+        }
+      }
+
       resolvedOrderId = orderRecord.id;
     } else {
       return NextResponse.json(

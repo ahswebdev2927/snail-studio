@@ -156,6 +156,7 @@ describe("Address Locking, Serviceability & Shipping Adjustment Policy", () => {
       (db.query.orders.findFirst as any).mockResolvedValue({
         id: "ord_123",
         status: "processing",
+        shippingAmount: 0,
         shippingCalculatedAt: new Date(),
         shippingDifferenceStatus: "waived",
         addresses: [{ type: "shipping", postalCode: "400001", city: "Mumbai", state: "Maharashtra" }],

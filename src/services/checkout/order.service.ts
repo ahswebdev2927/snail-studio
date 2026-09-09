@@ -222,7 +222,9 @@ export async function updateOrderStatus(
   status: string,
   notes?: string,
   tx?: any,
-  isLogisticsEvent: boolean = false
+  isLogisticsEvent: boolean = false,
+  adminId?: string,
+  adminName?: string
 ) {
   const client = tx || db;
 
@@ -257,6 +259,20 @@ export async function updateOrderStatus(
     status,
     notes: notes || `Order status transitioned to ${status}.`,
   });
+
+  if (adminId) {
+    await client.insert(shipmentAuditLogs).values({
+      id: `audit_${nanoid(10)}`,
+      orderId,
+      adminId,
+      adminName: adminName || "Admin",
+      action: `ORDER_STATUS_${status.toUpperCase()}`,
+      previousState: orderRecord ? JSON.stringify({ status: orderRecord.status }) : null,
+      newState: JSON.stringify({ status }),
+      notes: notes || `Order status updated to ${status} by ${adminName || "Admin"}`,
+      createdAt: new Date(),
+    });
+  }
 
   if (status === "cancelled") {
     await releaseCouponReservation(orderId, client);

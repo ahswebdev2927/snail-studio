@@ -10,6 +10,7 @@ import {
   checkAddressLockStatus, 
   validatePincodeServiceability 
 } from "@/services/shipping/shipping-policy.service";
+import { logShipmentAudit } from "@/services/shipping/shipment-orchestration.service";
 
 const addressSchema = z.object({
   name: z.string().min(2),
@@ -177,6 +178,17 @@ export async function POST(
         shippingAfter: recalculation.currentShippingCharge,
         difference: recalculation.shippingDifference,
         reason: reason || "Admin updated delivery address prior to shipment",
+      });
+
+      await logShipmentAudit({
+        orderId,
+        adminId: sessionUser.id,
+        adminName: sessionUser.name || sessionUser.phoneNumber || "Admin",
+        action: "ADDRESS_MODIFIED_PRE_AWB",
+        previousState: JSON.parse(oldAddressJson),
+        newState: JSON.parse(newAddressJson),
+        notes: reason || "Admin updated delivery address prior to shipment",
+        txClient: tx,
       });
 
       return {

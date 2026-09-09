@@ -108,7 +108,8 @@ export async function executeCarrierAction(
   exceptionId: string,
   actionType: 'REATTEMPT' | 'DEFER_DLV' | 'EDIT_DETAILS' | 'PICKUP_RESCHEDULE' | 'RTO_REQUESTED',
   adminId: string = "system_admin",
-  payload?: any
+  payload?: any,
+  adminName: string = "Admin"
 ) {
   const exception = await db.query.shipmentExceptions.findFirst({
     where: eq(shipmentExceptions.id, exceptionId),
@@ -179,7 +180,7 @@ export async function executeCarrierAction(
     shipmentId: exception.shipmentId,
     orderId: exception.shipment.orderId,
     adminId,
-    adminName: "Admin User",
+    adminName,
     action: `CARRIER_ACTION_${actionType}`,
     previousState: JSON.stringify({ status: exception.status }),
     newState: JSON.stringify({ status: updatedStatus, reference: providerRes.providerReference }),
@@ -202,7 +203,8 @@ export async function recordCustomerContact(
   exceptionId: string,
   adminId: string,
   customerResponse: string,
-  notes?: string
+  notes?: string,
+  adminName: string = "Admin"
 ) {
   const exception = await db.query.shipmentExceptions.findFirst({
     where: eq(shipmentExceptions.id, exceptionId),
@@ -230,7 +232,7 @@ export async function recordCustomerContact(
     shipmentId: exception.shipmentId,
     orderId: exception.shipment.orderId,
     adminId,
-    adminName: "Admin User",
+    adminName,
     action: "NDR_CUSTOMER_CONTACTED",
     newState: JSON.stringify({ customerResponse, notes }),
     notes: `Recorded customer contact. Response: ${customerResponse}`,
@@ -243,7 +245,12 @@ export async function recordCustomerContact(
 /**
  * Resolves an exception manually in the Admin interface.
  */
-export async function resolveException(exceptionId: string, adminId: string, notes?: string) {
+export async function resolveException(
+  exceptionId: string, 
+  adminId: string, 
+  notes?: string,
+  adminName: string = "Admin"
+) {
   const exception = await db.query.shipmentExceptions.findFirst({
     where: eq(shipmentExceptions.id, exceptionId),
     with: { shipment: true },
@@ -267,7 +274,7 @@ export async function resolveException(exceptionId: string, adminId: string, not
     shipmentId: exception.shipmentId,
     orderId: exception.shipment.orderId,
     adminId,
-    adminName: "Admin User",
+    adminName,
     action: "EXCEPTION_MANUALLY_RESOLVED",
     previousState: JSON.stringify({ status: exception.status }),
     newState: JSON.stringify({ status: "RESOLVED" }),
