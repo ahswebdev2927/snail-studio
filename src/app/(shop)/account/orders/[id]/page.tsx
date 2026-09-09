@@ -24,6 +24,7 @@ import { getSystemSettingsMap } from "@/services/settings";
 import { getSessionUser } from "@/lib/auth/session";
 import { formatPrice } from "@/lib/utils";
 import CustomerOrderActions from "@/components/orders/customer-order-actions";
+import CustomerItemReturnAction from "@/components/orders/customer-item-return-action";
 import { OrderStatusBadge } from "@/components/orders/order-status-badge";
 import { CustomerTrackingTimeline } from "@/components/orders/customer-tracking-timeline";
 import { 
@@ -57,7 +58,7 @@ export default async function OrderDetailsPage({ params }: PageProps) {
     redirect(`/login?callbackUrl=/account/orders/${id}`);
   }
 
-  // Fetch the order with items, variant, product, address, shipments, and statusHistory relations
+  // Fetch the order with items, variant, product, address, shipments, returnRequests, and statusHistory relations
   const orderRecord = await db.query.orders.findFirst({
     where: eq(orders.id, id),
     with: {
@@ -80,6 +81,7 @@ export default async function OrderDetailsPage({ params }: PageProps) {
         },
       },
       addresses: true,
+      returnRequests: true,
       statusHistory: {
         orderBy: (sh, { desc }) => [desc(sh.createdAt)],
       },
@@ -260,10 +262,17 @@ export default async function OrderDetailsPage({ params }: PageProps) {
                       </div>
                     </div>
                     
-                    <div className="text-right shrink-0">
-                      <span className="text-xs font-semibold text-foreground">
+                    <div className="text-right shrink-0 space-y-1.5">
+                      <span className="text-xs font-semibold text-foreground block">
                         {formatPrice((item.price - item.discount) * item.quantity)}
                       </span>
+                      <CustomerItemReturnAction
+                        orderId={orderRecord.id}
+                        orderStatus={orderRecord.status}
+                        orderItem={item}
+                        returnRequests={orderRecord.returnRequests || []}
+                        orderDeliveredAt={shipment?.updatedAt || orderRecord.updatedAt}
+                      />
                     </div>
                   </div>
                 );

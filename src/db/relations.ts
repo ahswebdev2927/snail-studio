@@ -274,10 +274,11 @@ export const ordersRelations = relations(schema.orders, ({ one, many }) => ({
   shipments: many(schema.shipments),
   statusHistory: many(schema.orderStatusHistory),
   couponUsages: many(schema.couponUsage),
-  addressHistory: many(schema.orderAddressHistory)
+  addressHistory: many(schema.orderAddressHistory),
+  returnRequests: many(schema.returnRequests)
 }));
 
-export const orderItemsRelations = relations(schema.orderItems, ({ one }) => ({
+export const orderItemsRelations = relations(schema.orderItems, ({ one, many }) => ({
   order: one(schema.orders, {
     fields: [schema.orderItems.orderId],
     references: [schema.orders.id]
@@ -285,7 +286,8 @@ export const orderItemsRelations = relations(schema.orderItems, ({ one }) => ({
   variant: one(schema.productVariants, {
     fields: [schema.orderItems.variantId],
     references: [schema.productVariants.id]
-  })
+  }),
+  returnRequests: many(schema.returnRequests)
 }));
 
 export const orderAddressesRelations = relations(schema.orderAddresses, ({ one }) => ({
@@ -499,6 +501,35 @@ export const ndrActionsRelations = relations(schema.ndrActions, ({ one }) => ({
   exception: one(schema.shipmentExceptions, {
     fields: [schema.ndrActions.shipmentExceptionId],
     references: [schema.shipmentExceptions.id]
+  })
+}));
+
+export const returnRequestsRelations = relations(schema.returnRequests, ({ one }) => ({
+  order: one(schema.orders, {
+    fields: [schema.returnRequests.orderId],
+    references: [schema.orders.id]
+  }),
+  orderItem: one(schema.orderItems, {
+    fields: [schema.returnRequests.orderItemId],
+    references: [schema.orderItems.id]
+  }),
+  customer: one(schema.users, {
+    fields: [schema.returnRequests.customerId],
+    references: [schema.users.id],
+    relationName: 'returnCustomer'
+  }),
+  reviewer: one(schema.users, {
+    fields: [schema.returnRequests.reviewedBy],
+    references: [schema.users.id],
+    relationName: 'returnReviewer'
+  }),
+  replacementProduct: one(schema.products, {
+    fields: [schema.returnRequests.replacementProductId],
+    references: [schema.products.id]
+  }),
+  replacementVariant: one(schema.productVariants, {
+    fields: [schema.returnRequests.replacementVariantId],
+    references: [schema.productVariants.id]
   })
 }));
 

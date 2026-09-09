@@ -1,7 +1,7 @@
 import { sqliteTable, text, integer, index, uniqueIndex } from 'drizzle-orm/sqlite-core';
 import { sql } from 'drizzle-orm';
 import { users } from './auth';
-import { productVariants } from './catalog';
+import { products, productVariants } from './catalog';
 
 export const orders = sqliteTable('orders', {
   id: text('id').primaryKey(),
@@ -217,6 +217,45 @@ export const ndrActions = sqliteTable('ndr_actions', {
 }, (table) => [
   index('ndr_actions_exception_id_idx').on(table.shipmentExceptionId),
   index('ndr_actions_action_type_idx').on(table.actionType),
+]);
+
+export const returnRequests = sqliteTable('return_requests', {
+  id: text('id').primaryKey(),
+  orderId: text('order_id').notNull().references(() => orders.id, { onDelete: 'cascade' }),
+  orderItemId: text('order_item_id').notNull().references(() => orderItems.id, { onDelete: 'cascade' }),
+  customerId: text('customer_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  type: text('type', { enum: ['RETURN', 'REPLACEMENT'] }).notNull(),
+  reason: text('reason', {
+    enum: ['Damaged', 'Defective', 'Wrong Item', 'Wrong Size', 'Change of Mind', 'Different Preference', 'Other']
+  }).notNull(),
+  customerNotes: text('customer_notes'),
+  status: text('status', {
+    enum: ['PENDING_REVIEW', 'APPROVED', 'REJECTED', 'PROCESSING', 'COMPLETED', 'CANCELLED']
+  }).notNull().default('PENDING_REVIEW'),
+  adminNotes: text('admin_notes'),
+  replacementProductId: text('replacement_product_id').references(() => products.id, { onDelete: 'set null' }),
+  replacementVariantId: text('replacement_variant_id').references(() => productVariants.id, { onDelete: 'set null' }),
+  waybill: text('waybill'),
+  trackingUrl: text('tracking_url'),
+  reviewedBy: text('reviewed_by').references(() => users.id, { onDelete: 'set null' }),
+  reviewedAt: integer('reviewed_at', { mode: 'timestamp' }),
+  paymentResponsibility: text('payment_responsibility', {
+    enum: ['NONE', 'CUSTOMER_PAYS', 'STORE_PAYS']
+  }).notNull().default('NONE'),
+  paymentAmount: integer('payment_amount').notNull().default(0),
+  paymentStatus: text('payment_status', {
+    enum: ['NOT_REQUIRED', 'PENDING', 'PAID']
+  }).notNull().default('NOT_REQUIRED'),
+  paymentMethod: text('payment_method'),
+  paymentReference: text('payment_reference'),
+  paymentNotes: text('payment_notes'),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)
+}, (table) => [
+  index('return_requests_order_id_idx').on(table.orderId),
+  index('return_requests_customer_id_idx').on(table.customerId),
+  index('return_requests_status_idx').on(table.status),
+  index('return_requests_created_at_idx').on(table.createdAt),
 ]);
 
 
