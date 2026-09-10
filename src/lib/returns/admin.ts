@@ -4,6 +4,12 @@ import { eq } from "drizzle-orm";
 import { PaymentResponsibility } from "./types";
 import { SessionUser } from "@/lib/auth/session";
 import { nanoid } from "nanoid";
+import {
+  notifyReturnApproved,
+  notifyReplacementApproved,
+  notifyReturnRejected,
+  notifyReplacementRejected,
+} from "./notifications";
 
 export interface ReviewReturnRequestOptions {
   requestId: string;
@@ -71,13 +77,15 @@ export async function reviewReturnRequest(
 
     await db.update(returnRequests).set(updates).where(eq(returnRequests.id, requestId));
 
+    const auditAction = existing.type === "REPLACEMENT" ? "REPLACEMENT_APPROVED" : "RETURN_APPROVED";
+
     await db.insert(shipmentAuditLogs).values({
       id: `log_${nanoid(12)}`,
       shipmentId: null,
       orderId: existing.orderId,
       adminId: adminUser.id,
       adminName: adminUser.name || adminUser.phoneNumber || "Admin",
-      action: "RETURN_APPROVED",
+      action: auditAction,
       previousState: JSON.stringify({
         status: existing.status,
         paymentResponsibility: existing.paymentResponsibility,
@@ -87,8 +95,21 @@ export async function reviewReturnRequest(
         paymentResponsibility: updates.paymentResponsibility,
         adminNotes: updates.adminNotes,
       }),
-      notes: updates.adminNotes || `Return request approved with payment responsibility: ${paymentResponsibility}`,
+      notes: updates.adminNotes || `${existing.type === "REPLACEMENT" ? "Replacement" : "Return"} request approved with payment responsibility: ${paymentResponsibility}`,
     });
+
+    // Trigger Notification
+    const payload = {
+      id: existing.id,
+      orderId: existing.orderId,
+      customerId: existing.customerId,
+      paymentResponsibility: updates.paymentResponsibility,
+    };
+    if (existing.type === "REPLACEMENT") {
+      await notifyReplacementApproved(payload);
+    } else {
+      await notifyReturnApproved(payload);
+    }
 
     return {
       success: true,
@@ -117,13 +138,15 @@ export async function reviewReturnRequest(
 
     await db.update(returnRequests).set(updates).where(eq(returnRequests.id, requestId));
 
+    const auditAction = existing.type === "REPLACEMENT" ? "REPLACEMENT_REJECTED" : "RETURN_REJECTED";
+
     await db.insert(shipmentAuditLogs).values({
       id: `log_${nanoid(12)}`,
       shipmentId: null,
       orderId: existing.orderId,
       adminId: adminUser.id,
       adminName: adminUser.name || adminUser.phoneNumber || "Admin",
-      action: "RETURN_REJECTED",
+      action: auditAction,
       previousState: JSON.stringify({
         status: existing.status,
       }),
@@ -133,6 +156,19 @@ export async function reviewReturnRequest(
       }),
       notes: updates.adminNotes,
     });
+
+    // Trigger Notification
+    const payload = {
+      id: existing.id,
+      orderId: existing.orderId,
+      customerId: existing.customerId,
+      adminNotes: updates.adminNotes,
+    };
+    if (existing.type === "REPLACEMENT") {
+      await notifyReplacementRejected(payload);
+    } else {
+      await notifyReturnRejected(payload);
+    }
 
     return {
       success: true,

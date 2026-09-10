@@ -5,6 +5,10 @@ import { SessionUser } from "@/lib/auth/session";
 import { createDelhiveryREPL } from "@/lib/shipping/providers/delhivery/repl";
 import { validateReplacementVariant } from "./validation";
 import { nanoid } from "nanoid";
+import {
+  notifyReplacementShipped,
+  notifyReplacementDelivered,
+} from "./notifications";
 
 export interface CreateReplacementReplShipmentOptions {
   requestId: string;
@@ -201,6 +205,14 @@ export async function createReplacementReplShipment(
     notes: `Delhivery REPL exchange shipment created. Single AWB: ${replResult.waybill}`,
   });
 
+  // 11. Trigger Notification
+  await notifyReplacementShipped({
+    id: existing.id,
+    orderId: existing.orderId,
+    customerId: existing.customerId,
+    waybill: replResult.waybill,
+  });
+
   return {
     success: true,
     waybill: replResult.waybill,
@@ -258,6 +270,13 @@ export async function markReplacementCompleted(
       status: updates.status,
     }),
     notes: `Replacement exchange completed. Request status updated to COMPLETED.`,
+  });
+
+  // Trigger Notification
+  await notifyReplacementDelivered({
+    id: existing.id,
+    orderId: existing.orderId,
+    customerId: existing.customerId,
   });
 
   return {

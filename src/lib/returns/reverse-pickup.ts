@@ -4,6 +4,11 @@ import { eq, and } from "drizzle-orm";
 import { SessionUser } from "@/lib/auth/session";
 import { createDelhiveryReversePickup } from "@/lib/shipping/providers/delhivery/reverse-pickup";
 import { nanoid } from "nanoid";
+import {
+  notifyReturnPickupCreated,
+  notifyReturnReceived,
+  notifyReturnCompleted,
+} from "./notifications";
 
 export interface CreateReturnReversePickupOptions {
   requestId: string;
@@ -193,6 +198,14 @@ export async function createReturnReversePickup(
     notes: `Reverse pickup created via Delhivery. AWB: ${pickupResult.waybill}`,
   });
 
+  // 10. Trigger Notification
+  await notifyReturnPickupCreated({
+    id: existing.id,
+    orderId: existing.orderId,
+    customerId: existing.customerId,
+    waybill: pickupResult.waybill,
+  });
+
   return {
     success: true,
     waybill: pickupResult.waybill,
@@ -236,6 +249,7 @@ export async function markReturnReceived(
 
   await db.update(returnRequests).set(updates).where(eq(returnRequests.id, requestId));
 
+  // Insert RETURN_RECEIVED audit log
   await db.insert(shipmentAuditLogs).values({
     id: `log_${nanoid(12)}`,
     shipmentId: null,
@@ -249,7 +263,37 @@ export async function markReturnReceived(
     newState: JSON.stringify({
       status: updates.status,
     }),
-    notes: `Returned item received at warehouse. Return request status updated to COMPLETED.`,
+    notes: `Returned item received at warehouse.`,
+  });
+
+  // Insert RETURN_COMPLETED audit log
+  await db.insert(shipmentAuditLogs).values({
+    id: `log_${nanoid(12)}`,
+    shipmentId: null,
+    orderId: existing.orderId,
+    adminId: adminUser.id,
+    adminName: adminUser.name || adminUser.phoneNumber || "Admin",
+    action: "RETURN_COMPLETED",
+    previousState: JSON.stringify({
+      status: existing.status,
+    }),
+    newState: JSON.stringify({
+      status: updates.status,
+    }),
+    notes: `Return request status updated to COMPLETED.`,
+  });
+
+  // Trigger Notifications
+  await notifyReturnReceived({
+    id: existing.id,
+    orderId: existing.orderId,
+    customerId: existing.customerId,
+  });
+
+  await notifyReturnCompleted({
+    id: existing.id,
+    orderId: existing.orderId,
+    customerId: existing.customerId,
   });
 
   return {

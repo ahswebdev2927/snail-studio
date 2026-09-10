@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { returnRequests, productVariants } from "@/db/schema";
+import { returnRequests, productVariants, shipmentAuditLogs } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { authorize } from "@/middleware/auth";
 import { nanoid } from "nanoid";
 import { createReturnRequestSchema } from "@/lib/returns/types";
 import { validateReturnEligibility } from "@/lib/returns/validation";
+import {
+  notifyReturnRequestReceived,
+  notifyReplacementRequestReceived,
+} from "@/lib/returns/notifications";
 
 /**
  * POST /api/orders/[id]/return-request
@@ -79,6 +83,39 @@ export async function POST(
     };
 
     await db.insert(returnRequests).values(newRequest);
+
+    // Audit Log Entry
+    const auditAction = input.type === "REPLACEMENT" ? "REPLACEMENT_REQUEST_CREATED" : "RETURN_REQUEST_CREATED";
+    await db.insert(shipmentAuditLogs).values({
+      id: `log_${nanoid(12)}`,
+      shipmentId: null,
+      orderId,
+      adminId: auth.user.id,
+      adminName: auth.user.name || auth.user.phoneNumber || "Customer",
+      action: auditAction,
+      previousState: null,
+      newState: JSON.stringify({
+        requestId,
+        type: input.type,
+        reason: input.reason,
+        status: newRequest.status,
+      }),
+      notes: `${input.type === "REPLACEMENT" ? "Replacement" : "Return"} request submitted by customer.`,
+    });
+
+    // Notification Trigger
+    const notifPayload = {
+      id: requestId,
+      orderId,
+      customerId: auth.user.id,
+      reason: input.reason,
+    };
+
+    if (input.type === "REPLACEMENT") {
+      await notifyReplacementRequestReceived(notifPayload);
+    } else {
+      await notifyReturnRequestReceived(notifPayload);
+    }
 
     return NextResponse.json({
       success: true,
