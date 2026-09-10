@@ -25,6 +25,7 @@ import {
 import { useDebounce } from "@/lib/hooks/use-debounce";
 import { ServiceabilityCheckerModal } from "@/components/admin/shipments/serviceability-checker-modal";
 import { SchedulePickupModal } from "@/components/admin/shipments/schedule-pickup-modal";
+import { AddToActivePickupModal } from "@/components/admin/shipments/add-to-active-pickup-modal";
 import { ShipmentDetailDrawer } from "@/components/admin/shipments/shipment-detail-drawer";
 import { ShipmentDispatchModal } from "@/components/admin/orders/shipment-dispatch-modal";
 
@@ -80,6 +81,7 @@ export default function AdminShipmentsPage() {
   // Modal / Drawer State
   const [serviceabilityModalOpen, setServiceabilityModalOpen] = useState(false);
   const [pickupModalOpen, setPickupModalOpen] = useState(false);
+  const [addToActiveModalOpen, setAddToActiveModalOpen] = useState(false);
   const [selectedShipmentId, setSelectedShipmentId] = useState<string | null>(null);
   const [detailDrawerOpen, setDetailDrawerOpen] = useState(false);
 
@@ -90,12 +92,32 @@ export default function AdminShipmentsPage() {
   const [dispatchModalOpen, setDispatchModalOpen] = useState(false);
   const [dispatchOrderId, setDispatchOrderId] = useState<string | null>(null);
 
-  // Live Exception Metrics State
+  // Live Exception Metrics & Active Pickup State
   const [exceptionMetrics, setExceptionMetrics] = useState({ ndrCount: 0, pickupCount: 0, rtoCount: 0 });
+  const [hasActivePickup, setHasActivePickup] = useState(false);
+  const [activePickupInfo, setActivePickupInfo] = useState<any>(null);
 
   useEffect(() => {
     fetchExceptionMetrics();
+    checkActivePickup();
   }, []);
+
+  const checkActivePickup = async () => {
+    try {
+      const res = await fetch("/api/admin/shipments/pickup");
+      if (res.ok) {
+        const data = await res.json();
+        setHasActivePickup(Boolean(data.activePickupExists));
+        if (data.activePickupExists) {
+          setActivePickupInfo(data.latestPickup);
+        } else {
+          setActivePickupInfo(null);
+        }
+      }
+    } catch (err) {
+      console.error("Error checking active pickup:", err);
+    }
+  };
 
   const fetchExceptionMetrics = async () => {
     try {
@@ -114,7 +136,7 @@ export default function AdminShipmentsPage() {
 
   // Ready to pickup shipments eligible for batch pickup
   const readyToPickupShipments = shipments.filter(
-    (s) => (s.status === "ready_to_pickup" || s.status === "manifested") && s.provider === "delhivery"
+    (s) => (s.status === "ready_to_ship" || s.status === "ready_to_pickup" || s.status === "manifested") && s.provider === "delhivery"
   );
 
   const isAllReadySelected =
@@ -147,9 +169,10 @@ export default function AdminShipmentsPage() {
     }
   }, []);
 
-  // Reset page when queries change
+  // Reset page & clear multi-selections when queries change
   useEffect(() => {
     setCurrentPage(1);
+    setSelectedShipmentIds([]);
   }, [
     debouncedQuery,
     statusFilter,
@@ -253,11 +276,39 @@ export default function AdminShipmentsPage() {
           </button>
 
           <button
-            onClick={() => setPickupModalOpen(true)}
-            className="px-4.5 py-2.5 bg-primary text-primary-foreground hover:bg-primary/95 rounded-xl text-xs font-semibold shadow-sm transition flex items-center space-x-2 cursor-pointer"
+            disabled={!(selectedShipmentIds.length > 0 || hasActivePickup)}
+            onClick={() => {
+              if (hasActivePickup && selectedShipmentIds.length > 0) {
+                setAddToActiveModalOpen(true);
+              } else {
+                setPickupModalOpen(true);
+              }
+            }}
+            title={
+              selectedShipmentIds.length > 0
+                ? hasActivePickup
+                  ? `Add ${selectedShipmentIds.length} parcel(s) to active pickup request`
+                  : `Schedule pickup for ${selectedShipmentIds.length} selected parcel(s)`
+                : hasActivePickup
+                ? "View active pickup request / unlock for new pickup"
+                : "Select ready-to-ship shipment(s) to schedule pickup"
+            }
+            className={`px-4.5 py-2.5 rounded-xl text-xs font-semibold shadow-sm transition flex items-center space-x-2 ${
+              selectedShipmentIds.length > 0 || hasActivePickup
+                ? "bg-primary text-primary-foreground hover:bg-primary/95 cursor-pointer"
+                : "bg-primary/40 text-primary-foreground/50 cursor-not-allowed opacity-50"
+            }`}
           >
             <Calendar className="w-4 h-4" />
-            <span>Schedule Pickup</span>
+            <span>
+              {hasActivePickup && selectedShipmentIds.length > 0
+                ? `Add to Active Pickup Request (${selectedShipmentIds.length})`
+                : hasActivePickup
+                ? "Add to Active Pickup Request"
+                : selectedShipmentIds.length > 0
+                ? `Schedule Pickup (${selectedShipmentIds.length})`
+                : "Schedule Pickup"}
+            </span>
           </button>
         </div>
       </div>
@@ -447,11 +498,21 @@ export default function AdminShipmentsPage() {
               Clear Selection
             </button>
             <button
-              onClick={() => setPickupModalOpen(true)}
+              onClick={() => {
+                if (hasActivePickup && selectedShipmentIds.length > 0) {
+                  setAddToActiveModalOpen(true);
+                } else {
+                  setPickupModalOpen(true);
+                }
+              }}
               className="px-4 py-2 bg-[#a95423] hover:bg-[#94451b] text-white text-xs font-semibold rounded-xl shadow-sm transition flex items-center space-x-2 cursor-pointer"
             >
               <Calendar className="w-4 h-4" />
-              <span>Schedule Batch Pickup ({selectedShipmentIds.length})</span>
+              <span>
+                {hasActivePickup
+                  ? `Add to Active Pickup Request (${selectedShipmentIds.length})`
+                  : `Schedule Batch Pickup (${selectedShipmentIds.length})`}
+              </span>
             </button>
           </div>
         </div>
@@ -531,16 +592,18 @@ export default function AdminShipmentsPage() {
               <table className="w-full text-left text-xs font-light border-collapse">
                 <thead>
                   <tr className="border-b border-border/40 text-muted-foreground uppercase text-[9px] font-bold tracking-wider bg-secondary/10">
-                    <th className="py-3 px-4 w-10 text-center">
-                      <input
-                        type="checkbox"
-                        checked={isAllReadySelected}
-                        onChange={toggleSelectAllReady}
-                        title="Select all ready to pickup shipments"
-                        className="rounded border-slate-300 text-[#a95423] focus:ring-[#a95423] cursor-pointer disabled:opacity-30"
-                        disabled={readyToPickupShipments.length === 0}
-                      />
-                    </th>
+                    {statusFilter === "ready_to_ship" && (
+                      <th className="py-3 px-4 w-10 text-center">
+                        <input
+                          type="checkbox"
+                          checked={isAllReadySelected}
+                          onChange={toggleSelectAllReady}
+                          title="Select all ready to ship shipments"
+                          className="rounded border-slate-300 text-[#a95423] focus:ring-[#a95423] cursor-pointer disabled:opacity-30"
+                          disabled={readyToPickupShipments.length === 0}
+                        />
+                      </th>
+                    )}
                     <th className="py-3 px-5">Order & Courier ID</th>
                     <th className="py-3 px-5">Customer & Destination</th>
                     <th className="py-3 px-5">Provider / Carrier</th>
@@ -553,7 +616,7 @@ export default function AdminShipmentsPage() {
                 <tbody>
                   {shipments.map((ship) => {
                     const isEligibleForPickup =
-                      (ship.status === "ready_to_pickup" || ship.status === "manifested") &&
+                      (ship.status === "ready_to_ship" || ship.status === "ready_to_pickup" || ship.status === "manifested") &&
                       ship.provider === "delhivery";
                     const isSelected = selectedShipmentIds.includes(ship.id);
 
@@ -565,20 +628,22 @@ export default function AdminShipmentsPage() {
                         }`}
                         onClick={() => handleOpenDetail(ship.id)}
                       >
-                        <td className="py-4 px-4 w-10 text-center" onClick={(e) => e.stopPropagation()}>
-                          <input
-                            type="checkbox"
-                            checked={isSelected}
-                            onChange={(e) => toggleSelectShipment(ship.id, e as any)}
-                            disabled={!isEligibleForPickup}
-                            title={
-                              isEligibleForPickup
-                                ? "Select for batch pickup"
-                                : "Only ready_to_pickup Delhivery parcels can be selected for batch pickup"
-                            }
-                            className="rounded border-slate-300 text-[#a95423] focus:ring-[#a95423] cursor-pointer disabled:opacity-25"
-                          />
-                        </td>
+                        {statusFilter === "ready_to_ship" && (
+                          <td className="py-4 px-4 w-10 text-center" onClick={(e) => e.stopPropagation()}>
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={(e) => toggleSelectShipment(ship.id, e as any)}
+                              disabled={!isEligibleForPickup}
+                              title={
+                                isEligibleForPickup
+                                  ? "Select for batch pickup"
+                                  : "Only ready_to_ship Delhivery parcels can be selected for batch pickup"
+                              }
+                              className="rounded border-slate-300 text-[#a95423] focus:ring-[#a95423] cursor-pointer disabled:opacity-25"
+                            />
+                          </td>
+                        )}
                       <td className="py-4 px-5">
                         <div className="flex flex-col">
                           <span className="font-mono font-bold text-foreground">#{ship.orderId}</span>
@@ -676,9 +741,22 @@ export default function AdminShipmentsPage() {
         onClose={() => setPickupModalOpen(false)}
         onSuccess={() => {
           loadShipments();
+          checkActivePickup();
           setSelectedShipmentIds([]);
         }}
         selectedShipmentIds={selectedShipmentIds}
+      />
+
+      <AddToActivePickupModal
+        isOpen={addToActiveModalOpen}
+        onClose={() => setAddToActiveModalOpen(false)}
+        onSuccess={() => {
+          loadShipments();
+          checkActivePickup();
+          setSelectedShipmentIds([]);
+        }}
+        selectedShipmentIds={selectedShipmentIds}
+        activePickupInfo={activePickupInfo}
       />
 
       <ShipmentDetailDrawer

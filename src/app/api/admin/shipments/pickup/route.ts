@@ -9,6 +9,7 @@ const schedulePickupSchema = z.object({
   packageCount: z.number().min(1).default(1),
   shipmentIds: z.array(z.string()).optional(),
   bypassActiveLock: z.boolean().optional().default(false),
+  isAddToActive: z.boolean().optional().default(false),
 });
 
 // GET /api/admin/shipments/pickup - Query if active pickup request already exists today
@@ -56,7 +57,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { pickupDate, pickupTime, packageCount, shipmentIds, bypassActiveLock } = parseRes.data;
+    const { pickupDate, pickupTime, packageCount, shipmentIds, bypassActiveLock, isAddToActive } = parseRes.data;
 
     const pickupResult = await scheduleShipmentPickup({
       pickupDate,
@@ -64,6 +65,7 @@ export async function POST(req: NextRequest) {
       packageCount,
       shipmentIds,
       bypassActiveLock,
+      isAddToActive,
       adminName: auth.user.name || auth.user.phoneNumber,
       adminId: auth.user.id,
     });

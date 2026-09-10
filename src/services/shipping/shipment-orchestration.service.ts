@@ -75,6 +75,7 @@ export interface SchedulePickupOptions {
   packageCount?: number;
   shipmentIds?: string[];
   bypassActiveLock?: boolean;
+  isAddToActive?: boolean;
   adminName?: string;
   adminId?: string;
 }
@@ -709,9 +710,72 @@ export async function scheduleShipmentPickup(options: SchedulePickupOptions) {
     packageCount = 1,
     shipmentIds = [],
     bypassActiveLock = false,
+    isAddToActive = false,
     adminName = "Admin",
     adminId,
   } = options;
+
+  // Handle adding shipments to an active/pending pickup request
+  if (isAddToActive) {
+    if (shipmentIds.length > 3) {
+      throw new Error(
+        "Cannot add more than 3 Shipments to an active/pending Pickup request, please request for another time or after the pickup request is resolved"
+      );
+    }
+
+    if (shipmentIds.length === 0) {
+      throw new Error("Please select at least 1 shipment to add to the active pickup request.");
+    }
+
+    const todayActive = await getTodayActivePickup();
+    if (!todayActive.activePickupExists) {
+      throw new Error("No active pickup request found for today to add shipments to.");
+    }
+
+    const targetShipments = await db.query.shipments.findMany({
+      where: inArray(shipments.id, shipmentIds),
+    });
+
+    if (targetShipments.length > 0) {
+      await db.transaction(async (tx) => {
+        for (const ship of targetShipments) {
+          await tx
+            .update(shipments)
+            .set({
+              status: "pickup_scheduled",
+              updatedAt: new Date(),
+            })
+            .where(eq(shipments.id, ship.id));
+
+          await logShipmentAudit({
+            shipmentId: ship.id,
+            orderId: ship.orderId,
+            adminId,
+            adminName,
+            action: "pickup_scheduled",
+            newState: {
+              pickupId: todayActive.latestPickup?.pickupId || "Active",
+              pickupDate: todayActive.latestPickup?.scheduledDate || pickupDate,
+              isAddedToActive: true,
+            },
+            notes: `Added shipment to active pickup request (#${
+              todayActive.latestPickup?.pickupId || "Active"
+            }).`,
+            txClient: tx,
+          });
+        }
+      });
+    }
+
+    return {
+      success: true,
+      message: `Successfully added ${targetShipments.length} shipment(s) to active pickup request (#${
+        todayActive.latestPickup?.pickupId || "Active"
+      }).`,
+      pickupId: todayActive.latestPickup?.pickupId || null,
+      scheduledCount: targetShipments.length,
+    };
+  }
 
   // 1. Check active pickup limit for today if lock not explicitly bypassed
   const todayActive = await getTodayActivePickup();
