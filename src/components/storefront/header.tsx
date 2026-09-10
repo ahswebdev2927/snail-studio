@@ -199,36 +199,6 @@ export function Header({ navigationData, storeLogo = "", storeName = "Snail Stud
     router.push(url);
   };
 
-  // Compile lists dynamically with static fallbacks for safety
-  const shapeGroup = nav?.shop?.attributeGroups?.find((g) => g.code === "shape");
-  const shapesList = shapeGroup?.values || [
-    { name: "Coffin", url: "/shop?shape=coffin" },
-    { name: "Almond", url: "/shop?shape=almond" },
-    { name: "Stiletto", url: "/shop?shape=stiletto" },
-    { name: "Square", url: "/shop?shape=square" },
-  ];
-
-  const lengthGroup = nav?.shop?.attributeGroups?.find((g) => g.code === "length");
-  const lengthsList = lengthGroup?.values || [
-    { name: "Short", url: "/shop?length=short" },
-    { name: "Medium", url: "/shop?length=medium" },
-    { name: "Long", url: "/shop?length=long" },
-  ];
-
-  const occasionGroup = nav?.shop?.attributeGroups?.find((g) => g.code === "occasion");
-  const occasionsList = occasionGroup?.values || [
-    { name: "Casual", url: "/shop?occasion=casual" },
-    { name: "Wedding", url: "/shop?occasion=wedding" },
-    { name: "Party", url: "/shop?occasion=party" },
-  ];
-
-  const collectionsList = nav?.shop?.collections?.length
-    ? nav.shop.collections
-    : [
-      { name: "Best Sellers", url: "/shop?sort=best_selling" },
-      { name: "New Arrivals", url: "/shop?sort=newest" },
-    ];
-
   const promo = nav?.promoBanner;
 
   return (
@@ -637,76 +607,90 @@ export function Header({ navigationData, storeLogo = "", storeName = "Snail Stud
               Home
             </button>
 
+            {/* 2. Shop Dropdown Accordion */}
             <Accordion type="single" className="w-full border-none">
-              {/* Dynamic Shop Press-Ons Menu */}
+              {/* Dynamic Shop Menu (matches Desktop Mega Menu) */}
               <AccordionItem value="shop-menu" className="border-b border-border/10">
                 <AccordionTrigger className="py-2.5 font-inter text-sm font-medium hover:no-underline hover:text-primary">
-                  Shop Press-Ons
+                  Shop
                 </AccordionTrigger>
-                <AccordionContent className="pl-4 space-y-3 pt-2">
-                  <div className="space-y-1.5">
-                    <span className="text-[9px] uppercase font-bold tracking-wider text-primary block">By Shape</span>
-                    <div className="grid grid-cols-2 gap-2 text-xs font-light">
-                      {shapesList.map((shape) => (
-                        <button
-                          key={shape.name}
-                          onClick={() => handleMobileNav(shape.url)}
-                          className="text-left py-1 hover:text-primary cursor-pointer"
-                        >
-                          {shape.name}
-                        </button>
-                      ))}
+                <AccordionContent className="pl-4 space-y-4 pt-2">
+                  {/* Attribute Groups (e.g., Shop by Occasion) */}
+                  {nav?.shop?.attributeGroups?.map((group) => (
+                    <div key={group.code} className="space-y-1.5">
+                      <span className="text-[9px] uppercase font-bold tracking-wider text-primary block">
+                        Shop by {group.name}
+                      </span>
+                      <div className="grid grid-cols-2 gap-2 text-xs font-light">
+                        {group.values.map((val) => (
+                          <button
+                            key={val.name}
+                            onClick={() => handleMobileNav(val.url)}
+                            className="text-left py-1 hover:text-primary cursor-pointer"
+                          >
+                            {val.name} {group.code === "shape" ? "Shape" : group.code === "length" ? "Nails" : ""}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  ))}
 
-                  <div className="space-y-1.5 pt-2">
-                    <span className="text-[9px] uppercase font-bold tracking-wider text-primary block">By Length</span>
-                    <div className="grid grid-cols-3 gap-2 text-xs font-light">
-                      {lengthsList.map((length) => (
-                        <button
-                          key={length.name}
-                          onClick={() => handleMobileNav(length.url)}
-                          className="text-left py-1 hover:text-primary cursor-pointer"
-                        >
-                          {length.name}
-                        </button>
-                      ))}
+                  {/* Categories Column (Shop by Category) */}
+                  {nav?.shop?.categories && nav.shop.categories.length > 0 && (
+                    <div className="space-y-1.5 pt-1">
+                      <span className="text-[9px] uppercase font-bold tracking-wider text-primary block">
+                        Shop by Category
+                      </span>
+                      <div className="grid grid-cols-2 gap-2 text-xs font-light">
+                        {nav.shop.categories.map((cat) => (
+                          <button
+                            key={cat.name}
+                            onClick={() => handleMobileNav(cat.url)}
+                            className="text-left py-1 hover:text-primary cursor-pointer"
+                          >
+                            {cat.name}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  )}
 
-                  <div className="space-y-1.5 pt-2">
-                    <span className="text-[9px] uppercase font-bold tracking-wider text-primary block">By Occasion</span>
-                    <div className="grid grid-cols-2 gap-2 text-xs font-light">
-                      {occasionsList.map((occasion) => (
-                        <button
-                          key={occasion.name}
-                          onClick={() => handleMobileNav(occasion.url)}
-                          className="text-left py-1 hover:text-primary cursor-pointer"
-                        >
-                          {occasion.name}
-                        </button>
-                      ))}
+                  {/* Collections Column */}
+                  {nav?.shop?.collections && nav.shop.collections.length > 0 && (
+                    <div className="space-y-1.5 pt-1">
+                      <span className="text-[9px] uppercase font-bold tracking-wider text-primary block">
+                        Collections
+                      </span>
+                      <div className="grid grid-cols-2 gap-2 text-xs font-light">
+                        {nav.shop.collections.map((col) => (
+                          <button
+                            key={col.name}
+                            onClick={() => handleMobileNav(col.url)}
+                            className="text-left py-1 hover:text-primary cursor-pointer"
+                          >
+                            {col.name}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-
-                  <div className="space-y-1.5 pt-2">
-                    <span className="text-[9px] uppercase font-bold tracking-wider text-primary block">Collections</span>
-                    <div className="grid grid-cols-2 gap-2 text-xs font-light">
-                      {collectionsList.map((col) => (
-                        <button
-                          key={col.name}
-                          onClick={() => handleMobileNav(col.url)}
-                          className="text-left py-1 hover:text-primary cursor-pointer"
-                        >
-                          {col.name}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                  )}
                 </AccordionContent>
               </AccordionItem>
+            </Accordion>
 
-              {/* Dynamic Accordions for other parent categories (e.g. Care & Accessories) */}
+            {/* 3. Navbar Collections (directly after Shop, matches Desktop sequence) */}
+            {nav?.navbarCollections?.map((col) => (
+              <button
+                key={col.slug}
+                onClick={() => handleMobileNav(col.url)}
+                className="w-full text-left font-inter text-sm font-medium text-foreground hover:text-primary transition-colors py-2 border-b border-border/10 cursor-pointer"
+              >
+                {col.name}
+              </button>
+            ))}
+
+            {/* 4. Parent Categories with Subcategories (matches Desktop sequence) */}
+            <Accordion type="single" className="w-full border-none">
               {nav?.categories?.map((cat) => {
                 if (cat.slug === "press-on-nails" || cat.slug === "care-and-accessories") return null;
 
@@ -735,17 +719,6 @@ export function Header({ navigationData, storeLogo = "", storeName = "Snail Stud
               })}
             </Accordion>
 
-            {/* Navbar Collections directly on mobile nav list */}
-            {nav?.navbarCollections?.map((col) => (
-              <button
-                key={col.slug}
-                onClick={() => handleMobileNav(col.url)}
-                className="w-full text-left font-inter text-sm font-medium text-foreground hover:text-primary transition-colors py-2 border-b border-border/10 cursor-pointer"
-              >
-                {col.name}
-              </button>
-            ))}
-
             {/* Flat categories menu items (no children) */}
             {nav?.categories?.map((cat) => {
               if (cat.slug === "press-on-nails" || cat.slug === "care-and-accessories") return null;
@@ -762,20 +735,15 @@ export function Header({ navigationData, storeLogo = "", storeName = "Snail Stud
               );
             })}
 
-            <button
-              onClick={() => handleMobileNav("/shop")}
-              className="w-full text-left font-inter text-sm font-medium text-foreground hover:text-primary transition-colors py-2 border-b border-border/10 cursor-pointer"
-            >
-              All Collections
-            </button>
-
+            {/* 5. Sizing (matches Desktop label) */}
             <button
               onClick={() => handleMobileNav("/sizing-guide")}
               className="w-full text-left font-inter text-sm font-medium text-foreground hover:text-primary transition-colors py-2 border-b border-border/10 cursor-pointer"
             >
-              Find Your Size
+              Sizing
             </button>
 
+            {/* 6. Contact */}
             <button
               onClick={() => handleMobileNav("/contact")}
               className="w-full text-left font-inter text-sm font-medium text-foreground hover:text-primary transition-colors py-2 border-b border-border/10 cursor-pointer"
