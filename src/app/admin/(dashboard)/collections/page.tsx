@@ -14,7 +14,8 @@ import {
   Pencil,
   PlusCircle,
   HelpCircle,
-  Eye
+  Eye,
+  Search
 } from "lucide-react";
 
 interface Rule {
@@ -81,6 +82,7 @@ export default function AdminCollectionsPage() {
   const [showInNavbar, setShowInNavbar] = useState(false);
   const [sortOrder, setSortOrder] = useState(0);
   const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
+  const [productSearchQuery, setProductSearchQuery] = useState("");
   const [rules, setRules] = useState<Rule[]>([]);
 
   const [editingCollection, setEditingCollection] = useState<Collection | null>(null);
@@ -126,6 +128,7 @@ export default function AdminCollectionsPage() {
     setShowInNavbar(false);
     setSortOrder(0);
     setSelectedProductIds([]);
+    setProductSearchQuery("");
     setRules([]);
     setIsModalOpen(true);
   };
@@ -142,6 +145,7 @@ export default function AdminCollectionsPage() {
     setShowInNavbar(col.showInNavbar || false);
     setSortOrder(col.sortOrder);
     setSelectedProductIds((col.products || []).map(p => p.productId));
+    setProductSearchQuery("");
     setRules(col.rules || []);
     setIsModalOpen(true);
   };
@@ -224,16 +228,18 @@ export default function AdminCollectionsPage() {
     const updated = [...rules];
     updated[idx] = { ...updated[idx], [field]: val };
     
-    // Auto-update relation logic if column type changes to price or IDs
+    // Auto-update relation logic if column type changes
     if (field === "column") {
-      if (val === "price") {
-        updated[idx].relation = "less_than_or_equal";
+      if (val === "price_between") {
+        updated[idx].relation = "between";
+        updated[idx].value = "1000-4000";
       } else if (val === "categoryId" || val === "brandId") {
         updated[idx].relation = "equals";
+        updated[idx].value = "";
       } else {
         updated[idx].relation = "contains";
+        updated[idx].value = "";
       }
-      updated[idx].value = "";
     }
     setRules(updated);
   };
@@ -335,9 +341,13 @@ export default function AdminCollectionsPage() {
                         {col.rules && col.rules.length > 0 ? (
                           col.rules.map((r, i) => (
                             <div key={i} className="text-[10px] text-foreground font-mono flex gap-1.5 items-center bg-card/40 px-2 py-1 rounded border border-border/10">
-                              <span className="text-primary font-semibold">{r.column}</span>
+                              <span className="text-primary font-semibold">
+                                {r.column === "price_between" ? "price_range (₹)" : r.column}
+                              </span>
                               <span className="text-muted-foreground">{r.relation}</span>
-                              <span className="text-secondary font-medium">"{r.value}"</span>
+                              <span className="text-secondary font-medium">
+                                "{r.column === "price_between" ? `₹${(r.value || "").replace("-", " - ₹")}` : r.value}"
+                              </span>
                             </div>
                           ))
                         ) : (
@@ -547,44 +557,116 @@ export default function AdminCollectionsPage() {
                       <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Select Products ({selectedProductIds.length} Selected)</label>
                     </div>
 
+                    {/* Product Search Input */}
+                    <div className="relative">
+                      <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                      <input
+                        type="text"
+                        placeholder="Search products by name..."
+                        value={productSearchQuery}
+                        onChange={(e) => setProductSearchQuery(e.target.value)}
+                        className="w-full pl-9 pr-8 py-2 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none text-foreground font-light transition-all placeholder:text-muted-foreground/35"
+                      />
+                      {productSearchQuery && (
+                        <button
+                          type="button"
+                          onClick={() => setProductSearchQuery("")}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+
                     <div className="border border-border/60 rounded-2xl divide-y divide-border/30 max-h-56 overflow-y-auto bg-secondary/5">
-                      {products.map((p) => {
-                        const isSelected = selectedProductIds.includes(p.id);
-                        return (
-                          <div 
-                            key={p.id}
-                            onClick={() => toggleProductSelect(p.id)}
-                            className="flex items-center justify-between p-3.5 hover:bg-secondary/15 cursor-pointer transition-colors"
-                          >
-                            <span className="text-xs text-foreground font-medium">{p.name}</span>
-                            <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${
-                              isSelected ? "bg-primary border-primary text-primary-foreground" : "border-border bg-card"
-                            }`}>
-                              {isSelected && <Check className="w-3.5 h-3.5 stroke-[2.5]" />}
-                            </div>
-                          </div>
+                      {(() => {
+                        const filteredProducts = products.filter((p) =>
+                          p.name.toLowerCase().includes(productSearchQuery.toLowerCase())
                         );
-                      })}
+
+                        if (filteredProducts.length === 0) {
+                          return (
+                            <div className="py-6 text-center">
+                              <p className="text-xs text-muted-foreground font-light italic">
+                                No products found matching &quot;{productSearchQuery}&quot;
+                              </p>
+                            </div>
+                          );
+                        }
+
+                        return filteredProducts.map((p) => {
+                          const isSelected = selectedProductIds.includes(p.id);
+                          return (
+                            <div 
+                              key={p.id}
+                              onClick={() => toggleProductSelect(p.id)}
+                              className="flex items-center justify-between p-3.5 hover:bg-secondary/15 cursor-pointer transition-colors"
+                            >
+                              <span className="text-xs text-foreground font-medium">{p.name}</span>
+                              <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${
+                                isSelected ? "bg-primary border-primary text-primary-foreground" : "border-border bg-card"
+                              }`}>
+                                {isSelected && <Check className="w-3.5 h-3.5 stroke-[2.5]" />}
+                              </div>
+                            </div>
+                          );
+                        });
+                      })()}
                     </div>
                   </div>
                 ) : (
                   <div className="space-y-4 pt-3 border-t border-border/20">
-                    <div className="flex items-center justify-between">
-                      <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Dynamic Compiling Rules</label>
-                      <button
-                        type="button"
-                        onClick={addRule}
-                        className="inline-flex items-center gap-1 text-[10px] uppercase font-bold tracking-wider text-primary hover:underline cursor-pointer"
-                      >
-                        <PlusCircle className="w-3.5 h-3.5" />
-                        Add Rule
-                      </button>
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Dynamic Compiling Rules</label>
+                        <button
+                          type="button"
+                          onClick={addRule}
+                          className="inline-flex items-center gap-1 text-[10px] uppercase font-bold tracking-wider text-primary hover:underline cursor-pointer"
+                        >
+                          <PlusCircle className="w-3.5 h-3.5" />
+                          Add Rule
+                        </button>
+                      </div>
+
+                      {/* Quick Presets Bar */}
+                      <div className="flex items-center gap-1.5 flex-wrap pt-0.5 pb-1">
+                        <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Quick Price Presets:</span>
+                        <button
+                          type="button"
+                          onClick={() => setRules([{ column: "price_between", relation: "between", value: "0-1000" }])}
+                          className="px-2 py-0.5 text-[9px] font-semibold bg-secondary/15 hover:bg-primary/10 hover:text-primary border border-border/40 rounded-full transition-all cursor-pointer"
+                        >
+                          Under ₹1,000
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setRules([{ column: "price_between", relation: "between", value: "1000-4000" }])}
+                          className="px-2 py-0.5 text-[9px] font-semibold bg-secondary/15 hover:bg-primary/10 hover:text-primary border border-border/40 rounded-full transition-all cursor-pointer"
+                        >
+                          ₹1,000 – ₹4,000
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setRules([{ column: "price_between", relation: "between", value: "2500-5000" }])}
+                          className="px-2 py-0.5 text-[9px] font-semibold bg-secondary/15 hover:bg-primary/10 hover:text-primary border border-border/40 rounded-full transition-all cursor-pointer"
+                        >
+                          ₹2,500 – ₹5,000
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setRules([{ column: "price_between", relation: "between", value: "5000-100000" }])}
+                          className="px-2 py-0.5 text-[9px] font-semibold bg-secondary/15 hover:bg-primary/10 hover:text-primary border border-border/40 rounded-full transition-all cursor-pointer"
+                        >
+                          Above ₹5,000
+                        </button>
+                      </div>
                     </div>
 
                     <div className="space-y-3.5">
                       {rules.length === 0 ? (
                         <div className="py-6 border border-dashed border-border/60 rounded-2xl text-center text-xs text-muted-foreground font-light italic">
-                          No rules defined yet. Add a rule to matches products.
+                          No rules defined yet. Add a rule to match products.
                         </div>
                       ) : (
                         rules.map((rule, idx) => (
@@ -592,10 +674,10 @@ export default function AdminCollectionsPage() {
                             <select
                               value={rule.column}
                               onChange={(e) => updateRule(idx, "column", e.target.value)}
-                              className="px-2.5 py-1.5 bg-card border border-border rounded-xl text-xs text-foreground focus:outline-none"
+                              className="px-2.5 py-1.5 bg-card border border-border rounded-xl text-xs text-foreground focus:outline-none shrink-0"
                             >
+                              <option value="price_between">Price Range (₹)</option>
                               <option value="name">Product Name</option>
-                              <option value="price">Min Price (Paise)</option>
                               <option value="categoryId">Category ID</option>
                               <option value="brandId">Brand ID</option>
                               <option value="shape">Nail Shape</option>
@@ -604,64 +686,102 @@ export default function AdminCollectionsPage() {
                               <option value="texture">Nail Texture</option>
                             </select>
 
-                            <select
-                              value={rule.relation}
-                              onChange={(e) => updateRule(idx, "relation", e.target.value)}
-                              className="px-2.5 py-1.5 bg-card border border-border rounded-xl text-xs text-foreground focus:outline-none"
-                            >
-                              {rule.column === "price" ? (
-                                <>
-                                  <option value="equals">Equals</option>
-                                  <option value="greater_than_or_equal">Greater Than / Equal</option>
-                                  <option value="less_than_or_equal">Less Than / Equal</option>
-                                </>
-                              ) : rule.column === "categoryId" || rule.column === "brandId" ? (
-                                <>
-                                  <option value="equals">Equals</option>
-                                  <option value="not_equals">Not Equals</option>
-                                </>
-                              ) : (
-                                <>
-                                  <option value="equals">Equals</option>
-                                  <option value="contains">Contains</option>
-                                  <option value="not_equals">Not Equals</option>
-                                </>
-                              )}
-                            </select>
-
-                            {rule.column === "categoryId" ? (
-                              <select
-                                value={rule.value}
-                                onChange={(e) => updateRule(idx, "value", e.target.value)}
-                                className="flex-1 px-2.5 py-1.5 bg-card border border-border rounded-xl text-xs text-foreground focus:outline-none"
-                              >
-                                <option value="">Select Category...</option>
-                                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                              </select>
-                            ) : rule.column === "brandId" ? (
-                              <select
-                                value={rule.value}
-                                onChange={(e) => updateRule(idx, "value", e.target.value)}
-                                className="flex-1 px-2.5 py-1.5 bg-card border border-border rounded-xl text-xs text-foreground focus:outline-none"
-                              >
-                                <option value="">Select Brand...</option>
-                                {brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                              </select>
+                            {rule.column === "price_between" ? (
+                              <div className="flex-1 flex items-center gap-2">
+                                <div className="flex items-center gap-1.5 flex-1">
+                                  <span className="text-[9px] font-bold text-muted-foreground uppercase shrink-0">Min ₹</span>
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    placeholder="1000"
+                                    value={(rule.value || "").split("-")[0] || ""}
+                                    onChange={(e) => {
+                                      const maxVal = (rule.value || "").split("-")[1] || "4000";
+                                      updateRule(idx, "value", `${e.target.value}-${maxVal}`);
+                                    }}
+                                    className="w-full px-2.5 py-1.5 bg-card border border-border rounded-xl text-xs text-foreground focus:outline-none"
+                                  />
+                                </div>
+                                <span className="text-xs text-muted-foreground font-bold shrink-0">—</span>
+                                <div className="flex items-center gap-1.5 flex-1">
+                                  <span className="text-[9px] font-bold text-muted-foreground uppercase shrink-0">Max ₹</span>
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    placeholder="4000"
+                                    value={(rule.value || "").split("-")[1] || ""}
+                                    onChange={(e) => {
+                                      const minVal = (rule.value || "").split("-")[0] || "1000";
+                                      updateRule(idx, "value", `${minVal}-${e.target.value}`);
+                                    }}
+                                    className="w-full px-2.5 py-1.5 bg-card border border-border rounded-xl text-xs text-foreground focus:outline-none"
+                                  />
+                                </div>
+                              </div>
                             ) : (
-                              <input
-                                type="text"
-                                placeholder="Value..."
-                                required
-                                value={rule.value}
-                                onChange={(e) => updateRule(idx, "value", e.target.value)}
-                                className="flex-1 px-3 py-1.5 bg-card border border-border focus:border-primary focus:outline-none rounded-xl text-xs font-light text-foreground"
-                              />
+                              <>
+                                <select
+                                  value={rule.relation}
+                                  onChange={(e) => updateRule(idx, "relation", e.target.value)}
+                                  className="px-2.5 py-1.5 bg-card border border-border rounded-xl text-xs text-foreground focus:outline-none shrink-0"
+                                >
+                                  {rule.column === "price" || rule.column === "price_max" ? (
+                                    <>
+                                      <option value="greater_than_or_equal">Greater Than / Equal (≥)</option>
+                                      <option value="greater_than">Greater Than (&gt;)</option>
+                                      <option value="less_than_or_equal">Less Than / Equal (≤)</option>
+                                      <option value="less_than">Less Than (&lt;)</option>
+                                      <option value="equals">Equals (=)</option>
+                                    </>
+                                  ) : rule.column === "categoryId" || rule.column === "brandId" ? (
+                                    <>
+                                      <option value="equals">Equals</option>
+                                      <option value="not_equals">Not Equals</option>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <option value="equals">Equals</option>
+                                      <option value="contains">Contains</option>
+                                      <option value="not_equals">Not Equals</option>
+                                    </>
+                                  )}
+                                </select>
+
+                                {rule.column === "categoryId" ? (
+                                  <select
+                                    value={rule.value}
+                                    onChange={(e) => updateRule(idx, "value", e.target.value)}
+                                    className="flex-1 px-2.5 py-1.5 bg-card border border-border rounded-xl text-xs text-foreground focus:outline-none"
+                                  >
+                                    <option value="">Select Category...</option>
+                                    {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                  </select>
+                                ) : rule.column === "brandId" ? (
+                                  <select
+                                    value={rule.value}
+                                    onChange={(e) => updateRule(idx, "value", e.target.value)}
+                                    className="flex-1 px-2.5 py-1.5 bg-card border border-border rounded-xl text-xs text-foreground focus:outline-none"
+                                  >
+                                    <option value="">Select Brand...</option>
+                                    {brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                                  </select>
+                                ) : (
+                                  <input
+                                    type="text"
+                                    placeholder="Value..."
+                                    required
+                                    value={rule.value}
+                                    onChange={(e) => updateRule(idx, "value", e.target.value)}
+                                    className="flex-1 px-3 py-1.5 bg-card border border-border focus:border-primary focus:outline-none rounded-xl text-xs font-light text-foreground"
+                                  />
+                                )}
+                              </>
                             )}
 
                             <button
                               type="button"
                               onClick={() => removeRule(idx)}
-                              className="p-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 rounded-xl transition-all cursor-pointer"
+                              className="p-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 rounded-xl transition-all cursor-pointer shrink-0"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>

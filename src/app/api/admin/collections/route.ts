@@ -8,7 +8,7 @@ import { nanoid } from "nanoid";
 import { z } from "zod";
 import { authorize } from "@/middleware/auth";
 import { slugify } from "@/lib/utils";
-import { compileDynamicCollection } from "@/services/collections/collections.service";
+import { compileDynamicCollection, recompileAllDynamicCollections } from "@/services/collections/collections.service";
 
 const createCollectionSchema = z.object({
   name: z.string().min(1, "Name is required").max(100, "Name is too long"),
@@ -44,6 +44,9 @@ export async function GET(req: NextRequest) {
     if (!auth.authorized) {
       return auth.response!;
     }
+
+    // Recompile dynamic collections to ensure rule evaluation and product counts are accurate
+    await recompileAllDynamicCollections();
 
     const allCollections = await db.query.collections.findMany({
       orderBy: asc(collections.sortOrder),

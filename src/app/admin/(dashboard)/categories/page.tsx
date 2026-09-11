@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import MediaPicker from "@/components/media/media-picker";
 import { Select } from "@/components/ui/select";
+import { CascadingCategorySelect } from "@/components/ui/cascading-category-select";
 
 interface Category {
   id: string;
@@ -352,18 +353,16 @@ export default function AdminCategoriesPage() {
 
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Parent Node Category</label>
-                  <Select
-                    options={[
-                      { value: "", label: "No Parent (Root Node)" },
-                      ...categoriesFlat
-                        .filter((c) => !editingCategory || c.id !== editingCategory.id)
-                        .map((cat) => ({
-                          value: cat.id,
-                          label: `${cat.name} (${cat.slug})`,
-                        })),
-                    ]}
+                  <CascadingCategorySelect
+                    categories={categoriesFlat}
                     value={catParentId}
-                    onChange={(val) => setCatParentId(val)}
+                    onChange={(val) => setCatParentId(val || "")}
+                    placeholder="No Parent (Root Node)"
+                    showCheckbox
+                    showRootOption
+                    rootOptionLabel="No Parent (Root Node)"
+                    appendName={catName}
+                    excludeId={editingCategory?.id}
                   />
                 </div>
 

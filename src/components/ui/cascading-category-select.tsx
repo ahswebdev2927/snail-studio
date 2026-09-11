@@ -19,37 +19,67 @@ export interface CascadingCategorySelectProps {
   className?: string;
   disabled?: boolean;
   showFullPath?: boolean;
+  showCheckbox?: boolean;
+  showRootOption?: boolean;
+  rootOptionLabel?: string;
+  appendName?: string;
+  excludeId?: string;
 }
 
 export function CascadingCategorySelect({
   categories,
   value,
   onChange,
-  placeholder = "Select Category...",
+  placeholder = "Select Parent Category...",
   className,
   disabled = false,
   showFullPath = false,
+  showCheckbox = false,
+  showRootOption = false,
+  rootOptionLabel = "No Parent (Root Node)",
+  appendName = "",
+  excludeId,
 }: CascadingCategorySelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Filter out excluded ID and its descendants if excludeId is provided
+  const filteredCategories = useMemo(() => {
+    if (!excludeId) return categories;
+
+    // Collect all descendant IDs of excludeId
+    const invalidIds = new Set<string>([excludeId]);
+    let added = true;
+    while (added) {
+      added = false;
+      categories.forEach((cat) => {
+        if (cat.parentId && invalidIds.has(cat.parentId) && !invalidIds.has(cat.id)) {
+          invalidIds.add(cat.id);
+          added = true;
+        }
+      });
+    }
+
+    return categories.filter((cat) => !invalidIds.has(cat.id));
+  }, [categories, excludeId]);
+
   // Map category IDs to items
   const categoryMap = useMemo(() => {
     const map = new Map<string, CategoryItem>();
-    categories.forEach((cat) => map.set(cat.id, cat));
+    filteredCategories.forEach((cat) => map.set(cat.id, cat));
     return map;
-  }, [categories]);
+  }, [filteredCategories]);
 
   // Group children by parentId ('root' for top-level)
   const childrenMap = useMemo(() => {
     const map = new Map<string, CategoryItem[]>();
-    categories.forEach((cat) => {
+    filteredCategories.forEach((cat) => {
       const pid = cat.parentId || "root";
       if (!map.has(pid)) map.set(pid, []);
       map.get(pid)!.push(cat);
     });
     return map;
-  }, [categories]);
+  }, [filteredCategories]);
 
   // Compute full path for selected value: [GrandParent, Parent, Child]
   const selectedPath = useMemo(() => {
@@ -63,7 +93,7 @@ export function CascadingCategorySelect({
     return path;
   }, [value, categoryMap]);
 
-  // Active expanded path column levels while browsing: [level0CatId, level1CatId, level2CatId, ...]
+  // Active expanded path column levels while browsing: [level0CatId, level1CatId, ...]
   const [expandedPath, setExpandedPath] = useState<string[]>([]);
 
   // Initialize expandedPath when dropdown opens or value changes
@@ -91,15 +121,12 @@ export function CascadingCategorySelect({
   }, []);
 
   // Compute columns to display based on expandedPath
-  // Column 0: root categories
-  // Column 1: children of expandedPath[0]
-  // Column 2: children of expandedPath[1], etc.
   const columns = useMemo(() => {
     const cols: CategoryItem[][] = [];
 
     // Root level column
     const rootCats = childrenMap.get("root") || [];
-    if (rootCats.length > 0) {
+    if (rootCats.length > 0 || showRootOption) {
       cols.push(rootCats);
     }
 
@@ -114,19 +141,21 @@ export function CascadingCategorySelect({
     }
 
     return cols;
-  }, [childrenMap, expandedPath]);
+  }, [childrenMap, expandedPath, showRootOption]);
 
   const handleItemHover = (levelIndex: number, itemId: string) => {
     const newPath = expandedPath.slice(0, levelIndex);
-    const hasChildren = (childrenMap.get(itemId) || []).length > 0;
-    if (hasChildren) {
-      newPath.push(itemId);
+    if (itemId) {
+      const hasChildren = (childrenMap.get(itemId) || []).length > 0;
+      if (hasChildren) {
+        newPath.push(itemId);
+      }
     }
     setExpandedPath(newPath);
   };
 
-  const handleItemSelect = (cat: CategoryItem) => {
-    onChange(cat.id);
+  const handleItemSelect = (catId: string | null) => {
+    onChange(catId);
     setIsOpen(false);
   };
 
@@ -136,10 +165,31 @@ export function CascadingCategorySelect({
     setExpandedPath([]);
   };
 
-  const selectedCategory = categoryMap.get(value || "");
-  const selectedLabel = showFullPath
-    ? selectedPath.map((item) => item.name).join(" / ")
-    : selectedCategory?.name;
+  // Build live path text for trigger button: parent 1 / parent 2 / new-category-name
+  const livePathDisplay = useMemo(() => {
+    const pathNames = selectedPath.map((item) => item.name);
+    
+    if (appendName.trim()) {
+      pathNames.push(appendName.trim());
+    }
+
+    if (pathNames.length > 0) {
+      return pathNames.join(" / ");
+    }
+
+    if (value === null || value === "") {
+      return rootOptionLabel;
+    }
+
+    const selectedCategory = categoryMap.get(value || "");
+    if (selectedCategory) {
+      return showFullPath || showCheckbox
+        ? selectedPath.map((item) => item.name).join(" / ")
+        : selectedCategory.name;
+    }
+
+    return null;
+  }, [selectedPath, appendName, value, rootOptionLabel, categoryMap, showFullPath, showCheckbox]);
 
   return (
     <div ref={containerRef} className={cn("relative w-full font-sans select-none", className)}>
@@ -156,9 +206,9 @@ export function CascadingCategorySelect({
       >
         <div className="flex items-center gap-2 truncate pr-2">
           <Folder className="w-4 h-4 text-primary shrink-0 opacity-80" />
-          {selectedLabel ? (
+          {livePathDisplay ? (
             <span className="truncate text-foreground font-semibold">
-              {selectedLabel}
+              {livePathDisplay}
             </span>
           ) : (
             <span className="text-muted-foreground/80 font-normal">{placeholder}</span>
@@ -196,7 +246,7 @@ export function CascadingCategorySelect({
               <div
                 key={colIndex}
                 className={cn(
-                  "w-52 max-h-72 overflow-y-auto py-1.5 flex flex-col shrink-0 custom-scrollbar",
+                  "w-56 max-h-72 overflow-y-auto py-1.5 flex flex-col shrink-0 custom-scrollbar",
                   colIndex > 0 && "border-l border-border/40 bg-secondary/10"
                 )}
               >
@@ -210,6 +260,38 @@ export function CascadingCategorySelect({
                   </span>
                 </div>
 
+                {/* Root Option in Column 0 if enabled */}
+                {colIndex === 0 && showRootOption && (
+                  <div
+                    onClick={() => handleItemSelect(null)}
+                    onMouseEnter={() => handleItemHover(0, "")}
+                    className={cn(
+                      "group flex items-center justify-between px-3.5 py-2 text-xs transition-colors cursor-pointer select-none mx-1 rounded-lg border-b border-border/20 mb-1",
+                      value === null || value === ""
+                        ? "bg-primary/10 text-primary font-semibold"
+                        : "text-foreground hover:bg-secondary/20"
+                    )}
+                  >
+                    <div className="flex items-center gap-2 truncate">
+                      {showCheckbox && (
+                        <div
+                          className={cn(
+                            "w-4 h-4 rounded-md border flex items-center justify-center transition-all shrink-0",
+                            value === null || value === ""
+                              ? "bg-primary border-primary text-primary-foreground"
+                              : "border-border bg-card group-hover:border-primary/50"
+                          )}
+                        >
+                          {(value === null || value === "") && (
+                            <Check className="w-3 h-3 text-primary-foreground stroke-[2.5]" />
+                          )}
+                        </div>
+                      )}
+                      <span className="truncate italic">{rootOptionLabel}</span>
+                    </div>
+                  </div>
+                )}
+
                 {columnItems.map((cat) => {
                   const children = childrenMap.get(cat.id) || [];
                   const hasChildren = children.length > 0;
@@ -220,33 +302,41 @@ export function CascadingCategorySelect({
                     <div
                       key={cat.id}
                       onMouseEnter={() => handleItemHover(colIndex, cat.id)}
-                      onClick={() => handleItemSelect(cat)}
+                      onClick={() => handleItemSelect(cat.id)}
                       className={cn(
                         "group flex items-center justify-between px-3.5 py-2 text-xs transition-colors cursor-pointer select-none mx-1 rounded-lg",
                         isSelected
-                          ? "bg-primary text-primary-foreground font-semibold shadow-xs"
+                          ? "bg-primary/15 text-primary font-semibold border border-primary/20 shadow-2xs"
                           : isExpanded
                           ? "bg-accent/15 text-accent-foreground font-medium"
                           : "text-foreground hover:bg-secondary/20"
                       )}
                     >
-                      <span className="truncate pr-2">{cat.name}</span>
+                      <div className="flex items-center gap-2 truncate pr-1">
+                        {showCheckbox && (
+                          <div
+                            className={cn(
+                              "w-4 h-4 rounded-md border flex items-center justify-center transition-all shrink-0",
+                              isSelected
+                                ? "bg-primary border-primary text-primary-foreground"
+                                : "border-border bg-card group-hover:border-primary/50"
+                            )}
+                          >
+                            {isSelected && (
+                              <Check className="w-3 h-3 text-primary-foreground stroke-[2.5]" />
+                            )}
+                          </div>
+                        )}
+                        <span className="truncate">{cat.name}</span>
+                      </div>
 
                       <div className="flex items-center gap-1 shrink-0">
-                        {isSelected && (
-                          <Check
-                            className={cn(
-                              "w-3.5 h-3.5",
-                              isSelected ? "text-primary-foreground" : "text-primary"
-                            )}
-                          />
-                        )}
                         {hasChildren && (
                           <ChevronRight
                             className={cn(
                               "w-3.5 h-3.5 transition-transform",
                               isSelected
-                                ? "text-primary-foreground/80"
+                                ? "text-primary font-bold"
                                 : isExpanded
                                 ? "text-primary translate-x-0.5"
                                 : "text-muted-foreground/60 group-hover:text-foreground"

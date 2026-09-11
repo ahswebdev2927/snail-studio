@@ -5,6 +5,9 @@ import { eq } from "drizzle-orm";
 /**
  * Evaluates whether a product matches a specific collection rule.
  */
+/**
+ * Evaluates whether a product matches a specific collection rule.
+ */
 function evaluateRule(product: any, rule: any): boolean {
   const column = rule.column;
   const relation = rule.relation;
@@ -30,14 +33,55 @@ function evaluateRule(product: any, rule: any): boolean {
       if (relation === "ends_with") return prodName.endsWith(ruleVal);
       return false;
     }
-    case "price": {
-      const prodPrice = product.priceMin;
-      const rulePrice = parseInt(value, 10);
+    case "price":
+    case "price_min":
+    case "priceMin": {
+      // product.priceMin is stored in paise (e.g. 450000 = ₹4,500)
+      const prodPriceRupees = (product.priceMin || 0) / 100;
+      let rulePrice = parseFloat(value);
       if (isNaN(rulePrice)) return false;
-      if (relation === "equals") return prodPrice === rulePrice;
-      if (relation === "greater_than" || relation === "greater_than_or_equal") return prodPrice >= rulePrice;
-      if (relation === "less_than" || relation === "less_than_or_equal") return prodPrice <= rulePrice;
+
+      // Normalize if rule value was entered in paise (>= 100000)
+      if (rulePrice >= 100000) {
+        rulePrice = rulePrice / 100;
+      }
+
+      if (relation === "equals") return prodPriceRupees === rulePrice;
+      if (relation === "greater_than") return prodPriceRupees > rulePrice;
+      if (relation === "greater_than_or_equal") return prodPriceRupees >= rulePrice;
+      if (relation === "less_than") return prodPriceRupees < rulePrice;
+      if (relation === "less_than_or_equal") return prodPriceRupees <= rulePrice;
       return false;
+    }
+    case "price_max":
+    case "priceMax": {
+      const prodPriceRupees = (product.priceMax || product.priceMin || 0) / 100;
+      let rulePrice = parseFloat(value);
+      if (isNaN(rulePrice)) return false;
+
+      if (rulePrice >= 100000) {
+        rulePrice = rulePrice / 100;
+      }
+
+      if (relation === "equals") return prodPriceRupees === rulePrice;
+      if (relation === "greater_than") return prodPriceRupees > rulePrice;
+      if (relation === "greater_than_or_equal") return prodPriceRupees >= rulePrice;
+      if (relation === "less_than") return prodPriceRupees < rulePrice;
+      if (relation === "less_than_or_equal") return prodPriceRupees <= rulePrice;
+      return false;
+    }
+    case "price_between":
+    case "priceBetween": {
+      const prodPriceRupees = (product.priceMin || 0) / 100;
+      const parts = (value || "").split(/[-,\s]+/);
+      let minVal = parseFloat(parts[0]);
+      let maxVal = parseFloat(parts[1]);
+      if (isNaN(minVal) || isNaN(maxVal)) return false;
+
+      if (minVal >= 100000) minVal /= 100;
+      if (maxVal >= 100000) maxVal /= 100;
+
+      return prodPriceRupees >= minVal && prodPriceRupees <= maxVal;
     }
     default: {
       // Treat as an attribute group code filter (e.g. shape, length, colour, texture)
@@ -151,5 +195,19 @@ export async function compileDynamicCollection(collectionId: string, tx?: any): 
     await db.transaction(async (innerTx) => {
       await performUpdate(innerTx);
     });
+  }
+}
+
+/**
+ * Re-evaluates and recompiles all active dynamic collections.
+ */
+export async function recompileAllDynamicCollections(tx?: any): Promise<void> {
+  const client = tx || db;
+  const dynamicCols = await client.query.collections.findMany({
+    where: eq(collections.type, "dynamic"),
+  });
+
+  for (const col of dynamicCols) {
+    await compileDynamicCollection(col.id, client);
   }
 }

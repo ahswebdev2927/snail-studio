@@ -63,6 +63,7 @@ export default function AdminBundlesPage() {
   const [discountType, setDiscountType] = useState<"percentage" | "fixed">("percentage");
   const [discountValue, setDiscountValue] = useState<number | "">("");
   const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
+  const [productSearchQuery, setProductSearchQuery] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [isActive, setIsActive] = useState(true);
@@ -122,6 +123,7 @@ export default function AdminBundlesPage() {
     setDiscountType("percentage");
     setDiscountValue("");
     setSelectedProductIds([]);
+    setProductSearchQuery("");
     setStartDate("");
     setEndDate("");
     setIsActive(true);
@@ -139,6 +141,7 @@ export default function AdminBundlesPage() {
       bundle.discountType === "fixed" ? bundle.discountValue / 100 : bundle.discountValue
     );
     setSelectedProductIds(bundle.items.map((i) => i.productId));
+    setProductSearchQuery("");
     setStartDate(bundle.startDate ? formatToDatetimeLocal(bundle.startDate) : "");
     setEndDate(bundle.endDate ? formatToDatetimeLocal(bundle.endDate) : "");
     setIsActive(bundle.isActive);
@@ -564,33 +567,71 @@ export default function AdminBundlesPage() {
                     {selectedProductIds.length} Selected (min 2)
                   </span>
                 </div>
+
+                {/* Product Search Input */}
+                <div className="relative">
+                  <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                  <input
+                    type="text"
+                    placeholder="Search products by name..."
+                    value={productSearchQuery}
+                    onChange={(e) => setProductSearchQuery(e.target.value)}
+                    className="w-full pl-9 pr-8 py-2 bg-secondary/30 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-xs outline-none text-foreground font-light transition-all placeholder:text-muted-foreground/35"
+                  />
+                  {productSearchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setProductSearchQuery("")}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+
                 <div className="border border-border/40 rounded-2xl p-3 max-h-[180px] overflow-y-auto space-y-1.5 bg-secondary/10">
-                  {products.map((product) => {
-                    const isChecked = selectedProductIds.includes(product.id);
-                    return (
-                      <div
-                        key={product.id}
-                        onClick={() => handleToggleProduct(product.id)}
-                        className={`flex items-center justify-between text-xs px-3 py-2.5 border rounded-xl cursor-pointer transition-all ${
-                          isChecked
-                            ? "bg-accent/15 border-accent/40 text-foreground"
-                            : "bg-card border-border text-muted-foreground hover:border-border/80"
-                        }`}
-                      >
-                        <span className="font-light pr-2 truncate">{product.name}</span>
-                        <div className="flex items-center gap-3 shrink-0">
-                          <span className="font-mono text-[11px] text-muted-foreground font-semibold">
-                            {formatPrice(product.priceMin)}
-                          </span>
-                          <div className={`w-4 h-4 rounded-md border flex items-center justify-center transition-all ${
-                            isChecked ? "bg-primary border-primary text-primary-foreground" : "border-border bg-card"
-                          }`}>
-                            {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
+                  {(() => {
+                    const filteredProducts = products.filter((product) =>
+                      product.name.toLowerCase().includes(productSearchQuery.toLowerCase())
+                    );
+
+                    if (filteredProducts.length === 0) {
+                      return (
+                        <div className="py-6 text-center">
+                          <p className="text-xs text-muted-foreground font-light italic">
+                            No products found matching &quot;{productSearchQuery}&quot;
+                          </p>
+                        </div>
+                      );
+                    }
+
+                    return filteredProducts.map((product) => {
+                      const isChecked = selectedProductIds.includes(product.id);
+                      return (
+                        <div
+                          key={product.id}
+                          onClick={() => handleToggleProduct(product.id)}
+                          className={`flex items-center justify-between text-xs px-3 py-2.5 border rounded-xl cursor-pointer transition-all ${
+                            isChecked
+                              ? "bg-accent/15 border-accent/40 text-foreground"
+                              : "bg-card border-border text-muted-foreground hover:border-border/80"
+                          }`}
+                        >
+                          <span className="font-light pr-2 truncate">{product.name}</span>
+                          <div className="flex items-center gap-3 shrink-0">
+                            <span className="font-mono text-[11px] text-muted-foreground font-semibold">
+                              {formatPrice(product.priceMin)}
+                            </span>
+                            <div className={`w-4 h-4 rounded-md border flex items-center justify-center transition-all ${
+                              isChecked ? "bg-primary border-primary text-primary-foreground" : "border-border bg-card"
+                            }`}>
+                              {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    });
+                  })()}
                 </div>
               </div>
 
