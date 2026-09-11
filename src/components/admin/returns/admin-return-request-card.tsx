@@ -17,8 +17,10 @@ import {
   Sparkles,
   Truck,
   ExternalLink,
+  Share2,
 } from "lucide-react";
 import Link from "next/link";
+import { customAlert } from "@/components/ui/alert-dialog-provider";
 import { AdminPaymentRecordModal } from "./admin-payment-record-modal";
 
 export interface ReturnRequestItem {
@@ -112,6 +114,38 @@ export function AdminReturnRequestCard({ request, onRefresh }: AdminReturnReques
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isRecordModalOpen, setIsRecordModalOpen] = useState(false);
+  const [isGeneratingLink, setIsGeneratingLink] = useState(false);
+
+  const handleGeneratePaymentLink = async () => {
+    setIsGeneratingLink(true);
+    setErrorMessage(null);
+    try {
+      const res = await fetch(`/api/admin/returns/${request.id}/generate-payment-link`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (res.ok && data.success && data.paymentLinkUrl) {
+        const link = data.paymentLinkUrl;
+        await navigator.clipboard.writeText(link);
+        const cleanPhone = (data.customerPhone || "").replace(/[^0-9]/g, "");
+        if (cleanPhone && data.whatsappMessage) {
+          const waUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(data.whatsappMessage)}`;
+          window.open(waUrl, "_blank");
+        }
+        await customAlert(
+          "Razorpay Payment Link Generated",
+          `Razorpay payment link copied to clipboard:\n${link}${cleanPhone ? "\n\nOpening WhatsApp sharing window..." : ""}`
+        );
+      } else {
+        setErrorMessage(data.error || "Failed to generate payment link.");
+      }
+    } catch (err: any) {
+      console.error("Error generating payment link:", err);
+      setErrorMessage("An unexpected error occurred while generating payment link.");
+    } finally {
+      setIsGeneratingLink(false);
+    }
+  };
 
   const isPending = request.status === "PENDING_REVIEW";
   const isApproved = request.status === "APPROVED";
@@ -511,14 +545,25 @@ export function AdminReturnRequestCard({ request, onRefresh }: AdminReturnReques
                 </p>
 
                 {request.paymentStatus === "PENDING" && (
-                  <button
-                    type="button"
-                    onClick={() => setIsRecordModalOpen(true)}
-                    className="py-1 px-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold rounded-lg shadow-xs transition flex items-center gap-1 cursor-pointer"
-                  >
-                    <CreditCard className="w-3 h-3" />
-                    Record Payment
-                  </button>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      disabled={isGeneratingLink}
+                      onClick={handleGeneratePaymentLink}
+                      className="py-1 px-2.5 bg-primary hover:bg-primary/90 text-primary-foreground text-[11px] font-semibold rounded-lg shadow-xs transition flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                    >
+                      {isGeneratingLink ? <Loader2 className="w-3 h-3 animate-spin" /> : <Share2 className="w-3 h-3" />}
+                      <span>Generate Payment Link</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsRecordModalOpen(true)}
+                      className="py-1 px-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold rounded-lg shadow-xs transition flex items-center gap-1 cursor-pointer"
+                    >
+                      <CreditCard className="w-3 h-3" />
+                      <span>Record Payment</span>
+                    </button>
+                  </div>
                 )}
               </div>
 
@@ -565,16 +610,27 @@ export function AdminReturnRequestCard({ request, onRefresh }: AdminReturnReques
             <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-300 text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0 text-amber-400" />
-                <span>Customer payment of ₹{(request.paymentAmount / 100).toFixed(2)} is PENDING. Record payment before creating reverse pickup.</span>
+                <span>Customer payment of ₹{(request.paymentAmount / 100).toFixed(2)} is PENDING. Record or generate payment link before creating reverse pickup.</span>
               </div>
-              <button
-                type="button"
-                onClick={() => setIsRecordModalOpen(true)}
-                className="py-1 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-xl shadow-xs transition flex items-center gap-1.5 shrink-0 cursor-pointer"
-              >
-                <CreditCard className="w-3.5 h-3.5" />
-                Record Payment
-              </button>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  disabled={isGeneratingLink}
+                  onClick={handleGeneratePaymentLink}
+                  className="py-1 px-3 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                >
+                  {isGeneratingLink ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Share2 className="w-3.5 h-3.5" />}
+                  <span>Generate Link</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsRecordModalOpen(true)}
+                  className="py-1 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+                >
+                  <CreditCard className="w-3.5 h-3.5" />
+                  <span>Record Payment</span>
+                </button>
+              </div>
             </div>
           )}
 
@@ -618,16 +674,27 @@ export function AdminReturnRequestCard({ request, onRefresh }: AdminReturnReques
             <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-300 text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0 text-amber-400" />
-                <span>Customer payment of ₹{(request.paymentAmount / 100).toFixed(2)} is PENDING. Record payment before creating REPL exchange shipment.</span>
+                <span>Customer payment of ₹{(request.paymentAmount / 100).toFixed(2)} is PENDING. Record or generate payment link before creating REPL exchange shipment.</span>
               </div>
-              <button
-                type="button"
-                onClick={() => setIsRecordModalOpen(true)}
-                className="py-1 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-xl shadow-xs transition flex items-center gap-1.5 shrink-0 cursor-pointer"
-              >
-                <CreditCard className="w-3.5 h-3.5" />
-                Record Payment
-              </button>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  disabled={isGeneratingLink}
+                  onClick={handleGeneratePaymentLink}
+                  className="py-1 px-3 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                >
+                  {isGeneratingLink ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Share2 className="w-3.5 h-3.5" />}
+                  <span>Generate Link</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsRecordModalOpen(true)}
+                  className="py-1 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+                >
+                  <CreditCard className="w-3.5 h-3.5" />
+                  <span>Record Payment</span>
+                </button>
+              </div>
             </div>
           )}
 

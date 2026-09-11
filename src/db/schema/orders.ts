@@ -67,7 +67,7 @@ export const payments = sqliteTable('payments', {
   orderId: text('order_id').notNull().references(() => orders.id, { onDelete: 'cascade' }),
   gateway: text('gateway').notNull(), // e.g. "stripe", "razorpay"
   gatewayTransactionId: text('gateway_transaction_id').unique(),
-  purpose: text('purpose', { enum: ['checkout', 'shipping_adjustment'] }).notNull().default('checkout'),
+  purpose: text('purpose', { enum: ['checkout', 'shipping_adjustment', 'return_fee', 'replacement_fee'] }).notNull().default('checkout'),
   status: text('status').notNull(), // e.g. "succeeded", "failed"
   amount: integer('amount').notNull(),
   currency: text('currency').notNull().default('INR'),

@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   RotateCcw,
   RefreshCw,
@@ -13,6 +13,7 @@ import {
   CreditCard,
   AlertCircle,
   Package,
+  Loader2,
 } from "lucide-react";
 
 export interface CustomerReturnTimelineProps {
@@ -39,6 +40,108 @@ export interface CustomerReturnTimelineProps {
 }
 
 export function CustomerReturnTimeline({ request, storePhone = "+91 99999 99999" }: CustomerReturnTimelineProps) {
+  const [isPaying, setIsPaying] = useState(false);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Dynamically load Razorpay SDK checkout script if not present
+    if (typeof window !== "undefined" && !(window as any).Razorpay) {
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.async = true;
+      document.body.appendChild(script);
+    }
+  }, []);
+
+  const handlePayFee = async () => {
+    setIsPaying(true);
+    setPaymentError(null);
+
+    try {
+      const res = await fetch(`/api/returns/${request.id}/pay-fee`);
+      const data = await res.json();
+
+      if (!res.ok || !data.success || !data.paymentSession) {
+        throw new Error(data.error || "Failed to initialize payment session.");
+      }
+
+      const { paymentSession } = data;
+
+      if (paymentSession.checkoutUrl) {
+        window.location.href = paymentSession.checkoutUrl;
+        return;
+      }
+
+      if ((window as any).Razorpay && paymentSession.keyId) {
+        const options = {
+          key: paymentSession.keyId,
+          amount: paymentSession.amount,
+          currency: paymentSession.currency || "INR",
+          name: "Snail Studio",
+          description: `${request.type === "RETURN" ? "Return Pickup Fee" : "Replacement Exchange Fee"} for Request #${request.id}`,
+          order_id: paymentSession.gatewayOrderId || paymentSession.id,
+          handler: async function (response: any) {
+            setIsPaying(true);
+            try {
+              const confirmRes = await fetch(`/api/returns/${request.id}/pay-fee`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  paymentId: response.razorpay_payment_id,
+                  gatewayOrderId: response.razorpay_order_id,
+                  signature: response.razorpay_signature,
+                }),
+              });
+
+              const confirmData = await confirmRes.json();
+              if (confirmRes.ok && confirmData.success) {
+                window.location.reload();
+              } else {
+                setPaymentError(confirmData.error || "Payment verification failed.");
+                setIsPaying(false);
+              }
+            } catch (err: any) {
+              console.error(err);
+              setPaymentError("An error occurred during payment verification.");
+              setIsPaying(false);
+            }
+          },
+          theme: {
+            color: "#AC5429",
+          },
+          modal: {
+            ondismiss: function () {
+              setIsPaying(false);
+            },
+          },
+        };
+
+        const rzp = new (window as any).Razorpay(options);
+        rzp.open();
+      } else {
+        // Mock fallback for dev mode
+        const confirmRes = await fetch(`/api/returns/${request.id}/pay-fee`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            paymentId: `pay_mock_${Date.now()}`,
+            gatewayOrderId: paymentSession.gatewayOrderId || paymentSession.id,
+          }),
+        });
+        const confirmData = await confirmRes.json();
+        if (confirmRes.ok && confirmData.success) {
+          window.location.reload();
+        } else {
+          setPaymentError(confirmData.error || "Payment failed.");
+          setIsPaying(false);
+        }
+      }
+    } catch (err: any) {
+      console.error(err);
+      setPaymentError(err.message || "An unexpected error occurred.");
+      setIsPaying(false);
+    }
+  };
   const isReturn = request.type === "RETURN";
   const isPending = request.status === "PENDING_REVIEW";
   const isApproved = request.status === "APPROVED";
@@ -276,14 +379,34 @@ export function CustomerReturnTimeline({ request, storePhone = "+91 99999 99999"
             </div>
           </div>
 
-          <div className="pt-1">
+          {paymentError && (
+            <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-400 text-xs flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{paymentError}</span>
+            </div>
+          )}
+
+          <div className="flex flex-wrap items-center gap-2 pt-1">
+            <button
+              type="button"
+              disabled={isPaying}
+              onClick={handlePayFee}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-semibold rounded-xl shadow-sm transition-all cursor-pointer disabled:opacity-50"
+            >
+              {isPaying ? (
+                <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+              ) : (
+                <CreditCard className="w-4 h-4 shrink-0" />
+              )}
+              <span>Pay Online via Razorpay</span>
+            </button>
+
             <a
               href={whatsappUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow-sm transition-all cursor-pointer"
             >
-              <span>For payment :</span>
               <MessageCircle className="w-4 h-4 text-white shrink-0 fill-current" />
               <span>Contact Support</span>
             </a>
