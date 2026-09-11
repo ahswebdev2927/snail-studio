@@ -368,6 +368,25 @@ export default async function OrderDetailsPage({ params }: PageProps) {
           <OrderUpdatesAccordion
             statusHistory={orderRecord.statusHistory || []}
           />
+
+          {/* Need Help & Policy Links */}
+          <div className="p-5 rounded-3xl bg-secondary/20 border border-border/30 space-y-3 font-sans text-xs">
+            <h4 className="font-semibold uppercase tracking-wider text-[10px] text-muted-foreground">Need Help with your Order?</h4>
+            <div className="flex flex-col gap-2 font-light">
+              <Link href="/shipping-policy" className="hover:text-primary transition-colors flex items-center justify-between text-foreground">
+                <span>Shipping Policy & Delivery Timelines</span>
+                <span className="text-muted-foreground">&rarr;</span>
+              </Link>
+              <Link href="/returns-refunds" className="hover:text-primary transition-colors flex items-center justify-between text-foreground">
+                <span>Returns, Refunds & Exchanges</span>
+                <span className="text-muted-foreground">&rarr;</span>
+              </Link>
+              <Link href="/contact" className="hover:text-primary transition-colors flex items-center justify-between text-foreground">
+                <span>Contact Client Support</span>
+                <span className="text-muted-foreground">&rarr;</span>
+              </Link>
+            </div>
+          </div>
         </div>
       </div>
     </div>

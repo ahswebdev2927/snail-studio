@@ -31,6 +31,16 @@ export async function POST(req: NextRequest) {
     const now = new Date();
 
     if (!user) {
+      let targetEmail = body.email || `customer-${phoneNumber.slice(-4)}@example.com`;
+      const existingEmailUser = await db.query.users.findFirst({
+        where: eq(users.email, targetEmail),
+      });
+
+      if (existingEmailUser) {
+        // If email is already registered to another user account, append nanoid suffix for mock user
+        targetEmail = `${targetEmail.split('@')[0]}_${nanoid(4)}@${targetEmail.split('@')[1] || 'example.com'}`;
+      }
+
       // Create new customer user record
       const insertedUsers = await db
         .insert(users)
@@ -45,7 +55,7 @@ export async function POST(req: NextRequest) {
           createdAt: now,
           updatedAt: now,
           name: body.name || `Customer ${phoneNumber.slice(-4)}`,
-          email: body.email || `customer-${phoneNumber.slice(-4)}@example.com`,
+          email: targetEmail,
           whatsappNumber: body.whatsappNumber || null,
         })
         .returning();

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import DOMPurify from "isomorphic-dompurify";
 import {
   FileText,
@@ -302,9 +303,14 @@ export function ProductTabs({ description, specifications }: ProductTabsProps) {
                   </li>
                   <li className="flex items-start gap-2.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0 mt-1.5" />
-                    <span><strong>Shipping Cost</strong>: Free standard shipping on all prepaid orders above ₹999. Below that, flat ₹80 applies.</span>
+                    <span><strong>Shipping Calculation</strong>: Calculated live during checkout based on delivery PIN code serviceability and order value.</span>
                   </li>
                 </ul>
+                <div className="pt-2 border-t border-border/10">
+                  <Link href="/shipping-policy" className="text-xs font-semibold text-primary hover:underline inline-flex items-center gap-1">
+                    Read full Shipping Policy &rarr;
+                  </Link>
+                </div>
               </div>
 
               {/* Returns policy */}
@@ -318,17 +324,22 @@ export function ProductTabs({ description, specifications }: ProductTabsProps) {
                 <ul className="space-y-3.5 text-xs text-muted-foreground font-light">
                   <li className="flex items-start gap-2.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0 mt-1.5" />
-                    <span><strong>Final Sale</strong>: Due to the personal hygiene nature of press-on nails, all orders are non-returnable and non-refundable.</span>
+                    <span><strong>Eligibility</strong>: Return requests for unused/unworn sets may be submitted within 7 days of delivery.</span>
                   </li>
                   <li className="flex items-start gap-2.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0 mt-1.5" />
-                    <span><strong>Exchange Policy</strong>: In the rare case of transit damage, missing items, or receiving a wrong product, we offer immediate replacement.</span>
+                    <span><strong>Exchange Policy</strong>: In case of transit damage, defective items, or wrong products, we offer immediate replacement with unboxing video proof within 48 hours.</span>
                   </li>
                   <li className="flex items-start gap-2.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0 mt-1.5" />
-                    <span><strong>Claim Process</strong>: Please email us (or WhatsApp) with an unboxing video showing the damage within 48 hours of delivery to process a free exchange.</span>
+                    <span><strong>Shipping & Hygiene</strong>: Customer pays return shipping for size/mind returns. Hygiene restrictions apply.</span>
                   </li>
                 </ul>
+                <div className="pt-2 border-t border-border/10">
+                  <Link href="/returns-refunds" className="text-xs font-semibold text-primary hover:underline inline-flex items-center gap-1">
+                    Read full Returns & Refunds Policy &rarr;
+                  </Link>
+                </div>
               </div>
             </div>
           </div>

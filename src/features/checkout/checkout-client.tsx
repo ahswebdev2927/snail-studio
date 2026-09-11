@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { 
   ShoppingBag, 
@@ -1382,23 +1383,31 @@ export default function CheckoutClient() {
             )}
 
             {currentStep === "review" && (
-              <Button 
-                onClick={handlePlaceOrder}
-                disabled={processingOrder}
-                className="w-full rounded-xl py-3 bg-accent text-accent-foreground hover:bg-accent/95 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer shadow-md transition-all"
-              >
-                {processingOrder ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Processing Order...</span>
-                  </>
-                ) : (
-                  <>
-                    <Lock className="w-4 h-4" />
-                    <span>Place Order & Pay {formatPrice(finalTotal)}</span>
-                  </>
-                )}
-              </Button>
+              <>
+                <p className="text-[10px] text-muted-foreground font-light text-center leading-normal mb-2">
+                  By placing your order, you agree to our{" "}
+                  <Link href="/terms-and-conditions" target="_blank" className="text-primary hover:underline">Terms & Conditions</Link>,{" "}
+                  <Link href="/privacy-policy" target="_blank" className="text-primary hover:underline">Privacy Policy</Link>, and{" "}
+                  <Link href="/returns-refunds" target="_blank" className="text-primary hover:underline">Returns & Refunds Policy</Link>.
+                </p>
+                <Button 
+                  onClick={handlePlaceOrder}
+                  disabled={processingOrder}
+                  className="w-full rounded-xl py-3 bg-accent text-accent-foreground hover:bg-accent/95 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer shadow-md transition-all"
+                >
+                  {processingOrder ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Processing Order...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Lock className="w-4 h-4" />
+                      <span>Place Order & Pay {formatPrice(finalTotal)}</span>
+                    </>
+                  )}
+                </Button>
+              </>
             )}
           </div>
         </div>

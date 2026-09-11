@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Select } from "@/components/ui/select";
+import { CascadingCategorySelect } from "@/components/ui/cascading-category-select";
 import * as z from "zod";
 import { 
   ArrowLeft, 
@@ -154,31 +155,38 @@ export default function ProductForm({ mode, productId, initialData }: ProductFor
   }, [attributes]);
 
   const categoryOptions = useMemo(() => {
-    const parents = categories.filter((c) => !c.parentId);
-    const childrenMap = categories.reduce((acc: any, c) => {
-      if (c.parentId) {
-        if (!acc[c.parentId]) acc[c.parentId] = [];
-        acc[c.parentId].push(c);
-      }
-      return acc;
-    }, {});
+    const childrenMap: Record<string, any[]> = {};
+    categories.forEach((c) => {
+      const pid = c.parentId || "root";
+      if (!childrenMap[pid]) childrenMap[pid] = [];
+      childrenMap[pid].push(c);
+    });
 
     const options: { value: string; label: string; disabled?: boolean }[] = [
       { value: "", label: "Select Category" }
     ];
 
-    parents.forEach((parent) => {
-      const children = childrenMap[parent.id] || [];
-      if (children.length > 0) {
-        options.push({ value: `group-${parent.id}`, label: parent.name, disabled: true });
-        options.push({ value: parent.id, label: `\u00A0\u00A0${parent.name} (Parent)` });
-        children.forEach((child: any) => {
-          options.push({ value: child.id, label: `\u00A0\u00A0\u00A0\u00A0${child.name}` });
-        });
+    function traverse(cat: any, depth: number) {
+      const children = childrenMap[cat.id] || [];
+
+      if (depth === 0) {
+        if (children.length > 0) {
+          options.push({ value: `group-${cat.id}`, label: cat.name, disabled: true });
+          options.push({ value: cat.id, label: `\u00A0\u00A0${cat.name} (Parent)` });
+        } else {
+          options.push({ value: cat.id, label: cat.name });
+        }
       } else {
-        options.push({ value: parent.id, label: parent.name });
+        const indentSpaces = "\u00A0\u00A0".repeat(depth + 1);
+        const prefix = depth >= 2 ? `↳ ` : "";
+        options.push({ value: cat.id, label: `${indentSpaces}${prefix}${cat.name}` });
       }
-    });
+
+      children.forEach((child) => traverse(child, depth + 1));
+    }
+
+    const topParents = childrenMap["root"] || [];
+    topParents.forEach((parent) => traverse(parent, 0));
 
     return options;
   }, [categories]);
@@ -851,11 +859,11 @@ export default function ProductForm({ mode, productId, initialData }: ProductFor
                   name="categoryId"
                   control={control}
                   render={({ field }) => (
-                    <Select
-                      options={categoryOptions}
-                      value={field.value || ""}
-                      onChange={field.onChange}
-                      placeholder="Select Category"
+                    <CascadingCategorySelect
+                      categories={categories}
+                      value={field.value}
+                      onChange={(val) => field.onChange(val)}
+                      placeholder="Select Category..."
                     />
                   )}
                 />

@@ -483,7 +483,7 @@ function LoginFormContent() {
 
   if (checkingSession) {
     return (
-      <div className="flex flex-col items-center justify-center py-32 gap-3 text-center">
+      <div className="flex-1 flex flex-col items-center justify-center min-h-[calc(100vh-140px)] py-12 gap-3 text-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
         <p className="text-xs font-light text-muted-foreground">Verifying secure session...</p>
       </div>
@@ -497,8 +497,9 @@ function LoginFormContent() {
   };
 
   return (
-    <div className="w-full max-w-md mx-auto my-12 px-4">
-      <div className="bg-card/75 border border-border/40 backdrop-blur-md rounded-3xl p-8 shadow-2xl relative overflow-hidden transition-all duration-300 hover:border-primary/20">
+    <div className="flex-1 flex flex-col items-center justify-center min-h-[calc(100vh-140px)] py-12 px-4">
+      <div className="w-full max-w-md mx-auto">
+        <div className="bg-card/75 border border-border/40 backdrop-blur-md rounded-3xl p-8 shadow-2xl relative overflow-hidden transition-all duration-300 hover:border-primary/20">
         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary/30 via-accent to-primary/30" />
         <div className="absolute -right-12 -top-12 w-28 h-28 rounded-full bg-accent/5 blur-2xl pointer-events-none" />
 
@@ -818,6 +819,7 @@ function LoginFormContent() {
         <div id="recaptcha-container" className="hidden"></div>
       </div>
     </div>
+  </div>
   );
 }
 
@@ -825,7 +827,7 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex flex-col items-center justify-center py-32 gap-3 text-center">
+        <div className="flex-1 flex flex-col items-center justify-center min-h-[calc(100vh-140px)] py-12 gap-3 text-center">
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
           <p className="text-xs font-light text-muted-foreground">Loading login form...</p>
         </div>

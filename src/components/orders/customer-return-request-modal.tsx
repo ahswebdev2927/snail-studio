@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import { createPortal } from "react-dom";
 import { X, RefreshCw, AlertCircle, CheckCircle2, RotateCcw, Replace, MessageSquare, Phone } from "lucide-react";
 import { RETURN_REASONS, ReturnReason, ReturnRequestType } from "@/lib/returns/types";
@@ -235,10 +236,14 @@ export default function CustomerReturnRequestModal({
             <div className="p-3 bg-secondary/15 border border-border/20 text-muted-foreground rounded-xl text-[10px] leading-relaxed font-light space-y-1">
               <div className="flex items-center gap-1.5 font-semibold text-foreground text-[11px]">
                 <Phone className="w-3.5 h-3.5 text-primary shrink-0" />
-                3-Day Window & Photo Verification
+                Return Policy & Verification
               </div>
               <p>
-                Requests must be initiated within <span className="font-semibold text-foreground">3 days</span> of parcel delivery. Photo/video evidence for damaged/defective claims can be shared directly with our support team on <span className="font-semibold text-primary">WhatsApp</span>.
+                Please review our full{" "}
+                <Link href="/returns-refunds" target="_blank" className="text-primary font-medium underline">
+                  Returns & Refunds Policy
+                </Link>{" "}
+                before submitting. Unboxing video proof within 48h is required for damage or defective item claims.
               </p>
             </div>
 

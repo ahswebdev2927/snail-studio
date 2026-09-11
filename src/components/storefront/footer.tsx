@@ -156,8 +156,13 @@ export function Footer({ storeLogo = "", storeName = "Snail Studio" }: FooterPro
               </Link>
             </li>
             <li>
-              <Link prefetch={false} href="/shipping-returns" className="hover:text-primary transition-colors">
-                Shipping & Returns
+              <Link prefetch={false} href="/shipping-policy" className="hover:text-primary transition-colors">
+                Shipping Policy
+              </Link>
+            </li>
+            <li>
+              <Link prefetch={false} href="/returns-refunds" className="hover:text-primary transition-colors">
+                Returns & Refunds
               </Link>
             </li>
             <li>
@@ -196,12 +201,18 @@ export function Footer({ storeLogo = "", storeName = "Snail Studio" }: FooterPro
       <div className="border-t border-border py-8 bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between text-[11px] text-muted-foreground font-light gap-4">
           <p>&copy; {new Date().getFullYear()} Snail Studio. All rights reserved.</p>
-          <div className="flex gap-6">
+          <div className="flex flex-wrap gap-4 sm:gap-6">
             <Link prefetch={false} href="/privacy-policy" className="hover:text-primary transition-colors">
               Privacy Policy
             </Link>
-            <Link prefetch={false} href="/terms-of-service" className="hover:text-primary transition-colors">
-              Terms of Service
+            <Link prefetch={false} href="/terms-and-conditions" className="hover:text-primary transition-colors">
+              Terms & Conditions
+            </Link>
+            <Link prefetch={false} href="/shipping-policy" className="hover:text-primary transition-colors">
+              Shipping Policy
+            </Link>
+            <Link prefetch={false} href="/returns-refunds" className="hover:text-primary transition-colors">
+              Returns & Refunds
             </Link>
           </div>
         </div>

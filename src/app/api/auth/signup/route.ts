@@ -103,6 +103,20 @@ async function postHandler(req: NextRequest) {
       ),
     });
 
+    // Check email uniqueness to prevent SQLite UNIQUE constraint failures
+    if (sanitizedEmail) {
+      const userWithEmail = await db.query.users.findFirst({
+        where: eq(users.email, sanitizedEmail),
+      });
+
+      if (userWithEmail && (!existingUser || userWithEmail.id !== existingUser.id)) {
+        return NextResponse.json(
+          { error: "An account with this email address already exists. Please use a different email address." },
+          { status: 400 }
+        );
+      }
+    }
+
     if (existingUser) {
       // If the user already exists, update their details and perform normal login flow
       const updatedUsers = await db
@@ -340,6 +354,19 @@ async function postHandler(req: NextRequest) {
     return response;
   } catch (error: any) {
     reqLogger.error({ err: error }, "Signup API route error");
+    const errorMsg = error?.message || "";
+    if (errorMsg.includes("UNIQUE constraint failed: users.email")) {
+      return NextResponse.json(
+        { error: "An account with this email address already exists. Please use a different email address." },
+        { status: 400 }
+      );
+    }
+    if (errorMsg.includes("UNIQUE constraint failed: users.phone_number")) {
+      return NextResponse.json(
+        { error: "An account with this phone number already exists." },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
       { error: "Internal Server Error", details: error.message },
       { status: 500 }
