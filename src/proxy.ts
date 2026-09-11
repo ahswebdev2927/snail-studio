@@ -221,9 +221,10 @@ export async function proxy(request: NextRequest) {
   if (pathname.startsWith("/api")) {
     const isWebhook = pathname.startsWith("/api/webhooks");
     const isCron = pathname.startsWith("/api/cron");
+    const isDevRoute = pathname.startsWith("/api/dev");
     const isMutative = ["POST", "PUT", "DELETE", "PATCH"].includes(request.method);
 
-    if (isMutative && !isWebhook && !isCron) {
+    if (isMutative && !isWebhook && !isCron && !isDevRoute) {
       if (!verifyCsrf(request)) {
         return NextResponse.json(
           { error: "Forbidden: CSRF verification failed" },

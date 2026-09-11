@@ -8,11 +8,16 @@ export const getOrderStatusBadgeStyle = (status: string) => {
       return "bg-sky-500/15 text-sky-800 dark:text-sky-300 border-sky-500/30";
     case "processing":
       return "bg-orange-500/15 text-orange-800 dark:text-orange-300 border-orange-500/30";
+    case "placed":
     case "pending":
       return "bg-amber-500/15 text-amber-800 dark:text-amber-300 border-amber-500/30";
     case "paid":
     case "confirmed":
       return "bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border-emerald-500/30";
+    case "ready_to_ship":
+      return "bg-indigo-500/15 text-indigo-800 dark:text-indigo-300 border-indigo-500/30";
+    case "returned":
+      return "bg-rose-500/15 text-rose-800 dark:text-rose-300 border-rose-500/30";
     case "cancelled":
       return "bg-rose-500/15 text-rose-800 dark:text-rose-300 border-rose-500/30";
     case "refunded":

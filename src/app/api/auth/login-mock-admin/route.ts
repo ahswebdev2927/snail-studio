@@ -8,7 +8,7 @@ import { triggerAdminNotification } from "@/services/notifications/notification-
 
 export async function POST(req: NextRequest) {
   // Only permit this endpoint in development environment
-  if (process.env.APP_ENV === "production") {
+  if (process.env.APP_ENV === "production" || process.env.NODE_ENV === "production") {
     return new Response("Not Found", { status: 404 });
   }
 
@@ -117,7 +117,7 @@ export async function POST(req: NextRequest) {
     // Set HttpOnly secure cookies (Same options as regular auth endpoint)
     response.cookies.set("accessToken", accessToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: (process.env.NODE_ENV as string) === "production",
       sameSite: "lax",
       path: "/",
       maxAge: 15 * 60, // 15 minutes
@@ -126,7 +126,7 @@ export async function POST(req: NextRequest) {
     const refreshTokenMaxAge = Math.floor((expiresAt.getTime() - Date.now()) / 1000);
     response.cookies.set("refreshToken", refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: (process.env.NODE_ENV as string) === "production",
       sameSite: "lax",
       path: "/",
       maxAge: refreshTokenMaxAge,

@@ -154,20 +154,21 @@ export default function CustomerOrderActions({
           {/* Address Lock Status Badge */}
           {isAddressLocked ? (
             <span 
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 text-[10px] font-bold uppercase tracking-wider"
-              title="Address is locked because a shipment (AWB) has been generated."
+              className="inline-flex items-center justify-center p-1.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20"
+              title="Address Locked"
+              aria-label="Address Locked"
             >
-              <Lock className="w-3 h-3 shrink-0" />
-              Address Locked
+              <Lock className="w-3.5 h-3.5 shrink-0" />
             </span>
           ) : (
             <button
               type="button"
               onClick={() => setShowSupportModal(true)}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-secondary/40 text-secondary-foreground border border-border/30 hover:bg-secondary text-[10px] font-semibold transition-all cursor-pointer"
+              className="inline-flex items-center justify-center p-1.5 rounded-full bg-secondary/40 text-secondary-foreground border border-border/30 hover:bg-secondary transition-all cursor-pointer"
+              title="Request Edit"
+              aria-label="Request Edit"
             >
-              <Phone className="w-3 h-3 text-primary shrink-0" />
-              Request Edit
+              <Phone className="w-3.5 h-3.5 text-primary shrink-0" />
             </button>
           )}
         </div>

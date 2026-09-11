@@ -14,7 +14,7 @@
     "db:seed": "tsx database/seed.ts",
     "simulate:ndr": "tsx scripts/simulate-ndr.ts",
     "typecheck": "tsc --noEmit",
-    "test": "npx vitest run src/tests/shipping/"
+    "test": "npx vitest run src/tests/"
 
   },
   "dependencies": {

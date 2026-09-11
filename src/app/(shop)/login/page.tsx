@@ -35,7 +35,7 @@ function LoginFormContent() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/account";
 
-  const isDev = process.env.APP_ENV !== "production";
+  const isDev = process.env.APP_ENV !== "production" && process.env.NODE_ENV !== "production";
 
   const [step, setStep] = useState<"phone" | "otp" | "profile">("phone");
   const [loading, setLoading] = useState(false);

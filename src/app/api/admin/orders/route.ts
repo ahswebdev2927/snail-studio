@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { orders, users } from "@/db/schema";
-import { eq, and, or, like, desc, sql } from "drizzle-orm";
+import { orders, users, returnRequests } from "@/db/schema";
+import { eq, and, or, like, desc, sql, inArray } from "drizzle-orm";
 import { authorize } from "@/middleware/auth";
 
 // GET /api/admin/orders - Retrieve list of orders with filters and customer details (Admin only)
@@ -24,9 +24,40 @@ export async function GET(req: NextRequest) {
 
     const conditions = [];
 
-    // Filter by status
+    // Filter by status tab based on business rules:
+    // placed: fresh placed orders ('placed', 'pending')
+    // confirmed: admin checks payments & details ('confirmed', 'paid')
+    // processing, ready_to_ship, shipped, delivered, cancelled
+    // returns: orders with active/approved return requests
+    // refunds: refunded / partially_refunded orders
     if (status !== "all") {
-      conditions.push(eq(orders.status, status as any));
+      if (status === "placed") {
+        conditions.push(inArray(orders.status, ["placed", "pending"]));
+      } else if (status === "confirmed") {
+        conditions.push(inArray(orders.status, ["confirmed", "paid"]));
+      } else if (status === "cancelled_returns" || status === "cancelled" || status === "returns") {
+        const returnedOrderIdsSubquery = db
+          .select({ orderId: returnRequests.orderId })
+          .from(returnRequests);
+        conditions.push(
+          or(
+            eq(orders.status, "cancelled"),
+            inArray(orders.id, returnedOrderIdsSubquery)
+          )
+        );
+      } else if (status === "refunds") {
+        const returnedOrderIdsSubquery = db
+          .select({ orderId: returnRequests.orderId })
+          .from(returnRequests);
+        conditions.push(
+          or(
+            inArray(orders.status, ["refunded", "partially_refunded"]),
+            inArray(orders.id, returnedOrderIdsSubquery)
+          )
+        );
+      } else {
+        conditions.push(eq(orders.status, status as any));
+      }
     }
 
     // Search query (Order ID, Customer Name, or Phone Number)
@@ -47,7 +78,7 @@ export async function GET(req: NextRequest) {
         .select({ count: sql<number>`count(${orders.id})` })
         .from(orders)
         .leftJoin(users, eq(orders.userId, users.id));
-      
+
       if (conditions.length > 0) {
         countBuilder.where(and(...conditions));
       }
@@ -86,20 +117,51 @@ export async function GET(req: NextRequest) {
 
     const results = await queryBuilder;
 
-    if (page !== null && limit !== null) {
-      return NextResponse.json({
-        orders: results,
-        pagination: {
-          totalItems,
-          page,
-          limit,
-          totalPages: Math.ceil(totalItems / limit),
-        }
-      }, { status: 200 });
+    // Attach return and refund metadata
+    const orderIds = results.map((r) => r.id);
+    let returnReqMap = new Map<string, any>();
+    if (orderIds.length > 0) {
+      const returnReqs = await db.query.returnRequests.findMany({
+        where: (rr, { inArray }) => inArray(rr.orderId, orderIds),
+      });
+      for (const rr of returnReqs) {
+        returnReqMap.set(rr.orderId, rr);
+      }
     }
 
-    return NextResponse.json(results, { status: 200 });
+    const enrichedResults = results.map((order) => {
+      const activeReturn = returnReqMap.get(order.id);
+      let refundReason: "Cancel" | "Return" | null = null;
+      if (activeReturn) {
+        refundReason = "Return";
+      } else if (order.status === "cancelled" || order.status === "refunded") {
+        refundReason = "Cancel";
+      }
 
+      return {
+        ...order,
+        hasReturnRequest: Boolean(activeReturn),
+        returnRequest: activeReturn || null,
+        refundReason,
+      };
+    });
+
+    if (page !== null && limit !== null) {
+      return NextResponse.json(
+        {
+          orders: enrichedResults,
+          pagination: {
+            totalItems,
+            page,
+            limit,
+            totalPages: Math.ceil(totalItems / limit),
+          },
+        },
+        { status: 200 }
+      );
+    }
+
+    return NextResponse.json(enrichedResults, { status: 200 });
   } catch (error: any) {
     console.error("GET /api/admin/orders error:", error);
     return NextResponse.json(

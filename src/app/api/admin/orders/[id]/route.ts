@@ -68,11 +68,17 @@ export async function GET(
       orderBy: (ah, { desc }) => [desc(ah.createdAt)],
     });
 
+    // Fetch return and replacement requests
+    const returnRequests = await db.query.returnRequests.findMany({
+      where: (rr, { eq }) => eq(rr.orderId, orderId),
+    });
+
     return NextResponse.json({
       ...order,
       payments,
       shipments,
       addressHistory,
+      returnRequests,
     }, { status: 200 });
 
   } catch (error: any) {

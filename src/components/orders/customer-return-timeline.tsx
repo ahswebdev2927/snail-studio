@@ -58,36 +58,76 @@ export function CustomerReturnTimeline({ request, storePhone = "+91 99999 99999"
   let steps: Array<{ title: string; subtitle: string; active: boolean; current: boolean; completed: boolean }> = [];
 
   if (isReturn) {
-    steps = [
-      {
-        title: "Requested",
-        subtitle: "Pending Admin Review",
-        active: true,
-        current: isPending,
-        completed: !isPending && !isRejected,
-      },
-      {
-        title: "Approved",
-        subtitle: "Return Accepted",
-        active: isApproved || isProcessing || isCompleted,
-        current: isApproved && !request.waybill,
-        completed: isProcessing || isCompleted,
-      },
-      {
-        title: "Reverse Pickup",
-        subtitle: request.waybill ? `AWB: ${request.waybill}` : "Pickup Scheduled",
-        active: (isApproved && Boolean(request.waybill)) || isProcessing || isCompleted,
-        current: isProcessing,
-        completed: isCompleted,
-      },
-      {
-        title: "Received",
-        subtitle: "Delivered to Warehouse",
-        active: isCompleted,
-        current: isCompleted,
-        completed: isCompleted,
-      },
-    ];
+    if (request.paymentResponsibility === "CUSTOMER_PAYS") {
+      steps = [
+        {
+          title: "Requested",
+          subtitle: "Pending Admin Review",
+          active: true,
+          current: isPending,
+          completed: !isPending && !isRejected,
+        },
+        {
+          title: "Approved",
+          subtitle: "Return Accepted",
+          active: isApproved || isProcessing || isCompleted,
+          current: isApproved && request.paymentStatus !== "PAID",
+          completed: isProcessing || isCompleted,
+        },
+        {
+          title: "Pickup Fee",
+          subtitle: request.paymentStatus === "PAID" ? "Fee Confirmed" : "Fee Pending",
+          active: request.paymentStatus === "PAID" || isProcessing || isCompleted,
+          current: isApproved && request.paymentStatus === "PENDING",
+          completed: request.paymentStatus === "PAID" || isProcessing || isCompleted,
+        },
+        {
+          title: "Reverse Pickup",
+          subtitle: request.waybill ? `AWB: ${request.waybill}` : "Pickup Scheduled",
+          active: (isApproved && Boolean(request.waybill)) || isProcessing || isCompleted,
+          current: isProcessing,
+          completed: isCompleted,
+        },
+        {
+          title: "Received",
+          subtitle: "Delivered to Warehouse",
+          active: isCompleted,
+          current: isCompleted,
+          completed: isCompleted,
+        },
+      ];
+    } else {
+      steps = [
+        {
+          title: "Requested",
+          subtitle: "Pending Admin Review",
+          active: true,
+          current: isPending,
+          completed: !isPending && !isRejected,
+        },
+        {
+          title: "Approved",
+          subtitle: "Return Accepted",
+          active: isApproved || isProcessing || isCompleted,
+          current: isApproved && !request.waybill,
+          completed: isProcessing || isCompleted,
+        },
+        {
+          title: "Reverse Pickup",
+          subtitle: request.waybill ? `AWB: ${request.waybill}` : "Pickup Scheduled",
+          active: (isApproved && Boolean(request.waybill)) || isProcessing || isCompleted,
+          current: isProcessing,
+          completed: isCompleted,
+        },
+        {
+          title: "Received",
+          subtitle: "Delivered to Warehouse",
+          active: isCompleted,
+          current: isCompleted,
+          completed: isCompleted,
+        },
+      ];
+    }
   } else {
     // Replacement Steps
     steps = [
@@ -226,10 +266,12 @@ export function CustomerReturnTimeline({ request, storePhone = "+91 99999 99999"
             <AlertCircle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
             <div className="space-y-1">
               <h4 className="text-xs font-semibold text-amber-500 uppercase tracking-wider">
-                Payment Required: ₹{amountRupees}
+                {isReturn ? "Reverse Shipment Fee Required" : "Replacement Shipping Fee Required"}: ₹{amountRupees}
               </h4>
               <p className="text-xs text-muted-foreground font-light leading-relaxed">
-                Please contact our support team to get payment details (UPI/QR) to proceed with your return/replacement parcel creation.
+                {isReturn
+                  ? "Payment for reverse pickup shipping is required before scheduling your return pickup. Please contact support team for payment details (UPI/QR)."
+                  : "Payment for replacement shipping is required before creating your exchange parcel. Please contact support team for payment details (UPI/QR)."}
               </p>
             </div>
           </div>
@@ -254,7 +296,8 @@ export function CustomerReturnTimeline({ request, storePhone = "+91 99999 99999"
           <div className="flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
             <span className="font-medium text-foreground">
-              Payment Confirmed: <strong className="text-emerald-500">₹{amountRupees}</strong> ({request.paymentMethod || "UPI"}{request.paymentReference ? ` - Ref: ${request.paymentReference}` : ""})
+              {isReturn ? "Reverse Shipment Fee Paid: " : "Replacement Shipping Fee Paid: "}
+              <strong className="text-emerald-500">₹{amountRupees}</strong> ({request.paymentMethod || "UPI"}{request.paymentReference ? ` - Ref: ${request.paymentReference}` : ""})
             </span>
           </div>
         </div>

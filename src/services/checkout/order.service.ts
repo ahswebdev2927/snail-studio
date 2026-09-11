@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { orders, orderItems, orderAddresses, orderStatusHistory, users, shipmentAuditLogs, refunds as refundsTable } from "@/db/schema";
+import { orders, orderItems, orderAddresses, orderStatusHistory, users, shipmentAuditLogs, refunds as refundsTable, returnRequests, payments } from "@/db/schema";
 import { eq, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { sendMail } from "@/services/email/email.service";
@@ -18,8 +18,9 @@ export const ALLOWED_ORDER_TRANSITIONS: Record<string, string[]> = {
   processing: ["ready_to_ship", "cancelled"],
   ready_to_ship: ["shipped", "cancelled"],
   shipped: ["delivered"],
-  delivered: [],
+  delivered: ["returned"],
   cancelled: ["refunded", "partially_refunded"],
+  returned: [],
   refunded: [],
   partially_refunded: [],
 };
@@ -494,6 +495,131 @@ export async function cancelAndRefundOrder(params: CancelAndRefundOrderParams, t
     refundAmountPaise: calculatedRefundPaise,
     refundPercentage,
     message: `Order successfully transitioned to ${targetStatus}. Refund of ₹${(calculatedRefundPaise / 100).toFixed(2)} (${refundPercentage}%) processed.`,
+  };
+}
+
+/**
+ * Processes a Return Refund for a delivered order.
+ * Marks the return request as COMPLETED, records a refund, and sets order status to 'returned'.
+ */
+export async function processReturnRefund(params: {
+  orderId: string;
+  returnRequestId?: string;
+  reason: string;
+  refundType: "full" | "custom";
+  refundAmountPaise?: number;
+  adminId: string;
+  adminName?: string;
+}) {
+  const { orderId, returnRequestId, reason, refundType, refundAmountPaise, adminId, adminName } = params;
+
+  const orderRecord = await db.query.orders.findFirst({
+    where: eq(orders.id, orderId),
+    with: {
+      payments: true,
+      returnRequests: true,
+      items: true,
+    },
+  });
+
+  if (!orderRecord) {
+    throw new Error(`Order ${orderId} not found.`);
+  }
+
+  // Find targeted return request or active return request
+  const targetReturnReq = returnRequestId
+    ? orderRecord.returnRequests.find((r) => r.id === returnRequestId)
+    : orderRecord.returnRequests[0];
+
+  let calculatedRefundPaise = refundAmountPaise || orderRecord.totalAmount;
+  if (refundType === "full") {
+    if (targetReturnReq && targetReturnReq.orderItemId) {
+      const item = orderRecord.items.find((i) => i.id === targetReturnReq.orderItemId);
+      if (item) {
+        calculatedRefundPaise = Math.max(0, (item.price - item.discount) * item.quantity);
+      }
+    }
+  }
+
+  if (calculatedRefundPaise <= 0 || calculatedRefundPaise > orderRecord.totalAmount) {
+    throw new Error(
+      `Invalid refund amount (₹${(calculatedRefundPaise / 100).toFixed(2)}). Must be between ₹0.01 and ₹${(
+        orderRecord.totalAmount / 100
+      ).toFixed(2)}.`
+    );
+  }
+
+  // 1. Mark return request as COMPLETED
+  if (targetReturnReq) {
+    await db
+      .update(returnRequests)
+      .set({ status: "COMPLETED", updatedAt: new Date() })
+      .where(eq(returnRequests.id, targetReturnReq.id));
+  }
+
+  // 2. Insert Refund record linked to primary checkout payment
+  const payment = orderRecord.payments.find((p) => p.status === "succeeded") || orderRecord.payments[0];
+  const paymentId = payment ? payment.id : `pmt_mock_${nanoid(10)}`;
+
+  if (!payment) {
+    await db.insert(payments).values({
+      id: paymentId,
+      orderId,
+      gateway: "mock_development",
+      status: "succeeded",
+      amount: orderRecord.totalAmount,
+      currency: "INR",
+    });
+  }
+
+  const refundId = `ref_${nanoid(12)}`;
+  await db.insert(refundsTable).values({
+    id: refundId,
+    paymentId,
+    gatewayRefundId: `rfd_${nanoid(12)}`,
+    amount: calculatedRefundPaise,
+    reason,
+    status: "succeeded",
+  });
+
+  // 3. Update Order Status to 'returned'
+  await db
+    .update(orders)
+    .set({ status: "returned" as any, updatedAt: new Date() })
+    .where(eq(orders.id, orderId));
+
+  // 4. Insert Order Status History log
+  await db.insert(orderStatusHistory).values({
+    id: `osh_${nanoid(10)}`,
+    orderId,
+    status: "returned",
+    notes: `Returned item received and verified. Refund of ₹${(calculatedRefundPaise / 100).toFixed(
+      2
+    )} issued. Notes: ${reason}`,
+  });
+
+  // 5. Insert Shipment Audit Log
+  await db.insert(shipmentAuditLogs).values({
+    id: `audit_${nanoid(10)}`,
+    orderId,
+    adminId,
+    adminName: adminName || "Admin",
+    action: "RETURN_REFUND_PROCESSED",
+    previousState: JSON.stringify({ status: orderRecord.status }),
+    newState: JSON.stringify({ status: "returned", refundAmountPaise: calculatedRefundPaise }),
+    notes: `Return refund processed by ${adminName || "Admin"}. Refund Amount: ₹${(
+      calculatedRefundPaise / 100
+    ).toFixed(2)}.`,
+  });
+
+  return {
+    success: true,
+    message: `Return refund of ₹${(calculatedRefundPaise / 100).toFixed(
+      2
+    )} processed successfully. Order status updated to Returned.`,
+    refundId,
+    refundAmountPaise: calculatedRefundPaise,
+    status: "returned",
   };
 }
 

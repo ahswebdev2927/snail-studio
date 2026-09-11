@@ -31,6 +31,55 @@ export async function delhiveryFetch<T = any>(options: DelhiveryRequestOptions):
     throw new DelhiveryApiError("Delhivery API Token is not configured in system environment.");
   }
 
+  // Development Mock Provider Handler (Strictly disabled in production)
+  if (config.isMockEnabled) {
+    const simulatedError = process.env.MOCK_DELHIVERY_ERROR;
+    if (simulatedError === "500") {
+      throw new DelhiveryApiError("Delhivery API HTTP Error 500: Internal Server Error", 500, "Internal Server Error");
+    }
+    if (simulatedError === "timeout") {
+      throw new DelhiveryApiError("Delhivery API request timed out after 15000ms.");
+    }
+
+    const cleanEndpoint = options.endpoint.startsWith("/") ? options.endpoint : `/${options.endpoint}`;
+
+    if (cleanEndpoint === "/api/cmu/create.json") {
+      let orderId = `REQ-${Date.now().toString().slice(-4)}`;
+      let isRepl = false;
+
+      if (typeof options.body === "string") {
+        if (options.body.includes("REPL") || options.body.includes("replacement")) {
+          isRepl = true;
+        }
+        const match = options.body.match(/"order"\s*:\s*"([^"]+)"/);
+        if (match && match[1]) {
+          orderId = match[1];
+        }
+      }
+
+      const cleanId = orderId.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+      const prefix = isRepl ? "DEV-REPL" : "DEV-RETURN";
+      const waybill = `${prefix}-${cleanId.slice(-8)}`;
+
+      return {
+        success: true,
+        packages: [
+          {
+            status: "Success",
+            waybill,
+            remarks: ["Mock shipment created successfully in development mode"],
+          },
+        ],
+        rmk: "Mock Delhivery Response",
+      } as unknown as T;
+    }
+
+    return {
+      success: true,
+      delivery_codes: [{ postal_code: { pre_paid: "Y", cod: "Y" } }],
+    } as unknown as T;
+  }
+
   const method = options.method || "GET";
   const timeoutMs = options.timeoutMs || 15000;
   const contentType = options.contentType || "application/json";

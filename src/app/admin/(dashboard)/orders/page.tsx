@@ -33,17 +33,20 @@ import {
   ChevronLeft,
   ChevronRight,
   Lock,
-  AlertTriangle
+  AlertTriangle,
+  RotateCcw,
+  RefreshCw
 } from "lucide-react";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 import { ShipmentDispatchModal } from "@/components/admin/orders/shipment-dispatch-modal";
 import { ShipmentAttemptsTimeline } from "@/components/admin/orders/shipment-attempts-timeline";
 import { OrderCancellationModal } from "@/components/admin/orders/order-cancellation-modal";
+import { ReturnRefundModal } from "@/components/admin/orders/return-refund-modal";
 
 interface OrderListItem {
   id: string;
   userId: string | null;
-  status: "pending" | "paid" | "processing" | "shipped" | "delivered" | "cancelled" | "refunded";
+  status: string;
   totalAmount: number;
   couponCode: string | null;
   createdAt: string;
@@ -51,6 +54,9 @@ interface OrderListItem {
   customerName: string | null;
   customerPhone: string | null;
   customerEmail: string | null;
+  hasReturnRequest?: boolean;
+  returnRequest?: any;
+  refundReason?: "Cancel" | "Return" | null;
 }
 
 interface OrderDetail {
@@ -148,6 +154,7 @@ interface OrderDetail {
     email: string | null;
     name: string | null;
   } | null;
+  returnRequests?: any[];
 }
 
 export default function AdminOrdersPage() {
@@ -171,6 +178,8 @@ export default function AdminOrdersPage() {
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [copiedShareLink, setCopiedShareLink] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
+  const [showReturnRefundModal, setShowReturnRefundModal] = useState(false);
+  const [selectedReturnRequest, setSelectedReturnRequest] = useState<any>(null);
 
   // Shipment Specific Form States
   const [shipCarrier, setShipCarrier] = useState("Delhivery");
@@ -684,17 +693,27 @@ export default function AdminOrdersPage() {
 
         {/* Filter Tabs */}
         <div className="flex flex-wrap gap-1.5 w-full sm:w-auto">
-          {["all", "pending", "paid", "processing", "ready_to_ship", "shipped", "delivered", "cancelled", "refunded"].map((status) => (
+          {[
+            { id: "all", label: "ALL" },
+            { id: "placed", label: "PLACED" },
+            { id: "confirmed", label: "CONFIRMED" },
+            { id: "processing", label: "PROCESSING" },
+            { id: "ready_to_ship", label: "READY TO SHIP" },
+            { id: "shipped", label: "SHIPPED" },
+            { id: "delivered", label: "DELIVERED" },
+            { id: "cancelled_returns", label: "CANCEL / RETURNS" },
+            { id: "refunds", label: "REFUNDS" },
+          ].map((tab) => (
             <button
-              key={status}
-              onClick={() => setStatusFilter(status)}
+              key={tab.id}
+              onClick={() => setStatusFilter(tab.id)}
               className={`px-3 py-1.5 rounded-lg text-[10px] font-semibold uppercase tracking-wider transition-all cursor-pointer ${
-                statusFilter === status
+                statusFilter === tab.id
                   ? "bg-primary text-primary-foreground"
                   : "bg-secondary/40 hover:bg-secondary/70 text-muted-foreground border border-border/35"
               }`}
             >
-              {status.replace(/_/g, " ")}
+              {tab.label}
             </button>
           ))}
         </div>
@@ -807,9 +826,16 @@ export default function AdminOrdersPage() {
                       <td className="py-4 px-5 font-semibold text-foreground">{formatPrice(order.totalAmount)}</td>
                       <td className="py-4 px-5 font-mono text-muted-foreground">{order.couponCode || "—"}</td>
                       <td className="py-4 px-5">
-                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase border tracking-wider inline-block ${getStatusBadge(order.status)}`}>
-                          {order.status}
-                        </span>
+                        <div className="flex flex-col gap-1 items-start">
+                          <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase border tracking-wider inline-block ${getStatusBadge(order.status)}`}>
+                            {order.status.replace(/_/g, " ")}
+                          </span>
+                          {order.refundReason && (
+                            <span className="text-[9px] font-medium text-muted-foreground bg-secondary/50 px-1.5 py-0.5 rounded border border-border/30">
+                              Reason: <strong className="text-foreground">{order.refundReason}</strong>
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="py-4 px-5 text-right" onClick={(e) => e.stopPropagation()}>
                         <button
@@ -1212,6 +1238,61 @@ export default function AdminOrdersPage() {
                       </div>
                     </div>
 
+                    {/* Return & Replacement Details */}
+                    <div className="space-y-3">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                        <RotateCcw className="w-3.5 h-3.5" />
+                        Reverse / Replacement Details
+                      </h4>
+                      <div className="border border-border/25 rounded-2xl p-4.5 space-y-3 bg-secondary/10">
+                        {(!orderDetail.returnRequests || orderDetail.returnRequests.length === 0) ? (
+                          <p className="text-xs text-muted-foreground font-light italic">No return or replacement request for this order.</p>
+                        ) : (
+                          orderDetail.returnRequests.map((req: any) => (
+                            <div key={req.id} className="space-y-2.5 text-xs">
+                              <div className="flex items-center justify-between font-semibold border-b border-border/20 pb-2">
+                                <span className="flex items-center gap-1.5 uppercase text-foreground">
+                                  {req.type === "RETURN" ? <RotateCcw className="w-3.5 h-3.5 text-rose-500" /> : <RefreshCw className="w-3.5 h-3.5 text-indigo-400" />}
+                                  {req.type} REQUEST
+                                </span>
+                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                                  req.status === "APPROVED" ? "bg-emerald-500/10 text-emerald-500" :
+                                  req.status === "COMPLETED" ? "bg-emerald-500/10 text-emerald-500" :
+                                  req.status === "REJECTED" ? "bg-destructive/10 text-destructive" :
+                                  "bg-amber-500/10 text-amber-500"
+                                }`}>
+                                  {req.status.replace(/_/g, " ")}
+                                </span>
+                              </div>
+
+                              <div className="space-y-1 text-[11px] text-muted-foreground">
+                                <p><strong className="text-foreground">Reason:</strong> {req.reason}</p>
+                                {req.customerNotes && <p><strong className="text-foreground">Customer Notes:</strong> "{req.customerNotes}"</p>}
+                                {req.waybill && (
+                                  <p><strong className="text-foreground">AWB / Waybill:</strong> {req.waybill}</p>
+                                )}
+                                <p><strong className="text-foreground">Payment Responsibility:</strong> {req.paymentResponsibility}</p>
+                              </div>
+
+                              {/* Action Button: Received and Verified -> Refund */}
+                              <div className="pt-2 border-t border-border/20 flex justify-end">
+                                <button
+                                  onClick={() => {
+                                    setSelectedReturnRequest(req);
+                                    setShowReturnRefundModal(true);
+                                  }}
+                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-semibold shadow-xs transition-all cursor-pointer"
+                                >
+                                  <CheckCircle2 className="w-3.5 h-3.5" />
+                                  <span>Received & Verified → Refund</span>
+                                </button>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+
                     {/* Shipments / Tracking */}
                     <div className="space-y-3">
                       <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
@@ -1487,6 +1568,25 @@ export default function AdminOrdersPage() {
           isOpen={showCancelModal}
           onClose={() => setShowCancelModal(false)}
           orderId={orderDetail.id}
+          totalAmountPaise={orderDetail.totalAmount}
+          onSuccess={async () => {
+            await loadOrderDetail(orderDetail.id);
+            await loadOrders();
+          }}
+        />
+      )}
+
+      {/* Return Refund Modal */}
+      {orderDetail && (
+        <ReturnRefundModal
+          isOpen={showReturnRefundModal}
+          onClose={() => {
+            setShowReturnRefundModal(false);
+            setSelectedReturnRequest(null);
+          }}
+          orderId={orderDetail.id}
+          returnRequest={selectedReturnRequest}
+          orderItems={orderDetail.items}
           totalAmountPaise={orderDetail.totalAmount}
           onSuccess={async () => {
             await loadOrderDetail(orderDetail.id);

@@ -151,7 +151,7 @@ export default function AdminLoginPage() {
     }
   };
 
-  const isDev = process.env.APP_ENV !== "production";
+  const isDev = process.env.APP_ENV !== "production" && process.env.NODE_ENV !== "production";
 
   const handlePhoneSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

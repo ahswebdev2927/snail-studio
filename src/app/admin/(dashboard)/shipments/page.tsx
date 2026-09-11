@@ -304,7 +304,7 @@ export default function AdminShipmentsPage() {
               {hasActivePickup && selectedShipmentIds.length > 0
                 ? `Add to Active Pickup Request (${selectedShipmentIds.length})`
                 : hasActivePickup
-                ? "Add to Active Pickup Request"
+                ? "Active Pickup Request"
                 : selectedShipmentIds.length > 0
                 ? `Schedule Pickup (${selectedShipmentIds.length})`
                 : "Schedule Pickup"}

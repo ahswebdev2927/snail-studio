@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { RotateCcw, Replace, CheckCircle2, Clock, XCircle, AlertCircle, ChevronDown, ChevronUp } from "lucide-react";
 import CustomerReturnRequestModal from "./customer-return-request-modal";
-import { CustomerReturnTimeline } from "./customer-return-timeline";
+import CustomerReturnTimelineModal from "./customer-return-timeline-modal";
 
 interface CustomerItemReturnActionProps {
   orderId: string;
@@ -23,13 +23,13 @@ export default function CustomerItemReturnAction({
   storePhone = "+91 99999 99999",
 }: CustomerItemReturnActionProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [showTimeline, setShowTimeline] = useState(false);
+  const [showTimelineModal, setShowTimelineModal] = useState(false);
 
   // Find existing request for this specific item
   const itemRequest = returnRequests?.find((rr) => rr.orderItemId === orderItem.id);
 
   // Calculate 3-day delivery window eligibility
-  const isDelivered = orderStatus.toLowerCase() === "delivered";
+  const isDelivered = ["delivered", "returned"].includes(orderStatus.toLowerCase());
   let isWithin3Days = true;
   if (orderDeliveredAt) {
     const delDate = new Date(orderDeliveredAt);
@@ -100,22 +100,30 @@ export default function CustomerItemReturnAction({
     <div className="flex flex-col items-end gap-1.5 font-sans w-full">
       {itemRequest && (
         <div className="flex items-center gap-2">
-          {renderStatusBadge(itemRequest)}
           <button
             type="button"
-            onClick={() => setShowTimeline(!showTimeline)}
+            onClick={() => setShowTimelineModal(true)}
+            className="cursor-pointer transition-opacity hover:opacity-80"
+          >
+            {renderStatusBadge(itemRequest)}
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowTimelineModal(true)}
             className="text-[11px] text-primary hover:underline font-medium cursor-pointer flex items-center gap-0.5"
           >
-            <span>{showTimeline ? "Hide Details" : "View Timeline"}</span>
-            {showTimeline ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+            <span>View Timeline</span>
           </button>
         </div>
       )}
 
-      {itemRequest && showTimeline && (
-        <div className="w-full mt-3 text-left">
-          <CustomerReturnTimeline request={itemRequest} storePhone={storePhone} />
-        </div>
+      {itemRequest && showTimelineModal && (
+        <CustomerReturnTimelineModal
+          isOpen={showTimelineModal}
+          onClose={() => setShowTimelineModal(false)}
+          request={itemRequest}
+          storePhone={storePhone}
+        />
       )}
 
       {!hasActiveRequest && isWithin3Days && (

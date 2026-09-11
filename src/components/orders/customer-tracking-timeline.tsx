@@ -20,8 +20,21 @@ export function CustomerTrackingTimeline({
 
   const isCancelled = statusLower === "cancelled";
   const isRefunded = statusLower === "refunded";
+  const isReturned = statusLower === "returned";
   const isNDR = shipStatusLower === "ndr";
   const isRTO = shipStatusLower === "rto";
+
+  if (isReturned) {
+    return (
+      <div className={cn("p-4.5 bg-rose-500/10 border border-rose-500/20 text-rose-700 dark:text-rose-400 rounded-2xl flex items-center gap-3 text-xs", className)}>
+        <RotateCcw className="w-5 h-5 shrink-0" />
+        <div>
+          <p className="font-bold uppercase tracking-wider text-[10px]">Order Returned</p>
+          <p className="font-light">This order has been returned and verified. The return refund has been processed.</p>
+        </div>
+      </div>
+    );
+  }
 
   if (isCancelled) {
     return (
