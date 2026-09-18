@@ -42,7 +42,7 @@ export function normalizeDelhiveryStatus(
     code === "X-PNP" ||
     s.includes("ndr") ||
     s.includes("undelivered") ||
-    inst.includes("not picked") ||
+    (inst.includes("not picked") && !inst.includes("picked up")) ||
     inst.includes("not received from client")
   ) {
     return "ndr";
@@ -58,11 +58,14 @@ export function normalizeDelhiveryStatus(
     return "cancelled";
   }
 
-  // 6. In-Transit (all transit scan steps grouped)
+  // 6. In-Transit / Picked Up
   if (
     s === "in transit" ||
     s === "dispatched" ||
+    s === "picked up" ||
+    code === "X-PPOM" ||
     inst.includes("picked up") ||
+    inst.includes("shipment picked up") ||
     inst.includes("recieved at origin") ||
     inst.includes("received at facility") ||
     inst.includes("vehicle departed") ||
@@ -78,6 +81,7 @@ export function normalizeDelhiveryStatus(
     s === "manifested" ||
     s === "pending" ||
     code === "FMPUR-101" ||
+    code === "X-UCI" ||
     inst.includes("manifest uploaded") ||
     inst.includes("pickup scheduled")
   ) {

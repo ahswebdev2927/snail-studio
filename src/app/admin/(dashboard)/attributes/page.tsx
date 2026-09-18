@@ -60,6 +60,13 @@ interface AttributeGroup {
   values: AttributeValue[];
 }
 
+const isColorGroup = (group?: { code?: string; name?: string } | null) => {
+  if (!group) return false;
+  const c = (group.code || "").trim().toLowerCase();
+  const n = (group.name || "").trim().toLowerCase();
+  return c === "colour" || c === "color" || n === "colour" || n === "color";
+};
+
 export default function AdminAttributesPage() {
   const [groups, setGroups] = useState<AttributeGroup[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -149,6 +156,27 @@ export default function AdminAttributesPage() {
     e.preventDefault();
     if (!groupName.trim()) return;
 
+    const targetName = groupName.trim().toLowerCase();
+    const targetCode = groupCode.trim().toLowerCase();
+    const isColorTarget = targetName === "colour" || targetName === "color" || targetCode === "colour" || targetCode === "color";
+
+    if (isColorTarget) {
+      const existingColorGroup = groups.find(
+        (g) =>
+          g.code.toLowerCase() === "colour" ||
+          g.code.toLowerCase() === "color" ||
+          g.name.trim().toLowerCase() === "colour" ||
+          g.name.trim().toLowerCase() === "color"
+      );
+      if (existingColorGroup) {
+        await customAlert(
+          "Validation Error",
+          `A Colour attribute group ("${existingColorGroup.name}") already exists. Only one Colour attribute group is allowed in the catalog.`
+        );
+        return;
+      }
+    }
+
     setIsSubmitting("group-create");
     try {
       const res = await fetch("/api/admin/attributes", {
@@ -186,6 +214,28 @@ export default function AdminAttributesPage() {
   const handleEditGroup = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedGroup || !editGroupName.trim()) return;
+
+    const targetName = editGroupName.trim().toLowerCase();
+    const targetCode = editGroupCode.trim().toLowerCase();
+    const isColorTarget = targetName === "colour" || targetName === "color" || targetCode === "colour" || targetCode === "color";
+
+    if (isColorTarget) {
+      const existingColorGroup = groups.find(
+        (g) =>
+          g.id !== selectedGroup.id &&
+          (g.code.toLowerCase() === "colour" ||
+            g.code.toLowerCase() === "color" ||
+            g.name.trim().toLowerCase() === "colour" ||
+            g.name.trim().toLowerCase() === "color")
+      );
+      if (existingColorGroup) {
+        await customAlert(
+          "Validation Error",
+          `A Colour attribute group ("${existingColorGroup.name}") already exists. Only one Colour attribute group is allowed in the catalog.`
+        );
+        return;
+      }
+    }
 
     setIsSubmitting(`group-edit-${selectedGroup.id}`);
     try {
@@ -250,7 +300,7 @@ export default function AdminAttributesPage() {
     if (!text.trim()) return;
 
     const group = groups.find(g => g.id === groupId);
-    const isColor = group?.code === "colour";
+    const isColor = isColorGroup(group);
     const hex = inlineValueColorHex[groupId] || "";
     const valCode = inlineValueCode[groupId] || "";
 
@@ -293,7 +343,7 @@ export default function AdminAttributesPage() {
     if (!selectedLabel || !editLabelValue.trim()) return;
 
     const group = groups.find(g => g.id === selectedLabel.groupId);
-    const isColor = group?.code === "colour";
+    const isColor = isColorGroup(group);
 
     if (isColor && !editLabelColorHex.trim()) {
       await customAlert("Validation Error", "Please provide a hex color code.");
@@ -558,7 +608,7 @@ export default function AdminAttributesPage() {
                           onClick={() => openLabelEditModal(val)}
                           title="Click to rename"
                         >
-                          {group.code === "colour" && val.colorHex && (
+                          {isColorGroup(group) && val.colorHex && (
                             <span 
                               className="w-2.5 h-2.5 rounded-full border border-black/10 shrink-0" 
                               style={{ backgroundColor: val.colorHex }}
@@ -590,7 +640,7 @@ export default function AdminAttributesPage() {
 
               {/* Inline input */}
               <div className="pt-3.5 border-t border-border/20">
-                {group.code === "colour" ? (
+                {isColorGroup(group) ? (
                   <div className="space-y-2">
                     <div className="grid grid-cols-2 gap-2">
                       <input
@@ -1061,7 +1111,7 @@ export default function AdminAttributesPage() {
                   />
                 </div>
 
-                {selectedLabel.groupId && groups.find(g => g.id === selectedLabel.groupId)?.code === "colour" && (
+                {selectedLabel.groupId && isColorGroup(groups.find(g => g.id === selectedLabel.groupId)) && (
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Colour Hex *</label>
                     <div className="flex gap-2 items-center">

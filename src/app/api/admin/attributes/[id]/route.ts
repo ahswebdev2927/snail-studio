@@ -67,6 +67,30 @@ export async function PUT(
       }
     }
 
+    // Enforce single Colour attribute group constraint
+    const targetName = (name ?? existing.name).trim().toLowerCase();
+    const targetCode = (code ?? existing.code).trim().toLowerCase();
+    const isColorTarget = targetName === "colour" || targetName === "color" || targetCode === "colour" || targetCode === "color";
+
+    if (isColorTarget) {
+      const allGroups = await db.query.attributeGroups.findMany();
+      const existingColorGroup = allGroups.find(
+        (g) =>
+          g.id !== id &&
+          (g.code.toLowerCase() === "colour" ||
+            g.code.toLowerCase() === "color" ||
+            g.name.trim().toLowerCase() === "colour" ||
+            g.name.trim().toLowerCase() === "color")
+      );
+
+      if (existingColorGroup) {
+        return NextResponse.json(
+          { error: `A Colour attribute group ("${existingColorGroup.name}") already exists. Only one Colour attribute group is allowed in the catalog.` },
+          { status: 400 }
+        );
+      }
+    }
+
     // Configure variantAxis automatically if attributeType is provided
     let variantAxis: boolean | undefined = undefined;
     if (attributeType !== undefined) {

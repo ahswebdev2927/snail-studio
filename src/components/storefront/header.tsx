@@ -365,48 +365,6 @@ export function Header({ navigationData, storeLogo = "", storeName = "Snail Stud
               </Link>
             ))}
 
-            {/* Dynamic Parent Categories (e.g. Care & Accessories) */}
-            {nav?.categories?.map((cat) => {
-              // Press On Nails is already represented by the main Shop menu dropdown
-              if (cat.slug === "press-on-nails" || cat.slug === "care-and-accessories") return null;
-
-              if (cat.children && cat.children.length > 0) {
-                return (
-                  <div key={cat.id} className="group relative py-2.5">
-                    <button className="flex items-center gap-1.5 px-4 py-2.5 rounded-full hover:text-primary transition-all cursor-pointer">
-                      {cat.name}
-                      <ChevronDown className="w-3.5 h-3.5 group-hover:rotate-180 transition-transform duration-200" />
-                    </button>
-                    <div className="absolute top-full left-0 pt-4 w-48 pointer-events-none opacity-0 translate-y-2 group-hover:pointer-events-auto group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 z-100">
-                      <div className="bg-card border border-border/40 rounded-2xl p-4 shadow-xl space-y-2">
-                        {cat.children.map((sub) => (
-                          <Link
-                            key={sub.id}
-                            prefetch={true}
-                            href={`/shop?category=${sub.slug}`}
-                            className="block text-[11px] font-medium text-muted-foreground hover:text-primary transition-colors normal-case tracking-wider"
-                          >
-                            {sub.name}
-                          </Link>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                );
-              }
-
-              return (
-                <Link
-                  key={cat.id}
-                  prefetch={true}
-                  href={`/shop?category=${cat.slug}`}
-                  className="px-4 py-2.5 rounded-full hover:text-primary transition-all"
-                >
-                  {cat.name}
-                </Link>
-              );
-            })}
-
             {/* Sizing Guide */}
             <Link
               prefetch={true}
@@ -689,53 +647,7 @@ export function Header({ navigationData, storeLogo = "", storeName = "Snail Stud
               </button>
             ))}
 
-            {/* 4. Parent Categories with Subcategories (matches Desktop sequence) */}
-            <Accordion type="single" className="w-full border-none">
-              {nav?.categories?.map((cat) => {
-                if (cat.slug === "press-on-nails" || cat.slug === "care-and-accessories") return null;
-
-                if (cat.children && cat.children.length > 0) {
-                  return (
-                    <AccordionItem key={cat.id} value={cat.slug} className="border-b border-border/10">
-                      <AccordionTrigger className="py-2.5 font-inter text-sm font-medium hover:no-underline hover:text-primary">
-                        {cat.name}
-                      </AccordionTrigger>
-                      <AccordionContent className="pl-4 space-y-2 pt-2 text-xs font-light">
-                        {cat.children.map((sub) => (
-                          <button
-                            key={sub.id}
-                            onClick={() => handleMobileNav(`/shop?category=${sub.slug}`)}
-                            className="w-full text-left py-1 hover:text-primary cursor-pointer block"
-                          >
-                            {sub.name}
-                          </button>
-                        ))}
-                      </AccordionContent>
-                    </AccordionItem>
-                  );
-                }
-
-                return null;
-              })}
-            </Accordion>
-
-            {/* Flat categories menu items (no children) */}
-            {nav?.categories?.map((cat) => {
-              if (cat.slug === "press-on-nails" || cat.slug === "care-and-accessories") return null;
-              if (cat.children && cat.children.length > 0) return null;
-
-              return (
-                <button
-                  key={cat.id}
-                  onClick={() => handleMobileNav(`/shop?category=${cat.slug}`)}
-                  className="w-full text-left font-inter text-sm font-medium text-foreground hover:text-primary transition-colors py-2 border-b border-border/10 cursor-pointer"
-                >
-                  {cat.name}
-                </button>
-              );
-            })}
-
-            {/* 5. Sizing (matches Desktop label) */}
+            {/* 4. Sizing (matches Desktop label) */}
             <button
               onClick={() => handleMobileNav("/sizing-guide")}
               className="w-full text-left font-inter text-sm font-medium text-foreground hover:text-primary transition-colors py-2 border-b border-border/10 cursor-pointer"

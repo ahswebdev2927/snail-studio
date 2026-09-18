@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { revalidateTag } from "next/cache";
+import { revalidateTag, revalidatePath } from "next/cache";
 import { CACHE_TAGS } from "@/lib/cache-tags";
 import { db } from "@/db";
 import { categories } from "@/db/schema";
@@ -172,6 +172,8 @@ export async function PUT(
 
     revalidateTag(CACHE_TAGS.CATEGORIES, "max");
     revalidateTag(CACHE_TAGS.NAVIGATION, "max");
+    revalidatePath("/");
+    revalidatePath("/shop");
 
     return NextResponse.json(updated[0]);
   } catch (error: unknown) {
@@ -252,6 +254,8 @@ export async function DELETE(
 
     revalidateTag(CACHE_TAGS.CATEGORIES, "max");
     revalidateTag(CACHE_TAGS.NAVIGATION, "max");
+    revalidatePath("/");
+    revalidatePath("/shop");
 
     return NextResponse.json({ success: true, message: "Category deleted successfully" });
   } catch (error: unknown) {

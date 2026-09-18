@@ -275,7 +275,13 @@ export default function ProductForm({ mode, productId, initialData }: ProductFor
   const watchColorMedia = watch("colorMedia") || [];
 
   const selectedColorValues = useMemo(() => {
-    const colorGroup = attributes.find(g => g.code === "colour");
+    const isColorGroup = (g?: { code?: string; name?: string } | null) => {
+      if (!g) return false;
+      const c = (g.code || "").trim().toLowerCase();
+      const n = (g.name || "").trim().toLowerCase();
+      return c === "colour" || c === "color" || n === "colour" || n === "color";
+    };
+    const colorGroup = attributes.find(g => isColorGroup(g) && g.attributeType === "VARIANT");
     if (!colorGroup) return [];
     const selectedIds = watch("attributeValueIds") || [];
     return colorGroup.values.filter(v => selectedIds.includes(v.id));

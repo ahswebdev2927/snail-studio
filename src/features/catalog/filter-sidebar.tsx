@@ -236,7 +236,7 @@ export function FilterSidebar({ facets, filters, onChange, onClear, onToggleHide
               <div className="mt-3 flex flex-wrap gap-2">
                 {facet.values.map((v) => {
                   const isSelected = (filters[groupCode] as string[])?.includes(v.code) || false;
-                  const isColourGroup = groupCode === "colour";
+                  const isColourGroup = groupCode === "colour" || groupCode === "color" || groupName.toLowerCase() === "colour" || groupName.toLowerCase() === "color";
                   const colorHexes: Record<string, string> = {
                     pink: "bg-pink-300",
                     nude: "bg-amber-100",

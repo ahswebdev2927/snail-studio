@@ -88,7 +88,8 @@ export async function PUT(
 
     let normalizedColorHex = undefined;
     if (colorHex !== undefined) {
-      if (group.code === "colour") {
+      const isColorGroup = group.code === "colour" || group.code === "color" || group.name.toLowerCase() === "colour" || group.name.toLowerCase() === "color";
+      if (isColorGroup) {
         if (!colorHex) {
           return NextResponse.json({ error: "Hex code is required for Colour attribute values" }, { status: 400 });
         }
